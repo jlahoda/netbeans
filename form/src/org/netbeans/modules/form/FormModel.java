@@ -66,6 +66,9 @@ public class FormModel
     // the class on which the form is based (which is extended in the java file)
     private Class<?> formBaseClass;
 
+    //leading comment (comment before the main element, typically a license header), null if none
+    private String leadingComment;
+
     // the top metacomponent of the form (null if form is based on Object)
     private RADComponent topRADComponent;
 
@@ -155,6 +158,14 @@ public class FormModel
 
     public Class<?> getFormBaseClass() {
         return formBaseClass;
+    }
+    
+    public void setLeadingComment(String leadingComment) {
+        this.leadingComment = leadingComment;
+    }
+
+    public String getLeadingComment() {
+        return leadingComment;
     }
 
     void setName(String name) {
