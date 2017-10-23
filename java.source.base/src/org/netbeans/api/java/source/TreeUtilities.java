@@ -71,6 +71,7 @@ import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
 
 import com.sun.source.util.DocTrees;
+import com.sun.source.util.TreeScanner;
 import com.sun.tools.javac.api.JavacTaskImpl;
 import com.sun.tools.javac.comp.ArgumentAttr;
 import com.sun.tools.javac.comp.Attr;
@@ -106,6 +107,8 @@ import org.openide.util.Exceptions;
  *
  * @author Jan Lahoda, Dusan Balek, Tomas Zezula
  */
+
+
 public final class TreeUtilities {
     
     /**{@link Kind}s that are represented by {@link ClassTree}.
@@ -754,6 +757,14 @@ public final class TreeUtilities {
     public Scope toScopeWithDisabledAccessibilityChecks(Scope scope) {
         return new NBScope((JavacScope)scope);
     }
+
+    private static Env<AttrContext> getEnv(Scope scope) {
+        if (scope instanceof NBScope) {
+            scope = ((NBScope) scope).delegate;
+        }
+        
+        return ((JavacScope) scope).getEnv();
+    }
     
     /**Attribute the given tree in the given context.
      */
@@ -783,7 +794,7 @@ public final class TreeUtilities {
     }
     
     public TypeMirror reattributeTree(Tree tree, Scope scope) {
-        Env<AttrContext> env = ((JavacScope)scope).getEnv();
+        Env<AttrContext> env = getEnv(scope);
         copyInnerClassIndexes(env.tree, tree);
         if (scope instanceof NBScope && ((NBScope)scope).areAccessibilityChecksDisabled()) {
             NBResolve.instance(info.impl.getJavacTask().getContext()).disableAccessibilityChecks();
@@ -796,7 +807,7 @@ public final class TreeUtilities {
     }
     
     public Scope reattributeTreeTo(Tree tree, Scope scope, Tree to) {
-        Env<AttrContext> env = ((JavacScope)scope).getEnv();
+        Env<AttrContext> env = getEnv(scope);
         copyInnerClassIndexes(env.tree, tree);
         if (scope instanceof NBScope && ((NBScope)scope).areAccessibilityChecksDisabled()) {
             NBResolve.instance(info.impl.getJavacTask().getContext()).disableAccessibilityChecks();
@@ -826,7 +837,7 @@ public final class TreeUtilities {
 //        ArgumentAttr.LocalCacheContext cacheContext = argumentAttr.withLocalCacheContext();
         try {
             Attr attr = Attr.instance(jti.getContext());
-            Env<AttrContext> env = ((JavacScope) scope).getEnv();
+            Env<AttrContext> env = getEnv(scope);
             if (tree instanceof JCExpression)
                 return attr.attribExpr((JCTree) tree,env, Type.noType);
             return attr.attribStat((JCTree) tree,env);
@@ -856,7 +867,7 @@ public final class TreeUtilities {
 //        ArgumentAttr.LocalCacheContext cacheContext = argumentAttr.withLocalCacheContext();
         try {
             Attr attr = Attr.instance(jti.getContext());
-            Env<AttrContext> env = ((JavacScope) scope).getEnv();
+            Env<AttrContext> env = getEnv(scope);
             Env<AttrContext> result = tree instanceof JCExpression ?
                 attr.attribExprToTree((JCExpression) tree, env, (JCTree) to) :
                 attr.attribStatToTree((JCTree) tree, env, (JCTree) to);
@@ -907,7 +918,7 @@ public final class TreeUtilities {
     /**Checks whether the given scope is in "static" context.
      */
     public boolean isStaticContext(Scope scope) {
-        return NBResolve.isStatic(((JavacScope)scope).getEnv());
+        return NBResolve.isStatic(getEnv(scope));
     }
     
     /**Returns uncaught exceptions inside the given tree path.
@@ -1108,6 +1119,19 @@ public final class TreeUtilities {
     public int[] findNameSpan(ContinueTree cont) {
         return findNameSpan(cont.getLabel().toString(), cont);
     }
+    
+//    /**Find span of the {@link VariablePatternTree#getBinding()} identifier in the source.
+//     * Returns starting and ending offset of the name in the source code that was parsed
+//     * (ie. {@link CompilationInfo.getText()}, which may differ from the positions in the source
+//     * document if it has been already altered.
+//     * 
+//     * @param var variable pattern which name should be searched for
+//     * @return the span of the name, or null if cannot be found
+//     * @since 0.999
+//     */
+//    public int[] findNameSpan(VariablePatternTree var) {
+//        return findNameSpan(var.getBinding().toString(), var);
+//    }
     
     /**Find span of the {@link MethodTree#getParameters()} parameter list in the source.
      * Returns the position of the opening and closing parentheses of the parameter list
@@ -1834,6 +1858,18 @@ public final class TreeUtilities {
         return ref.paramTypes;
     }
     
+    public List<Tree> getChildren(Tree t) {
+        final List<Tree> result = new ArrayList<>();
+        t.accept(new TreeScanner<Void, Void>() {
+            @Override
+            public Void scan(Tree tree, Void p) {
+                result.add(tree);
+                return null;
+            }
+        }, null);
+        return result;
+    }
+
     private static final class NBScope implements Scope {
 
         private final JavacScope delegate;
