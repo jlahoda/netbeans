@@ -1,7 +1,6 @@
 Name: NetBeans Application Launchers
 Description: Windows Launchers for the NetBeans Platform
 Version: 8.2
-License: CDDL-GPL-2-CP
 Source: https://netbeans.org/
 Origin: NetBeans
 
