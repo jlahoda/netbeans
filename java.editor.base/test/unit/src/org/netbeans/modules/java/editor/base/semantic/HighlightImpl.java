@@ -111,6 +111,7 @@ public final class HighlightImpl {
         ColoringAttributes.METHOD,
         ColoringAttributes.CONSTRUCTOR,
         ColoringAttributes.CLASS,
+        ColoringAttributes.DATUM,
         ColoringAttributes.INTERFACE,
         ColoringAttributes.ANNOTATION_TYPE,
         ColoringAttributes.ENUM,
@@ -125,6 +126,8 @@ public final class HighlightImpl {
         ColoringAttributes.DECLARATION,
         
         ColoringAttributes.MARK_OCCURRENCES,
+
+        ColoringAttributes.KEYWORD,
     });
  
     public static HighlightImpl parse(StyledDocument doc, String line) throws ParseException, BadLocationException {

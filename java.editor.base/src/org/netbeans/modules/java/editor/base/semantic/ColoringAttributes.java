@@ -40,6 +40,7 @@ public enum ColoringAttributes {
     CONSTRUCTOR,
     MODULE,
     CLASS,
+    DATUM,
     INTERFACE,
     ANNOTATION_TYPE,
     ENUM,

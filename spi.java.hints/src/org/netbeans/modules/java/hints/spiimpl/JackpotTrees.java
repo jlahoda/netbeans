@@ -30,6 +30,7 @@ import com.sun.tools.javac.tree.JCTree.JCBlock;
 import com.sun.tools.javac.tree.JCTree.JCCase;
 import com.sun.tools.javac.tree.JCTree.JCCatch;
 import com.sun.tools.javac.tree.JCTree.JCErroneous;
+import com.sun.tools.javac.tree.JCTree.JCExpression;
 import com.sun.tools.javac.tree.JCTree.JCIdent;
 import com.sun.tools.javac.tree.JCTree.JCModifiers;
 import com.sun.tools.javac.tree.JCTree.JCVariableDecl;
@@ -118,7 +119,27 @@ public class JackpotTrees {
         }
     }
 
-    public static class AnnotationWildcard extends JCAnnotation implements IdentifierTree {
+    public static JCVariableDecl createVariable(Context ctx, Name ident, JCIdent jcIdent) {
+        java.util.List<Object> params = new ArrayList<>();
+        params.add(new FakeModifiers());
+        params.add(ident);
+        JCTree typeTree = createType(ctx);
+        params.add(typeTree);
+        JCVariableDecl var = createInstance(ctx, JCVariableDecl.class, ident, jcIdent, new Class[] {JCModifiers.class, Name.class, JCExpression.class}, params.toArray(new Object[0]));
+        var.sym = new VarSymbol(0, ident, typeTree.type, Symtab.instance(ctx).errSymbol);
+        var.type = typeTree.type;
+        return var;
+    }
+
+    private static JCErroneous createType(Context ctx) {
+        JCErroneous err = new JCErroneous(List.<JCTree>nil()) {};
+
+        err.type = Symtab.instance(ctx).errType;
+
+        return err;
+    }
+
+   public static class AnnotationWildcard extends JCAnnotation implements IdentifierTree {
 
         private final Name ident;
         private final JCIdent jcIdent;
@@ -161,7 +182,7 @@ public class JackpotTrees {
         private final JCIdent jcIdent;
 
         public CatchWildcard(Context ctx, Name ident, JCIdent jcIdent) {
-            super(new FakeVariable(ctx, ident, jcIdent), TreeMaker.instance(ctx).Block(0, List.<JCStatement>nil()));
+            super(createVariable(ctx, ident, jcIdent), TreeMaker.instance(ctx).Block(0, List.<JCStatement>nil()));
             this.ident = ident;
             this.jcIdent = jcIdent;
         }
@@ -192,61 +213,6 @@ public class JackpotTrees {
 
     }
     
-    public static class VariableWildcard extends FakeVariable implements IdentifierTree {
-
-        private final Name ident;
-
-        public VariableWildcard(Context ctx, Name ident, JCIdent jcIdent) {
-            super(ctx, ident, jcIdent);
-            this.ident = ident;
-        }
-
-        public Name getName() {
-            return ident;
-        }
-
-        @Override
-        public Kind getKind() {
-            return Kind.IDENTIFIER;
-        }
-
-        @Override
-        public <R, D> R accept(TreeVisitor<R, D> v, D d) {
-            return v.visitIdentifier(this, d);
-        }
-
-        @Override
-        public String toString() {
-            return ident.toString();
-        }
-    }
-
-    private static class FakeVariable extends JCVariableDecl {
-        
-        private final JCIdent jcIdent;
-
-        public FakeVariable(Context ctx, Name ident, JCIdent jcIdent) {
-            super(new FakeModifiers(), ident, createType(ctx), null, null);
-            this.sym = new VarSymbol(0, name, type, Symtab.instance(ctx).errSymbol);
-            this.type = vartype.type;
-            this.jcIdent = jcIdent;
-        }
-
-        private static JCErroneous createType(Context ctx) {
-            JCErroneous err = new JCErroneous(List.<JCTree>nil()) {};
-
-            err.type = Symtab.instance(ctx).errType;
-
-            return err;
-        }
-
-        @Override
-        public void accept(Visitor v) {
-            v.visitIdent(jcIdent);
-        }
-
-    }
-
     private static class FakeModifiers extends JCModifiers {
         public FakeModifiers() {
             super(0, List.<JCAnnotation>nil());
