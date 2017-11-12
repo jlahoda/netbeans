@@ -211,6 +211,40 @@ public class TokenList {
         return ret[0];
     }
 
+    public Token firstIdentifierOrKeyword(final TreePath tp) {
+        final Token[] ret = new Token[] {null};
+        doc.render(new Runnable() {
+            @Override
+            public void run() {
+                if (cancel.get()) {
+                    return ;
+                }
+
+                if (ts != null && !ts.isValid()) {
+                    cancel.set(true);
+                    return ;
+                }
+
+                if (ts == null) {
+                    return ;
+                }
+
+                boolean next = true;
+
+                while (ts.token().id() != JavaTokenId.IDENTIFIER &&
+                       !ts.token().id().primaryCategory().equals("keyword") &&
+                       !ts.token().id().primaryCategory().equals("keyword-directive") &&
+                       (next = ts.moveNext()))
+                    ;
+
+                if (next) {
+                    ret[0] = ts.token();
+                }
+            }
+        });
+        return ret[0];
+    }
+
     public void identifierHere(final IdentifierTree tree, final Map<Tree, List<Token>> tree2Tokens) {
         doc.render(new Runnable() {
             @Override

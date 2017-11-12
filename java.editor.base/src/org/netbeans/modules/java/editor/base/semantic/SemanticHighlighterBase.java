@@ -75,6 +75,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -92,6 +93,7 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.swing.text.Document;
+import org.netbeans.api.java.lexer.JavaTokenId;
 import org.netbeans.api.java.source.CompilationInfo;
 import org.netbeans.api.java.source.ElementHandle;
 import org.netbeans.api.java.source.JavaParserResultTask;
@@ -657,25 +659,25 @@ public abstract class SemanticHighlighterBase extends JavaParserResultTask {
 
         private static final Set<Kind> LITERALS = EnumSet.of(Kind.BOOLEAN_LITERAL, Kind.CHAR_LITERAL, Kind.DOUBLE_LITERAL, Kind.FLOAT_LITERAL, Kind.INT_LITERAL, Kind.LONG_LITERAL, Kind.STRING_LITERAL);
 
-        private void handlePossibleIdentifier(TreePath expr, Collection<UseTypes> type) {
-            handlePossibleIdentifier(expr, type, null, false, false);
+        private Collection<ColoringAttributes> handlePossibleIdentifier(TreePath expr, Collection<UseTypes> type) {
+            return handlePossibleIdentifier(expr, type, null, false, false);
         }
         
-        private void handlePossibleIdentifier(TreePath expr, Collection<UseTypes> type, Element decl, boolean providesDecl, boolean nct) {
-            
+        private Collection<ColoringAttributes> handlePossibleIdentifier(TreePath expr, Collection<UseTypes> type, Element decl, boolean providesDecl, boolean nct) {
+
             if (Utilities.isKeyword(expr.getLeaf())) {
                 //ignore keywords:
-                return ;
+                return null;
             }
 
             if (expr.getLeaf().getKind() == Kind.PRIMITIVE_TYPE) {
                 //ignore primitive types:
-                return ;
+                return null;
             }
 
             if (LITERALS.contains(expr.getLeaf().getKind())) {
                 //ignore literals:
-                return ;
+                return null;
             }
 
             decl = !providesDecl ? info.getTrees().getElement(expr) : decl;
@@ -712,11 +714,15 @@ public abstract class SemanticHighlighterBase extends JavaParserResultTask {
                 
                 addModifiers(decl, c);
                 
-                switch (decl.getKind()) {
-                    case CLASS: c.add(ColoringAttributes.CLASS); break;
-                    case INTERFACE: c.add(ColoringAttributes.INTERFACE); break;
-                    case ANNOTATION_TYPE: c.add(ColoringAttributes.ANNOTATION_TYPE); break;
-                    case ENUM: c.add(ColoringAttributes.ENUM); break;
+                if (expr.getLeaf().getKind().name().equals("DATUM"))
+                    c.add(ColoringAttributes.DATUM);
+                else {
+                    switch (decl.getKind()) {
+                        case CLASS: c.add(ColoringAttributes.CLASS); break;
+                        case INTERFACE: c.add(ColoringAttributes.INTERFACE); break;
+                        case ANNOTATION_TYPE: c.add(ColoringAttributes.ANNOTATION_TYPE); break;
+                        case ENUM: c.add(ColoringAttributes.ENUM); break;
+                    }
                 }
             }                       
             
@@ -731,6 +737,8 @@ public abstract class SemanticHighlighterBase extends JavaParserResultTask {
             if (c != null) {
                 addUse(decl, type, expr, c);
             }
+
+            return c;
         }
         
         private void addUse(Element decl, Collection<UseTypes> useTypes, TreePath t, Collection<ColoringAttributes> c) {
@@ -1342,16 +1350,28 @@ public abstract class SemanticHighlighterBase extends JavaParserResultTask {
                 }
             }
             
-            handlePossibleIdentifier(getCurrentPath(), EnumSet.of(UseTypes.DECLARATION));
-            
             scan(tree.getModifiers(), null);
             
 //            System.err.println("tree.getModifiers()=" + tree.getModifiers());
 //            System.err.println("mod end=" + sourcePositions.getEndPosition(info.getCompilationUnit(), tree.getModifiers()));
 //            System.err.println("class start=" + sourcePositions.getStartPosition(info.getCompilationUnit(), tree));
             tl.moveToEnd(tree.getModifiers());
+            Token t = tl.firstIdentifierOrKeyword(getCurrentPath());
+            boolean isDatum = t.id() == JavaTokenId.IDENTIFIER && "__datum".contentEquals(t.text());
+            if (isDatum) {
+                contextKeywords.add(t);
+                tl.moveNext();
+            }
+
             firstIdentifier(tree.getSimpleName().toString());
-            
+
+            Collection<ColoringAttributes> ca = handlePossibleIdentifier(getCurrentPath(), EnumSet.of(UseTypes.DECLARATION));
+
+            if (isDatum) {
+                ca.remove(ColoringAttributes.CLASS);
+                ca.add(ColoringAttributes.DATUM);
+            }
+
             //XXX:????
             scan(tree.getTypeParameters(), null);
             scan(tree.getExtendsClause(), null);

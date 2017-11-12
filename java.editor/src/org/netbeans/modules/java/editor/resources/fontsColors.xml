@@ -56,6 +56,9 @@
     <fontcolor name="mod-class-declaration" default="identifier">
             <font style="bold" />
     </fontcolor>
+    <fontcolor name="mod-datum-declaration" default="identifier">
+            <font style="bold" />
+    </fontcolor>
     <fontcolor name="mod-interface-declaration" default="identifier">
             <font style="bold" />
     </fontcolor>
@@ -73,6 +76,7 @@
     <fontcolor name="mod-constructor" default="identifier"/>
     <fontcolor name="mod-module" default="identifier"/>
     <fontcolor name="mod-class" default="identifier"/>
+    <fontcolor name="mod-datum" default="identifier"/>
     <fontcolor name="mod-interface" default="identifier"/>
     <fontcolor name="mod-annotation-type" default="identifier"/>
     <fontcolor name="mod-enum" default="identifier"/>

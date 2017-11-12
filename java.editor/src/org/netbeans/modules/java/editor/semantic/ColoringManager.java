@@ -59,6 +59,7 @@ public final class ColoringManager {
         put("mod-annotation-type-declaration", ANNOTATION_TYPE, DECLARATION);
         put("mod-interface-declaration", INTERFACE, DECLARATION);
         put("mod-class-declaration", CLASS, DECLARATION);
+        put("mod-datum-declaration", DATUM, DECLARATION);
         put("mod-constructor-declaration", CONSTRUCTOR, DECLARATION);
         put("mod-method-declaration", METHOD, DECLARATION);
         put("mod-parameter-declaration", PARAMETER, DECLARATION);
@@ -69,6 +70,7 @@ public final class ColoringManager {
         put("mod-annotation-type", ANNOTATION_TYPE);
         put("mod-interface", INTERFACE);
         put("mod-class", CLASS);
+        put("mod-datum", DATUM);
         put("mod-constructor", CONSTRUCTOR);
         put("mod-method", METHOD);
         put("mod-parameter", PARAMETER);
