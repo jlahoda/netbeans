@@ -319,6 +319,10 @@ public class MarkOccDetTest extends TestBase {
     public void testPatterns() throws Exception {
         performTest("Patterns", 6, 42);
     }
+    
+    public void testErroneousMethodNETBEANS_224() throws Exception {
+        performTest("ErroneousMethod", 3, 24);
+    }
 
     //Support for exotic identifiers has been removed 6999438
     public void REMOVEDtestExoticIdentifiers1() throws Exception {
