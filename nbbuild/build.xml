@@ -137,8 +137,7 @@
   <target name="prepare-vanilla-javac" depends="-check-vanilla-javac" unless="vanilla.javac.exists">
     <delete dir="${nb_all}/nbbuild/build/langtools" />
     <mkdir dir="${nb_all}/nbbuild/build/langtools" />
-    <get src="http://hg.openjdk.java.net/jdk9/jdk9/langtools/archive/tip.zip" dest="${nb_all}/nbbuild/build/langtools.zip" skipexisting="true"/>
-    <unzip src="${nb_all}/nbbuild/build/langtools.zip" dest="${nb_all}/nbbuild/build/langtools">
+    <unzip src="${nb_all}/nbbuild/external/langtools-9.zip" dest="${nb_all}/nbbuild/build/langtools">
         <cutdirsmapper dirs="1"/>
     </unzip>
     <ant antfile="${nb_all}/nbbuild/build/langtools/make/build.xml" dir="${nb_all}/nbbuild/build/langtools/" target="generate-sources">
@@ -351,6 +350,17 @@
     <copy file="../ide/launcher/netbeans.conf" todir="${netbeans.dest.dir}/etc" overwrite="true"/>
     <copy file="../ide/launcher/netbeans.clusters" todir="${netbeans.dest.dir}/etc" overwrite="true"/>
 
+    <mkdir dir="${nb.build.dir}/license-temp" />
+    <concat destfile="${nb.build.dir}/license-temp/LICENSE.txt">
+        <filelist dir="${nb_all}/nbbuild" files="license-dialog-stub.txt" />
+        <filelist dir="${netbeans.dest.dir}" files="LICENSE" />
+    </concat>
+
+    <jar destfile="${netbeans.dest.dir}/nb/core/org-netbeans-upgrader.jar"
+         update="true"
+         compress="${build.package.compress}" >
+        <zipfileset dir="${nb.build.dir}/license-temp" prefix="org/netbeans/license" />
+    </jar>
     <echo message="${netbeans.dest.dir}/${nb.cluster.platform.dir}/lib/nbexec" />
     <fixcrlf eol="lf" srcdir="${netbeans.dest.dir}" >
       <include name="etc/netbeans.conf" />
@@ -1520,7 +1530,7 @@ It is possible to use -Ddebug.port=3234 -Ddebug.pause=y to start the system in d
 
     <target name="create-mandatory-files-for-binary" depends="bootstrap,download-selected-extbins" description="Create a summary of the licenses used by libraries in the build.">
         <taskdef name="createlicensesummary" classname="org.netbeans.nbbuild.extlibs.CreateLicenseSummary" classpath="${nbantext.jar}"/>
-        <createlicensesummary licenseStub="license-stub.txt" noticeStub="notice-stub.txt" report="${nb.build.dir}/createlicensesummary.xml" nball=".." build="${netbeans.dest.dir}" license="${netbeans.dest.dir}/LICENSE" notice="${nb.build.dir}/notice-temp"/>
+        <createlicensesummary licenseStub="${nb_all}/LICENSE" noticeStub="notice-stub.txt" report="${nb.build.dir}/createlicensesummary.xml" nball=".." build="${netbeans.dest.dir}" license="${netbeans.dest.dir}/LICENSE" notice="${nb.build.dir}/notice-temp"/>
         <concat destfile="${netbeans.dest.dir}/NOTICE">
           <fileset file="${nb.build.dir}/notice-temp" />
           <fileset dir="${nb_all}"
@@ -1582,9 +1592,7 @@ It is possible to use -Ddebug.port=3234 -Ddebug.pause=y to start the system in d
           </tokenfilter>
       </filterchain>
     </concat>
-    <concat destfile="${nb.build.dir}/LICENSE">
-      <fileset file="${nb_all}/nbbuild/license-stub.txt" />
-    </concat>
+    <copy tofile="${nb.build.dir}/LICENSE" file="${nb_all}/LICENSE" />
     <taskdef name="createdependencies" classname="org.netbeans.nbbuild.extlibs.CreateDependencies" classpath="${nbantext.jar}"/>
     <createdependencies refid="source.dirset" dependencies="${nb.build.dir}/DEPENDENCIES" sourceDependencies="true"/>
     <concat destfile="${nb.build.dir}/cluster.properties">
@@ -1595,12 +1603,15 @@ It is possible to use -Ddebug.port=3234 -Ddebug.pause=y to start the system in d
             </tokenfilter>
         </filterchain>
     </concat>
-    <condition property="source.zip.readme" else="${nb_all}/o.n.bootstrap/readme/README-src.txt" value="${nb_all}/ide.branding/does-not-exist-yet">
+    <condition property="source.zip.readme" else="${nb_all}/README.md"
+                                            value="${nb_all}/README.md">
         <isset property="has.nb.cluster" />
     </condition>
     <zip zipfile="${nb.build.dir}/${cluster.config}-src-${buildnum}.zip" duplicate="preserve">
       <zipfileset dir="${nb_all}" includes="${source.dirs}">
-          <exclude name="*/build/**/*"/>
+          <exclude name="*/build/"/>
+          <exclude name="*/external/*.jar"/>
+          <exclude name="*/external/*.zip"/>
           <exclude name="nbbuild/netbeans/**"/>
           <exclude name="nbbuild/cluster.properties" />
       </zipfileset>
@@ -1612,7 +1623,7 @@ It is possible to use -Ddebug.port=3234 -Ddebug.pause=y to start the system in d
       <zipfileset file="${nb.build.dir}/NOTICE" />
       <zipfileset file="${nb.build.dir}/LICENSE" />
       <zipfileset file="${nb_all}/DISCLAIMER" />
-      <zipfileset file="${source.zip.readme}" fullpath="README.txt" erroronmissingarchive="false" />
+      <zipfileset file="${source.zip.readme}" fullpath="README.md" erroronmissingarchive="false" />
     </zip>
   </target>
 
@@ -2085,7 +2096,7 @@ It is possible to use -Ddebug.port=3234 -Ddebug.pause=y to start the system in d
             <exclude name="**/nbproject/jfx-impl.xml" /> <!--generated, no degree of creativity -->
             <exclude name="**/nbproject/private/**" /> <!--user-specific files -->
             <exclude name="**/src/META-INF/**" /> <!--no degree of creativity-->
-            <exclude name="*/build/**" />
+            <exclude name="**/build/**" /> <!-- build artifacts -->
             <exclude name="**/.dep.inc" /> <!--no degree of creativity-->
             <exclude name="**/Makefile-vc" /> <!--no degree of creativity-->
             <exclude name="**/Makefile-vc-wo-crt" /> <!--no degree of creativity-->
@@ -2096,14 +2107,17 @@ It is possible to use -Ddebug.port=3234 -Ddebug.pause=y to start the system in d
             <exclude name="api.templates/test/unit/src/org/netbeans/modules/templates/utf8.xml" /> <!--test data-->
             <exclude name="apisupport.ant/src/org/netbeans/modules/apisupport/project/resources/license-*.txt" /> <!--template file-->
             <exclude name="apisupport.installer/src/org/netbeans/modules/apisupport/installer/resources/licenses/**" /> <!--three license files-->
-            <exclude name="autoupdate.services/test/unit/src/org/netbeans/modules/autoupdate/updateprovider/data/**" /> <!-- test data -->
+            <exclude name="apisupport.project/src/org/netbeans/modules/apisupport/project/ui/resources/layer_template.xml" /> <!--template file-->
+            <exclude name="autoupdate.services/test/unit/**/data/**" /> <!-- test data not captured by general data exclude -->
             <exclude name="beans/src/org/netbeans/modules/beans/resources/templates/*.template" /> <!--license would be visible when users edit the templates inside their IDE-->
+            <exclude name="classfile/test/unit/src/org/netbeans/modules/classfile/datafiles/WithLambda.classx" /> <!-- test data -->
             <exclude name="css.editor/src/org/netbeans/modules/css/resources/CascadeStyleSheet.css.template" /> <!-- user visible template -->
             <exclude name="css.editor/src/org/netbeans/modules/css/resources/CssExample" /> <!-- user visible template -->
-            <exclude name="css.editor/todo" /> <!-- no degree of creativity -->
             <exclude name="debugger.jpda/test/unit/src/org/netbeans/api/debugger/jpda/testapps/JspLineBreakpointApp.txt" /> <!-- test data -->
             <exclude name="diff/test/unit/src/org/netbeans/modules/diff/builtin/provider/*.txt" /> <!--test data-->
             <exclude name="diff/test/unit/src/org/netbeans/modules/diff/builtin/visualizer/data/**" /> <!--test data-->
+            <exclude name="db.sql.editor/src/org/netbeans/modules/db/sql/editor/resources/SQLExample" /> <!-- file is used as sample for syntax highlighting in GUI -->
+            <exclude name="dbschema/src/org/netbeans/modules/dbschema/jdbcimpl/resources/templates/*" /> <!-- template files -->
             <exclude name="editor/demosrc/base/org/netbeans/editor/example/res/template.html_" /> <!-- template file -->
             <exclude name="editor/demosrc/base/org/netbeans/editor/example/res/template.java_" /> <!-- template file -->
             <exclude name="editor/demosrc/properties-addon/org/netbeans/editor/example/res/template.properties" /> <!-- template file -->
@@ -2131,19 +2145,23 @@ It is possible to use -Ddebug.port=3234 -Ddebug.pause=y to start the system in d
             <exclude name="java.api.common/src/org/netbeans/modules/java/api/common/project/ui/customizer/vmo/gen/CommandLine.tokens" /> <!--generated by ANTLR-->
             <exclude name="java.editor/src/org/netbeans/modules/java/editor/resources/JavaExample" /> <!--no degree of creativity-->
             <exclude name="java.j2semodule/src/org/netbeans/modules/java/j2semodule/ui/resources/module-info.java.template" /> <!--template file-->
+            <exclude name="java.j2seproject/copylibstask/test/org/netbeans/modules/java/j2seproject/moduletask/resources/module-info.bin" /> <!-- test data (compiled Java class) -->
             <exclude name="java.platform.ui/src/org/netbeans/modules/java/platform/resources/templates/javaplatform.xml" /> <!--template file-->
             <exclude name="java.project.ui/src/org/netbeans/modules/java/project/ui/resources/*.template" /> <!-- template files -->
-            <exclude name="java.source/test-excludes.txt" /> <!-- test context -->
             <exclude name="java.source/src/org/netbeans/modules/**/*.template" /> <!-- template files -->
             <exclude name="javafx2.project/src/org/netbeans/modules/javafx2/project/templates/**" /> <!--license would be visible when users edit the templates inside their IDE-->
-            <exclude name="javawebstart/AntTasks/build/**" /> <!-- generated build files -->
             <exclude name="jellytools.platform/src/org/netbeans/jellytools/version_info" /> <!--does not natively support comments-->
+            <exclude name="jshell.support/src/org/netbeans/modules/jshell/resources/consoleExample.jsh" /> <!-- file is used as sample for syntax highlighting in GUI -->
             <exclude name="junit.ui/src/org/netbeans/modules/junit/ui/resources/*.template" /> <!--license would be visible when users edit the templates inside their IDE-->
             <exclude name="languages.diff/src/org/netbeans/modules/languages/diff/DiffExample.diff" /> <!--license would be visible to users in the Fonts/Colors settings-->
             <exclude name="languages.yaml/src/org/netbeans/modules/languages/yaml/*.yaml" /> <!--Files used in GUI as sample/starting point-->
             <exclude name="languages.yaml/src/org/netbeans/modules/languages/yaml/*.yml" /> <!--Files used in GUI as sample/starting point-->
+            <exclude name="lexer/demo/src/org/netbeans/modules/lexer/demo/**/*.txt" /> <!-- test data -->
+            <exclude name="lib.profiler/test/unit/src/org/netbeans/lib/profiler/heap/testHeapDumpLog.txt" /> <!--test data-->
+            <exclude name="lib.profiler/release/lib/deployed/**/*.map" /> <!-- companion files for CDDL licensed binaries -->
             <exclude name="lib.uihandler/src/org/netbeans/lib/uihandler/pubKey" /> <!--no degree of creativity-->
             <exclude name="lib.uihandler/test/unit/src/**" /> <!--test data-->
+            <exclude name="maven.checkstyle/src/org/netbeans/modules/maven/format/checkstyle/config/configuration*.dtd" /> <!-- the files do not reach a level of creativity -->
             <exclude name="maven.htmlui/src/org/netbeans/modules/maven/htmlui/UIDefaults" /> <!-- config file with no place for license header-->
             <exclude name="maven.indexer/external/NOTICE-patched-indexer-core-6.0.0" /> <!--no degree of creativity-->
             <exclude name="mercurial/src/org/netbeans/modules/mercurial/util/log*" /> <!-- user templates for mercurial commits, etc. -->
@@ -2152,15 +2170,15 @@ It is possible to use -Ddebug.port=3234 -Ddebug.pause=y to start the system in d
             <exclude name="nbbuild/licenses/**" />
             <exclude name="nbbuild/netbeans/**" />
             <exclude name="nbbuild/tagref" /> <!--no degree of creativity-->
+            <exclude name="nbbuild/license-dialog-stub.txt" /> <!--A prefix that is added to license file-->
             <exclude name="nbbuild/notice-stub.txt" /> <!--Apache notice file-->
             <exclude name="nbbuild/standard-nbm-license.txt" /> <!--license file-->
-            <exclude name="nbbuild/testuserdir/**" />
+            <exclude name="nbbuild/testuserdir/**" /> <!-- directory for netbeans testruns, not part of distribution and repository -->
+            <exclude name="nbbuild/user.build.properties" /> <!-- user configuration file, not part of distribution and repository -->
             <exclude name="nbi/engine/nbproject/profiler-build-impl.xml" /> <!--generated, no degree of creativity -->
             <exclude name="o.apache.tools.ant.module/src/org/apache/tools/ant/module/resources/CustomTask_java" /> <!-- user visible file template -->
             <exclude name="o.apache.tools.ant.module/src/org/apache/tools/ant/module/resources/Project.xml_" /> <!-- user visible file template -->
             <exclude name="o.n.bootstrap/readme/*.txt" /> <!--READMEs-->
-            <exclude name="o.n.bootstrap/test/unit/src/org/fakepkg/resource1.txt" /> <!--no degree of creativity-->
-            <exclude name="o.n.bootstrap/test/unit/src/org/fakepkg/resource2.txt" /> <!--no degree of creativity-->
             <exclude name="o.n.core/licenses/**" /> <!-- license files -->
             <exclude name="o.n.core/test/unit/src/org/netbeans/core/modules/jars/localized-manifest/locmani/something.txt" /> <!--no degree of creativity-->
             <exclude name="o.n.core/test/unit/src/org/netbeans/core/projects/cache/data/**" /> <!-- test data -->
@@ -2172,9 +2190,10 @@ It is possible to use -Ddebug.port=3234 -Ddebug.pause=y to start the system in d
             <exclude name="openide.util.lookup/test/unit/src/org/openide/util/lookup/services-jar-2.txt" /> <!--no degree of creativity-->
             <exclude name="openide.util.ui/test/unit/src/org/openide/util/UtilitiesTranslateEmpty.txt" /> <!-- license would cause tests to fail -->
             <exclude name="openide.util/test/unit/src/org/openide/util/LookupUsesRequestProcessorTest.resource" /> <!-- license would cause tests to fail -->
-            <exclude name="options.editor/src/org/netbeans/modules/options/colors/AllLanguagesExample" /> <!--no degree of creativitya-->
-            <exclude name="options.editor/src/org/netbeans/modules/options/colors/HighlightingExample" /> <!--no degree of creativitya-->
-            <exclude name="options.editor/src/org/netbeans/modules/options/indentation/indentationExample" /> <!--no degree of creativitya-->
+            <exclude name="options.editor/src/org/netbeans/modules/options/colors/AllLanguagesExample" /> <!--no degree of creativity-->
+            <exclude name="options.editor/src/org/netbeans/modules/options/colors/HighlightingExample" /> <!--no degree of creativity-->
+            <exclude name="options.editor/src/org/netbeans/modules/options/indentation/indentationExample" /> <!--no degree of creativity-->
+            <exclude name="performance/threaddemo/src/threaddemo/util/doc-files/TwoWaySupport.zargo" /> <!-- ARGO UML zip file (documentation) -->
             <exclude name="projectui/src/org/netbeans/modules/project/ui/resources/*-license.txt" /> <!--licenses-->
             <exclude name="projectui/src/org/netbeans/modules/project/ui/resources/license-default.txt" /> <!--licenses-->
             <exclude name="projectuiapi/test/unit/src/org/netbeans/modules/project/uiapi/data/*.txt" /> <!--test data-->
@@ -2189,6 +2208,10 @@ It is possible to use -Ddebug.port=3234 -Ddebug.pause=y to start the system in d
             <exclude name="testng.ui/src/org/netbeans/modules/testng/ui/resources/*.template" /> <!--template files-->
             <exclude name="utilities/test/unit/src/org/netbeans/modules/openfile/resources/recent_files/*" /> <!--test data-->
             <exclude name="websvc.saas.api/src/org/netbeans/modules/websvc/saas/oauth/*.template" /> <!--template files-->
+            <exclude name="websvc.saas.api/src/org/netbeans/modules/websvc/saas/model/*.xsd" /> <!-- XSDs for usage at runtime and code generation - the XSDs are not modified, so covered by https://www.apache.org/legal/resolved.html#category-b -->
+            <exclude name="websvc.saas.api/src/org/netbeans/modules/websvc/saas/model/jaxb/*" /> <!-- generated code -->
+            <exclude name="websvc.saas.api/src/org/netbeans/modules/websvc/saas/model/oauth/*" /> <!-- generated code -->
+            <exclude name="websvc.saas.api/src/org/netbeans/modules/websvc/saas/model/wadl/*" /> <!-- generated code -->
             <exclude name="websvc.saas.api/test/unit/src/org/netbeans/modules/websvc/saas/model/application.wadl" /> <!--test data-->
             <exclude name="websvc.saas.api/test/unit/src/org/netbeans/modules/websvc/saas/util/rootGroup.xml" /> <!--test data-->
             <exclude name="welcome/src/org/netbeans/modules/welcome/resources/rss-0_91.dtd" /> <!-- specifies a standard -->
@@ -2236,10 +2259,27 @@ It is possible to use -Ddebug.port=3234 -Ddebug.pause=y to start the system in d
                 conforming SGML systems and applications as defined in
                 ISO 8879, provided this notice is included in all copies.
             </rat:fullTextMatcher>
+            <rat:fullTextMatcher licenseFamilyCategory="AL" licenseFamilyName="Apache License 2.0 Short header">
+                Licensed to the Apache Software Foundation (ASF) under one or more contributor 
+                license agreements; and to You under the Apache License, Version 2.0.
+            </rat:fullTextMatcher>
+            <rat:fullTextMatcher licenseFamilyCategory="EPL/EDL" licenseFamilyName="Eclipse Public License and Eclipse Distribution License">
+                This program and the accompanying materials are made available under the
+                terms of the Eclipse Public License v1.0 and Eclipse Distribution License v. 1.0
+                which accompanies this distribution.
+            </rat:fullTextMatcher>
+            <rat:fullTextMatcher licenseFamilyCategory="EPL" licenseFamilyName="Eclipse Public License">
+                This program and the accompanying materials
+                are made available under the terms of the Eclipse Public License v1.0
+                which accompanies this distribution
+            </rat:fullTextMatcher>
             <rat:approvedLicense familyName="W3C Software and Document Notice and License"/>
             <rat:approvedLicense familyName="OASIS"/>
             <rat:approvedLicense familyName="WSDL Schema Files" />
             <rat:approvedLicense familyName="International Organization for Standardization for SGML"/>
+            <rat:approvedLicense familyName="Apache License 2.0 Short header"/>
+            <rat:approvedLicense familyName="Eclipse Public License and Eclipse Distribution License" />
+            <rat:approvedLicense familyName="Eclipse Public License" />
 	    <fileset dir="${nb_all}">
                 <patternset refid="non.rat" />
             </fileset>
@@ -2256,9 +2296,33 @@ It is possible to use -Ddebug.port=3234 -Ddebug.pause=y to start the system in d
                 All Rights Reserved
                 License for WSDL Schema Files
             </rat:fullTextMatcher>
+            <rat:fullTextMatcher licenseFamilyCategory="ISO-SGML" licenseFamilyName="International Organization for Standardization for SGML">
+                International Organization for Standardization 1986
+                Permission to copy in any form is granted for use with
+                conforming SGML systems and applications as defined in
+                ISO 8879, provided this notice is included in all copies.
+            </rat:fullTextMatcher>
+            <rat:fullTextMatcher licenseFamilyCategory="AL" licenseFamilyName="Apache License 2.0 Short header">
+                Licensed to the Apache Software Foundation (ASF) under one or more contributor
+                license agreements; and to You under the Apache License, Version 2.0.
+            </rat:fullTextMatcher>
+            <rat:fullTextMatcher licenseFamilyCategory="EPL/EDL" licenseFamilyName="Eclipse Public License and Eclipse Distribution License">
+                This program and the accompanying materials are made available under the
+                terms of the Eclipse Public License v1.0 and Eclipse Distribution License v. 1.0
+                which accompanies this distribution.
+            </rat:fullTextMatcher>
+            <rat:fullTextMatcher licenseFamilyCategory="EPL" licenseFamilyName="Eclipse Public License">
+                This program and the accompanying materials
+                are made available under the terms of the Eclipse Public License v1.0
+                which accompanies this distribution
+            </rat:fullTextMatcher>
             <rat:approvedLicense familyName="W3C Software and Document Notice and License"/>
             <rat:approvedLicense familyName="OASIS"/>
             <rat:approvedLicense familyName="WSDL Schema Files" />
+            <rat:approvedLicense familyName="International Organization for Standardization for SGML"/>
+            <rat:approvedLicense familyName="Apache License 2.0 Short header"/>
+            <rat:approvedLicense familyName="Eclipse Public License and Eclipse Distribution License" />
+            <rat:approvedLicense familyName="Eclipse Public License" />
 	    <fileset dir="${nb_all}">
                 <patternset refid="non.rat" />
             </fileset>
