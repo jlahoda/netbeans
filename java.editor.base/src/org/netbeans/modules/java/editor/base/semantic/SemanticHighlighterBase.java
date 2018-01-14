@@ -1355,7 +1355,7 @@ public abstract class SemanticHighlighterBase extends JavaParserResultTask {
 //            System.err.println("class start=" + sourcePositions.getStartPosition(info.getCompilationUnit(), tree));
             tl.moveToEnd(tree.getModifiers());
             Token t = tl.firstIdentifierOrKeyword(getCurrentPath());
-            boolean isDatum = t.id() == JavaTokenId.IDENTIFIER && "__datum".contentEquals(t.text());
+            boolean isDatum = t != null && t.id() == JavaTokenId.IDENTIFIER && "record".contentEquals(t.text());
             if (isDatum) {
                 contextKeywords.add(t);
                 tl.moveNext();
