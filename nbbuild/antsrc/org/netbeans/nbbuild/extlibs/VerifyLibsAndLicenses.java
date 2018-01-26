@@ -32,6 +32,7 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -54,6 +55,9 @@ import org.apache.tools.ant.Task;
 import org.apache.tools.ant.types.selectors.SelectorUtils;
 import org.netbeans.nbbuild.JUnitReportWriter;
 import org.netbeans.nbbuild.extlibs.DownloadBinaries.MavenCoordinate;
+import org.netbeans.nbbuild.extlibs.licenseinfo.Fileset;
+import org.netbeans.nbbuild.extlibs.licenseinfo.Licenseinfo;
+import org.netbeans.nbbuild.extlibs.licenseinfo.Licenseinfos;
 
 /**
  * Task to check that external libraries have legitimate licenses, etc.
@@ -92,6 +96,7 @@ public class VerifyLibsAndLicenses extends Task {
             testLicenseFilesAreProperlyFormattedPhysically();
             testLicenses();
             testBinaryUniqueness();
+            testLicenseinfo();
         } catch (IOException x) {
             throw new BuildException(x, getLocation());
         }
@@ -381,6 +386,61 @@ public class VerifyLibsAndLicenses extends Task {
         }
         pseudoTests.put("testLicenses", msg.length() > 0 ? "Some license files have incorrect headers" + msg : null);
     }
+    
+    private void testLicenseinfo() throws IOException {
+        File licenses = new File(new File(nball, "nbbuild"), "licenses");
+        StringBuilder msg = new StringBuilder();
+        
+        for (String module : modules) {
+            File moduleDir = new File(nball, module);
+            File licenseInfoFile = new File(moduleDir, "licenseinfo.xml");
+            if(! licenseInfoFile.exists()) {
+                continue;
+            }
+            String path = module + "/licenseinfo.xml";
+            
+            Licenseinfo li;
+            try {
+                li = Licenseinfo.parse(licenseInfoFile);
+            } catch (IOException ex) {
+                msg.append("\n");
+                msg.append(path);
+                msg.append(" could not be parsed: ");
+                msg.append(ex.getMessage());
+                continue;
+            }
+            
+            for(Fileset fs: li.getFilesets()) {
+                for(File f: fs.getFiles()) {
+                    if(! f.exists()) {
+                        Path relativePath = li.getLicenseinfoFile().getParentFile().toPath().relativize(f.toPath());
+                        msg.append("\n");
+                        msg.append(path);
+                        msg.append(" referenced file not found '");
+                        msg.append(relativePath.toString());
+                        msg.append("'");
+                    }
+                }
+                if(fs.getLicenseRef() != null) {
+                    File licenseFile = new File(licenses, fs.getLicenseRef());
+                    if (!licenseFile.exists()) {
+                        msg.append("\n");
+                        msg.append(path);
+                        msg.append(" referenced license does not exist '");
+                        msg.append(fs.getLicenseRef());
+                        msg.append("'");
+                    }
+                } else {
+                    msg.append("\n");
+                    msg.append(path);
+                    msg.append(" missing license reference");
+                }
+            }
+        }
+ 
+        pseudoTests.put("testLicenseinfo", msg.length() > 0 ? "Some licenseinfo.xml files failed verification:" + msg : null);
+    }
+    
     private static String templateMatch(String actual, String expected, boolean left) {
         String reason = null;
         boolean expectReason = false;
