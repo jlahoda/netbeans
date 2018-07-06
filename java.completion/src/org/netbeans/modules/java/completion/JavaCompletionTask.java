@@ -20,6 +20,7 @@
 package org.netbeans.modules.java.completion;
 
 import com.sun.source.tree.*;
+import com.sun.source.tree.Tree.Kind;
 import com.sun.source.util.*;
 
 import java.io.IOException;
@@ -1210,7 +1211,7 @@ public final class JavaCompletionTask<T> extends BaseTask {
         if (annTypeElement != null && annTypeElement.getKind() == ANNOTATION_TYPE) {
             HashSet<String> names = new HashSet<>();
             for (ExpressionTree arg : ann.getArguments()) {
-                if (arg.getKind() == Tree.Kind.ASSIGNMENT && sourcePositions.getEndPosition(root, arg) < offset) {
+                if (arg.getKind() == Tree.Kind.ASSIGNMENT && sourcePositions.getEndPosition(root, ((AssignmentTree) arg).getExpression()) < offset) {
                     ExpressionTree var = ((AssignmentTree) arg).getVariable();
                     if (var.getKind() == Tree.Kind.IDENTIFIER) {
                         names.add(((IdentifierTree) var).getName().toString());
@@ -4850,7 +4851,7 @@ public final class JavaCompletionTask<T> extends BaseTask {
                 }
             }
         }
-        return false;
+        return tree.getKind() == Kind.COMPILATION_UNIT;
     }
 
     private static boolean isAnnonInner(ElementHandle<TypeElement> elem) {
