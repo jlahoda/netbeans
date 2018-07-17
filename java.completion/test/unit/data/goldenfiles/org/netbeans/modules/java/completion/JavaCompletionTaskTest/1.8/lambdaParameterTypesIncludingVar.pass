@@ -1,5 +1,6 @@
 Foo
 String[] args
+Test t
 public static void main(String[] args)
 boolean
 byte

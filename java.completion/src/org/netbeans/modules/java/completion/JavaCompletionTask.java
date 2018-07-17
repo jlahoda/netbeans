@@ -1905,14 +1905,21 @@ public final class JavaCompletionTask<T> extends BaseTask {
                     break;
                 case COMMA:
                     if (let.getParameters().isEmpty()
-                            || env.getController().getTrees().getSourcePositions().getStartPosition(path.getCompilationUnit(), let.getParameters().get(0).getType()) >= 0) {
+                            || (env.getController().getTrees().getSourcePositions().getStartPosition(path.getCompilationUnit(), let.getParameters().get(0).getType()) >= 0 &&
+                            !let.getParameters().get(0).getType().toString().equals("var"))) {
                         addTypes(env, EnumSet.of(CLASS, INTERFACE, ENUM, ANNOTATION_TYPE, TYPE_PARAMETER), null);
                         addPrimitiveTypeKeywords(env);
                         addKeyword(env, FINAL_KEYWORD, SPACE, false);
                     }
                     //Assuming first parameter to be var type if position for the parameter type is not found.
                     else if (!let.getParameters().isEmpty()) {
-                        addVarTypeForLambdaParam(env);
+                        int end = (int) env.getSourcePositions().getEndPosition(path.getCompilationUnit(), let.getParameters().get(0));
+                        ts = findLastNonWhitespaceToken(env, let.getParameters().get(0), end);
+                        ts.movePrevious();
+                        if (previousNonWhitespaceToken(ts) == null ||
+                            (ts.token().id() != JavaTokenId.COMMA && ts.token().id() != JavaTokenId.LPAREN)) {
+                            addVarTypeForLambdaParam(env);
+                        }
                     }
                     break;
             }
