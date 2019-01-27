@@ -285,6 +285,7 @@ public final class JavaCompletionTask<T> extends BaseTask {
 
     @Override
     protected void resolve(CompilationController controller) throws IOException {
+        controller.getChangedTree();
         Env env = getCompletionEnvironment(controller, true);
         if (env == null) {
             return;
