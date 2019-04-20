@@ -106,6 +106,10 @@ public abstract class EntityCatalog implements EntityResolver {
                         EventQueue.isDispatchThread() ? Level.WARNING : Level.FINE,
                         "No resolver found for {0}", systemID);
             }
+            
+            if (systemID != null && systemID.startsWith("http:")) {
+                return new InputSource(systemID.replaceFirst("http", "https"));
+            }
             return null;
         }
     }
