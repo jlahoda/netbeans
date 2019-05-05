@@ -157,7 +157,6 @@ import org.netbeans.modules.java.hints.providers.spi.ClassPathBasedHintProvider;
 import org.netbeans.modules.java.hints.providers.spi.HintDescription;
 import org.netbeans.modules.java.hints.providers.spi.Trigger.PatternDescription;
 import org.netbeans.modules.java.hints.spiimpl.JackpotTrees.CatchWildcard;
-import org.netbeans.modules.java.hints.spiimpl.JackpotTrees.VariableWildcard;
 import org.netbeans.modules.java.source.JavaSourceAccessor;
 import org.netbeans.modules.java.source.builder.TreeFactory;
 import org.netbeans.lib.nbjavac.services.CancelService;
@@ -1370,7 +1369,7 @@ public class Utilities {
 
                     if (peeked.kind == TokenKind.COMMA || peeked.kind == TokenKind.RPAREN) {
                         nextToken();
-                        return new VariableWildcard(ctx, name, F.Ident(name));
+                        return JackpotTrees.createVariableWildcard(ctx, name);
                     }
                 }
             }
@@ -1388,7 +1387,7 @@ public class Utilities {
 
                     if (peeked.kind == TokenKind.COMMA || peeked.kind == TokenKind.RPAREN) {
                         nextToken();
-                        return new VariableWildcard(ctx, name, F.Ident(name));
+                        return JackpotTrees.createVariableWildcard(ctx, name);
                     }
                 }
             }

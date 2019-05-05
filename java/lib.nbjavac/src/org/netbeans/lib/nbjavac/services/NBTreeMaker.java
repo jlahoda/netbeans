@@ -40,11 +40,11 @@ import com.sun.tools.javac.util.Names;
 public class NBTreeMaker extends TreeMaker {
 
     public static void preRegister(Context context) {
-        context.put(treeMakerKey, new Context.Factory<TreeMaker>() {
-            public TreeMaker make(Context c) {
-                return new NBTreeMaker(c);
-            }
-        });
+//        context.put(treeMakerKey, new Context.Factory<TreeMaker>() {
+//            public TreeMaker make(Context c) {
+//                return new NBTreeMaker(c);
+//            }
+//        });
     }
 
     private final Names names;
