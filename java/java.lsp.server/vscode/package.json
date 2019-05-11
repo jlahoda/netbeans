@@ -14,10 +14,11 @@
 		"multi-root ready"
 	],
 	"engines": {
-		"vscode": "^1.26.0"
+		"vscode": "^1.30.0"
 	},
 	"activationEvents": [
-		"onLanguage:java"
+		"onLanguage:java",
+                "onDebug"
 	],
 	"main": "./out/extension",
 	"scripts": {
@@ -34,6 +35,15 @@
 		"vscode": "^1.1.21"
 	},
 	"dependencies": {
-		"vscode-languageclient": "^4.1.4"
-	}
+		"vscode-languageclient": "^4.1.4",
+		"vscode-debugadapter": "1.33.0"
+	},
+        "contributes": {
+            "breakpoints": [{ "language": "java" }],
+            "debuggers": [{
+                "type": "java",
+                "label": "Java (NetBeans)",
+                "runtime": "node"
+            }]
+        }
 }

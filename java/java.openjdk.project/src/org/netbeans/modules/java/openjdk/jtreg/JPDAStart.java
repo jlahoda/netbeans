@@ -166,7 +166,7 @@ public class JPDAStart implements Runnable {
                 properties.put("name", getName()); //NOI18N
                 properties.put("jdksources", jdkSourcePath); //NOI18N
                 properties.put("baseDir", FileUtil.toFile(project.getProjectDirectory())); // NOI18N
-                
+
                 final ListeningConnector flc = lc;
                 RP.post(new Runnable() {
 

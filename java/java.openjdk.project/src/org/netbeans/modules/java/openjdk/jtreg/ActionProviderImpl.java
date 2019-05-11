@@ -41,6 +41,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -52,6 +53,7 @@ import javax.swing.SwingUtilities;
 import org.netbeans.api.java.classpath.ClassPath;
 import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.api.project.Project;
+import org.netbeans.modules.java.lsp.server.debugging.api.DebuggerStarter;
 import org.netbeans.modules.java.openjdk.common.BuildUtils;
 import org.netbeans.modules.java.openjdk.common.ShortcutUtils;
 import org.netbeans.modules.java.openjdk.project.Settings;
@@ -124,7 +126,8 @@ public class ActionProviderImpl implements ActionProvider {
         StopAction newStop = new StopAction();
         ReRunAction newReRun = new ReRunAction(COMMAND_TEST_SINGLE);
         ReRunAction newReDebug = new ReRunAction(COMMAND_DEBUG_TEST_SINGLE);
-        final InputOutput io = IOProvider.getDefault().getIO(ioName, false, new javax.swing.Action[] {newReRun, newReDebug, newStop}, null);
+        IOProvider ioProvider = context.lookup(IOProvider.class) != null ? context.lookup(IOProvider.class) : IOProvider.getDefault();
+        final InputOutput io = ioProvider.getIO(ioName, false, new javax.swing.Action[] {newReRun, newReDebug, newStop}, null);
         final StopAction stop = StopAction.record(io, newStop);
         final ReRunAction rerun = ReRunAction.recordRun(io, newReRun);
         final ReRunAction redebug = ReRunAction.recordDebug(io, newReDebug);
@@ -137,6 +140,7 @@ public class ActionProviderImpl implements ActionProvider {
         ProfileSupport profiler = COMMAND_PROFILE_TEST_SINGLE.equals(command) ? Lookup.getDefault().lookup(ProfileSupport.Factory.class).create() : null;
         File jtregJar = findJTReg(file);
         if (jtregJar == null) {
+            progress.finished(false);
             return null;
         }
         return ExecutionEngine.getDefault().execute(ioName, new Runnable() {
@@ -171,7 +175,7 @@ public class ActionProviderImpl implements ActionProvider {
                         if (toRun != null) {
                             final CountDownLatch wait = new CountDownLatch(1);
                             final boolean[] state = new boolean[1];
-                            targetContext = Lookups.singleton(new ActionProgress() {
+                            targetContext = Lookups.fixed(new ActionProgress() {
                                 @Override
                                 protected void started() {
                                     state[0] = true;
@@ -181,7 +185,7 @@ public class ActionProviderImpl implements ActionProvider {
                                     state[0] = success;
                                     wait.countDown();
                                 }
-                            });
+                            }, ioProvider);
                             prjAP.invokeAction(toRun, targetContext);
 
                             if (!state[0]) {
@@ -245,31 +249,36 @@ public class ActionProviderImpl implements ActionProvider {
                     switch (command) {
                         case COMMAND_RUN_SINGLE: break;
                         case COMMAND_DEBUG_TEST_SINGLE:
-                            try {
-                                InetAddress addr = InetAddress.getLocalHost();
-                                debugSocket[0] = new ServerSocket(0, 1, addr);
-                                BACKGROUND.post(() -> {
-                                    try {
-                                        while (true) {
-                                            Socket server = debugSocket[0].accept();
-                                            JPDAStart s = new JPDAStart(io, COMMAND_DEBUG_SINGLE); //XXX command
-                                            s.setAdditionalSourcePath(fullSourcePath);
-                                            try {
-                                                int connectTo = s.execute(prj);
-                                                Socket clientSocket = new Socket(InetAddress.getLocalHost(), connectTo);
-                                                BACKGROUND.post(new Copy(clientSocket.getInputStream(), server.getOutputStream(), clientSocket));
-                                                BACKGROUND.post(new Copy(server.getInputStream(), clientSocket.getOutputStream(), clientSocket));
-                                            } catch (Throwable ex) {
-                                                Exceptions.printStackTrace(ex);
+                            DebuggerStarter starter = context.lookup(DebuggerStarter.class);
+                            if (starter == null) {
+                                try {
+                                    InetAddress addr = InetAddress.getLocalHost();
+                                    debugSocket[0] = new ServerSocket(0, 1, addr);
+                                    BACKGROUND.post(() -> {
+                                        try {
+                                            while (true) {
+                                                Socket server = debugSocket[0].accept();
+                                                JPDAStart s = new JPDAStart(io, COMMAND_DEBUG_SINGLE); //XXX command
+                                                s.setAdditionalSourcePath(fullSourcePath);
+                                                try {
+                                                    int connectTo = s.execute(prj);
+                                                    Socket clientSocket = new Socket(InetAddress.getLocalHost(), connectTo);
+                                                    BACKGROUND.post(new Copy(clientSocket.getInputStream(), server.getOutputStream(), clientSocket));
+                                                    BACKGROUND.post(new Copy(server.getInputStream(), clientSocket.getOutputStream(), clientSocket));
+                                                } catch (Throwable ex) {
+                                                    Exceptions.printStackTrace(ex);
+                                                }
                                             }
+                                        } catch (IOException ex) {
+                                            LOG.log(Level.FINE, null, ex);
                                         }
-                                    } catch (IOException ex) {
-                                        LOG.log(Level.FINE, null, ex);
-                                    }
-                                });
-                                options.addAll(Arrays.asList("-debug:-agentlib:jdwp=transport=dt_socket,suspend=y,server=n,address=" + addr.getHostAddress() + ":" + debugSocket[0].getLocalPort()));
-                            } catch (Throwable ex) {
-                                Exceptions.printStackTrace(ex);
+                                    });
+                                    options.addAll(Arrays.asList("-debug:-agentlib:jdwp=transport=dt_socket,suspend=y,server=n,address=" + addr.getHostAddress() + ":" + debugSocket[0].getLocalPort()));
+                                } catch (Throwable ex) {
+                                    Exceptions.printStackTrace(ex);
+                                }
+                            } else {
+                                options.addAll(Arrays.asList("-debug:-agentlib:jdwp=transport=dt_socket,suspend=y,server=n,address=localhost:" + starter.startDebugger(fullSourcePath)));
                             }
                             break;
                         case COMMAND_PROFILE_TEST_SINGLE:

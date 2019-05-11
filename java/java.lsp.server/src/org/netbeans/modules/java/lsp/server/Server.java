@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
-import java.net.URL;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -34,6 +34,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.tools.ant.module.api.AntProjectCookie;
 import org.eclipse.lsp4j.CompletionOptions;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
@@ -55,15 +56,13 @@ import org.netbeans.api.java.source.JavaSource;
 import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ui.OpenProjects;
+import org.netbeans.modules.java.lsp.server.debugging.Debugger;
 import org.netbeans.modules.java.lsp.server.text.TextDocumentServiceImpl;
 import org.netbeans.modules.java.lsp.server.workspace.WorkspaceServiceImpl;
-import org.netbeans.modules.parsing.impl.indexing.DefaultCacheFolderProvider;
 import org.netbeans.modules.parsing.impl.indexing.implspi.CacheFolderProvider;
 import org.openide.filesystems.FileObject;
-import org.openide.filesystems.FileUtil;
 import org.openide.modules.ModuleInfo;
 import org.openide.modules.Places;
-import org.openide.util.Exceptions;
 import org.openide.util.Lookup;
 
 /**
@@ -106,7 +105,9 @@ public class Server {
         new File(cachedir, "index").mkdirs();
         Class jsClass = JavaSource.class;
         File javaCluster = new File(jsClass.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile().getParentFile();
-        System.setProperty("netbeans.dirs", javaCluster.getAbsolutePath());
+        Class antClass = AntProjectCookie.class;
+        File extIdeCluster = new File(antClass.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile().getParentFile();
+        System.setProperty("netbeans.dirs", javaCluster.getAbsolutePath() + File.pathSeparatorChar + extIdeCluster.getAbsolutePath());
         CacheFolderProvider.getCacheFolderForRoot(Places.getUserDirectory().toURI().toURL(), EnumSet.noneOf(CacheFolderProvider.Kind.class), CacheFolderProvider.Mode.EXISTENT);
 
         Lookup.getDefault().lookup(ModuleInfo.class); //start the module system
@@ -115,6 +116,8 @@ public class Server {
         Launcher<LanguageClient> serverLauncher = LSPLauncher.createServerLauncher(server, in, out);
         ((LanguageClientAware) server).connect(serverLauncher.getRemoteProxy());
         serverLauncher.startListening();
+
+        Debugger.startDebugger();
 
         while (true) {
             try {

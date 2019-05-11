@@ -47,6 +47,9 @@ import org.openide.util.NbBundle.Messages;
 import org.openide.util.Pair;
 import org.openide.util.Task;
 import org.openide.util.TaskListener;
+import org.openide.util.lookup.Lookups;
+import org.openide.util.lookup.ProxyLookup;
+import org.openide.windows.IOProvider;
 
 /**
  *
@@ -221,20 +224,29 @@ public class ActionProviderImpl implements ActionProvider {
             props.put("srcdir", srcdir);
             props.put("module.name", moduleName);
         }
-        final ActionProgress progress = ActionProgress.start(context);
-        try {
-            ActionUtils.runTarget(scriptFO, command2Targets.get(Pair.of(command, kind)), props)
-                       .addTaskListener(new TaskListener() {
-                @Override
-                public void taskFinished(Task task) {
-                    progress.finished(((ExecutorTask) task).result() == 0);
-                }
-            });
-        } catch (IOException ex) {
-            //???
-            Exceptions.printStackTrace(ex);
-            progress.finished(false);
+        Lookup newDefault = Lookup.getDefault();
+        IOProvider injectedIO = context.lookup(IOProvider.class);
+        if (injectedIO != null) {
+            newDefault = new ProxyLookup(Lookups.singleton(injectedIO), Lookups.exclude(Lookup.getDefault(), IOProvider.class));
         }
+        String[] targets = command2Targets.get(Pair.of(command, kind));
+        FileObject scriptFOFin = scriptFO;
+        Lookups.executeWith(newDefault, () -> {
+            final ActionProgress progress = ActionProgress.start(context);
+            try {
+                ActionUtils.runTarget(scriptFOFin, targets, props)
+                           .addTaskListener(new TaskListener() {
+                    @Override
+                    public void taskFinished(Task task) {
+                        progress.finished(((ExecutorTask) task).result() == 0);
+                    }
+                });
+            } catch (IOException ex) {
+                //???
+                Exceptions.printStackTrace(ex);
+                progress.finished(false);
+            }
+        });
     }
 
     @Override
