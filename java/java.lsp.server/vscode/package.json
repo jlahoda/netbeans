@@ -43,7 +43,13 @@
             "debuggers": [{
                 "type": "java",
                 "label": "Java (NetBeans)",
-                "runtime": "node"
+                "runtime": "node",
+                "initialConfigurations": [{
+                    "type": "java",
+                    "request": "launch",
+                    "name": "Java (NetBeans)",
+                    "program": "${file}"
+                }]
             }]
         }
 }
