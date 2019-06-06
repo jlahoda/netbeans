@@ -108,7 +108,6 @@
       </fileset>
       <zipfileset dir="${nb_all}" includes="LICENSE" fullpath="META-INF/LICENSE"/>
       <zipfileset dir="${nb_all}/nbbuild" includes="notice-stub.txt" fullpath="META-INF/NOTICE"/>
-      <zipfileset dir="${nb_all}" includes="DISCLAIMER" fullpath="META-INF/DISCLAIMER"/>
     </jar>
     <taskdef name="createlicensesummary" classname="org.netbeans.nbbuild.extlibs.CreateLicenseSummary" classpath="${nbantext.jar}"/>
   </target>
@@ -471,6 +470,24 @@ Hg ID:    ${hg.id}
     </nbmerge>
   </target>
 
+  <target name="build-basic" description="Build the NetBeans Basic cluster.">
+      <mkdir dir="${netbeans.dest.dir}"/>
+      <ant dir="." target="build" inheritAll="false">
+          <property name="cluster.config" value="basic"/>
+          <property name="permit.jdk9.builds" value="true"/>
+      </ant>
+  </target>
+
+  <target name="test-basic" description="Test the NetBeans Basic cluster.">
+      <mkdir dir="${netbeans.dest.dir}"/>
+      <ant dir="." target="test" inheritAll="false">
+          <property name="cluster.config" value="basic"/>
+          <property name="test.type" value="test-unit"/>
+          <property name="test-unit-sys-prop.ignore.random.failures" value="true"/>
+          <property name="permit.jdk9.builds" value="true"/>
+          <property name="vanilla.javac.exists" value="true"/>
+      </ant>
+  </target>
 
   <target name="-build-platform" depends="init">
       <delete file="${netbeans.dest.dir}/nb.cluster.platform.built"/>
@@ -586,7 +603,6 @@ Hg ID:    ${hg.id}
             <include name="*.css"/>
             <include name="*.html"/>
             <include name="DEPENDENCIES"/>
-            <include name="DISCLAIMER"/>
             <include name="LICENSE"/>
             <include name="NOTICE"/>
             <include name="licenses/**"/>
@@ -1603,7 +1619,6 @@ It is possible to use -Ddebug.port=3234 -Ddebug.pause=y to start the system in d
         />
         <taskdef name="createdependencies" classname="org.netbeans.nbbuild.extlibs.CreateDependencies" classpath="${nbantext.jar}"/>
         <createdependencies refid="source.dirset"  dependencies="${netbeans.dest.dir}/DEPENDENCIES"/>
-        <copy file="${nb_all}/DISCLAIMER" tofile="${netbeans.dest.dir}/DISCLAIMER" />
     </target>
 
     <target name="-copy-platform-readme" depends="-check-nb-cluster" unless="has.nb.cluster">
@@ -1680,7 +1695,6 @@ It is possible to use -Ddebug.port=3234 -Ddebug.pause=y to start the system in d
       <zipfileset file="${nb.build.dir}/NOTICE" />
       <zipfileset file="${nb.build.dir}/LICENSE" />
       <zipfileset dir="${nb.build.dir}/licenses" includes="**" prefix="licenses" /> 
-      <zipfileset file="${nb_all}/DISCLAIMER" />
       <zipfileset file="${source.zip.readme}" fullpath="README.md" erroronmissingarchive="false" />
     </zip>
   </target>
