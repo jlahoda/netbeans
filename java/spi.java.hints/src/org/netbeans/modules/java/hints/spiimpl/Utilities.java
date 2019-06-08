@@ -94,6 +94,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.CharBuffer;
@@ -1491,7 +1492,16 @@ public class Utilities {
 
                         Class caseKind = Class.forName("com.sun.source.tree.CaseTree$CaseKind", false, JCCase.class.getClassLoader());
                         JCIdent identTree = F.at(pos).Ident(name);
-                        return com.sun.tools.javac.util.List.of(JackpotTrees.createInstance(ctx, JCCase.class, name, identTree, new Class[] {caseKind, com.sun.tools.javac.util.List.class, com.sun.tools.javac.util.List.class, JCTree.class}, new Object[] {Enum.valueOf(caseKind, "STATEMENT"), com.sun.tools.javac.util.List.of(identTree), com.sun.tools.javac.util.List.nil(), null}));
+                        JCTree patternTree = identTree;
+                        try {
+                            Class<?> literalPattern = Class.forName("com.sun.tools.javac.tree.JCTree$JCLiteralPattern", false, JCCase.class.getClassLoader());
+                            Constructor<?> c = literalPattern.getDeclaredConstructor(JCExpression.class);
+                            c.setAccessible(true);
+                            patternTree = (JCTree) c.newInstance(patternTree);
+                        } catch (Exception ex) {
+                            //ignore
+                        }
+                        return com.sun.tools.javac.util.List.of(JackpotTrees.createInstance(ctx, JCCase.class, name, identTree, new Class[] {caseKind, com.sun.tools.javac.util.List.class, com.sun.tools.javac.util.List.class, JCTree.class}, new Object[] {Enum.valueOf(caseKind, "STATEMENT"), com.sun.tools.javac.util.List.of(patternTree), com.sun.tools.javac.util.List.nil(), null}));
                     }
                 }
             }
