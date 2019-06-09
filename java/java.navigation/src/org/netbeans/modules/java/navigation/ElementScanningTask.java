@@ -52,6 +52,8 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Elements;
+import javax.lang.model.util.Elements.Origin;
 import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.annotations.common.NullAllowed;
@@ -322,7 +324,7 @@ public class ElementScanningTask implements CancellableTask<CompilationInfo>{
             final boolean isParentInherited, final CompilationInfo info,
             final Context ctx, boolean  fqn) {
         final ElementUtilities eu = info.getElementUtilities();
-        if(eu.isSynthetic(e)) {
+        if(info.getElements().getOrigin(e) == Origin.SYNTHETIC) {//show mandatory elements
             return null;
         }
         boolean inherited = isParentInherited || (null != parent && !parent.equals( e.getEnclosingElement() ));
