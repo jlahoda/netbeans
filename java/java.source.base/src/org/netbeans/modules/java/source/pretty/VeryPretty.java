@@ -119,6 +119,7 @@ import org.netbeans.modules.java.source.save.PositionEstimator;
 import org.netbeans.modules.java.source.save.Reformatter;
 import org.netbeans.modules.java.source.transform.FieldGroupTree;
 import org.netbeans.spi.java.classpath.support.ClassPathSupport;
+import org.openide.util.Exceptions;
 
 import org.openide.util.Exceptions;
 
