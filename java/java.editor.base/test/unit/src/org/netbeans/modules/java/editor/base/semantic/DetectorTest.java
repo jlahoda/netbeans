@@ -398,6 +398,31 @@ public class DetectorTest extends TestBase {
         performTest("IncDecReading230408");
     }
 
+    public void testRecord1() throws Exception {
+        //TODO: check records are available, skip if they are not.
+        performTest("Record",
+                    "public record Test(String s);",
+                    "[KEYWORD], 0:7-0:13",
+                    "[PUBLIC, DECLARATION], 0:14-0:18",
+                    "[PUBLIC, CLASS], 0:19-0:25",
+                    "[PRIVATE, FIELD, DECLARATION], 0:26-0:27");
+    }
+
+    public void testSealed1() throws Exception {
+        //TODO: check record are available, skip if they are not.
+        performTest("Sealed",
+                    "public class Sealed { public sealed interface Test permits Foo { } public static class Foo { } @interface A1 { public int sealed(); } @interface A2 { public int sealed(); } }",
+                    "[PUBLIC, CLASS, DECLARATION], 0:13-0:19",
+                    "[KEYWORD], 0:29-0:35",
+                    "[STATIC, PUBLIC, INTERFACE, DECLARATION], 0:46-0:50",
+                    "[KEYWORD], 0:51-0:58",
+                    "[STATIC, PUBLIC, CLASS, DECLARATION], 0:87-0:90",
+                    "[STATIC, PACKAGE_PRIVATE, ANNOTATION_TYPE, DECLARATION], 0:106-0:108",
+                    "[ABSTRACT, PUBLIC, METHOD, DECLARATION], 0:122-0:128",
+                    "[STATIC, PACKAGE_PRIVATE, ANNOTATION_TYPE, DECLARATION], 0:145-0:147",
+                    "[ABSTRACT, PUBLIC, METHOD, DECLARATION], 0:161-0:167");
+    }
+
     private void performTest(String fileName) throws Exception {
         performTest(fileName, new Performer() {
             public void compute(CompilationController parameter, Document doc, final ErrorDescriptionSetter setter) {
@@ -411,6 +436,19 @@ public class DetectorTest extends TestBase {
         });
     }
     
+    private void performTest(String fileName, String code, String... expected) throws Exception {
+        performTest(fileName, code, new Performer() {
+            public void compute(CompilationController parameter, Document doc, final ErrorDescriptionSetter setter) {
+                new SemanticHighlighterBase() {
+                    @Override
+                    protected boolean process(CompilationInfo info, Document doc) {
+                        return process(info, doc, setter);
+                    }
+                }.process(parameter, doc);
+            }
+        }, expected);
+    }
+
     private FileObject testSourceFO;
     
     static {
