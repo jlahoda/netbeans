@@ -270,7 +270,7 @@ public abstract class TestBase extends NbTestCase {
                                .map(h -> h.getHighlightTestData())
                                .collect(Collectors.toList()));
     }
-    
+
     public static Collection<HighlightImpl> toHighlights(Document doc, Map<Token, Coloring> colors) {
         List<HighlightImpl> highlights = new ArrayList<HighlightImpl>();
         

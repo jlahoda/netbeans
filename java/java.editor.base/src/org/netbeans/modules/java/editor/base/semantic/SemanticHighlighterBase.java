@@ -18,6 +18,7 @@
  */
 package org.netbeans.modules.java.editor.base.semantic;
 
+import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.ArrayTypeTree;
 import com.sun.source.tree.AssignmentTree;
 import com.sun.source.tree.ClassTree;
@@ -32,6 +33,7 @@ import com.sun.source.tree.MemberReferenceTree;
 import com.sun.source.tree.MemberSelectTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
+import com.sun.source.tree.ModifiersTree;
 import com.sun.source.tree.ModuleTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.OpensTree;
@@ -531,7 +533,7 @@ public abstract class SemanticHighlighterBase extends JavaParserResultTask {
             
             addModifiers(decl, c);
             
-            if (decl.getKind().isField()) {
+            if (decl.getKind().isField() || isStateComponent(decl.getKind())) {
                 c.add(ColoringAttributes.FIELD);
                 
                 return c;
@@ -553,6 +555,10 @@ public abstract class SemanticHighlighterBase extends JavaParserResultTask {
             assert false;
             
             return null;
+        }
+
+        private boolean isStateComponent(ElementKind kind) {
+            return "STATE_COMPONENT".equals(kind.name());
         }
 
         private static final Set<Kind> LITERALS = EnumSet.of(Kind.BOOLEAN_LITERAL, Kind.CHAR_LITERAL, Kind.DOUBLE_LITERAL, Kind.FLOAT_LITERAL, Kind.INT_LITERAL, Kind.LONG_LITERAL, Kind.STRING_LITERAL);
@@ -605,7 +611,7 @@ public abstract class SemanticHighlighterBase extends JavaParserResultTask {
             isDeclType = decl.getKind().isClass() || decl.getKind().isInterface();
             Collection<ColoringAttributes> c = null;
 
-            if (decl.getKind().isField() || isLocalVariableClosure(decl)) {
+            if (decl.getKind().isField() || isLocalVariableClosure(decl) || isStateComponent(decl.getKind())) {
                 c = getVariableColoring(decl);
             }
             
@@ -1038,10 +1044,23 @@ public abstract class SemanticHighlighterBase extends JavaParserResultTask {
             scan(tree.getModifiers(), null);
             
             tl.moveToEnd(tree.getModifiers());
+            Token record = tl.firstIdentifier(getCurrentPath(), "record");
+            if (record != null) {
+                contextKeywords.add(record);
+                tl.moveNext();
+            }
             firstIdentifier(tree.getSimpleName().toString());
-            
+
+            tl.moveNext(); //XXX: for permits below, should be replaced with tree.getPermits() when available
+
             //XXX:????
             scan(tree.getTypeParameters(), null);
+            //TODO: permits can be at any place
+            Token permits = tl.firstIdentifier(getCurrentPath(), "permits");
+            if (permits != null) {
+                contextKeywords.add(permits);
+                tl.moveNext();
+            }
             scan(tree.getExtendsClause(), null);
             scan(tree.getImplementsClause(), null);
 
@@ -1114,6 +1133,39 @@ public abstract class SemanticHighlighterBase extends JavaParserResultTask {
             return indent;
         }
 
+        @Override
+        public Void visitModifiers(ModifiersTree node, Void p) {
+            if (SEALED != null && node.getFlags().contains(SEALED)) {
+                OUTER: while (true) {
+                    Token t = tl.firstIdentifier(getCurrentPath(), "sealed");
+                    for (AnnotationTree at : node.getAnnotations()) {
+                        if (sourcePositions.getStartPosition(info.getCompilationUnit(), at) >= t.offset(null)
+                            && (t.offset(null) + t.length()) < sourcePositions.getEndPosition(info.getCompilationUnit(), at)) {
+                            //inside annotation, continue search:
+                            continue OUTER;
+                        }
+                    }
+                    contextKeywords.add(t);
+                    break;
+                }
+                tl.moveToOffset(sourcePositions.getStartPosition(info.getCompilationUnit(), node));
+            }
+            return super.visitModifiers(node, p);
+        }
+
+        private static final Modifier SEALED;
+
+        static {
+            Modifier sealed;
+
+            try {
+                sealed = Modifier.valueOf("SEALED");
+            } catch (IllegalArgumentException ex) {
+                sealed = null;
+            }
+
+            SEALED = sealed;
+        }
     }
 
     public static interface ErrorDescriptionSetter {
