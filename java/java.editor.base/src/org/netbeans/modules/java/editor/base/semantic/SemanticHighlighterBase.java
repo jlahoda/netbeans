@@ -1186,6 +1186,7 @@ public abstract class SemanticHighlighterBase extends JavaParserResultTask {
 
             SEALED = sealed;
         }
+
     }
 
     public static interface ErrorDescriptionSetter {
