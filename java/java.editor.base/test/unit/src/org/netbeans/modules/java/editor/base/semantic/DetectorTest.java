@@ -452,7 +452,7 @@ public class DetectorTest extends TestBase {
                     "[KEYWORD], 0:7-0:13",
                     "[PUBLIC, DECLARATION], 0:14-0:18",
                     "[PUBLIC, CLASS], 0:19-0:25",
-                    "[PRIVATE, FIELD, DECLARATION], 0:26-0:27");
+                    "[PACKAGE_PRIVATE, FIELD, DECLARATION], 0:26-0:27");
     }
 
     public void testSealed1() throws Exception {
@@ -468,6 +468,23 @@ public class DetectorTest extends TestBase {
                     "[ABSTRACT, PUBLIC, METHOD, DECLARATION], 0:122-0:128",
                     "[STATIC, PACKAGE_PRIVATE, ANNOTATION_TYPE, DECLARATION], 0:145-0:147",
                     "[ABSTRACT, PUBLIC, METHOD, DECLARATION], 0:161-0:167");
+    }
+
+    public void testRecordAndSealed1() throws Exception {
+        //TODO: check record are available, skip if they are not.
+        performTest("Sealed",
+                    "public class Sealed {\n" +
+                    "    public record Foo(int i, int j) { }\n" +
+                    "    public sealed interface Test permits Foo { }\n" +
+                    "}\n",
+                    "[PUBLIC, CLASS, DECLARATION], 0:13-0:19",
+                    "[KEYWORD], 1:11-1:17",
+                    "[STATIC, PUBLIC, DECLARATION], 1:18-1:21",
+                    "[PACKAGE_PRIVATE, FIELD, DECLARATION], 1:26-1:27",
+                    "[PACKAGE_PRIVATE, FIELD, DECLARATION], 1:33-1:34",
+                    "[KEYWORD], 2:11-2:17",
+                    "[STATIC, PUBLIC, INTERFACE, DECLARATION], 2:28-2:32",
+                    "[KEYWORD], 2:33-2:40");
     }
 
     private void performTest(String fileName) throws Exception {
