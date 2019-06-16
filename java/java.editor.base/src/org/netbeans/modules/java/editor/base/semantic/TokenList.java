@@ -211,6 +211,45 @@ public class TokenList {
         return ret[0];
     }
 
+    public Token peekIdentifier(final TreePath tp, final String name) {
+        final Token[] ret = new Token[] {null};
+        doc.render(new Runnable() {
+            @Override
+            public void run() {
+                if (cancel.get()) {
+                    return ;
+                }
+                
+                if (ts != null && !ts.isValid()) {
+                    cancel.set(true);
+                    return ;
+                }
+                
+                if (ts == null) {
+                    return ;
+                }
+                
+                int idx = ts.index();
+                boolean next = true;
+
+                while (ts.token().id() != JavaTokenId.IDENTIFIER && (next = ts.moveNext()))
+                    ;
+
+                if (next) {
+                    if (name.equals(info.getTreeUtilities().decodeIdentifier(ts.token().text()).toString())) {
+                        ret[0] = ts.token();
+                    } else {
+//                            System.err.println("looking for: " + name + ", not found");
+                    }
+                }
+
+                ts.moveIndex(idx);
+                ts.moveNext();
+            }
+        });
+        return ret[0];
+    }
+
     public void identifierHere(final IdentifierTree tree, final Map<Tree, List<Token>> tree2Tokens) {
         doc.render(new Runnable() {
             @Override

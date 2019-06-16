@@ -455,6 +455,9 @@ public abstract class SemanticHighlighterBase extends JavaParserResultTask {
         
         @Override
         public Void visitMemberSelect(MemberSelectTree tree, Void p) {
+            if (info.getTreeUtilities().isSynthetic(getCurrentPath()))
+                return null;
+
             long memberSelectBypassLoc = memberSelectBypass;
             
             memberSelectBypass = -1;
@@ -986,6 +989,9 @@ public abstract class SemanticHighlighterBase extends JavaParserResultTask {
 
         @Override
         public Void visitVariable(VariableTree tree, Void p) {
+            if (info.getTreeUtilities().isSynthetic(getCurrentPath()))
+                return null;
+
             tl.moveToOffset(sourcePositions.getStartPosition(info.getCompilationUnit(), tree));
 
             handlePossibleIdentifier(getCurrentPath(), true);
@@ -1058,10 +1064,10 @@ public abstract class SemanticHighlighterBase extends JavaParserResultTask {
             //XXX:????
             scan(tree.getTypeParameters(), null);
             //TODO: permits can be at any place
-            Token permits = tl.firstIdentifier(getCurrentPath(), "permits");
+            Token permits = tl.peekIdentifier(getCurrentPath(), "permits");
             if (permits != null) {
                 contextKeywords.add(permits);
-                tl.moveNext();
+                tl.moveToOffset(permits.offset(null) + permits.length());
             }
             scan(tree.getExtendsClause(), null);
             scan(tree.getImplementsClause(), null);
@@ -1168,7 +1174,7 @@ public abstract class SemanticHighlighterBase extends JavaParserResultTask {
                     contextKeywords.add(t);
                     break;
                 }
-                tl.moveToOffset(sourcePositions.getStartPosition(info.getCompilationUnit(), node));
+                tl.moveBefore(Arrays.asList(node));
             }
             return super.visitModifiers(node, p);
         }
