@@ -480,7 +480,7 @@ public class DetectorTest extends TestBase {
         performTest("Record",
                     "public record Test(String s);",
                     "[KEYWORD], 0:7-0:13",
-                    "[PUBLIC, DECLARATION], 0:14-0:18",
+                    "[PUBLIC, DECLARATION], 0:14-0:18",//TODO: record?
                     "[PUBLIC, CLASS], 0:19-0:25",
                     "[PACKAGE_PRIVATE, FIELD, DECLARATION], 0:26-0:27");
     }
@@ -530,6 +530,42 @@ public class DetectorTest extends TestBase {
                     "[KEYWORD], 2:11-2:17",
                     "[STATIC, PUBLIC, INTERFACE, DECLARATION], 2:28-2:32",
                     "[KEYWORD], 2:33-2:40");
+    }
+
+    public void testRecord2() throws Exception {
+        //TODO: check record are available, skip if they are not.
+        performTest("Records",
+                    "public class Records {\n" +
+                    "    public sealed interface Super permits Foo1, Foo2, Foo3 {}\n" +
+                    "    public record Foo1(String i, String j) implements Super { }\n" +
+                    "    public record Foo2(String i, String j) implements Super { }\n" +
+                    "    public record Foo3(String i, String j) implements Super { }\n" +
+                    "}\n",
+                    "[PUBLIC, CLASS, DECLARATION], 0:13-0:20",
+                    "[KEYWORD], 1:11-1:17",
+                    "[STATIC, PUBLIC, INTERFACE, DECLARATION], 1:28-1:33",
+                    "[KEYWORD], 1:34-1:41",//TODO: permitted
+                    "[KEYWORD], 2:11-2:17",
+                    "[STATIC, PUBLIC, DECLARATION], 2:18-2:22",
+                    "[PUBLIC, CLASS], 2:23-2:29",
+                    "[PACKAGE_PRIVATE, FIELD, DECLARATION], 2:30-2:31",
+                    "[PUBLIC, CLASS], 2:33-2:39",
+                    "[PACKAGE_PRIVATE, FIELD, DECLARATION], 2:40-2:41",
+                    "[STATIC, PUBLIC, INTERFACE], 2:54-2:59",
+                    "[KEYWORD], 3:11-3:17",
+                    "[STATIC, PUBLIC, DECLARATION], 3:18-3:22",
+                    "[PUBLIC, CLASS], 3:23-3:29",
+                    "[PACKAGE_PRIVATE, FIELD, DECLARATION], 3:30-3:31",
+                    "[PUBLIC, CLASS], 3:33-3:39",
+                    "[PACKAGE_PRIVATE, FIELD, DECLARATION], 3:40-3:41",
+                    "[STATIC, PUBLIC, INTERFACE], 3:54-3:59",
+                    "[KEYWORD], 4:11-4:17",
+                    "[STATIC, PUBLIC, DECLARATION], 4:18-4:22",
+                    "[PUBLIC, CLASS], 4:23-4:29",
+                    "[PACKAGE_PRIVATE, FIELD, DECLARATION], 4:30-4:31",
+                    "[PUBLIC, CLASS], 4:33-4:39",
+                    "[PACKAGE_PRIVATE, FIELD, DECLARATION], 4:40-4:41",
+                    "[STATIC, PUBLIC, INTERFACE], 4:54-4:59");
     }
 
     private void performTest(String fileName) throws Exception {

@@ -60,6 +60,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
@@ -1052,10 +1053,12 @@ public abstract class SemanticHighlighterBase extends JavaParserResultTask {
             scan(tree.getModifiers(), null);
             
             tl.moveToEnd(tree.getModifiers());
-            Token record = tl.firstIdentifier(getCurrentPath(), "record");
-            if (record != null) {
-                contextKeywords.add(record);
+            boolean record = false;
+            Token recordToken = tl.firstIdentifier(getCurrentPath(), "record");
+            if (recordToken != null) {
+                contextKeywords.add(recordToken);
                 tl.moveNext();
+                record = true;
             }
             firstIdentifier(tree.getSimpleName().toString());
 
@@ -1069,6 +1072,9 @@ public abstract class SemanticHighlighterBase extends JavaParserResultTask {
                 contextKeywords.add(permits);
                 tl.moveToOffset(permits.offset(null) + permits.length());
             }
+            if (record) {
+                scan(tree.getMembers().stream().filter(m -> isStateComponent(m)).collect(Collectors.toList()), null);
+            }
             scan(tree.getExtendsClause(), null);
             scan(tree.getImplementsClause(), null);
 
@@ -1076,7 +1082,11 @@ public abstract class SemanticHighlighterBase extends JavaParserResultTask {
 
             recursionDetector = null;
             
-            scan(tree.getMembers(), null);
+            if (record) {
+                scan(tree.getMembers().stream().filter(m -> !isStateComponent(m)).collect(Collectors.toList()), null);
+            } else {
+                scan(tree.getMembers(), null);
+            }
 
             recursionDetector = prevRecursionDetector;
             
@@ -1085,6 +1095,11 @@ public abstract class SemanticHighlighterBase extends JavaParserResultTask {
             return null;
         }
         
+        private boolean isStateComponent(Tree member) {
+            Element el = info.getTrees().getElement(new TreePath(getCurrentPath(), member));
+            return el != null && el.getKind().name().equals("STATE_COMPONENT");
+        }
+
         @Override
         public Void visitMemberReference(MemberReferenceTree node, Void p) {
             scan(node.getQualifierExpression(), p);
