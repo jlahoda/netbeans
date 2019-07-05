@@ -50,6 +50,7 @@ import org.netbeans.modules.classfile.ClassFile;
 import org.netbeans.modules.classfile.ClassName;
 import org.netbeans.modules.classfile.Method;
 import org.netbeans.modules.classfile.Variable;
+import org.netbeans.modules.java.source.BootClassPathUtil;
 import org.netbeans.modules.java.source.ElementUtils;
 import org.netbeans.modules.java.source.usages.ClassIndexImpl.UsageType;
 
@@ -353,11 +354,6 @@ public class CompromiseSATest extends NbTestCase {
     }
     
     private JavacTask prepareJavac () throws Exception {
-        return prepareJavac (Collections.<JavaFileObject>emptySet());
-    }
-    
-    
-    private JavacTask prepareJavac (Iterable<JavaFileObject> toParse) throws Exception {
 	JavaCompiler tool = ToolProvider.getSystemJavaCompiler();
         StandardJavaFileManager fm = tool.getStandardFileManager(null, null, null);
         List<String> options = new LinkedList<String>();
@@ -365,11 +361,16 @@ public class CompromiseSATest extends NbTestCase {
 //        options.add ("-g:");                // Enable some debug info
         options.add ("-g:lines" );	    // Make the compiler to maintain line table
         options.add("-g:vars" );	    // Make the compiler to maintain local variables table
+        options.add ("-source");
+        options.add ("8");
         options.add ("-bootclasspath");
-        options.add (getBootClassPath());        
-        CompilationTask jt = tool.getTask(null,fm,null,options,null,toParse);
+        options.add (BootClassPathUtil.getBootClassPath().toString());
+        options.add ("-proc:only");
+        CompilationTask jt = tool.getTask(null,fm,null,options, Arrays.asList("java.lang.Object"), null);
         assert jt instanceof JavacTask;
-	return (JavacTask)jt;
+        JavacTask task = (JavacTask)jt;
+        task.analyze();
+	return task;
     }
     
     private void assertEqulas (String[] result, ClassName[] names) {
