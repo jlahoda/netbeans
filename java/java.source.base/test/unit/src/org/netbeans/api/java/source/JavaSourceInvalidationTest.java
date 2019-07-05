@@ -58,8 +58,11 @@ public class JavaSourceInvalidationTest extends NbTestCase {
         final FileObject srcFile = FileUtil.toFileObject(TestFileUtils.writeFile(
                 FileUtil.toFile(FileUtil.createData(srcDir,"foo/Src.java")),    //NOI18N
                 "package foo; public class Src {}"));                           //NOI18N        
+        final FileObject othFile = FileUtil.toFileObject(TestFileUtils.writeFile(
+                FileUtil.toFile(FileUtil.createData(srcDir,"foo/Oth.java")),    //NOI18N
+                "package foo; public class Oth {}"));                           //NOI18N
         SourceUtilsTestUtil.prepareTest(srcDir, buildDir,  cache);
-        final JavaSource js = JavaSource.forFileObject(srcFile);
+        final JavaSource js = JavaSource.forFileObject(othFile);
         js.runUserActionTask(new Task<CompilationController>() {
             @Override
             public void run(CompilationController cc) throws Exception {
@@ -82,7 +85,7 @@ public class JavaSourceInvalidationTest extends NbTestCase {
             }
         }, true);
 
-        final JavaSource js2 = JavaSource.forFileObject(srcFile);
+        final JavaSource js2 = JavaSource.forFileObject(othFile);
         js2.runUserActionTask(new Task<CompilationController>() {
             @Override
             public void run(CompilationController cc) throws Exception {
