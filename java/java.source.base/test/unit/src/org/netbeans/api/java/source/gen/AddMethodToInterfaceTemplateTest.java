@@ -162,7 +162,7 @@ public class AddMethodToInterfaceTemplateTest extends GeneratorTestBase {
 
         };
             
-        FileObject folderFO = URLMapper.findFileObject(getWorkDir().toURL());
+        FileObject folderFO = URLMapper.findFileObject(getWorkDir().toURI().toURL());
         assertTrue(folderFO != null);
         // create new file
         FileObject tempFO = FileUtil.getConfigFile("Templates/Classes/Interface.java"); // NOI18N
