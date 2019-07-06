@@ -22,6 +22,7 @@ import javax.lang.model.element.TypeElement;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.java.classpath.ClassPath;
 import org.netbeans.junit.NbTestCase;
+import org.netbeans.modules.java.source.BootClassPathUtil;
 import org.netbeans.modules.java.source.usages.IndexUtil;
 import org.netbeans.modules.parsing.api.indexing.IndexingManager;
 import org.netbeans.spi.java.classpath.support.ClassPathSupport;
@@ -101,7 +102,7 @@ public class JavaSourceInvalidationTest extends NbTestCase {
         FileUtil.toFileObject(TestFileUtils.writeFile(
                 FileUtil.toFile(FileUtil.createData(srcDir,"foo/Src.java")),    //NOI18N
                 "package foo; public class Src {}"));                            //NOI18N
-        final ClassPath bootPath = TestUtilities.createBootClassPath();
+        final ClassPath bootPath = BootClassPathUtil.getBootClassPath();
         final ClassPath compilePath = ClassPath.EMPTY;
         final ClassPath srcPath = ClassPathSupport.createClassPath(wd.getFileObject("src"));    //NOI18N
         SourceUtilsTestUtil.prepareTest(srcDir, buildDir,  cache);
@@ -148,7 +149,7 @@ public class JavaSourceInvalidationTest extends NbTestCase {
         FileUtil.toFileObject(TestFileUtils.writeFile(
                 FileUtil.toFile(FileUtil.createData(srcDir,"foo/Src.java")),    //NOI18N
                 "package foo; public class Src {}"));                            //NOI18N
-        final ClassPath bootPath = TestUtilities.createBootClassPath();
+        final ClassPath bootPath = BootClassPathUtil.getBootClassPath();
         final ClassPath compilePath = ClassPath.EMPTY;
         final ClassPath srcPath = ClassPathSupport.createClassPath(wd.getFileObject("src"));    //NOI18N
         SourceUtilsTestUtil.prepareTest(srcDir, buildDir,  cache);
