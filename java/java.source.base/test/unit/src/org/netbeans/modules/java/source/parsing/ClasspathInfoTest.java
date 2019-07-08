@@ -85,8 +85,7 @@ public class ClasspathInfoTest extends NbTestCase {
         File cacheFolder = new File (workDir, "cache"); //NOI18N
         cacheFolder.mkdirs();
         IndexUtil.setCacheFolder(cacheFolder);
-        TestUtil.copyFiles( TestUtil.getJdkDir(), workDir, TestUtil.RT_JAR );
-        rtJar = FileUtil.normalizeFile(new File( workDir, TestUtil.RT_JAR ));
+        rtJar = FileUtil.normalizeFile(TestUtil.createRT_JAR(workDir));
         URL url = FileUtil.getArchiveRoot (Utilities.toURI(rtJar).toURL());
         this.bootPath = ClassPathSupport.createClassPath (new URL[] {url});
         this.classPath = ClassPathSupport.createClassPath(new URL[0]);

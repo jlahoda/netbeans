@@ -53,6 +53,7 @@ import org.netbeans.modules.classfile.Variable;
 import org.netbeans.modules.java.source.BootClassPathUtil;
 import org.netbeans.modules.java.source.ElementUtils;
 import org.netbeans.modules.java.source.usages.ClassIndexImpl.UsageType;
+import org.openide.filesystems.FileObject;
 
 /**
  *
@@ -64,7 +65,7 @@ public class CompromiseSATest extends NbTestCase {
     private static final String TEST_INNER_CLASS = "java.util.Collections$SingletonSet";    //NOI18N
     private static final String TEST_INNER_CLASS_2 = "java.util.Collections$UnmodifiableMap$UnmodifiableEntrySet";	//NOI18N
     private static final String TEST_INNER_CLASS_3 = "javax.swing.JTable$AccessibleJTable$AccessibleJTableCell";	//NOI18N
-    private static final String TEST_ANNON_CLASS = "java.lang.String$1";	//NOI18N
+    private static final String TEST_ANNON_CLASS = "java.lang.System$1";	//NOI18N
     
     private static final String[] METHOD_TYPE_SIGNATURES = new String[] {
         "<S:Ljava/lang/String;L:Ljava/lang/Long;>(TS;TL;)TT;",
@@ -327,29 +328,10 @@ public class CompromiseSATest extends NbTestCase {
 //        assertEquals("()LTTT;",sig[2]);
 //    }
     
-    private String getBootClassPath () {
-	String bootCp = System.getProperty ("sun.boot.class.path");
-	assert bootCp != null;
-	return bootCp;
-    }
-    
-    private File getRT_JAR () {
-	StringTokenizer tk = new StringTokenizer (getBootClassPath (), File.pathSeparator);
-	while (tk.hasMoreTokens()) {
-	    String token = tk.nextToken();
-	    if (token.endsWith(File.separator+"rt.jar") || token.endsWith(File.separator+"classes.jar")) {
-		File f = new File (token);
-		assert f.canRead();
-		return f;
-	    }
-	}
-	throw new AssertionError ();
-    }
-    
-    private InputStream prepareData (final String testClassName) throws Exception {	
-	ZipFile zf = new ZipFile (getRT_JAR());	
-	ZipEntry ze = zf.getEntry(testClassName.replace('.','/')+".class");
-	InputStream in = zf.getInputStream(ze);
+    private InputStream prepareData (final String testClassName) throws Exception {
+        FileObject resource = BootClassPathUtil.getBootClassPath().findResource(testClassName.replace('.','/')+".class");
+        assertNotNull(resource);
+	InputStream in = resource.getInputStream();
 	return in;
     }
     
@@ -363,8 +345,8 @@ public class CompromiseSATest extends NbTestCase {
         options.add("-g:vars" );	    // Make the compiler to maintain local variables table
         options.add ("-source");
         options.add ("8");
-        options.add ("-bootclasspath");
-        options.add (BootClassPathUtil.getBootClassPath().toString());
+//        options.add ("-bootclasspath");
+//        options.add (BootClassPathUtil.getBootClassPath().toString());
         options.add ("-proc:only");
         CompilationTask jt = tool.getTask(null,fm,null,options, Arrays.asList("java.lang.Object"), null);
         assert jt instanceof JavacTask;
