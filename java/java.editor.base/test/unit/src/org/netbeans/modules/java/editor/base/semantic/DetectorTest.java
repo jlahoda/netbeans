@@ -21,6 +21,7 @@ package org.netbeans.modules.java.editor.base.semantic;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
+import javax.lang.model.SourceVersion;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import org.netbeans.api.java.source.CompilationController;
@@ -445,6 +446,128 @@ public class DetectorTest extends TestBase {
         performTest("IncDecReading230408");
     }
 
+    public void testRawStringLiteral() throws Exception {
+        try {
+            SourceVersion.valueOf("RELEASE_11");
+        } catch (IllegalArgumentException iae) {
+            //OK, presumably no support for raw string literals
+        }
+        setSourceLevel("11");
+        performTest("RawStringLiteral",
+                    "public class RawStringLiteral {\n" +
+                    "    String s1 = \"\"\"\n" +
+                    "                int i1 = 1;    \n" +
+                    "                  int i2 = 2;\n" +
+                    "             \"\"\";\n" +
+                    "    String s2 = \"\"\"\n" +
+                    "                int i1 = 1;    \n" +
+                    "                  int i2 = 2;\n" +
+                    "                      \"\"\";\n" +
+                    "}\n",
+                    "[PUBLIC, CLASS, DECLARATION], 0:13-0:29",
+                    "[PUBLIC, CLASS], 1:4-1:10",
+                    "[PACKAGE_PRIVATE, FIELD, DECLARATION], 1:11-1:13",
+                    "[UNINDENTED_TEXT_BLOCK], 2:13-2:27",
+                    "[UNINDENTED_TEXT_BLOCK], 3:13-3:29",
+                    "[PUBLIC, CLASS], 5:4-5:10",
+                    "[PACKAGE_PRIVATE, FIELD, DECLARATION], 5:11-5:13",
+                    "[UNINDENTED_TEXT_BLOCK], 6:16-6:27",
+                    "[UNINDENTED_TEXT_BLOCK], 7:16-7:29");
+    }
+
+    public void testRecord1() throws Exception {
+        //TODO: check records are available, skip if they are not.
+        performTest("Record",
+                    "public record Test(String s);",
+                    "[KEYWORD], 0:7-0:13",
+                    "[PUBLIC, DECLARATION], 0:14-0:18",//TODO: record?
+                    "[PUBLIC, CLASS], 0:19-0:25",
+                    "[PACKAGE_PRIVATE, FIELD, DECLARATION], 0:26-0:27");
+    }
+
+    public void testSealed1() throws Exception {
+        //TODO: check record are available, skip if they are not.
+        performTest("Sealed",
+                    "public class Sealed { public sealed interface Test permits Foo { } public static class Foo { } @interface A1 { public int sealed(); } @interface A2 { public int sealed(); } }",
+                    "[PUBLIC, CLASS, DECLARATION], 0:13-0:19",
+                    "[KEYWORD], 0:29-0:35",
+                    "[STATIC, PUBLIC, INTERFACE, DECLARATION], 0:46-0:50",
+                    "[KEYWORD], 0:51-0:58",
+                    "[STATIC, PUBLIC, CLASS, DECLARATION], 0:87-0:90",
+                    "[STATIC, PACKAGE_PRIVATE, ANNOTATION_TYPE, DECLARATION], 0:106-0:108",
+                    "[ABSTRACT, PUBLIC, METHOD, DECLARATION], 0:122-0:128",
+                    "[STATIC, PACKAGE_PRIVATE, ANNOTATION_TYPE, DECLARATION], 0:145-0:147",
+                    "[ABSTRACT, PUBLIC, METHOD, DECLARATION], 0:161-0:167");
+    }
+
+    public void testYield() throws Exception {
+        enablePreview();
+        performTest("YieldTest.java",
+                    "public class YieldTest {\n" +
+                    "    private int map(int i) {\n" +
+                    "        return switch (i) { default -> { yield 0; } };\n" +
+                    "    }\n" +
+                    "}\n",
+                    "[PUBLIC, CLASS, DECLARATION], 0:13-0:22\n" +
+                    "[PRIVATE, METHOD, UNUSED, DECLARATION], 1:16-1:19\n" +
+                    "[PARAMETER, DECLARATION], 1:24-1:25\n" +
+                    "[PARAMETER], 2:23-2:24\n" +
+                    "[KEYWORD], 2:41-2:46\n");
+    }
+
+    public void testRecordAndSealed1() throws Exception {
+        //TODO: check record are available, skip if they are not.
+        performTest("Sealed",
+                    "public class Sealed {\n" +
+                    "    public record Foo(int i, int j) { }\n" +
+                    "    public sealed interface Test permits Foo { }\n" +
+                    "}\n",
+                    "[PUBLIC, CLASS, DECLARATION], 0:13-0:19",
+                    "[KEYWORD], 1:11-1:17",
+                    "[STATIC, PUBLIC, DECLARATION], 1:18-1:21",
+                    "[PACKAGE_PRIVATE, FIELD, DECLARATION], 1:26-1:27",
+                    "[PACKAGE_PRIVATE, FIELD, DECLARATION], 1:33-1:34",
+                    "[KEYWORD], 2:11-2:17",
+                    "[STATIC, PUBLIC, INTERFACE, DECLARATION], 2:28-2:32",
+                    "[KEYWORD], 2:33-2:40");
+    }
+
+    public void testRecord2() throws Exception {
+        //TODO: check record are available, skip if they are not.
+        performTest("Records",
+                    "public class Records {\n" +
+                    "    public sealed interface Super permits Foo1, Foo2, Foo3 {}\n" +
+                    "    public record Foo1(String i, String j) implements Super { }\n" +
+                    "    public record Foo2(String i, String j) implements Super { }\n" +
+                    "    public record Foo3(String i, String j) implements Super { }\n" +
+                    "}\n",
+                    "[PUBLIC, CLASS, DECLARATION], 0:13-0:20",
+                    "[KEYWORD], 1:11-1:17",
+                    "[STATIC, PUBLIC, INTERFACE, DECLARATION], 1:28-1:33",
+                    "[KEYWORD], 1:34-1:41",//TODO: permitted
+                    "[KEYWORD], 2:11-2:17",
+                    "[STATIC, PUBLIC, DECLARATION], 2:18-2:22",
+                    "[PUBLIC, CLASS], 2:23-2:29",
+                    "[PACKAGE_PRIVATE, FIELD, DECLARATION], 2:30-2:31",
+                    "[PUBLIC, CLASS], 2:33-2:39",
+                    "[PACKAGE_PRIVATE, FIELD, DECLARATION], 2:40-2:41",
+                    "[STATIC, PUBLIC, INTERFACE], 2:54-2:59",
+                    "[KEYWORD], 3:11-3:17",
+                    "[STATIC, PUBLIC, DECLARATION], 3:18-3:22",
+                    "[PUBLIC, CLASS], 3:23-3:29",
+                    "[PACKAGE_PRIVATE, FIELD, DECLARATION], 3:30-3:31",
+                    "[PUBLIC, CLASS], 3:33-3:39",
+                    "[PACKAGE_PRIVATE, FIELD, DECLARATION], 3:40-3:41",
+                    "[STATIC, PUBLIC, INTERFACE], 3:54-3:59",
+                    "[KEYWORD], 4:11-4:17",
+                    "[STATIC, PUBLIC, DECLARATION], 4:18-4:22",
+                    "[PUBLIC, CLASS], 4:23-4:29",
+                    "[PACKAGE_PRIVATE, FIELD, DECLARATION], 4:30-4:31",
+                    "[PUBLIC, CLASS], 4:33-4:39",
+                    "[PACKAGE_PRIVATE, FIELD, DECLARATION], 4:40-4:41",
+                    "[STATIC, PUBLIC, INTERFACE], 4:54-4:59");
+    }
+
     private void performTest(String fileName) throws Exception {
         performTest(fileName, new Performer() {
             public void compute(CompilationController parameter, Document doc, final ErrorDescriptionSetter setter) {
@@ -469,6 +592,19 @@ public class DetectorTest extends TestBase {
                 }.process(parameter, doc);
             }
         }, false, expected);
+    }
+
+    private void performTest(String fileName, String code, String... expected) throws Exception {
+        performTest(fileName, code, new Performer() {
+            public void compute(CompilationController parameter, Document doc, final ErrorDescriptionSetter setter) {
+                new SemanticHighlighterBase() {
+                    @Override
+                    protected boolean process(CompilationInfo info, Document doc) {
+                        return process(info, doc, setter);
+                    }
+                }.process(parameter, doc);
+            }
+        }, expected);
     }
 
     private FileObject testSourceFO;

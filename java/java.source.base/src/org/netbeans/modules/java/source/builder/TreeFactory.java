@@ -68,6 +68,7 @@ import com.sun.tools.javac.util.ListBuffer;
 import com.sun.tools.javac.util.Name;
 import com.sun.tools.javac.util.Names;
 import com.sun.tools.javac.util.Context;
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -224,8 +225,8 @@ public class TreeFactory {
         } catch (NoSuchMethodError err) {
             try {
                 Class<Enum> caseKind = (Class<Enum>) Class.forName("com.sun.source.tree.CaseTree$CaseKind", false, JCTree.class.getClassLoader());
-                com.sun.tools.javac.util.List<? extends Object> pats = expression != null ? com.sun.tools.javac.util.List.of((JCExpression)expression) : com.sun.tools.javac.util.List.nil();
-                return (CaseTree) make.getClass().getMethod("Case", caseKind, com.sun.tools.javac.util.List.class, com.sun.tools.javac.util.List.class, JCTree.class).invoke(make.at(NOPOS), Enum.valueOf(caseKind, "STATEMENT"), pats, lb.toList(), null);
+                com.sun.tools.javac.util.List<? extends JCExpression> pats = expression != null ? com.sun.tools.javac.util.List.of((JCExpression)expression) : com.sun.tools.javac.util.List.nil();
+                return (CaseTree) make.getClass().getMethod("Case", caseKind, com.sun.tools.javac.util.List.class, com.sun.tools.javac.util.List.class, JCTree.class).invoke(make.at(NOPOS), Enum.valueOf(caseKind, "STATEMENT"), wrapConstantCaseExpressionsIfNeeded(pats), lb.toList(), null);
             } catch (Throwable t) {
                 err.addSuppressed(t);
                 throw throwAny(err);
@@ -246,7 +247,7 @@ public class TreeFactory {
             exprs.append((JCExpression)t);
         try {
             Class<Enum> caseKind = (Class<Enum>) Class.forName("com.sun.source.tree.CaseTree$CaseKind", false, JCTree.class.getClassLoader());
-            return (CaseTree) make.getClass().getMethod("Case", caseKind, com.sun.tools.javac.util.List.class, com.sun.tools.javac.util.List.class, JCTree.class).invoke(make.at(NOPOS), Enum.valueOf(caseKind, "STATEMENT"), exprs.toList(), lb.toList(), null);
+            return (CaseTree) make.getClass().getMethod("Case", caseKind, com.sun.tools.javac.util.List.class, com.sun.tools.javac.util.List.class, JCTree.class).invoke(make.at(NOPOS), Enum.valueOf(caseKind, "STATEMENT"), wrapConstantCaseExpressionsIfNeeded(exprs.toList()), lb.toList(), null);
         } catch (Throwable t) {
             throw throwAny(t);
         }
@@ -260,12 +261,30 @@ public class TreeFactory {
             exprs.append((JCExpression)t);
         try {
             Class<Enum> caseKind = (Class<Enum>) Class.forName("com.sun.source.tree.CaseTree$CaseKind", false, JCTree.class.getClassLoader());
-            return (CaseTree) make.getClass().getMethod("Case", caseKind, com.sun.tools.javac.util.List.class, com.sun.tools.javac.util.List.class, JCTree.class).invoke(make.at(NOPOS), Enum.valueOf(caseKind, "RULE"), exprs.toList(), lb.toList(), body);
+            return (CaseTree) make.getClass().getMethod("Case", caseKind, com.sun.tools.javac.util.List.class, com.sun.tools.javac.util.List.class, JCTree.class).invoke(make.at(NOPOS), Enum.valueOf(caseKind, "RULE"), wrapConstantCaseExpressionsIfNeeded(exprs.toList()), lb.toList(), body);
         } catch (Throwable t) {
             throw throwAny(t);
         }
     }
     
+    private com.sun.tools.javac.util.List<? extends Object> wrapConstantCaseExpressionsIfNeeded(com.sun.tools.javac.util.List<? extends JCExpression> exprs) {
+        try {
+            Class<?> literalPattern = Class.forName("com.sun.tools.javac.tree.JCTree$JCLiteralPattern", false, JCCase.class.getClassLoader());
+            Constructor<?> c = literalPattern.getDeclaredConstructor(JCExpression.class);
+            c.setAccessible(true);
+            return exprs.stream().map(e -> {
+                try {
+                    return c.newInstance(e);
+                } catch (Exception ex) {
+                    throw throwAny(ex);
+                }
+            }).collect(com.sun.tools.javac.util.List.collector());
+        } catch (Exception ex) {
+            //ignore
+            return exprs;
+        }
+    }
+
     public CatchTree Catch(VariableTree parameter, BlockTree block) {
         return make.at(NOPOS).Catch((JCVariableDecl)parameter, (JCBlock)block);
     }
@@ -507,6 +526,8 @@ public class TreeFactory {
                 return make.at(NOPOS).Literal(TypeTag.INT, ((Byte) value).intValue());
             if (value instanceof Short)
                 return make.at(NOPOS).Literal(TypeTag.INT, ((Short) value).intValue());
+            if (value instanceof String[])
+                return make.at(NOPOS).Literal(TypeTag.CLASS, value);
             // workaround for making NULL_LITERAL kind.
             if (value == null) {
                 return make.at(NOPOS).Literal(TypeTag.BOT, value);
@@ -911,6 +932,15 @@ public class TreeFactory {
                            (JCExpression)type, (JCExpression)initializer);
     }
     
+    public Tree BindingPattern(CharSequence name,
+                               Tree type) {
+        try {
+            return (Tree) make.getClass().getMethod("BindingPattern", Name.class, JCTree.class).invoke(make.at(NOPOS), names.fromString(name.toString()), type);
+        } catch (Throwable t) {
+            throw throwAny(t);
+        }
+    }
+
     public VariableTree Variable(VariableElement variable, ExpressionTree initializer) {
         return make.at(NOPOS).VarDef((Symbol.VarSymbol)variable, (JCExpression)initializer);
     }

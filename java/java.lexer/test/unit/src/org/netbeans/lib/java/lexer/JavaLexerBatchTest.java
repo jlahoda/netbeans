@@ -106,12 +106,13 @@ public class JavaLexerBatchTest extends TestCase {
     }
     
     public void testStringLiterals() {
-        String text = "\"\" \"a\"\"\" \"\\\"\" \"\\\\\" \"\\\\\\\"\" \"\\n\" \"a";
+        String text = "\"\" \"a\" \"\" \"\\\"\" \"\\\\\" \"\\\\\\\"\" \"\\n\" \"a";
         TokenHierarchy<?> hi = TokenHierarchy.create(text, JavaTokenId.language());
         TokenSequence<?> ts = hi.tokenSequence();
         LexerTestUtilities.assertNextTokenEquals(ts, JavaTokenId.STRING_LITERAL, "\"\"");
         LexerTestUtilities.assertNextTokenEquals(ts, JavaTokenId.WHITESPACE, " ");
         LexerTestUtilities.assertNextTokenEquals(ts, JavaTokenId.STRING_LITERAL, "\"a\"");
+        LexerTestUtilities.assertNextTokenEquals(ts, JavaTokenId.WHITESPACE, " ");
         LexerTestUtilities.assertNextTokenEquals(ts, JavaTokenId.STRING_LITERAL, "\"\"");
         LexerTestUtilities.assertNextTokenEquals(ts, JavaTokenId.WHITESPACE, " ");
         LexerTestUtilities.assertNextTokenEquals(ts, JavaTokenId.STRING_LITERAL, "\"\\\"\"");
@@ -695,6 +696,38 @@ public class JavaLexerBatchTest extends TestCase {
 
         LexerTestUtilities.assertNextTokenEquals(ts, JavaTokenId.IDENTIFIER, "var");
         LexerTestUtilities.assertNextTokenEquals(ts, JavaTokenId.WHITESPACE, " ");
+    }
+
+    private void enableRawStringLiterals(InputAttributes attr) {
+        //any setup needed for raw string literals:
+        //e.g.:
+//        attr.setValue(JavaTokenId.language(), "version", Integer.valueOf(11), true);
+    }
+
+    public void testMultilineLiteral() {
+        String text = "\"\"\"\n2\"3\n4\\\"\"\"5\"\"\\\"6\n7\"\"\" \"\"\"wrong\"\"\" \"\"\"\nbla\n";
+        InputAttributes attr = new InputAttributes();
+        enableRawStringLiterals(attr);
+        TokenHierarchy<?> hi = TokenHierarchy.create(text, false, JavaTokenId.language(), EnumSet.noneOf(JavaTokenId.class), attr);
+        TokenSequence<?> ts = hi.tokenSequence();
+
+        LexerTestUtilities.assertNextTokenEquals(ts, JavaTokenId.MULTILINE_STRING_LITERAL, "\"\"\"\n2\"3\n4\\\"\"\"5\"\"\\\"6\n7\"\"\"");
+        LexerTestUtilities.assertNextTokenEquals(ts, JavaTokenId.WHITESPACE, " ");
+        LexerTestUtilities.assertNextTokenEquals(ts, JavaTokenId.MULTILINE_STRING_LITERAL, "\"\"\"wrong\"\"\"");
+        LexerTestUtilities.assertNextTokenEquals(ts, JavaTokenId.WHITESPACE, " ");
+        LexerTestUtilities.assertNextTokenEquals(ts, JavaTokenId.MULTILINE_STRING_LITERAL, "\"\"\"\nbla\n");
+        assertFalse(ts.moveNext());
+    }
+
+    public void testTrailing() {
+        String text = "\"\"";
+        InputAttributes attr = new InputAttributes();
+        enableRawStringLiterals(attr);
+        TokenHierarchy<?> hi = TokenHierarchy.create(text, false, JavaTokenId.language(), EnumSet.noneOf(JavaTokenId.class), attr);
+        TokenSequence<?> ts = hi.tokenSequence();
+
+        LexerTestUtilities.assertNextTokenEquals(ts, JavaTokenId.STRING_LITERAL, "\"\"");
+        assertFalse(ts.moveNext());
     }
 
 }
