@@ -43,6 +43,7 @@ import org.netbeans.api.lexer.Language;
 import org.netbeans.junit.NbTestCase;
 import org.netbeans.junit.NbTestSuite;
 import org.netbeans.modules.java.JavaDataLoader;
+import org.netbeans.modules.java.source.BootClassPathUtil;
 import org.netbeans.modules.java.source.usages.IndexUtil;
 import org.netbeans.spi.java.classpath.ClassPathProvider;
 import org.netbeans.spi.java.classpath.support.ClassPathSupport;
@@ -87,7 +88,7 @@ public class FormatingTest extends NbTestCase {
                     return ClassPathSupport.createClassPath(new FileObject[0]);
                 }
                 if (type.equals(ClassPath.BOOT)) {
-                    return createClassPath(System.getProperty("sun.boot.class.path"));
+                    return BootClassPathUtil.getBootClassPath();
                 }
                 return null;
             }

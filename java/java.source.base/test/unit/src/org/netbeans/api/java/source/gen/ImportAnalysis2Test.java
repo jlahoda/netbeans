@@ -53,6 +53,7 @@ import org.netbeans.api.java.source.TreeMaker;
 import org.netbeans.api.java.source.WorkingCopy;
 
 import org.netbeans.junit.NbTestSuite;
+import org.netbeans.modules.java.source.BootClassPathUtil;
 import org.netbeans.modules.java.source.JavaSourceAccessor;
 import org.netbeans.modules.java.source.indexing.TransactionContext;
 import org.netbeans.modules.java.source.save.ElementOverlay;
@@ -623,7 +624,7 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
             "    }\n" +
             "}\n";
 
-        ClasspathInfo cpInfo = ClasspathInfoAccessor.getINSTANCE().create (ClassPathSupport.createClassPath(System.getProperty("sun.boot.class.path")), ClassPath.EMPTY, ClassPath.EMPTY, ClassPath.EMPTY, ClassPath.EMPTY, ClassPathSupport.createClassPath(getSourcePath()), ClassPath.EMPTY, null, true, false, false, true, false, null);
+        ClasspathInfo cpInfo = ClasspathInfoAccessor.getINSTANCE().create (BootClassPathUtil.getBootClassPath(), ClassPath.EMPTY, ClassPath.EMPTY, ClassPath.EMPTY, ClassPath.EMPTY, ClassPathSupport.createClassPath(getSourcePath()), ClassPath.EMPTY, null, true, false, false, true, false, null);
         JavaSource src = JavaSource.create(cpInfo, FileUtil.toFileObject(testFile));
         Task<WorkingCopy> task = new Task<WorkingCopy>() {
             public void run(WorkingCopy workingCopy) throws IOException {
@@ -667,7 +668,7 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
             "    Entry e;\n" +
             "}\n";
 
-        ClasspathInfo cpInfo = ClasspathInfoAccessor.getINSTANCE().create (ClassPathSupport.createClassPath(System.getProperty("sun.boot.class.path")), ClassPath.EMPTY, ClassPath.EMPTY, ClassPath.EMPTY, ClassPath.EMPTY, ClassPathSupport.createClassPath(getSourcePath()), ClassPath.EMPTY, null, true, false, false, true, false, null);
+        ClasspathInfo cpInfo = ClasspathInfoAccessor.getINSTANCE().create (BootClassPathUtil.getBootClassPath(), ClassPath.EMPTY, ClassPath.EMPTY, ClassPath.EMPTY, ClassPath.EMPTY, ClassPathSupport.createClassPath(getSourcePath()), ClassPath.EMPTY, null, true, false, false, true, false, null);
         JavaSource src = JavaSource.create(cpInfo, FileUtil.toFileObject(testFile));
         Task<WorkingCopy> task = new Task<WorkingCopy>() {
             public void run(WorkingCopy workingCopy) throws IOException {
@@ -708,7 +709,7 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
             "}\n";
         final TransactionContext ctx = TransactionContext.beginStandardTransaction(Utilities.toURI(getWorkDir()).toURL(), true, ()->true, false);
         try {
-            ClasspathInfo cpInfo = ClasspathInfoAccessor.getINSTANCE().create (ClassPathSupport.createClassPath(System.getProperty("sun.boot.class.path")), ClassPath.EMPTY, ClassPath.EMPTY, ClassPath.EMPTY, ClassPath.EMPTY, ClassPathSupport.createClassPath(getSourcePath()), ClassPath.EMPTY, null, true, false, false, true, false, null);
+            ClasspathInfo cpInfo = ClasspathInfoAccessor.getINSTANCE().create (BootClassPathUtil.getBootClassPath(), ClassPath.EMPTY, ClassPath.EMPTY, ClassPath.EMPTY, ClassPath.EMPTY, ClassPathSupport.createClassPath(getSourcePath()), ClassPath.EMPTY, null, true, false, false, true, false, null);
             JavaSource src = JavaSource.create(cpInfo, FileUtil.toFileObject(testFile));
             Preferences preferences = MimeLookup.getLookup(JavaTokenId.language().mimeType()).lookup(Preferences.class);
             preferences.putBoolean("importInnerClasses", true);
@@ -754,7 +755,7 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
 
         final TransactionContext ctx = TransactionContext.beginStandardTransaction(Utilities.toURI(getWorkDir()).toURL(), true, ()->true, false);
         try {
-            ClasspathInfo cpInfo = ClasspathInfoAccessor.getINSTANCE().create (ClassPathSupport.createClassPath(System.getProperty("sun.boot.class.path")), ClassPath.EMPTY, ClassPath.EMPTY, ClassPath.EMPTY, ClassPath.EMPTY, ClassPathSupport.createClassPath(getSourcePath()), ClassPath.EMPTY, null, true, false, false, true, false, null);
+            ClasspathInfo cpInfo = ClasspathInfoAccessor.getINSTANCE().create (BootClassPathUtil.getBootClassPath(), ClassPath.EMPTY, ClassPath.EMPTY, ClassPath.EMPTY, ClassPath.EMPTY, ClassPathSupport.createClassPath(getSourcePath()), ClassPath.EMPTY, null, true, false, false, true, false, null);
             JavaSource src = JavaSource.create(cpInfo, FileUtil.toFileObject(testFile));
             Task<WorkingCopy> task = new Task<WorkingCopy>() {
                 public void run(WorkingCopy workingCopy) throws IOException {

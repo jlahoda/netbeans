@@ -585,9 +585,8 @@ public class SwitchTest extends GeneratorTestBase {
                         "                    case 0 -> {\n" +
                         "                        break;\n" +
                         "                    }\n" +
-//                        "                }\n" +
-//                        "                break;\n" +
-                        "                }   break;\n" + //XXX
+                        "                }\n" +
+                        "                break;\n" +
                         "            }\n" +
                         "        }\n" +
                         "    }\n" +

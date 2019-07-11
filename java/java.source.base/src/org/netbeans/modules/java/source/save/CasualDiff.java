@@ -534,8 +534,12 @@ public class CasualDiff {
             VariableTree vt = fgt.getVariables().get(fgt.getVariables().size() - 1);
             return TreeInfo.getEndPos((JCTree)vt, oldTopLevel.endPositions);
         }
-        return TreeInfo.getEndPos(t, oldTopLevel.endPositions);
+        int pos = TreeInfo.getEndPos(t, oldTopLevel.endPositions);
+        if (pos == (-1) && t.hasTag(Tag.ASSIGN)) {
+            pos = TreeInfo.getEndPos(((JCAssign) t).rhs, oldTopLevel.endPositions);
         }
+        return pos;
+    }
 
     private int endPos(com.sun.tools.javac.util.List<? extends JCTree> trees) {
         int result = -1;
