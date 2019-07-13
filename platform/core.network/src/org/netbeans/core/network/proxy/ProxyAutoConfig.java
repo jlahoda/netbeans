@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.netbeans.core.NbLifecycleManager;
 import org.netbeans.core.network.proxy.pac.PacParsingException;
 import org.netbeans.core.network.proxy.pac.PacScriptEvaluator;
 import org.netbeans.core.network.proxy.pac.PacScriptEvaluatorFactory;
@@ -57,7 +58,7 @@ public class ProxyAutoConfig {
             try {
                 instance = new ProxyAutoConfig(pacFile);
             } catch (URISyntaxException ex) {
-                Logger.getLogger(ProxyAutoConfig.class.getName()).warning("Parsing " + pacFile + " to URI throws " + ex);
+                LOGGER.warning("Parsing " + pacFile + " to URI throws " + ex);
             } finally {
                 file2pac.put(pacFile, instance);
             }
@@ -77,6 +78,7 @@ public class ProxyAutoConfig {
 
             @Override
             public void run() {
+                NbLifecycleManager.advancePolicy();
                 initEngine();
             }
         });
@@ -86,7 +88,7 @@ public class ProxyAutoConfig {
         return pacURI;
     }
 
-    private void initEngine() {
+    final void initEngine() {
         String pacSource = null;
         if (pacURI.isAbsolute()) {
             try (InputStream is = downloadPAC(pacURI.toURL())) {

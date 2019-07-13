@@ -21,6 +21,7 @@ package org.netbeans.core.network.proxy.pac.impl;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -29,32 +30,32 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.mozilla.javascript.ClassShutter;
-import org.mozilla.javascript.Context;
-import org.mozilla.javascript.ContextFactory;
-import org.mozilla.javascript.EvaluatorException;
-import org.mozilla.javascript.Function;
-import org.mozilla.javascript.RhinoException;
-import org.mozilla.javascript.Scriptable;
-import org.mozilla.javascript.ScriptableObject;
+import javax.script.Invocable;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineFactory;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
+import org.netbeans.api.scripting.Scripting;
 import org.netbeans.core.network.utils.SimpleObjCache;
 import org.netbeans.core.network.proxy.pac.PacHelperMethods;
 import org.netbeans.core.network.proxy.pac.PacJsEntryFunction;
 import org.netbeans.core.network.proxy.pac.PacValidationException;
 import org.netbeans.core.network.proxy.pac.PacParsingException;
+import org.openide.util.Exceptions;
 import org.netbeans.core.network.proxy.pac.PacScriptEvaluator;
 import org.netbeans.core.network.proxy.pac.PacUtils;
 import org.openide.util.Lookup;
+import org.openide.util.NbBundle;
 
 /**
  * NetBeans implementation of a PAC script evaluator. This implementation
  * is the one returned by {@link NbPacScriptEvaluatorFactory}.
- * 
+ *
  * <h3>Features comparison</h3>
  * There are differences between how browsers have implemented the PAC
  * evaluation functionality. In the following the Apache NetBeans implementation
  * (this class) is pitched against some of the major browsers.<br><br>
- * 
+ *
  * <table summary="" style="table-layout: fixed; width:100%;" border="1" cellpadding="10" cellspacing="0">
  *   <tr><th class="tablersh">Behavior</th>
  *       <th>Apache<br>NetBeans</th>
@@ -147,57 +148,42 @@ import org.openide.util.Lookup;
  *      <td>???</td>
  *   </tr>
  * </table>
- * 1) The following is removed: <i>{@code user-info}</i> and everything after the 
- *    host name, however the value passed to the script always ends with a '/' 
+ * 1) The following is removed: <i>{@code user-info}</i> and everything after the
+ *    host name, however the value passed to the script always ends with a '/'
  *    character.<br>
  * 2) Same as (1), except that <i>{@code user-info}</i> is not removed.<br>
- * 3) However, when converted to Java {@link java.net.Proxy} object, all return 
- *    types must be mapped to Java Proxy types {@code DIRECT}, 
+ * 3) However, when converted to Java {@link java.net.Proxy} object, all return
+ *    types must be mapped to Java Proxy types {@code DIRECT},
  *    {@code HTTP} and {@code SOCKS}, which means some finer grained information
  *    is lost. (but is irrelevant)<br>
- * 4) An implementation not using an explicit timeout will be at the mercy of 
- *    the underlying OS or runtime environment. For example, for 2 name servers, 
+ * 4) An implementation not using an explicit timeout will be at the mercy of
+ *    the underlying OS or runtime environment. For example, for 2 name servers,
  *    the default timeout in JRE is 30 seconds.<br>
- * 5) If date/time functions ({@code weekdayRange()}, {@code dateRange()} and 
- *    {@code timeRange()}) allow values that crosses a value boundary. 
- *    For example {@code timeRange(22,3}) for the range from 10 pm to 3 am, or 
+ * 5) If date/time functions ({@code weekdayRange()}, {@code dateRange()} and
+ *    {@code timeRange()}) allow values that crosses a value boundary.
+ *    For example {@code timeRange(22,3}) for the range from 10 pm to 3 am, or
  *    {@code dateRange("DEC","MAR"}) for the range from Dec 1st to March 31st.<br>
  * 6) How good is the {@code myIpAddress()} (or {@code myIpAddressEx()}) function
  *    at finding the host's correct IP address, in particular on a multi-homed
  *    computer.
  *
  * <h3>Customization</h3>
- * The implementation for 
+ * The implementation for
  * {@link org.netbeans.core.network.proxy.pac.PacHelperMethods PacHelperMethods} is
  * found via the global lookup. If you are unhappy with the implementation
  * of the Helper Functions you can replace with your own.
- * 
+ *
  * @author lbruun
  */
 public class NbPacScriptEvaluator implements PacScriptEvaluator {
 
     private static final Logger LOGGER = Logger.getLogger(NbPacScriptEvaluator.class.getName());
-    // The execution limits are in place as a last resort. In general it is
-    // expected, that a PAC comes from a trusted source
-    private static final SandboxedContextFactory SANDBOXED_CONTEXT_FACTORY = new SandboxedContextFactory(
-            100_000,
-            5 * 1000,
-            new ClassShutter() {
-                @Override
-                public boolean visibleToScripts(String string) {
-                    return "org.netbeans.core.network.proxy.pac.impl.NbPacHelperMethods".equals(string)
-                            || "java.lang.String".equals(string);
-                }
-            }
-    );
 
-    private static final String JS_HELPER_METHODS_INSTANCE_NAME = "jsPacHelpers";
-    
+
     private final boolean canUseURLCaching;
-    private final Scriptable scriptEngine;
+    private final PacScriptEngine scriptEngine;
     private final SimpleObjCache<URI,List<Proxy>> resultCache;
-    private final PacJsEntryFunction entryFunctionInfo;
-    private final Function entryFunction;
+
     private static final String PAC_PROXY = "PROXY";
     private static final String PAC_DIRECT = "DIRECT";
     private static final String PAC_SOCKS = "SOCKS";
@@ -210,35 +196,12 @@ public class NbPacScriptEvaluator implements PacScriptEvaluator {
 
     public NbPacScriptEvaluator(String pacSourceCocde) throws PacParsingException {
         this.pacScriptSource = pacSourceCocde;
+        scriptEngine = getScriptEngine(pacSourceCocde);
         canUseURLCaching = !usesTimeDateFunctions(pacSourceCocde);
         if (canUseURLCaching) {
             resultCache = new SimpleObjCache<>(100);
         } else {
             resultCache = null;
-        }
-        Context cx = SANDBOXED_CONTEXT_FACTORY.enterContext();
-        try {
-            String helperJSScript = getHelperJsScriptSource();
-            LOGGER.log(Level.FINER, "PAC Helper JavaScript :\n{0}", helperJSScript);
-
-            scriptEngine = cx.initSafeStandardObjects();
-
-            PacHelperMethods pacHelpers = Lookup.getDefault().lookup(PacHelperMethods.class);
-            if (pacHelpers == null) { // this should be redundant but we take no chances
-                pacHelpers = new NbPacHelperMethods();
-            }
-
-            ScriptableObject.putProperty(scriptEngine, JS_HELPER_METHODS_INSTANCE_NAME, pacHelpers);
-
-            cx.evaluateString(scriptEngine, pacSourceCocde, "PAC Source", 0, null);
-            cx.evaluateString(scriptEngine, helperJSScript, "JS Helper", 0, null);
-
-            entryFunctionInfo = testScriptEngine(scriptEngine, false);
-            entryFunction = (Function) ScriptableObject.getProperty(scriptEngine, entryFunctionInfo.getJsFunctionName());
-        } catch (RhinoException ex) {
-            throw new  PacParsingException(ex);
-        } finally {
-            Context.exit();
         }
     }
 
@@ -246,7 +209,7 @@ public class NbPacScriptEvaluator implements PacScriptEvaluator {
     public List<Proxy> findProxyForURL(URI uri) throws PacValidationException {
 
         List<Proxy> jsResultAnalyzed;
-        
+
         // First try the cache
         if (resultCache != null) {
             jsResultAnalyzed = resultCache.get(uri);
@@ -254,18 +217,20 @@ public class NbPacScriptEvaluator implements PacScriptEvaluator {
                 return jsResultAnalyzed;
             }
         }
-
-        Context cx = SANDBOXED_CONTEXT_FACTORY.enterContext();
         try {
-
-            Object jsResult = entryFunction.call(cx, scriptEngine, null, new Object[] {PacUtils.toStrippedURLStr(uri), uri.getHost()});
+            Object jsResult = scriptEngine.findProxyForURL(PacUtils.toStrippedURLStr(uri), uri.getHost());
             jsResultAnalyzed = analyzeResult(uri, jsResult);
             if (canUseURLCaching && (resultCache != null)) {
                 resultCache.put(uri, jsResultAnalyzed);   // save the result in the cache
             }
             return jsResultAnalyzed;
-        } catch (RhinoException ex) {
-            LOGGER.log(Level.WARNING, "Error when executing PAC script function " + entryFunctionInfo.getJsFunctionName() + " : ", ex);
+        } catch (NoSuchMethodException ex) {
+            // If this exception occur at this time it is really, really unexpected.
+            // We already gave the function a test spin in the constructor.
+            Exceptions.printStackTrace(ex);
+            return Collections.singletonList(Proxy.NO_PROXY);
+        } catch (ScriptException ex) {
+            LOGGER.log(Level.WARNING, "Error when executing PAC script function " + scriptEngine.getJsMainFunction().getJsFunctionName() + " : ", ex);
             return Collections.singletonList(Proxy.NO_PROXY);
         } catch (Exception ex) {  // for runtime exceptions
             if (ex.getCause() != null) {
@@ -276,10 +241,8 @@ public class NbPacScriptEvaluator implements PacScriptEvaluator {
                 }
             }
             // other unforseen errors
-            LOGGER.log(Level.WARNING, "Error when executing PAC script function " + entryFunctionInfo.getJsFunctionName() + " : ", ex);
+            LOGGER.log(Level.WARNING, "Error when executing PAC script function " + scriptEngine.getJsMainFunction().getJsFunctionName() + " : ", ex);
             return Collections.singletonList(Proxy.NO_PROXY);
-        } finally {
-            Context.exit();
         }
     }
 
@@ -290,17 +253,13 @@ public class NbPacScriptEvaluator implements PacScriptEvaluator {
 
     @Override
     public String getJsEntryFunction() {
-        return entryFunctionInfo.getJsFunctionName();
+        return scriptEngine.getJsMainFunction().getJsFunctionName();
     }
 
     @Override
     public String getEngineInfo() {
-        Context cx = Context.enter();
-        try {
-            return cx.getImplementationVersion();
-        } finally {
-            Context.exit();
-        }
+        ScriptEngineFactory factory = scriptEngine.getScriptEngine().getFactory();
+        return factory.getEngineName() + " version " + factory.getEngineVersion();
     }
 
     @Override
@@ -308,11 +267,120 @@ public class NbPacScriptEvaluator implements PacScriptEvaluator {
         return this.pacScriptSource;
     }
 
+
+
+    private PacScriptEngine getScriptEngine(String pacSource) throws PacParsingException {
+
+        try {
+            StringBuilder err = new StringBuilder();
+            ScriptEngine engine = newAllowedPacEngine(err);
+            if (engine == null) {
+                throw new  PacParsingException(err.toString());
+            }
+
+            LOGGER.log(Level.FINE, "PAC script evaluator using:  {0}", getEngineInfo(engine));
+
+
+            PacHelperMethods pacHelpers = Lookup.getDefault().lookup(PacHelperMethods.class);
+            if (pacHelpers == null) { // this should be redundant but we take no chances
+                pacHelpers = new NbPacHelperMethods();
+            }
+
+            String[] allowedGlobals =
+                    ("Object,Function,Array,String,Date,Number,BigInt,"
+                    + "Boolean,RegExp,Math,JSON,NaN,Infinity,undefined,"
+                    + "isNaN,isFinite,parseFloat,parseInt,encodeURI,"
+                    + "encodeURIComponent,decodeURI,decodeURIComponent,eval,"
+                    + "escape,unescape,"
+                    + "Error,EvalError,RangeError,ReferenceError,SyntaxError,"
+                    + "TypeError,URIError,ArrayBuffer,Int8Array,Uint8Array,"
+                    + "Uint8ClampedArray,Int16Array,Uint16Array,Int32Array,"
+                    + "Uint32Array,Float32Array,Float64Array,BigInt64Array,"
+                    + "BigUint64Array,DataView,Map,Set,WeakMap,"
+                    + "WeakSet,Symbol,Reflect,Proxy,Promise,SharedArrayBuffer,"
+                    + "Atomics,console,performance,"
+                    + "arguments").split(",");
+
+            Object cleaner = engine.eval("(function(allowed) {\n"
+                    + "   var names = Object.getOwnPropertyNames(this);\n"
+                    + "   MAIN: for (var i = 0; i < names.length; i++) {\n"
+                    + "     for (var j = 0; j < allowed.length; j++) {\n"
+                    + "       if (names[i] === allowed[j]) {\n"
+                    + "         continue MAIN;\n"
+                    + "       }\n"
+                    + "     }\n"
+                    + "     delete this[names[i]];\n"
+                    + "   }\n"
+                    + "})");
+
+            try {
+                ((Invocable)engine).invokeMethod(cleaner, "call", null, allowedGlobals);
+            } catch (NoSuchMethodException ex) {
+                throw new ScriptException(ex);
+            }
+
+
+            engine.eval(pacSource);
+
+            String helperJSScript = HelperScriptFactory.getPacHelperSource();
+            LOGGER.log(Level.FINER, "PAC Helper JavaScript :\n{0}", helperJSScript);
+            Object registerPacMethods = engine.eval(helperJSScript);
+            try {
+                ((Invocable) engine).invokeMethod(registerPacMethods, "call", null, pacHelpers);
+            } catch (NoSuchMethodException ex) {
+                throw new ScriptException(ex);
+            }
+
+            // Do some minimal testing of the validity of the PAC Script.
+            final PacJsEntryFunction jsMainFunction;
+            jsMainFunction = testScriptEngine(engine, false);
+
+            return new PacScriptEngine(engine, jsMainFunction);
+        } catch (ScriptException ex) {
+            throw new  PacParsingException(ex);
+        }
+    }
+
+    @NbBundle.Messages({
+        "ALLOWED_PAC_ENGINES=GraalVM:js,Graal.js,Nashorn"
+    })
+    private static ScriptEngine newAllowedPacEngine(StringBuilder err) {
+        return newAllowedPacEngine(null, err);
+    }
+
+    public static ScriptEngine newAllowedPacEngine(String allowedEngines, StringBuilder err) {
+        if (allowedEngines == null) {
+            allowedEngines = Bundle.ALLOWED_PAC_ENGINES();
+        }
+        ScriptEngineManager manager = Scripting.newBuilder().build();
+        for (String allowedEngine : allowedEngines.split(",")) { // NOI18N
+            ScriptEngine engine = manager.getEngineByName(allowedEngine);
+            if (engine != null) {
+                return engine;
+            }
+        }
+        if (err != null) {
+            logWarning(err, allowedEngines, manager);
+        }
+        return null;
+    }
+
+    private static void logWarning(StringBuilder sb, String allowedEngines, ScriptEngineManager manager) {
+        sb.append("Cannot find secure PAC script engine.\n"); // NOI18N
+        sb.append("Allowed engines: ").append(allowedEngines).append("\n"); // NOI18N
+        sb.append("Found engines:\n"); // NOI18N
+        for (ScriptEngineFactory f : manager.getEngineFactories()) {
+            sb.append("  ").append(f.getEngineName()).append("\n"); // NOI18N
+        }
+        sb.append("Will not resolve proxy configuration.\n"); // NOI18N
+        sb.append("Brand ALLOWED_PAC_ENGINES key in org.netbeans.core.network.proxy.pac.impl.Bundle to configure.\n"); // NOI18N
+    }
+
     /**
-     * Test if the main entry point, function FindProxyForURL()/FindProxyForURLEx(), 
+     * Test if the main entry point, function FindProxyForURL()/FindProxyForURLEx(),
      * is available.
      */
-    private PacJsEntryFunction testScriptEngine(Scriptable eng, boolean doDeepTest) throws PacParsingException {
+    private PacJsEntryFunction testScriptEngine(ScriptEngine eng, boolean doDeepTest) throws PacParsingException {
         if (isJsFunctionAvailable(eng, PacJsEntryFunction.IPV6_AWARE.getJsFunctionName(), doDeepTest)) {
             return PacJsEntryFunction.IPV6_AWARE;
         }
@@ -322,14 +390,17 @@ public class NbPacScriptEvaluator implements PacScriptEvaluator {
         throw new PacParsingException("Function " + PacJsEntryFunction.STANDARD.getJsFunctionName() + " or " + PacJsEntryFunction.IPV6_AWARE.getJsFunctionName() + " not found in PAC Script.");
     }
 
-    private boolean isJsFunctionAvailable(Scriptable eng, String functionName, boolean doDeepTest) {
-        Object o = ScriptableObject.getProperty(eng, functionName);
-        return o instanceof Function;
-    }
-    
-
-    private String getHelperJsScriptSource() throws PacParsingException {
-        return HelperScriptFactory.getPacHelperSource(JS_HELPER_METHODS_INSTANCE_NAME);
+    private boolean isJsFunctionAvailable(ScriptEngine eng, String functionName, boolean doDeepTest) {
+        // We want to test if the function is there, but without actually
+        // invoking it.
+        try {
+            Object typeofCheck = eng.eval("(function(name) { return typeof this[name]; })");
+            Object type = ((Invocable) eng).invokeMethod(typeofCheck, "call", null, functionName);
+            return "function".equals(type);
+        } catch (NoSuchMethodException | ScriptException ex) {
+            LOGGER.log(Level.WARNING, null, ex);
+            return false;
+        }
     }
 
 
@@ -341,7 +412,7 @@ public class NbPacScriptEvaluator implements PacScriptEvaluator {
      * @return
      */
     private static boolean usesTimeDateFunctions(String pacScriptSource) {
-        // Will be called only once so there's little to be gained by precompiling 
+        // Will be called only once so there's little to be gained by precompiling
         // the regex statement.
 
         Pattern pattern = Pattern.compile(".*(timeRange\\s*\\(|dateRange\\s*\\(|weekdayRange\\s*\\().*", Pattern.DOTALL);
@@ -349,33 +420,53 @@ public class NbPacScriptEvaluator implements PacScriptEvaluator {
         return matcher.matches();
     }
 
+    private String getEngineInfo(ScriptEngine engine) {
+        StringBuilder sb = new StringBuilder();
+        ScriptEngineFactory f = engine.getFactory();
+        sb.append("LanguageName=");
+        sb.append("\"").append(f.getLanguageName()).append("\"");
+        sb.append(" ");
+        sb.append("LanguageVersion=");
+        sb.append("\"").append(f.getLanguageVersion()).append("\"");
+        sb.append(" ");
+        sb.append("EngineName=");
+        sb.append("\"").append(f.getEngineName()).append("\"");
+        sb.append(" ");
+        sb.append("EngineNameAliases=");
+        sb.append(Arrays.toString(f.getNames().toArray(new String[f.getNames().size()])));
+        sb.append(" ");
+        sb.append("EngineVersion=");
+        sb.append("\"").append(f.getEngineVersion()).append("\"");
+        return sb.toString();
+    }
+
     /**
      * Translates result from JavaScript into list of java proxy types.
-     * 
+     *
      * The string returned from the JavaScript function (input to this
-     * method) can contain any number of the following building blocks, 
+     * method) can contain any number of the following building blocks,
      * separated by a semicolon:
-     * 
+     *
      *   DIRECT
      *       Connections should be made directly, without any proxies.
-     * 
+     *
      *   PROXY host:port
      *       The specified proxy should be used.
-     * 
+     *
      *   SOCKS host:port
      *       The specified SOCKS server should be used.
-     * 
-     * 
+     *
+     *
      * @param uri
      * @param proxiesString
-     * @return 
+     * @return
      */
     private List<Proxy> analyzeResult(URI uri, Object proxiesString) throws PacValidationException {
         if (proxiesString == null) {
             LOGGER.log(Level.FINE, "Null result for {0}", uri);
             return null;
         }
-        
+
         StringTokenizer st = new StringTokenizer(proxiesString.toString(), ";"); //NOI18N
         List<Proxy> proxies = new LinkedList<>();
         while (st.hasMoreTokens()) {
@@ -388,8 +479,8 @@ public class NbPacScriptEvaluator implements PacScriptEvaluator {
     private static Proxy getProxy(String proxySpec) throws PacValidationException {
          if (proxySpec.equals(PAC_DIRECT)) {
              return Proxy.NO_PROXY;
-         }      
-        
+         }
+
         String[] ele = proxySpec.split(" +"); // NOI18N
         if (ele.length != 2) {
             throw new PacValidationException("The value \"" + proxySpec + "\" has incorrect format");
@@ -409,7 +500,7 @@ public class NbPacScriptEvaluator implements PacScriptEvaluator {
             default:
                 throw new PacValidationException("The value \"" + ele[0] + "\" is an unknown proxy type");
         }
-        
+
         String hostAndPortNo = ele[1];
         int i = hostAndPortNo.lastIndexOf(":"); // NOI18N
         if (i <= 0 || i == (hostAndPortNo.length() - 1)) {
@@ -425,64 +516,37 @@ public class NbPacScriptEvaluator implements PacScriptEvaluator {
         } catch (NumberFormatException ex) {
             throw new PacValidationException("The portno value \"" + portStr + "\" cannot be converted to an integer");
         }
-        
+
         return new Proxy(proxyType, new InetSocketAddress(host, portNo));
     }
 
-    /**
-     * SandboxedContextFactory provides an Rhino execution context, that can
-     * limit executed instructions, execution time and exposed java classes
-     */
-    private static final class SandboxedContextFactory extends ContextFactory {
-        private final long maxExecutionTimeMS;
-        private final long maxInstructionCount;
-        private final ClassShutter classShutter;
 
-        public SandboxedContextFactory(long maxInstructionCount, long maxExecutionTimeMS, ClassShutter classShutter) {
-            this.classShutter = classShutter;
-            this.maxInstructionCount = maxInstructionCount;
-            this.maxExecutionTimeMS = maxExecutionTimeMS;
+    private static class PacScriptEngine  {
+        private final ScriptEngine scriptEngine;
+        private final PacJsEntryFunction jsMainFunction;
+        private final Invocable invocable;
+
+        public PacScriptEngine(ScriptEngine scriptEngine, PacJsEntryFunction jsMainFunction) {
+            this.scriptEngine = scriptEngine;
+            this.jsMainFunction = jsMainFunction;
+            this.invocable = (Invocable) scriptEngine;
         }
 
-	@Override
-	protected Context makeContext() {
-	    return new SandboxedContext(this, classShutter, maxInstructionCount, maxExecutionTimeMS);
-	}
+        public PacJsEntryFunction getJsMainFunction() {
+            return jsMainFunction;
+        }
 
+        public ScriptEngine getScriptEngine() {
+            return scriptEngine;
+        }
+
+        public Invocable getInvocable() {
+            return invocable;
+        }
+
+        public Object findProxyForURL(String url, String host) throws ScriptException, NoSuchMethodException {
+            return invocable.invokeFunction(jsMainFunction.getJsFunctionName(), url, host);
+        }
     }
 
-    private static final class SandboxedContext extends Context {
-        private final long maxInstructionCount;
-        private final long maxExecutionTimeMS;
-	private final long executionStart = System.currentTimeMillis();
-	private long instructionCounter = 0;
-
-	public SandboxedContext(SandboxedContextFactory factory, ClassShutter classShutter, long maxInstructionCount, long maxExecutionTimeMS) {
-	    super(factory);
-            this.maxExecutionTimeMS = maxExecutionTimeMS;
-            this.maxInstructionCount = maxInstructionCount;
-	    setClassShutter(classShutter);
-	    setGenerateObserverCount(true);
-	    setInstructionObserverThreshold(1);
-	}
-
-	@Override
-	protected void observeInstructionCount(int instructionCount) {
-	    instructionCounter += instructionCount;
-	    long executionTime = System.currentTimeMillis() - executionStart;
-	    if(instructionCounter > maxInstructionCount || executionTime > maxExecutionTimeMS) {
-		throw new ExecutionLimitsExceeded(executionTime, maxExecutionTimeMS, instructionCounter, maxInstructionCount);
-	    }
-	}
-    }
-
-    private static class  ExecutionLimitsExceeded extends EvaluatorException {
-
-	public ExecutionLimitsExceeded(long executionTime, long maxExecutionTime, long intructionCount, long maxInstructionCount) {
-	    super(String.format("Exceeded execution limits (Execution Time (current/max): %dms / %dms, Instruction Count (current/max): %d / %d)",
-		    executionTime, maxExecutionTime,
-		    intructionCount, maxInstructionCount));
-	}
-
-    }
 }

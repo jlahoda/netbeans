@@ -53,6 +53,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
@@ -345,9 +346,31 @@ public class BinaryAnalyser {
      */
     @NonNull
     public final Changes analyse (final @NonNull Context ctx) throws IOException, IllegalArgumentException  {
+        return analyse(ctx, ctx.getRootURI());
+    }
+    
+    /** Analyses a classpath root.
+     * @param scanning context
+     */
+    @NonNull
+    public final Changes analyse (final @NonNull Context ctx, URL processRoot, Predicate<ClassFile> accept) throws IOException, IllegalArgumentException  {
+        return analyse(ctx, createProcessor(ctx, processRoot), accept);
+    }
+
+    @NonNull
+    public final Changes analyse (final @NonNull Context ctx, URL processRoot) throws IOException, IllegalArgumentException  {
+        return analyse(ctx, processRoot, null);
+    }
+
+    @NonNull
+    public final Changes analyse (final @NonNull Context ctx, File root, Iterable<File> files) throws IOException, IllegalArgumentException  {
+        return analyse(ctx, new EnumerateFilesProcessor(ctx, root, files), null);
+    }
+
+    @NonNull
+    private Changes analyse (final @NonNull Context ctx, final @NonNull RootProcessor p, Predicate<ClassFile> accept) throws IOException, IllegalArgumentException  {
         Parameters.notNull("ctx", ctx); //NOI18N
-        final RootProcessor p = createProcessor(ctx);
-        if (p.execute()) {
+        if (p.execute(accept)) {
             if (!p.hasChanges() && timeStampsEmpty()) {
                 assert refs.isEmpty();
                 assert toDelete.isEmpty();
@@ -376,8 +399,7 @@ public class BinaryAnalyser {
      */
     @Deprecated
     public final Changes analyse(@NonNull final URL url) throws IOException, IllegalArgumentException  {
-        return analyse(
-            SPIAccessor.getInstance().createContext(
+        Context ctx = SPIAccessor.getInstance().createContext(
                 FileUtil.createMemoryFileSystem().getRoot(),
                 url,
                 JavaIndex.NAME,
@@ -388,13 +410,13 @@ public class BinaryAnalyser {
                 false,
                 SuspendSupport.NOP,
                 null,
-                null));
+                null);
+        return analyse(ctx, ctx.getRootURI());
     }
 
     //<editor-fold defaultstate="collapsed" desc="Private helper methods">
     @NonNull
-    private RootProcessor createProcessor(@NonNull final Context ctx) throws IOException {
-        final URL root = ctx.getRootURI();
+    private RootProcessor createProcessor(@NonNull final Context ctx, URL root) throws IOException {
         final String mainP = root.getProtocol();
         if ("jar".equals(mainP)) {          //NOI18N
             final URL innerURL = FileUtil.getArchiveFile(root);
@@ -641,8 +663,11 @@ public class BinaryAnalyser {
         this.toDelete.add(Pair.<String,String>of(className, fileName));
     }
 
-    private void analyse (final InputStream inputStream) throws IOException {
+    private void analyse (final InputStream inputStream, Predicate<ClassFile> accept) throws IOException {
         final ClassFile classFile = new ClassFile(inputStream);
+        if (accept != null && !accept.test(classFile)) {
+            return;
+        }
         final ClassFileProcessor cfp = cfg.createProcessor(classFile);
         this.delete (cfp.getClassName(), cfp.getFileName());
         final UsagesData<ClassName> usages = cfp.analyse();
@@ -1133,7 +1158,7 @@ public class BinaryAnalyser {
         static final RootProcessor UP_TO_DATE = new RootProcessor() {
             @Override
             @NonNull
-            protected boolean executeImpl() throws IOException {
+            protected boolean executeImpl(Predicate<ClassFile> accept) throws IOException {
                 return true;
             }
         };
@@ -1155,8 +1180,8 @@ public class BinaryAnalyser {
         }
 
         @NonNull
-        protected final boolean execute() throws IOException {
-            final boolean res = executeImpl();
+        protected final boolean execute(Predicate<ClassFile> accept) throws IOException {
+            final boolean res = executeImpl(accept);
             if (res) {
                 Collections.sort(result, COMPARATOR);
             }
@@ -1205,7 +1230,7 @@ public class BinaryAnalyser {
         }
 
         @NonNull
-        protected abstract boolean executeImpl() throws IOException;
+        protected abstract boolean executeImpl(Predicate<ClassFile> accept) throws IOException;
     }
 
     private final class ArchiveProcessor extends RootProcessor {
@@ -1228,7 +1253,7 @@ public class BinaryAnalyser {
 
         @Override
         @NonNull
-        protected boolean executeImpl() throws IOException {
+        protected boolean executeImpl(Predicate<ClassFile> accept) throws IOException {
             try {
                 while(entries.hasMoreElements()) {
                     final ZipEntry ze;
@@ -1266,7 +1291,7 @@ public class BinaryAnalyser {
                             ze.getCrc());
                         final InputStream in = new BufferedInputStream (zipFile.getInputStream( ze ));
                         try {
-                            analyse(in);
+                            analyse(in, accept);
                         } catch (InvalidClassFormatException | RuntimeException icf) {
                             LOGGER.log(
                                     Level.WARNING,
@@ -1323,7 +1348,7 @@ public class BinaryAnalyser {
 
         @Override
         @NonNull
-        protected boolean executeImpl() throws IOException {
+        protected boolean executeImpl(Predicate<ClassFile> accept) throws IOException {
             while (!todo.isEmpty()) {
                 File file = todo.removeFirst();
                 if (file.isDirectory()) {
@@ -1352,7 +1377,7 @@ public class BinaryAnalyser {
                         try {
                             InputStream in = new BufferedInputStream(new FileInputStream(file));
                             try {
-                                analyse(in);
+                                analyse(in, accept);
                             } catch (InvalidClassFormatException | RuntimeException icf) {
                                 LOGGER.log(
                                     Level.WARNING,
@@ -1391,6 +1416,72 @@ public class BinaryAnalyser {
         }
     }
 
+    private final class EnumerateFilesProcessor extends RootProcessor {
+        private final File todoRoot;
+        private final Iterable<File> todo;
+
+        public EnumerateFilesProcessor(
+                final @NonNull Context ctx,
+                final @NonNull File todoRoot,
+                final @NonNull Iterable<File> todo) throws IOException {
+            super(ctx);
+            this.todoRoot = todoRoot;
+            this.todo = todo;
+        }
+
+        @Override
+        @NonNull
+        protected boolean executeImpl(Predicate<ClassFile> accept) throws IOException {
+            for (File file : todo) {
+                long fileMTime = file.lastModified();
+                String relativePath = FileObjects.convertFolder2Package(FileObjects.getRelativePath(todoRoot, file), File.separatorChar);
+                report(
+                    ElementHandleAccessor.getInstance().create(ElementKind.OTHER, relativePath),
+                    fileMTime);
+                if (!isUpToDate (relativePath, fileMTime)) {
+                    markChanged();
+                    toDelete.add(Pair.<String,String>of (relativePath,null));
+                    try {
+                        InputStream in = new BufferedInputStream(new FileInputStream(file));
+                        try {
+                            analyse(in, accept);
+                        } catch (InvalidClassFormatException | RuntimeException icf) {
+                            LOGGER.log(
+                                Level.WARNING,
+                                "Invalid class file format: {0}",      //NOI18N
+                                file.getAbsolutePath());
+                                LOGGER.log(
+                                    Level.INFO,
+                                    "Class File Exception Details",             //NOI18N
+                                    icf);
+                        } finally {
+                            in.close();
+                        }
+                    } catch (IOException ex) {
+                        //unreadable file?
+                        LOGGER.log(Level.WARNING, "Cannot read file: {0}", file.getAbsolutePath());      //NOI18N
+                        LOGGER.log(Level.FINE, null, ex);
+                    }
+                    if (lmListener.isLowMemory()) {
+                        flush();
+                    }
+                }
+                if (isCancelled()) {
+                    return false;
+                }
+            }
+            for (String deleted : getTimeStamps().second()) {
+                if (FileObjects.MODULE_INFO.equals(deleted)) {
+                    delete(null,String.format("%s.%s", FileObjects.MODULE_INFO, FileObjects.CLASS));  //NOI18N
+                } else {
+                    delete(deleted, null);  //TODO
+                }
+                markChanged();
+            }
+            return true;
+        }
+    }
+
     private final class PathProcessor extends RootProcessor {
 
         private final URL rootURL;
@@ -1409,7 +1500,7 @@ public class BinaryAnalyser {
         }
 
         @Override
-        protected boolean executeImpl() throws IOException {
+        protected boolean executeImpl(Predicate<ClassFile> accept) throws IOException {
             final boolean[] cancelled = new boolean[1];
             final char separator = rootPath.getFileSystem().getSeparator().charAt(0);
             Files.walkFileTree(rootPath, new FileVisitor<Path>() {
@@ -1431,7 +1522,7 @@ public class BinaryAnalyser {
                                 fqn),
                             attrs.lastModifiedTime().toMillis());
                         try (final InputStream in = new BufferedInputStream (Files.newInputStream(file, StandardOpenOption.READ))) {
-                            analyse(in);
+                            analyse(in, accept);
                         } catch (InvalidClassFormatException | RuntimeException icf) {
                             LOGGER.log(
                                     Level.WARNING,
@@ -1507,7 +1598,7 @@ public class BinaryAnalyser {
 
         @Override
         @NonNull
-        protected boolean executeImpl() throws IOException {
+        protected boolean executeImpl(Predicate<ClassFile> accept) throws IOException {
             while (todo.hasMoreElements()) {
                 FileObject fo = todo.nextElement();
                 if (accepts(fo.getNameExt())) {
@@ -1517,7 +1608,7 @@ public class BinaryAnalyser {
                         0L);
                     final InputStream in = new BufferedInputStream (fo.getInputStream());
                     try {
-                        analyse (in);
+                        analyse (in, accept);
                     } catch (InvalidClassFormatException icf) {
                         LOGGER.log(Level.WARNING, "Invalid class file format: {0}", FileUtil.getFileDisplayName(fo));      //NOI18N
                     }
@@ -1548,7 +1639,7 @@ public class BinaryAnalyser {
 
         @Override
         @NonNull
-        protected boolean executeImpl() throws IOException {
+        protected boolean executeImpl(Predicate<ClassFile> accept) throws IOException {
             if (hasChanges()) {
                 writer.clear();
             }
