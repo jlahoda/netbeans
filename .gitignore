@@ -19,6 +19,12 @@
 /*/*/external/*.js
 /*/*/external/*.nbm
 /*/*/external/*/**
+/nbbuild/installer/jnlp/external/*.zip
+/nbbuild/installer/jnlp/external/*.jar
+/nbbuild/installer/jnlp/external/*.dll
+/nbbuild/installer/jnlp/external/*.exe
+/nbbuild/installer/jnlp/external/*.js
+/nbbuild/installer/jnlp/external/*.nbm
 /nbbuild/netbeans/
 /nbbuild/nbms/
 /nbbuild/testuserdir/
@@ -71,10 +77,10 @@
 
 # Snapcraft Generated files #
 #######################
-/nbbuild/packaging/snap/.snapcraft/
-/nbbuild/packaging/parts/
-/nbbuild/packaging/prime/
-/nbbuild/packaging/stage/
+/nbbuild/packaging/*/snap/.snapcraft/
+/nbbuild/packaging/*/parts/
+/nbbuild/packaging/*/prime/
+/nbbuild/packaging/*/stage/
 *.snap
 
 # Backup files
