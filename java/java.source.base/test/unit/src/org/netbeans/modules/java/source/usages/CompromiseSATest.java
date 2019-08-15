@@ -345,8 +345,6 @@ public class CompromiseSATest extends NbTestCase {
         options.add("-g:vars" );	    // Make the compiler to maintain local variables table
         options.add ("-source");
         options.add ("8");
-//        options.add ("-bootclasspath");
-//        options.add (BootClassPathUtil.getBootClassPath().toString());
         options.add ("-proc:only");
         CompilationTask jt = tool.getTask(null,fm,null,options, Arrays.asList("java.lang.Object"), null);
         assert jt instanceof JavacTask;
