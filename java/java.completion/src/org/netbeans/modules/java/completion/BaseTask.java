@@ -52,7 +52,7 @@ import org.netbeans.modules.parsing.spi.Parser;
  *
  * @author Dusan Balek
  */
-abstract class BaseTask extends UserTask {
+public abstract class BaseTask extends UserTask {
 
     protected final int caretOffset;
     protected final Callable<Boolean> cancel;
@@ -211,7 +211,7 @@ abstract class BaseTask extends UserTask {
         return null;
     }
 
-    Env getCompletionEnvironment(CompilationController controller, boolean bottomUpSearch) throws IOException {
+    protected Env getCompletionEnvironment(CompilationController controller, boolean bottomUpSearch) throws IOException {
         controller.toPhase(JavaSource.Phase.PARSED);
         int offset = controller.getSnapshot().getEmbeddedOffset(caretOffset);
         if (offset < 0 || offset > controller.getText().length()) {
@@ -647,7 +647,7 @@ abstract class BaseTask extends UserTask {
         } while (true);
     }
 
-    static final class Env {
+    protected static final class Env {
 
         private final int offset;
         private final String prefix;

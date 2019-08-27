@@ -51,6 +51,7 @@ import org.netbeans.api.java.source.support.ReferencesCount;
 import org.netbeans.api.lexer.TokenSequence;
 import org.netbeans.modules.java.completion.TreeShims;
 import org.netbeans.modules.parsing.api.Source;
+import org.openide.util.Lookup;
 import org.openide.util.Pair;
 
 /**
@@ -3618,7 +3619,19 @@ public final class JavaCompletionTask<T> extends BaseTask {
             }
         };
         boolean addCast = actualType != type && elem instanceof VariableElement && !elem.getKind().isField();
+        Predictor predictor = Lookup.getDefault().lookup(Predictor.class);
+        List<String> preferred = null;
+        if (predictor != null) {
+            preferred = predictor.predict(env.getController(), env.getPath(), actualType);
+        }
+        boolean hasPreferred = preferred != null;
         for (Element e : controller.getElementUtilities().getMembers(actualType, acceptor)) {
+            String[] jvmSignature = SourceUtils.getJVMSignature(ElementHandle.create(e));
+            boolean smart = false;
+            if (jvmSignature.length > 2) {
+                String key = jvmSignature[1] + ":" + jvmSignature[2];
+                smart = preferred != null && preferred.stream().anyMatch(p -> p.equals(key));
+            }
             switch (e.getKind()) {
                 case ENUM_CONSTANT:
                 case EXCEPTION_PARAMETER:
@@ -3629,30 +3642,30 @@ public final class JavaCompletionTask<T> extends BaseTask {
                     String name = e.getSimpleName().toString();
                     if (THIS_KEYWORD.equals(name) || CLASS_KEYWORD.equals(name) || SUPER_KEYWORD.equals(name)) {
                         if (!env.isExcludedKW(name)) {
-                            results.add(itemFactory.createKeywordItem(name, null, anchorOffset, isOfSmartType(env, e.asType(), smartTypes)));
+                            results.add(itemFactory.createKeywordItem(name, null, anchorOffset, hasPreferred ? smart : isOfSmartType(env, e.asType(), smartTypes)));
                             env.addExcludedKW(name);
                         }
                     } else {
                         TypeMirror tm = asMemberOf(e, actualType, types);
                         if (addCast && itemFactory instanceof TypeCastableItemFactory) {
-                            results.add(((TypeCastableItemFactory<T>)itemFactory).createTypeCastableVariableItem(env.getController(), (VariableElement) e, tm, actualType, anchorOffset, autoImport ? env.getReferencesCount() : null, typeElem != e.getEnclosingElement(), elements.isDeprecated(e), isOfSmartType(env, tm, smartTypes), env.assignToVarPos()));
+                            results.add(((TypeCastableItemFactory<T>)itemFactory).createTypeCastableVariableItem(env.getController(), (VariableElement) e, tm, actualType, anchorOffset, autoImport ? env.getReferencesCount() : null, typeElem != e.getEnclosingElement(), elements.isDeprecated(e), hasPreferred ? smart : isOfSmartType(env, tm, smartTypes), env.assignToVarPos()));
                         } else {
-                            results.add(itemFactory.createVariableItem(env.getController(), (VariableElement) e, tm, anchorOffset, autoImport ? env.getReferencesCount() : null, typeElem != e.getEnclosingElement(), elements.isDeprecated(e), isOfSmartType(env, tm, smartTypes), env.assignToVarPos()));
+                            results.add(itemFactory.createVariableItem(env.getController(), (VariableElement) e, tm, anchorOffset, autoImport ? env.getReferencesCount() : null, typeElem != e.getEnclosingElement(), elements.isDeprecated(e), hasPreferred ? smart : isOfSmartType(env, tm, smartTypes), env.assignToVarPos()));
                         }
                     }
                     break;
                 case CONSTRUCTOR:
                     ExecutableType et = (ExecutableType) asMemberOf(e, actualType, types);
-                    results.add(itemFactory.createExecutableItem(env.getController(), (ExecutableElement) e, et, anchorOffset, autoImport ? env.getReferencesCount() : null, typeElem != e.getEnclosingElement(), elements.isDeprecated(e), inImport, false, isOfSmartType(env, actualType, smartTypes), env.assignToVarPos(), false));
+                    results.add(itemFactory.createExecutableItem(env.getController(), (ExecutableElement) e, et, anchorOffset, autoImport ? env.getReferencesCount() : null, typeElem != e.getEnclosingElement(), elements.isDeprecated(e), inImport, false, hasPreferred ? smart : isOfSmartType(env, actualType, smartTypes), env.assignToVarPos(), false));
                     break;
                 case METHOD:
                     et = (ExecutableType) asMemberOf(e, actualType, types);
                     if (addCast && itemFactory instanceof TypeCastableItemFactory
                             && !types.isSubtype(type, e.getEnclosingElement().asType())
                             && type.getKind() == TypeKind.DECLARED && !eu.alreadyDefinedIn(e.getSimpleName(), et, (TypeElement)((DeclaredType)type).asElement())) {
-                        results.add(((TypeCastableItemFactory<T>)itemFactory).createTypeCastableExecutableItem(env.getController(), (ExecutableElement) e, et, actualType, anchorOffset, autoImport ? env.getReferencesCount() : null, typeElem != e.getEnclosingElement(), elements.isDeprecated(e), inImport, env.addSemicolon(), isOfSmartType(env, getCorrectedReturnType(env, et, (ExecutableElement) e, actualType), smartTypes), env.assignToVarPos(), false));
+                        results.add(((TypeCastableItemFactory<T>)itemFactory).createTypeCastableExecutableItem(env.getController(), (ExecutableElement) e, et, actualType, anchorOffset, autoImport ? env.getReferencesCount() : null, typeElem != e.getEnclosingElement(), elements.isDeprecated(e), inImport, env.addSemicolon(), hasPreferred ? smart : isOfSmartType(env, getCorrectedReturnType(env, et, (ExecutableElement) e, actualType), smartTypes), env.assignToVarPos(), false));
                     } else {
-                        results.add(itemFactory.createExecutableItem(env.getController(), (ExecutableElement) e, et, anchorOffset, autoImport ? env.getReferencesCount() : null, typeElem != e.getEnclosingElement(), elements.isDeprecated(e), inImport, env.addSemicolon(), isOfSmartType(env, getCorrectedReturnType(env, et, (ExecutableElement) e, actualType), smartTypes), env.assignToVarPos(), false));
+                        results.add(itemFactory.createExecutableItem(env.getController(), (ExecutableElement) e, et, anchorOffset, autoImport ? env.getReferencesCount() : null, typeElem != e.getEnclosingElement(), elements.isDeprecated(e), inImport, env.addSemicolon(), hasPreferred ? smart : isOfSmartType(env, getCorrectedReturnType(env, et, (ExecutableElement) e, actualType), smartTypes), env.assignToVarPos(), false));
                     }
                     break;
                 case CLASS:
@@ -3660,7 +3673,7 @@ public final class JavaCompletionTask<T> extends BaseTask {
                 case INTERFACE:
                 case ANNOTATION_TYPE:
                     DeclaredType dt = (DeclaredType) asMemberOf(e, actualType, types);
-                    results.add(itemFactory.createTypeItem(env.getController(), (TypeElement) e, dt, anchorOffset, null, elements.isDeprecated(e), insideNew, insideNew || env.isInsideClass(), true, isOfSmartType(env, dt, smartTypes), autoImport));
+                    results.add(itemFactory.createTypeItem(env.getController(), (TypeElement) e, dt, anchorOffset, null, elements.isDeprecated(e), insideNew, insideNew || env.isInsideClass(), true, hasPreferred ? smart : isOfSmartType(env, dt, smartTypes), autoImport));
                     break;
             }
         }
@@ -5982,5 +5995,9 @@ public final class JavaCompletionTask<T> extends BaseTask {
         }
         return isFirstParamVarType;
 
+    }
+
+    public interface Predictor {
+        public List<String> predict(CompilationInfo info, TreePath tp, TypeMirror path);
     }
 }

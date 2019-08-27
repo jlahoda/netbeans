@@ -1,0 +1,3 @@
+#docker run -it --rm -v $PWD:/tmp -w /tmp tensorflow/tensorflow python ./train-model.py
+docker run -it --rm -v $PWD:/tmp -w /tmp a222f5fb05ff python ./train-model.py
+#docker run -it --rm -v $PWD:/tmp -w /tmp be438a850056 python ./train-model.py
