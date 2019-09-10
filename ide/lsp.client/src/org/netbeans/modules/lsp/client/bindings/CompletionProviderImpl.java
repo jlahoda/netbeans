@@ -18,6 +18,8 @@
  */
 package org.netbeans.modules.lsp.client.bindings;
 
+import com.vladsch.flexmark.html.HtmlRenderer;
+import com.vladsch.flexmark.parser.Parser;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
@@ -37,8 +39,11 @@ import javax.swing.text.StyledDocument;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionItemKind;
 import org.eclipse.lsp4j.CompletionList;
+import org.eclipse.lsp4j.CompletionOptions;
 import org.eclipse.lsp4j.CompletionParams;
+import org.eclipse.lsp4j.MarkupContent;
 import org.eclipse.lsp4j.ParameterInformation;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.SignatureHelp;
 import org.eclipse.lsp4j.SignatureInformation;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
@@ -162,20 +167,16 @@ public class CompletionProviderImpl implements CompletionProvider {
                     for (CompletionItem i : items) {
                         String insert = i.getInsertText() != null ? i.getInsertText() : i.getLabel();
                         String leftLabel = encode(i.getLabel());
-                        String rightLabel = encode(""); //TODO: anything we could show there?
-                        String sortText = i.getSortText() != null ? i.getSortText() : i.getLabel();
-                        String header = "<html>" + "<b>" + (i.getDetail() != null ? i.getDetail() : i.getLabel()) + "</b>";
-                        String documentation;
-                        if (i.getDocumentation() != null) {
-                            header += "<br><br>";
-                            if (i.getDocumentation().isLeft()) {
-                                documentation = header + i.getDocumentation().getLeft();
-                            } else {
-                                documentation = header + i.getDocumentation().getRight().getValue(); //TODO: convert markup!
-                            }
+                        String rightLabel;
+                        boolean detailsUsed;
+                        if (i.getDetail() != null) {
+                            rightLabel = encode(i.getDetail());
+                            detailsUsed = true;
                         } else {
-                            documentation = header;
+                            rightLabel = null;
+                            detailsUsed = false;
                         }
+                        String sortText = i.getSortText() != null ? i.getSortText() : i.getLabel();
                         CompletionItemKind kind = i.getKind();
                         Icon ic = Icons.getCompletionIcon(kind);
                         ImageIcon icon = new ImageIcon(ImageUtilities.icon2Image(ic));
@@ -229,24 +230,56 @@ public class CompletionProviderImpl implements CompletionProvider {
                                 return new CompletionTask() {
                                     @Override
                                     public void query(CompletionResultSet resultSet) {
-                                        resultSet.setDocumentation(new CompletionDocumentation() {
-                                            @Override
-                                            public String getText() {
-                                                return documentation;
+                                        CompletionItem resolved;
+                                        if (i.getDocumentation() == null && hasCompletionResolve(server)) {
+                                            CompletionItem temp;
+                                            try {
+                                                temp = server.getTextDocumentService().resolveCompletionItem(i).get();
+                                            } catch (InterruptedException | ExecutionException ex) {
+                                                Exceptions.printStackTrace(ex);
+                                                temp = i;
                                             }
-                                            @Override
-                                            public URL getURL() {
-                                                return null;
-                                            }
-                                            @Override
-                                            public CompletionDocumentation resolveLink(String link) {
-                                                return null;
-                                            }
-                                            @Override
-                                            public Action getGotoSourceAction() {
-                                                return null;
-                                            }
-                                        });
+                                            resolved = temp;
+                                        } else {
+                                            resolved = i;
+                                        }
+                                        if (resolved.getDocumentation() != null || (resolved.getDetail() != null && !detailsUsed)) {
+                                            resultSet.setDocumentation(new CompletionDocumentation() {
+                                                @Override
+                                                public String getText() {
+    //                                                String header = "<html>" + "<b>" + (resolved.getDetail() != null ? resolved.getDetail() : resolved.getLabel()) + "</b>";
+                                                    String documentation;
+                                                    if (resolved.getDocumentation() != null) {
+    //                                                    header += "<br><br>";
+                                                        if (resolved.getDocumentation().isLeft()) {
+                                                            documentation = resolved.getDocumentation().getLeft();
+                                                        } else {
+                                                            MarkupContent content = resolved.getDocumentation().getRight();
+                                                            switch (content.getKind()) {
+                                                                default:
+                                                                case "plaintext": documentation = "<pre>\n" + content.getValue() + "\n</pre>"; break;
+                                                                case "markdown": documentation = HtmlRenderer.builder().build().render(Parser.builder().build().parse(content.getValue())); break;
+                                                            }
+                                                        }
+                                                    } else {
+                                                        documentation = resolved.getDetail();
+                                                    }
+                                                    return documentation;
+                                                }
+                                                @Override
+                                                public URL getURL() {
+                                                    return null;
+                                                }
+                                                @Override
+                                                public CompletionDocumentation resolveLink(String link) {
+                                                    return null;
+                                                }
+                                                @Override
+                                                public Action getGotoSourceAction() {
+                                                    return null;
+                                                }
+                                            });
+                                        }
                                         resultSet.finish();
                                     }
 
@@ -295,6 +328,15 @@ public class CompletionProviderImpl implements CompletionProvider {
         }, component);
     }
     
+    private boolean hasCompletionResolve(LSPBindings server) {
+        ServerCapabilities capabilities = server.getInitResult().getCapabilities();
+        if (capabilities == null) return false;
+        CompletionOptions completionProvider = capabilities.getCompletionProvider();
+        if (completionProvider == null) return false;
+        Boolean resolveProvider = completionProvider.getResolveProvider();
+        return resolveProvider != null && resolveProvider;
+    }
+
     private String encode(String str) {
         return str.replace("&", "&amp;")
                   .replace("<", "&lt;");

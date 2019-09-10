@@ -21,6 +21,8 @@ package org.netbeans.modules.java.lsp.server;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -110,7 +112,7 @@ public class Server implements ArgsProcessor {
 
     private static void run(InputStream in, OutputStream out) throws Exception {
         LanguageServerImpl server = new LanguageServerImpl();
-        Launcher<LanguageClient> serverLauncher = LSPLauncher.createServerLauncher(server, in, out);
+        Launcher<LanguageClient> serverLauncher = LSPLauncher.createServerLauncher(server, in, out, false, new PrintWriter(new OutputStreamWriter(System.err)));
         ((LanguageClientAware) server).connect(serverLauncher.getRemoteProxy());
         serverLauncher.startListening();
 
@@ -188,7 +190,9 @@ public class Server implements ArgsProcessor {
             }
             ServerCapabilities capabilities = new ServerCapabilities();
             capabilities.setTextDocumentSync(TextDocumentSyncKind.Incremental);
-            capabilities.setCompletionProvider(new CompletionOptions());
+            CompletionOptions completionOptions = new CompletionOptions();
+            completionOptions.setResolveProvider(true);
+            capabilities.setCompletionProvider(completionOptions);
             capabilities.setCodeActionProvider(true);
             capabilities.setDocumentSymbolProvider(true);
             capabilities.setDefinitionProvider(true);

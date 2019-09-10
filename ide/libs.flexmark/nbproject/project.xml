@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://www.netbeans.org/ns/project/1">
+    <type>org.netbeans.modules.apisupport.project</type>
+    <configuration>
+        <data xmlns="http://www.netbeans.org/ns/nb-module-project/3">
+            <code-name-base>org.netbeans.libs.flexmark</code-name-base>
+            <module-dependencies/>
+            <public-packages>
+                <subpackages>com.vladsch.flexmark</subpackages>
+                <subpackages>org.jsoup</subpackages>
+            </public-packages>
+            <class-path-extension>
+                <runtime-relative-path>ext/flexmark-html2md-converter-0.50.36.jar</runtime-relative-path>
+                <binary-origin>external/flexmark-html2md-converter-0.50.36.jar</binary-origin>
+            </class-path-extension>
+            <class-path-extension>
+                <runtime-relative-path>ext/jsoup-1.11.3.jar</runtime-relative-path>
+                <binary-origin>external/jsoup-1.11.3.jar</binary-origin>
+            </class-path-extension>
+            <class-path-extension>
+                <runtime-relative-path>ext/flexmark-util-0.50.36.jar</runtime-relative-path>
+                <binary-origin>external/flexmark-util-0.50.36.jar</binary-origin>
+            </class-path-extension>
+            <class-path-extension>
+                <runtime-relative-path>ext/flexmark-0.50.36.jar</runtime-relative-path>
+                <binary-origin>external/flexmark-0.50.36.jar</binary-origin>
+            </class-path-extension>
+        </data>
+    </configuration>
+</project>
