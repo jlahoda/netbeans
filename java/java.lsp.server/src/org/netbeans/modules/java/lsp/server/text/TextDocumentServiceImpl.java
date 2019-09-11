@@ -322,12 +322,12 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
                 label.append(it.next().getSimpleName().toString());
                 sep = ", ";
             }
-            label.append(")");
+            label.append(") : ");
+            TypeMirror retType = type.getReturnType();
+            label.append(Utilities.getTypeName(info, retType, false).toString());
             CompletionItem item = new CompletionItem(label.toString());
             item.setKind(elementKind2CompletionItemKind(elem.getKind()));
             item.setInsertText(elem.getSimpleName().toString());
-            TypeMirror retType = type.getReturnType();
-            item.setDetail(Utilities.getTypeName(info, retType, false).toString());
             setCompletionData(item, elem);
             return item;
         }

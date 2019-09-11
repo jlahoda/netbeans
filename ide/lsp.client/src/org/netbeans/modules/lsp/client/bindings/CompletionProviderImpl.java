@@ -67,6 +67,7 @@ import org.openide.filesystems.FileObject;
 import org.openide.text.NbDocument;
 import org.openide.util.Exceptions;
 import org.openide.util.ImageUtilities;
+import org.openide.xml.XMLUtil;
 
 /**
  *
@@ -168,13 +169,10 @@ public class CompletionProviderImpl implements CompletionProvider {
                         String insert = i.getInsertText() != null ? i.getInsertText() : i.getLabel();
                         String leftLabel = encode(i.getLabel());
                         String rightLabel;
-                        boolean detailsUsed;
                         if (i.getDetail() != null) {
                             rightLabel = encode(i.getDetail());
-                            detailsUsed = true;
                         } else {
                             rightLabel = null;
-                            detailsUsed = false;
                         }
                         String sortText = i.getSortText() != null ? i.getSortText() : i.getLabel();
                         CompletionItemKind kind = i.getKind();
@@ -227,11 +225,11 @@ public class CompletionProviderImpl implements CompletionProvider {
 
                             @Override
                             public CompletionTask createDocumentationTask() {
-                                return new CompletionTask() {
+                                return new AsyncCompletionTask(new AsyncCompletionQuery() {
                                     @Override
-                                    public void query(CompletionResultSet resultSet) {
+                                    protected void query(CompletionResultSet resultSet, Document doc, int caretOffset) {
                                         CompletionItem resolved;
-                                        if (i.getDocumentation() == null && hasCompletionResolve(server)) {
+                                        if ((i.getDetail() == null || i.getDocumentation() == null) && hasCompletionResolve(server)) {
                                             CompletionItem temp;
                                             try {
                                                 temp = server.getTextDocumentService().resolveCompletionItem(i).get();
@@ -243,28 +241,32 @@ public class CompletionProviderImpl implements CompletionProvider {
                                         } else {
                                             resolved = i;
                                         }
-                                        if (resolved.getDocumentation() != null || (resolved.getDetail() != null && !detailsUsed)) {
+                                        if (resolved.getDocumentation() != null || resolved.getDetail() != null) {
                                             resultSet.setDocumentation(new CompletionDocumentation() {
                                                 @Override
                                                 public String getText() {
-    //                                                String header = "<html>" + "<b>" + (resolved.getDetail() != null ? resolved.getDetail() : resolved.getLabel()) + "</b>";
-                                                    String documentation;
-                                                    if (resolved.getDocumentation() != null) {
-    //                                                    header += "<br><br>";
-                                                        if (resolved.getDocumentation().isLeft()) {
-                                                            documentation = resolved.getDocumentation().getLeft();
-                                                        } else {
-                                                            MarkupContent content = resolved.getDocumentation().getRight();
-                                                            switch (content.getKind()) {
-                                                                default:
-                                                                case "plaintext": documentation = "<pre>\n" + content.getValue() + "\n</pre>"; break;
-                                                                case "markdown": documentation = HtmlRenderer.builder().build().render(Parser.builder().build().parse(content.getValue())); break;
-                                                            }
-                                                        }
-                                                    } else {
-                                                        documentation = resolved.getDetail();
+                                                    StringBuilder documentation = new StringBuilder();
+                                                    documentation.append("<html>\n");
+                                                    if (resolved.getDetail() != null) {
+                                                        documentation.append("<b>").append(escape(resolved.getDetail())).append("</b>");
+                                                        documentation.append("\n<p>");
                                                     }
-                                                    return documentation;
+                                                    if (resolved.getDocumentation() != null) {
+                                                        MarkupContent content;
+                                                        if (resolved.getDocumentation().isLeft()) {
+                                                            content = new MarkupContent();
+                                                            content.setKind("plaintext");
+                                                            content.setValue(resolved.getDocumentation().getLeft());
+                                                        } else {
+                                                            content = resolved.getDocumentation().getRight();
+                                                        }
+                                                        switch (content.getKind()) {
+                                                            default:
+                                                            case "plaintext": documentation.append("<pre>\n").append(content.getValue()).append("\n</pre>"); break;
+                                                            case "markdown": documentation.append(HtmlRenderer.builder().build().render(Parser.builder().build().parse(content.getValue()))); break;
+                                                        }
+                                                    }
+                                                    return documentation.toString();
                                                 }
                                                 @Override
                                                 public URL getURL() {
@@ -282,13 +284,7 @@ public class CompletionProviderImpl implements CompletionProvider {
                                         }
                                         resultSet.finish();
                                     }
-
-                                    @Override
-                                    public void refresh(CompletionResultSet resultSet) {}
-
-                                    @Override
-                                    public void cancel() {}
-                                };
+                                });
                             }
 
                             @Override
@@ -335,6 +331,15 @@ public class CompletionProviderImpl implements CompletionProvider {
         if (completionProvider == null) return false;
         Boolean resolveProvider = completionProvider.getResolveProvider();
         return resolveProvider != null && resolveProvider;
+    }
+
+    private static String escape(String s) {
+        if (s != null) {
+            try {
+                return XMLUtil.toAttributeValue(s);
+            } catch (Exception ex) {}
+        }
+        return s;
     }
 
     private String encode(String str) {
