@@ -263,307 +263,307 @@ public class ServerTest extends NbTestCase {
         }
     }
 
-//    public void testNavigator() throws Exception {
-//        File src = new File(getWorkDir(), "Test.java");
-//        src.getParentFile().mkdirs();
-//        String code = "public class Test {\n" +
-//                      "    private int field;\n" +
-//                      "    public void method() {\n" +
-//                      "    }\n" +
-//                      "    class Inner {\n" +
-//                      "        public void innerMethod() {\n" +
-//                      "        }\n" +
-//                      "    }\n" +
-//                      "}\n";
-//        try (Writer w = new FileWriter(src)) {
-//            w.write(code);
-//        }
-//        FileUtil.refreshFor(getWorkDir());
-//        Launcher<LanguageServer> serverLauncher = LSPLauncher.createClientLauncher(new LanguageClient() {
-//            @Override
-//            public void telemetryEvent(Object arg0) {
-//                throw new UnsupportedOperationException("Not supported yet.");
-//            }
-//
-//            @Override
-//            public void publishDiagnostics(PublishDiagnosticsParams params) {
-//            }
-//
-//            @Override
-//            public void showMessage(MessageParams arg0) {
-//                throw new UnsupportedOperationException("Not supported yet.");
-//            }
-//
-//            @Override
-//            public CompletableFuture<MessageActionItem> showMessageRequest(ShowMessageRequestParams arg0) {
-//                throw new UnsupportedOperationException("Not supported yet.");
-//            }
-//
-//            @Override
-//            public void logMessage(MessageParams arg0) {
-//                throw new UnsupportedOperationException("Not supported yet.");
-//            }
-//        }, client.getInputStream(), client.getOutputStream());
-//        serverLauncher.startListening();
-//        LanguageServer server = serverLauncher.getRemoteProxy();
-//        InitializeResult result = server.initialize(new InitializeParams()).get();
-//        server.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(src.toURI().toString(), "java", 0, code)));
-//        List<Either<SymbolInformation, DocumentSymbol>> symbols = server.getTextDocumentService().documentSymbol(new DocumentSymbolParams(new TextDocumentIdentifier(src.toURI().toString()))).get();
-//        String textualSymbols = "";
-//        String sep = "";
-//        for (Either<SymbolInformation, DocumentSymbol> sym : symbols) {
-//            assertTrue(sym.isRight());
-//            textualSymbols += sep;
-//            textualSymbols += toString(sym.getRight());
-//            sep = ", ";
-//        }
-//        String expected = "Class:Test:Range [\n" +
-//                          "  start = Position [\n" +
-//                          "    line = 0\n" +
-//                          "    character = 0\n" +
-//                          "  ]\n" +
-//                          "  end = Position [\n" +
-//                          "    line = 8\n" +
-//                          "    character = 1\n" +
-//                          "  ]\n" +
-//                          "]:(Class:Inner:Range [\n" +
-//                          "  start = Position [\n" +
-//                          "    line = 4\n" +
-//                          "    character = 4\n" +
-//                          "  ]\n" +
-//                          "  end = Position [\n" +
-//                          "    line = 7\n" +
-//                          "    character = 5\n" +
-//                          "  ]\n" +
-//                          "]:(Method:innerMethod:Range [\n" +
-//                          "  start = Position [\n" +
-//                          "    line = 5\n" +
-//                          "    character = 8\n" +
-//                          "  ]\n" +
-//                          "  end = Position [\n" +
-//                          "    line = 6\n" +
-//                          "    character = 9\n" +
-//                          "  ]\n" +
-//                          "]:()), Field:field:Range [\n" +
-//                          "  start = Position [\n" +
-//                          "    line = 1\n" +
-//                          "    character = 4\n" +
-//                          "  ]\n" +
-//                          "  end = Position [\n" +
-//                          "    line = 1\n" +
-//                          "    character = 22\n" +
-//                          "  ]\n" +
-//                          "]:(), Method:method:Range [\n" +
-//                          "  start = Position [\n" +
-//                          "    line = 2\n" +
-//                          "    character = 4\n" +
-//                          "  ]\n" +
-//                          "  end = Position [\n" +
-//                          "    line = 3\n" +
-//                          "    character = 5\n" +
-//                          "  ]\n" +
-//                          "]:())";
-//        assertEquals(expected, textualSymbols);
-//    }
-//
-//    private String toString(DocumentSymbol sym) {
-//        return sym.getKind().toString() + ":" +
-//               sym.getName() + ":" +
-//               sym.getRange() + ":" +
-//               sym.getChildren()
-//                  .stream()
-//                  .map(this::toString)
-//                  .collect(Collectors.joining(", ", "(", ")"));
-//    }
-//
-//    public void testGoToDefinition() throws Exception {
-//        File src = new File(getWorkDir(), "Test.java");
-//        src.getParentFile().mkdirs();
-//        String code = "public class Test {\n" +
-//                      "    private int field;\n" +
-//                      "    public void method(int ppp) {\n" +
-//                      "        System.err.println(field);\n" +
-//                      "        System.err.println(ppp);\n" +
-//                      "    }\n" +
-//                      "}\n";
-//        try (Writer w = new FileWriter(src)) {
-//            w.write(code);
-//        }
-//        FileUtil.refreshFor(getWorkDir());
-//        Launcher<LanguageServer> serverLauncher = LSPLauncher.createClientLauncher(new LanguageClient() {
-//            @Override
-//            public void telemetryEvent(Object arg0) {
-//                throw new UnsupportedOperationException("Not supported yet.");
-//            }
-//
-//            @Override
-//            public void publishDiagnostics(PublishDiagnosticsParams params) {
-//            }
-//
-//            @Override
-//            public void showMessage(MessageParams arg0) {
-//                throw new UnsupportedOperationException("Not supported yet.");
-//            }
-//
-//            @Override
-//            public CompletableFuture<MessageActionItem> showMessageRequest(ShowMessageRequestParams arg0) {
-//                throw new UnsupportedOperationException("Not supported yet.");
-//            }
-//
-//            @Override
-//            public void logMessage(MessageParams arg0) {
-//                throw new UnsupportedOperationException("Not supported yet.");
-//            }
-//        }, client.getInputStream(), client.getOutputStream());
-//        serverLauncher.startListening();
-//        LanguageServer server = serverLauncher.getRemoteProxy();
-//        InitializeResult result = server.initialize(new InitializeParams()).get();
-//        server.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(src.toURI().toString(), "java", 0, code)));
-//        Position pos = new Position(3, 30);
-//        List<? extends Location> definition = server.getTextDocumentService().definition(new TextDocumentPositionParams(new TextDocumentIdentifier(src.toURI().toString()), pos)).get();
-//        assertEquals(1, definition.size());
-//        assertEquals(src.toURI().toString(), definition.get(0).getUri());
-//        assertEquals(1, definition.get(0).getRange().getStart().getLine());
-//        assertEquals(4, definition.get(0).getRange().getStart().getCharacter());
-//        pos = new Position(4, 30);
-//        definition = server.getTextDocumentService().definition(new TextDocumentPositionParams(new TextDocumentIdentifier(src.toURI().toString()), pos)).get();
-//        assertEquals(1, definition.size());
-//        assertEquals(src.toURI().toString(), definition.get(0).getUri());
-//        assertEquals(2, definition.get(0).getRange().getStart().getLine());
-//        assertEquals(23, definition.get(0).getRange().getStart().getCharacter());
-//        //XXX: test jump to another file!
-//    }
-//
-//    public void testOpenProjectOpenJDK() throws Exception {
-//        getWorkDir().mkdirs();
-//
-//        FileObject root = FileUtil.toFileObject(getWorkDir());
-//        try (Writer w = new OutputStreamWriter(FileUtil.createData(root, "jdk/src/java.base/share/classes/java/lang/Object.java").getOutputStream(), StandardCharsets.UTF_8)) {
-//            w.write("package java.lang; public class Object {}");
-//        }
-//        FileUtil.createData(root, "jdk/src/java.base/share/classes/impl/Service.java");
-//        FileObject javaBaseMI = FileUtil.createData(root, "jdk/src/java.base/share/classes/module-info.java");
-//        try (Writer w = new OutputStreamWriter(javaBaseMI.getOutputStream(), StandardCharsets.UTF_8)) {
-//            w.write("module java.base { exports java.lang; }");
-//        }
-//        try (Writer w = new OutputStreamWriter(FileUtil.createData(root, "jdk/src/java.compiler/share/classes/module-info.java").getOutputStream(), StandardCharsets.UTF_8)) {
-//            w.write("module java.compiler { }");
-//        }
-//
-//        List<Diagnostic>[] diags = new List[1];
-//        boolean[] indexingComplete = new boolean[1];
-//        Launcher<LanguageServer> serverLauncher = LSPLauncher.createClientLauncher(new LanguageClient() {
-//            @Override
-//            public void telemetryEvent(Object arg0) {
-//                throw new UnsupportedOperationException("Not supported yet.");
-//            }
-//
-//            @Override
-//            public void publishDiagnostics(PublishDiagnosticsParams params) {
-//                synchronized (diags) {
-//                    diags[0] = params.getDiagnostics();
-//                    diags.notifyAll();
-//                }
-//            }
-//
-//            @Override
-//            public void showMessage(MessageParams params) {
-//                if (Server.INDEXING_COMPLETED.equals(params.getMessage())) {
-//                    synchronized (indexingComplete) {
-//                        indexingComplete[0] = true;
-//                        indexingComplete.notifyAll();
-//                    }
-//                } else {
-//                    throw new UnsupportedOperationException("Unexpected message.");
-//                }
-//            }
-//
-//            @Override
-//            public CompletableFuture<MessageActionItem> showMessageRequest(ShowMessageRequestParams arg0) {
-//                throw new UnsupportedOperationException("Not supported yet.");
-//            }
-//
-//            @Override
-//            public void logMessage(MessageParams arg0) {
-//                throw new UnsupportedOperationException("Not supported yet.");
-//            }
-//        }, client.getInputStream(), client.getOutputStream());
-//        serverLauncher.startListening();
-//        LanguageServer server = serverLauncher.getRemoteProxy();
-//        InitializeParams initParams = new InitializeParams();
-//        initParams.setWorkspaceFolders(Arrays.asList(new WorkspaceFolder(root.getFileObject("jdk/src/java.base").toURI().toString())));
-//        InitializeResult result = server.initialize(initParams).get();
-//        synchronized (indexingComplete) {
-//            while (!indexingComplete[0]) {
-//                try {
-//                    indexingComplete.wait();
-//                } catch (InterruptedException ex) {
-//                    //ignore...
-//                }
-//            }
-//        }
-//        server.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(javaBaseMI.toURI().toString(), "java", 0, javaBaseMI.asText("UTF-8"))));
-//        assertDiags(diags);
-//    }
-//    
-//    public void testMarkOccurrences() throws Exception {
-//        File src = new File(getWorkDir(), "Test.java");
-//        src.getParentFile().mkdirs();
-//        String code = "public class Test {\n" +
-//                      "    public int method(int ppp) {\n" +
-//                      "        if (ppp < 0) return -1;\n" +
-//                      "        else if (ppp > 0) return 1;\n" +
-//                      "        else return 0;\n" +
-//                      "    }\n" +
-//                      "}\n";
-//        try (Writer w = new FileWriter(src)) {
-//            w.write(code);
-//        }
-//        FileUtil.refreshFor(getWorkDir());
-//        Launcher<LanguageServer> serverLauncher = LSPLauncher.createClientLauncher(new LanguageClient() {
-//            @Override
-//            public void telemetryEvent(Object arg0) {
-//                throw new UnsupportedOperationException("Not supported yet.");
-//            }
-//
-//            @Override
-//            public void publishDiagnostics(PublishDiagnosticsParams params) {
-//            }
-//
-//            @Override
-//            public void showMessage(MessageParams arg0) {
-//            }
-//
-//            @Override
-//            public CompletableFuture<MessageActionItem> showMessageRequest(ShowMessageRequestParams arg0) {
-//                throw new UnsupportedOperationException("Not supported yet.");
-//            }
-//
-//            @Override
-//            public void logMessage(MessageParams arg0) {
-//                throw new UnsupportedOperationException("Not supported yet.");
-//            }
-//        }, client.getInputStream(), client.getOutputStream());
-//        serverLauncher.startListening();
-//        LanguageServer server = serverLauncher.getRemoteProxy();
-//        InitializeResult result = server.initialize(new InitializeParams()).get();
-//        assertTrue(result.getCapabilities().getDocumentHighlightProvider());
-//        server.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(src.toURI().toString(), "java", 0, code)));
-//        assertHighlights(server.getTextDocumentService().documentHighlight(new TextDocumentPositionParams(new TextDocumentIdentifier(src.toURI().toString()), new Position(1, 13))).get(),
-//                         "<none>:2:21-2:31", "<none>:3:26-3:35", "<none>:4:13-4:22");
-//        assertHighlights(server.getTextDocumentService().documentHighlight(new TextDocumentPositionParams(new TextDocumentIdentifier(src.toURI().toString()), new Position(1, 27))).get(),
-//                         "<none>:1:26-1:29", "<none>:2:12-2:15", "<none>:3:17-3:20");
-//    }
-//
-//    private void assertHighlights(List<? extends DocumentHighlight> highlights, String... expected) {
-//        Set<String> stringHighlights = new HashSet<>();
-//        for (DocumentHighlight h : highlights) {
-//            DocumentHighlightKind kind = h.getKind();
-//            stringHighlights.add((kind != null ? kind.name() : "<none>") + ":" +
-//                                 h.getRange().getStart().getLine() + ":" + h.getRange().getStart().getCharacter() + "-" +
-//                                 h.getRange().getEnd().getLine() + ":" + h.getRange().getEnd().getCharacter());
-//        }
-//        assertEquals(new HashSet<>(Arrays.asList(expected)),
-//                     stringHighlights);
-//    }
+    public void testNavigator() throws Exception {
+        File src = new File(getWorkDir(), "Test.java");
+        src.getParentFile().mkdirs();
+        String code = "public class Test {\n" +
+                      "    private int field;\n" +
+                      "    public void method() {\n" +
+                      "    }\n" +
+                      "    class Inner {\n" +
+                      "        public void innerMethod() {\n" +
+                      "        }\n" +
+                      "    }\n" +
+                      "}\n";
+        try (Writer w = new FileWriter(src)) {
+            w.write(code);
+        }
+        FileUtil.refreshFor(getWorkDir());
+        Launcher<LanguageServer> serverLauncher = LSPLauncher.createClientLauncher(new LanguageClient() {
+            @Override
+            public void telemetryEvent(Object arg0) {
+                throw new UnsupportedOperationException("Not supported yet.");
+            }
+
+            @Override
+            public void publishDiagnostics(PublishDiagnosticsParams params) {
+            }
+
+            @Override
+            public void showMessage(MessageParams arg0) {
+                throw new UnsupportedOperationException("Not supported yet.");
+            }
+
+            @Override
+            public CompletableFuture<MessageActionItem> showMessageRequest(ShowMessageRequestParams arg0) {
+                throw new UnsupportedOperationException("Not supported yet.");
+            }
+
+            @Override
+            public void logMessage(MessageParams arg0) {
+                throw new UnsupportedOperationException("Not supported yet.");
+            }
+        }, client.getInputStream(), client.getOutputStream());
+        serverLauncher.startListening();
+        LanguageServer server = serverLauncher.getRemoteProxy();
+        InitializeResult result = server.initialize(new InitializeParams()).get();
+        server.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(src.toURI().toString(), "java", 0, code)));
+        List<Either<SymbolInformation, DocumentSymbol>> symbols = server.getTextDocumentService().documentSymbol(new DocumentSymbolParams(new TextDocumentIdentifier(src.toURI().toString()))).get();
+        String textualSymbols = "";
+        String sep = "";
+        for (Either<SymbolInformation, DocumentSymbol> sym : symbols) {
+            assertTrue(sym.isRight());
+            textualSymbols += sep;
+            textualSymbols += toString(sym.getRight());
+            sep = ", ";
+        }
+        String expected = "Class:Test:Range [\n" +
+                          "  start = Position [\n" +
+                          "    line = 0\n" +
+                          "    character = 0\n" +
+                          "  ]\n" +
+                          "  end = Position [\n" +
+                          "    line = 8\n" +
+                          "    character = 1\n" +
+                          "  ]\n" +
+                          "]:(Class:Inner:Range [\n" +
+                          "  start = Position [\n" +
+                          "    line = 4\n" +
+                          "    character = 4\n" +
+                          "  ]\n" +
+                          "  end = Position [\n" +
+                          "    line = 7\n" +
+                          "    character = 5\n" +
+                          "  ]\n" +
+                          "]:(Method:innerMethod:Range [\n" +
+                          "  start = Position [\n" +
+                          "    line = 5\n" +
+                          "    character = 8\n" +
+                          "  ]\n" +
+                          "  end = Position [\n" +
+                          "    line = 6\n" +
+                          "    character = 9\n" +
+                          "  ]\n" +
+                          "]:()), Field:field:Range [\n" +
+                          "  start = Position [\n" +
+                          "    line = 1\n" +
+                          "    character = 4\n" +
+                          "  ]\n" +
+                          "  end = Position [\n" +
+                          "    line = 1\n" +
+                          "    character = 22\n" +
+                          "  ]\n" +
+                          "]:(), Method:method:Range [\n" +
+                          "  start = Position [\n" +
+                          "    line = 2\n" +
+                          "    character = 4\n" +
+                          "  ]\n" +
+                          "  end = Position [\n" +
+                          "    line = 3\n" +
+                          "    character = 5\n" +
+                          "  ]\n" +
+                          "]:())";
+        assertEquals(expected, textualSymbols);
+    }
+
+    private String toString(DocumentSymbol sym) {
+        return sym.getKind().toString() + ":" +
+               sym.getName() + ":" +
+               sym.getRange() + ":" +
+               sym.getChildren()
+                  .stream()
+                  .map(this::toString)
+                  .collect(Collectors.joining(", ", "(", ")"));
+    }
+
+    public void testGoToDefinition() throws Exception {
+        File src = new File(getWorkDir(), "Test.java");
+        src.getParentFile().mkdirs();
+        String code = "public class Test {\n" +
+                      "    private int field;\n" +
+                      "    public void method(int ppp) {\n" +
+                      "        System.err.println(field);\n" +
+                      "        System.err.println(ppp);\n" +
+                      "    }\n" +
+                      "}\n";
+        try (Writer w = new FileWriter(src)) {
+            w.write(code);
+        }
+        FileUtil.refreshFor(getWorkDir());
+        Launcher<LanguageServer> serverLauncher = LSPLauncher.createClientLauncher(new LanguageClient() {
+            @Override
+            public void telemetryEvent(Object arg0) {
+                throw new UnsupportedOperationException("Not supported yet.");
+            }
+
+            @Override
+            public void publishDiagnostics(PublishDiagnosticsParams params) {
+            }
+
+            @Override
+            public void showMessage(MessageParams arg0) {
+                throw new UnsupportedOperationException("Not supported yet.");
+            }
+
+            @Override
+            public CompletableFuture<MessageActionItem> showMessageRequest(ShowMessageRequestParams arg0) {
+                throw new UnsupportedOperationException("Not supported yet.");
+            }
+
+            @Override
+            public void logMessage(MessageParams arg0) {
+                throw new UnsupportedOperationException("Not supported yet.");
+            }
+        }, client.getInputStream(), client.getOutputStream());
+        serverLauncher.startListening();
+        LanguageServer server = serverLauncher.getRemoteProxy();
+        InitializeResult result = server.initialize(new InitializeParams()).get();
+        server.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(src.toURI().toString(), "java", 0, code)));
+        Position pos = new Position(3, 30);
+        List<? extends Location> definition = server.getTextDocumentService().definition(new TextDocumentPositionParams(new TextDocumentIdentifier(src.toURI().toString()), pos)).get();
+        assertEquals(1, definition.size());
+        assertEquals(src.toURI().toString(), definition.get(0).getUri());
+        assertEquals(1, definition.get(0).getRange().getStart().getLine());
+        assertEquals(4, definition.get(0).getRange().getStart().getCharacter());
+        pos = new Position(4, 30);
+        definition = server.getTextDocumentService().definition(new TextDocumentPositionParams(new TextDocumentIdentifier(src.toURI().toString()), pos)).get();
+        assertEquals(1, definition.size());
+        assertEquals(src.toURI().toString(), definition.get(0).getUri());
+        assertEquals(2, definition.get(0).getRange().getStart().getLine());
+        assertEquals(23, definition.get(0).getRange().getStart().getCharacter());
+        //XXX: test jump to another file!
+    }
+
+    public void testOpenProjectOpenJDK() throws Exception {
+        getWorkDir().mkdirs();
+
+        FileObject root = FileUtil.toFileObject(getWorkDir());
+        try (Writer w = new OutputStreamWriter(FileUtil.createData(root, "jdk/src/java.base/share/classes/java/lang/Object.java").getOutputStream(), StandardCharsets.UTF_8)) {
+            w.write("package java.lang; public class Object {}");
+        }
+        FileUtil.createData(root, "jdk/src/java.base/share/classes/impl/Service.java");
+        FileObject javaBaseMI = FileUtil.createData(root, "jdk/src/java.base/share/classes/module-info.java");
+        try (Writer w = new OutputStreamWriter(javaBaseMI.getOutputStream(), StandardCharsets.UTF_8)) {
+            w.write("module java.base { exports java.lang; }");
+        }
+        try (Writer w = new OutputStreamWriter(FileUtil.createData(root, "jdk/src/java.compiler/share/classes/module-info.java").getOutputStream(), StandardCharsets.UTF_8)) {
+            w.write("module java.compiler { }");
+        }
+
+        List<Diagnostic>[] diags = new List[1];
+        boolean[] indexingComplete = new boolean[1];
+        Launcher<LanguageServer> serverLauncher = LSPLauncher.createClientLauncher(new LanguageClient() {
+            @Override
+            public void telemetryEvent(Object arg0) {
+                throw new UnsupportedOperationException("Not supported yet.");
+            }
+
+            @Override
+            public void publishDiagnostics(PublishDiagnosticsParams params) {
+                synchronized (diags) {
+                    diags[0] = params.getDiagnostics();
+                    diags.notifyAll();
+                }
+            }
+
+            @Override
+            public void showMessage(MessageParams params) {
+                if (Server.INDEXING_COMPLETED.equals(params.getMessage())) {
+                    synchronized (indexingComplete) {
+                        indexingComplete[0] = true;
+                        indexingComplete.notifyAll();
+                    }
+                } else {
+                    throw new UnsupportedOperationException("Unexpected message.");
+                }
+            }
+
+            @Override
+            public CompletableFuture<MessageActionItem> showMessageRequest(ShowMessageRequestParams arg0) {
+                throw new UnsupportedOperationException("Not supported yet.");
+            }
+
+            @Override
+            public void logMessage(MessageParams arg0) {
+                throw new UnsupportedOperationException("Not supported yet.");
+            }
+        }, client.getInputStream(), client.getOutputStream());
+        serverLauncher.startListening();
+        LanguageServer server = serverLauncher.getRemoteProxy();
+        InitializeParams initParams = new InitializeParams();
+        initParams.setWorkspaceFolders(Arrays.asList(new WorkspaceFolder(root.getFileObject("jdk/src/java.base").toURI().toString())));
+        InitializeResult result = server.initialize(initParams).get();
+        synchronized (indexingComplete) {
+            while (!indexingComplete[0]) {
+                try {
+                    indexingComplete.wait();
+                } catch (InterruptedException ex) {
+                    //ignore...
+                }
+            }
+        }
+        server.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(javaBaseMI.toURI().toString(), "java", 0, javaBaseMI.asText("UTF-8"))));
+        assertDiags(diags);
+    }
+    
+    public void testMarkOccurrences() throws Exception {
+        File src = new File(getWorkDir(), "Test.java");
+        src.getParentFile().mkdirs();
+        String code = "public class Test {\n" +
+                      "    public int method(int ppp) {\n" +
+                      "        if (ppp < 0) return -1;\n" +
+                      "        else if (ppp > 0) return 1;\n" +
+                      "        else return 0;\n" +
+                      "    }\n" +
+                      "}\n";
+        try (Writer w = new FileWriter(src)) {
+            w.write(code);
+        }
+        FileUtil.refreshFor(getWorkDir());
+        Launcher<LanguageServer> serverLauncher = LSPLauncher.createClientLauncher(new LanguageClient() {
+            @Override
+            public void telemetryEvent(Object arg0) {
+                throw new UnsupportedOperationException("Not supported yet.");
+            }
+
+            @Override
+            public void publishDiagnostics(PublishDiagnosticsParams params) {
+            }
+
+            @Override
+            public void showMessage(MessageParams arg0) {
+            }
+
+            @Override
+            public CompletableFuture<MessageActionItem> showMessageRequest(ShowMessageRequestParams arg0) {
+                throw new UnsupportedOperationException("Not supported yet.");
+            }
+
+            @Override
+            public void logMessage(MessageParams arg0) {
+                throw new UnsupportedOperationException("Not supported yet.");
+            }
+        }, client.getInputStream(), client.getOutputStream());
+        serverLauncher.startListening();
+        LanguageServer server = serverLauncher.getRemoteProxy();
+        InitializeResult result = server.initialize(new InitializeParams()).get();
+        assertTrue(result.getCapabilities().getDocumentHighlightProvider());
+        server.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(src.toURI().toString(), "java", 0, code)));
+        assertHighlights(server.getTextDocumentService().documentHighlight(new TextDocumentPositionParams(new TextDocumentIdentifier(src.toURI().toString()), new Position(1, 13))).get(),
+                         "<none>:2:21-2:31", "<none>:3:26-3:35", "<none>:4:13-4:22");
+        assertHighlights(server.getTextDocumentService().documentHighlight(new TextDocumentPositionParams(new TextDocumentIdentifier(src.toURI().toString()), new Position(1, 27))).get(),
+                         "<none>:1:26-1:29", "<none>:2:12-2:15", "<none>:3:17-3:20");
+    }
+
+    private void assertHighlights(List<? extends DocumentHighlight> highlights, String... expected) {
+        Set<String> stringHighlights = new HashSet<>();
+        for (DocumentHighlight h : highlights) {
+            DocumentHighlightKind kind = h.getKind();
+            stringHighlights.add((kind != null ? kind.name() : "<none>") + ":" +
+                                 h.getRange().getStart().getLine() + ":" + h.getRange().getStart().getCharacter() + "-" +
+                                 h.getRange().getEnd().getLine() + ":" + h.getRange().getEnd().getCharacter());
+        }
+        assertEquals(new HashSet<>(Arrays.asList(expected)),
+                     stringHighlights);
+    }
 }
