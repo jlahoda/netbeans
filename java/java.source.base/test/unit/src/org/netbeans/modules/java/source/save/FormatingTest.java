@@ -2114,7 +2114,8 @@ public class FormatingTest extends NbTestCase {
                 + "default:"
                 + "{System.out.println(\"DEFAULT\");"
                 + "yield 6;}"
-                + "}"
+                + "};"
+                + "System.out.println(i);"
                 + "}"
                 + "}\n";
 
@@ -2131,7 +2132,8 @@ public class FormatingTest extends NbTestCase {
                 + "                System.out.println(\"DEFAULT\");\n"
                 + "                yield 6;\n"
                 + "            }\n"
-                + "        }\n"
+                + "        };\n"
+                + "        System.out.println(i);\n"
                 + "    }\n"
                 + "}\n";
         preferences.putBoolean("spaceBeforeSwitchParen", true);
@@ -2153,7 +2155,8 @@ public class FormatingTest extends NbTestCase {
                 + "                System.out.println(\"DEFAULT\");\n"
                 + "                yield 6;\n"
                 + "            }\n"
-                + "        }\n"
+                + "        };\n"
+                + "        System.out.println(i);\n"
                 + "    }\n"
                 + "}\n";
 
@@ -2184,7 +2187,8 @@ public class FormatingTest extends NbTestCase {
                 + "                  System.out.println(\"DEFAULT\");\n"
                 + "                  yield 6;\n"
                 + "                }\n"
-                + "          }\n"
+                + "          };\n"
+                + "        System.out.println(i);\n"
                 + "    }\n"
                 + "}\n";
         preferences.putBoolean("spaceBeforeSwitchParen", true);
@@ -2209,7 +2213,8 @@ public class FormatingTest extends NbTestCase {
                 + "                    System.out.println(\"DEFAULT\");\n"
                 + "                    yield 6;\n"
                 + "                    }\n"
-                + "            }\n"
+                + "            };\n"
+                + "        System.out.println(i);\n"
                 + "    }\n"
                 + "}\n";
 
