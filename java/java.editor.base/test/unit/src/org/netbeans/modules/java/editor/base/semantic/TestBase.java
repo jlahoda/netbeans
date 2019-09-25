@@ -41,6 +41,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
+import javax.lang.model.SourceVersion;
+import javax.swing.event.ChangeListener;
 import java.util.stream.Collectors;
 import javax.swing.text.Document;
 import org.netbeans.api.java.lexer.JavaTokenId;
@@ -55,11 +57,13 @@ import org.netbeans.api.lexer.Language;
 import org.netbeans.api.lexer.Token;
 import org.netbeans.junit.NbTestCase;
 import org.netbeans.spi.editor.hints.ErrorDescription;
+import org.netbeans.spi.java.queries.CompilerOptionsQueryImplementation;
 import org.openide.cookies.EditorCookie;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.filesystems.MIMEResolver;
 import org.openide.loaders.DataObject;
+import org.openide.util.Pair;
 
 /**
  *
@@ -162,7 +166,29 @@ public abstract class TestBase extends NbTestCase {
     }
 
     protected void performTest(Input input, final Performer performer, boolean doCompileRecursively, Validator validator) throws Exception {
-        SourceUtilsTestUtil.prepareTest(new String[] {"org/netbeans/modules/java/editor/resources/layer.xml"}, new Object[] {new MIMEResolverImpl()});
+        SourceUtilsTestUtil.prepareTest(new String[] {"org/netbeans/modules/java/editor/resources/layer.xml"}, new Object[] {
+            new MIMEResolverImpl(),
+            new CompilerOptionsQueryImplementation() {
+                @Override
+                public CompilerOptionsQueryImplementation.Result getOptions(FileObject file) {
+                    if (testSourceFO == file) {
+                        return new CompilerOptionsQueryImplementation.Result() {
+                            @Override
+                            public List<? extends String> getArguments() {
+                                return extraOptions;
+                            }
+
+                            @Override
+                            public void addChangeListener(ChangeListener listener) {}
+
+                            @Override
+                            public void removeChangeListener(ChangeListener listener) {}
+                        };
+                    }
+                    return null;
+                }
+            }
+        });
         
 	FileObject scratch = SourceUtilsTestUtil.makeScratchDir(this);
 	FileObject cache   = scratch.createFolder("cache");
@@ -303,10 +329,6 @@ public abstract class TestBase extends NbTestCase {
                                .collect(Collectors.toList()));
     }
 
-    protected ColoringAttributes getColoringAttribute() {
-        return ColoringAttributes.UNUSED;
-    }
-
     public static Collection<HighlightImpl> toHighlights(Document doc, Map<Token, Coloring> colors) {
         List<HighlightImpl> highlights = new ArrayList<HighlightImpl>();
         
@@ -345,6 +367,14 @@ public abstract class TestBase extends NbTestCase {
         this.sourceLevel = sourceLevel;
     }
 
+    private List<String> extraOptions = new ArrayList<>();
+
+    protected final void enablePreview() {
+        String svName = SourceVersion.latest().name();
+        setSourceLevel(svName.substring(svName.indexOf('_') + 1));
+        extraOptions.add("--enable-preview");
+    }
+
     private boolean showPrependedText;
 
     protected final void setShowPrependedText(boolean showPrependedText) {
@@ -363,9 +393,9 @@ public abstract class TestBase extends NbTestCase {
         }
     
         @Override
-        public void setHighlights(Document doc, Collection<int[]> highlights, Map<int[], String> preText) {
-            for (int[] h : highlights) {
-                this.highlights.add(new HighlightImpl(doc, h[0], h[1], EnumSet.of(getColoringAttribute())));
+        public void setHighlights(Document doc, Collection<Pair<int[], Coloring>> highlights, Map<int[], String> preText) {
+            for (Pair<int[], Coloring> h : highlights) {
+                this.highlights.add(new HighlightImpl(doc, h.first()[0], h.first()[1], h.second()));
             }
             if (showPrependedText) {
                 for (Entry<int[], String> e : preText.entrySet()) {
