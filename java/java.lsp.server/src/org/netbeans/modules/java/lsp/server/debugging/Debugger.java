@@ -24,11 +24,13 @@ import com.microsoft.java.debug.core.UsageDataSession;
 import com.microsoft.java.debug.core.adapter.HotCodeReplaceEvent;
 import com.microsoft.java.debug.core.adapter.ICompletionsProvider;
 import com.microsoft.java.debug.core.adapter.IEvaluationProvider;
+import com.microsoft.java.debug.core.adapter.IExecuteProvider;
 import com.microsoft.java.debug.core.adapter.IHotCodeReplaceProvider;
 import com.microsoft.java.debug.core.adapter.ISourceLookUpProvider;
 import com.microsoft.java.debug.core.adapter.IVirtualMachineManagerProvider;
 import com.microsoft.java.debug.core.adapter.ProtocolServer;
 import com.microsoft.java.debug.core.adapter.ProviderContext;
+import com.microsoft.java.debug.core.protocol.Requests;
 import com.microsoft.java.debug.core.protocol.Types;
 import com.sun.jdi.BooleanValue;
 import com.sun.jdi.Bootstrap;
@@ -69,6 +71,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
+import java.io.Writer;
 import java.net.Inet4Address;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -102,7 +105,6 @@ import org.openide.filesystems.URLMapper;
 import org.openide.util.Lookup;
 import org.openide.util.Pair;
 import org.openide.util.lookup.Lookups;
-import org.openide.util.lookup.ServiceProvider;
 import org.openide.windows.IOProvider;
 import org.openide.windows.InputOutput;
 import org.openide.windows.OutputListener;
@@ -113,6 +115,8 @@ import org.openide.windows.OutputWriter;
  * @author lahvac
  */
 public class Debugger {
+
+    private static final Logger LOG = Logger.getLogger(Debugger.class.getName());
 
     public static int startDebugger() throws IOException {
         int port = 10001;
@@ -188,6 +192,17 @@ public class Debugger {
                         @Override
                         public List<Types.CompletionItem> codeComplete(StackFrame arg0, String arg1, int arg2, int arg3) {
                             throw new UnsupportedOperationException("Not supported yet.");
+                        }
+                    });
+                    context.registerProvider(IExecuteProvider.class, new IExecuteProvider() {
+                        @Override
+                        public Process launch(Requests.LaunchArguments la) throws IOException {
+                            String filePath = la.mainClass;
+                            FileObject file = filePath != null ? FileUtil.toFileObject(new File(filePath)) : null;
+                            if (file == null) {
+                                throw new IOException("Missing file: " + la.mainClass);
+                            }
+                            return new LaunchingVirtualMachine(file, sourceProvider).runWithoutDebugger();
                         }
                     });
                     ProtocolServer server = new ProtocolServer(vsCodeSocket.getInputStream(), vsCodeSocket.getOutputStream(), context);
@@ -371,6 +386,16 @@ public class Debugger {
                 protected void started() {}
                 @Override
                 public void finished(boolean success) {
+                    try {
+                        outPair.second().close();
+                    } catch (IOException ex) {
+                        LOG.log(Level.FINE, null, ex);
+                    }
+                    try {
+                        errPair.second().close();
+                    } catch (IOException ex) {
+                        LOG.log(Level.FINE, null, ex);
+                    }
                     synchronized (LaunchingVirtualMachine.this) {
                         exitCode = success ? 0 : 1;
                         finished = true;
@@ -380,15 +405,34 @@ public class Debugger {
             };
         }
 
+        public Process runWithoutDebugger() throws IOException {
+            Lookup testLookup = Lookups.singleton(toRun);
+            ActionProvider provider = null;
+            String command = ActionProvider.COMMAND_TEST_SINGLE;
+            for (ActionProvider ap : Lookup.getDefault().lookupAll(ActionProvider.class)) {
+                if (new HashSet<>(Arrays.asList(ap.getSupportedActions())).contains(command) &&
+                    ap.isActionEnabled(command, testLookup)) {
+                    provider = ap;
+                    break;
+                }
+            }
+            if (provider == null) {
+                throw new IOException("Cannot find run action!"); //TODO: message, locations
+            }
+            provider.invokeAction(command, Lookups.fixed(toRun, ioProvider, progress));
+            return process();
+        }
+
         private VirtualMachine delegate() throws VMDisconnectedException {
             if (!inited) {
                 inited = true;
                 try {
                     Lookup testLookup = Lookups.singleton(toRun);
                     ActionProvider provider = null;
+                    String command = ActionProvider.COMMAND_DEBUG_TEST_SINGLE;
                     for (ActionProvider ap : Lookup.getDefault().lookupAll(ActionProvider.class)) {
-                        if (new HashSet<>(Arrays.asList(ap.getSupportedActions())).contains(ActionProvider.COMMAND_DEBUG_TEST_SINGLE) &&
-                            ap.isActionEnabled(ActionProvider.COMMAND_DEBUG_TEST_SINGLE, testLookup)) {
+                        if (new HashSet<>(Arrays.asList(ap.getSupportedActions())).contains(command) &&
+                            ap.isActionEnabled(command, testLookup)) {
                             provider = ap;
                             break;
                         }
@@ -427,7 +471,7 @@ public class Debugger {
                     //                    getProject ().setNewProperty (getAddressProperty (), address);
                     //                    lock[0] = address;
                     //                }
-                    provider.invokeAction(ActionProvider.COMMAND_DEBUG_TEST_SINGLE, Lookups.fixed(toRun, ioProvider, progress, new DebuggerStarter() {
+                    provider.invokeAction(command, Lookups.fixed(toRun, ioProvider, progress, new DebuggerStarter() {
                         @Override
                         public int startDebugger(ClassPath sources) {
                             sourceProvider.sources = sources != null ? sources : ClassPath.EMPTY;
@@ -587,7 +631,7 @@ public class Debugger {
 
                 @Override
                 public void destroy() {
-                    throw new UnsupportedOperationException("Not supported yet.");
+                    //ignore
                 }
             };
         }
@@ -829,7 +873,6 @@ public class Debugger {
 
         private final OutputStream out;
         private final OutputStream err;
-        private InputOutput io;
 
         public IOProviderImpl(OutputStream out, OutputStream err) {
             this.out = out;
@@ -838,10 +881,8 @@ public class Debugger {
 
         @Override
         public synchronized InputOutput getIO(String name, boolean newIO) {
-            if (io == null) {
-                io = new IO(new OutputWriterImpl(out), new OutputWriterImpl(err));
-            }
-            return io;
+            return new IO(new OutputWriterImpl(this, OutputWriterImpl.Kind.OUT),
+                          new OutputWriterImpl(this, OutputWriterImpl.Kind.ERR));
         }
 
         @Override
@@ -942,8 +983,15 @@ public class Debugger {
 
     private static class OutputWriterImpl extends OutputWriter {
 
-        public OutputWriterImpl(OutputStream sink) {
-            super(new OutputStreamWriter(sink));
+        private final Kind kind;
+
+        public OutputWriterImpl(IOProviderImpl io, Kind kind) {
+            super(createWriter(io, kind));
+            this.kind = kind;
+        }
+
+        private static Writer createWriter(IOProviderImpl io, Kind kind) {
+            return new OutputStreamWriter(kind == Kind.OUT ? io.out : io.err);
         }
 
         @Override
@@ -973,12 +1021,19 @@ public class Debugger {
 
         @Override
         public void reset() throws IOException {
+            IOProvider io = Lookup.getDefault().lookup(IOProvider.class);
+            if (io instanceof IOProviderImpl) {
+                out = createWriter((IOProviderImpl) io, kind);
+            }
         }
 
         @Override
         public void close() {
         }
 
+        public enum Kind {
+            OUT, ERR;
+        }
     }
 
     private static Pair<InputStream, OutputStream> createCopyingStreams() {
@@ -995,7 +1050,7 @@ public class Debugger {
                     } catch (InterruptedException ex) {
                         //ignore
                     }
-                    if (closed.get()) {
+                    if (data.isEmpty() && closed.get()) {
                         return -1;
                     }
                     return data.remove(0);
@@ -1028,10 +1083,10 @@ public class Debugger {
 
             @Override
             public void close() throws IOException {
-//                synchronized (data) {
-//                    closed.set(true);
-//                    data.notifyAll();
-//                }
+                synchronized (data) {
+                    closed.set(true);
+                    data.notifyAll();
+                }
             }
         };
         return Pair.of(in, out);

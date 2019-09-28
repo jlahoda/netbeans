@@ -140,6 +140,7 @@ public class ActionProviderImpl implements ActionProvider {
         ProfileSupport profiler = COMMAND_PROFILE_TEST_SINGLE.equals(command) ? Lookup.getDefault().lookup(ProfileSupport.Factory.class).create() : null;
         File jtregJar = findJTReg(file);
         if (jtregJar == null) {
+            io.getErr().println("Cannot detect JTReg - please reconfigure and specify JTReg home!");
             progress.finished(false);
             return null;
         }
@@ -611,6 +612,8 @@ public class ActionProviderImpl implements ActionProvider {
         "TITLE_NoJTReg=No JTReg found",
     })
     private static File findJTReg(FileObject file) {
+        if (true)
+            return new File("/home/jlahoda/tools/jtreg/jtreg/lib/jtreg.jar");
         File buildDir = BuildUtils.getBuildTargetDir(file);
         File spec = new File(buildDir, "spec.gmk");
         if (spec.canRead()) {

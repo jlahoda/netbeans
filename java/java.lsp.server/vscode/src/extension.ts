@@ -83,6 +83,7 @@ class NetBeansConfigurationProvider implements vscode.DebugConfigurationProvider
     resolveDebugConfiguration(folder: vscode.WorkspaceFolder | undefined, config: vscode.DebugConfiguration, token?: vscode.CancellationToken): vscode.ProviderResult<vscode.DebugConfiguration> {
         config.mainClass = config.program;
         config.classPaths = ['any'];
+        config.console = 'internalConsole';
 
         return config;
     }
