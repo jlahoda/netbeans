@@ -38,7 +38,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -159,16 +158,12 @@ import org.netbeans.spi.editor.hints.ErrorDescription;
 import org.netbeans.spi.editor.hints.Fix;
 import org.netbeans.spi.editor.hints.LazyFixList;
 import org.netbeans.spi.java.hints.JavaFix;
-import org.netbeans.spi.lexer.MutableTextInput;
 import org.openide.cookies.EditorCookie;
-import org.openide.cookies.LineCookie;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.filesystems.URLMapper;
 import org.openide.modules.Places;
-import org.openide.text.Line;
 import org.openide.text.NbDocument;
-import org.openide.text.PositionRef;
 import org.openide.util.Exceptions;
 import org.openide.util.RequestProcessor;
 
@@ -495,7 +490,7 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
     }
 
     public static String html2MD(String html) {
-        return FlexmarkHtmlConverter.builder().build().convert(html);
+        return FlexmarkHtmlConverter.builder().build().convert(html).replaceAll("<br />[ \n]*$", "");
     }
 
     @Override
