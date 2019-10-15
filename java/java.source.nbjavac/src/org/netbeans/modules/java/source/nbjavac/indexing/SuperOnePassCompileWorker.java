@@ -140,7 +140,7 @@ final class SuperOnePassCompileWorker extends CompileWorker {
                                     CompilerOptionsQuery.getOptions(context.getRoot()),
                                     Collections.emptyList());
                             }
-                            for (CompilationUnitTree cut : jt.parse(tuple.jfo)) { //TODO: should be exactly one
+                            for (CompilationUnitTree cut : JavacParser.runInJavacMode(jt, tuple.jfo, (jti, jfo) -> jti.parse(jfo))) { //TODO: should be exactly one
                                 if (units != null) {
                                     trees.add(cut);
                                     units.put(cut, tuple);
@@ -203,7 +203,7 @@ final class SuperOnePassCompileWorker extends CompileWorker {
         Iterable<? extends Processor> processors = jt.getProcessors();
         boolean aptEnabled = processors != null && processors.iterator().hasNext();
         try {
-            final Iterable<? extends Element> types = jt.enter(trees);
+            final Iterable<? extends Element> types = JavacParser.runInJavacMode(jt, trees, (jti, ts) -> jti.enter(ts));
             if (context.isCancelled()) {
                 return null;
             }
@@ -222,7 +222,7 @@ final class SuperOnePassCompileWorker extends CompileWorker {
                     clazz2Tuple.put(type, units.get(typeEnv.toplevel));
                 }
             }
-            jt.analyze(types);
+            JavacParser.runInJavacMode(jt, types, (jti, ts) -> jti.analyze(ts));
             if (context.isCancelled()) {
                 return null;
             }
@@ -288,7 +288,7 @@ final class SuperOnePassCompileWorker extends CompileWorker {
                 @Override
                 public void run() throws IOException {
                     for (Element type : types) {
-                        Iterable<? extends JavaFileObject> generatedFiles = jtFin.generate(Collections.singletonList(type));
+                        Iterable<? extends JavaFileObject> generatedFiles = JavacParser.runInJavacMode(jtFin, type, (jti, t) -> jti.generate(Collections.singletonList(t)));
                         CompileTuple unit = clazz2Tuple.get(type);
                         if (unit == null || !unit.virtual) {
                             for (JavaFileObject generated : generatedFiles) {

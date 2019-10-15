@@ -180,7 +180,7 @@ final class MultiPassCompileWorker extends CompileWorker {
                             JavaIndex.LOG.finer("Created new JavacTask for: " + FileUtil.getFileDisplayName(context.getRoot()) + " " + javaContext.getClasspathInfo().toString()); //NOI18N
                         }
                     }
-                    Iterable<? extends CompilationUnitTree> trees = jt.parse(new JavaFileObject[]{active.jfo});
+                    Iterable<? extends CompilationUnitTree> trees = JavacParser.runInJavacMode(jt, active.jfo, (jti, jfo) -> jti.parse(new JavaFileObject[]{jfo}));
                     if (isLowMemory(flm)) {
                         dumpSymFiles(jt, previous.createdFiles, context);
                         jt = null;
@@ -201,7 +201,7 @@ final class MultiPassCompileWorker extends CompileWorker {
                         continue;
                     }
                     Iterable<? extends Element> types;
-                    types = jt.enterTrees(trees);
+                    types = JavacParser.runInJavacMode(jt, trees, (jti, t) -> jti.enterTrees(t));
                     if (jfo2tuples.remove(active.jfo) != null) {
                         final Types ts = Types.instance(jt.getContext());
                         final Indexable activeIndexable = active.indexable;
@@ -258,7 +258,7 @@ final class MultiPassCompileWorker extends CompileWorker {
                         freeMemory(true);
                         continue;
                     }
-                    jt.analyze(types);
+                    JavacParser.runInJavacMode(jt, types, (jti, ts) -> jti.analyze(ts));
                     if (aptEnabled) {
                         JavaCustomIndexer.addAptGenerated(context, javaContext, active, previous.aptGenerated);
                     }
@@ -300,7 +300,7 @@ final class MultiPassCompileWorker extends CompileWorker {
                     }
                     ExecutableFilesIndex.DEFAULT.setMainClass(context.getRoot().toURL(), active.indexable.getURL(), main[0]);
                     JavaCustomIndexer.setErrors(context, active, diagnosticListener);
-                    Iterable<? extends JavaFileObject> generatedFiles = jt.generate(types);
+                    Iterable<? extends JavaFileObject> generatedFiles = JavacParser.runInJavacMode(jt, types, (jti, ts) -> jti.generate(ts));
                     if (!active.virtual) {
                         for (JavaFileObject generated : generatedFiles) {
                             if (generated instanceof FileObjects.FileBase) {

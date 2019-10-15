@@ -624,43 +624,7 @@ public class JavacParser extends Parser {
                     return Phase.MODIFIED;
                 }
                 long start = System.currentTimeMillis();
-                Supplier<Object> setJavacHandler = () -> null;
-                Consumer<Object> restoreHandler = h -> {};
-                try {
-                    //the DeferredCompletionFailureHandler should be set to javac mode:
-                    Class<?> dcfhClass = Class.forName("com.sun.tools.javac.code.DeferredCompletionFailureHandler");
-                    Class<?> dcfhHandlerClass = Class.forName("com.sun.tools.javac.code.DeferredCompletionFailureHandler$Handler");
-                    Object dcfh = dcfhClass.getDeclaredMethod("instance", Context.class).invoke(null, currentInfo.getJavacTask().getContext());
-                    Method setHandler = dcfhClass.getDeclaredMethod("setHandler", dcfhHandlerClass);
-                    Object javacCodeHandler = dcfhClass.getDeclaredField("javacCodeHandler").get(dcfh);
-
-                    setJavacHandler = () -> {
-                        try {
-                            return setHandler.invoke(dcfh, javacCodeHandler);
-                        } catch (ReflectiveOperationException ex) {
-                            LOGGER.log(Level.FINE, null, ex);
-                            return null;
-                        }
-                    };
-                    restoreHandler = h -> {
-                        if (h != null) {
-                            try {
-                                setHandler.invoke(dcfh, h);
-                            } catch (ReflectiveOperationException ex) {
-                                LOGGER.log(Level.WARNING, null, ex);
-                            }
-                        }
-                    };
-                } catch (ReflectiveOperationException | SecurityException ex) {
-                    //ignore
-                    LOGGER.log(Level.FINEST, null, ex);
-                }
-                Object oldHandler = setJavacHandler.get();
-                try {
-                    currentInfo.getJavacTask().enter();
-                } finally {
-                    restoreHandler.accept(oldHandler);
-                }
+                runInJavacMode(currentInfo.getJavacTask(), null, (jti, v) -> jti.enter());
                 currentPhase = Phase.ELEMENTS_RESOLVED;
                 long end = System.currentTimeMillis();
                 logTime(currentInfo.getFileObject(),currentPhase,(end-start));
@@ -1386,5 +1350,49 @@ public class JavacParser extends Parser {
 
     public static interface SequentialParsing {
         public Iterable<? extends CompilationUnitTree> parse(JavacTask task, JavaFileObject file) throws IOException;
+    }
+
+    public static <D, R, E extends Throwable> R runInJavacMode(JavacTaskImpl jti, D data, JavacModeTask<D, R, E> what) throws E {
+        Supplier<Object> setJavacHandler = () -> null;
+        Consumer<Object> restoreHandler = h -> {};
+        try {
+            //the DeferredCompletionFailureHandler should be set to javac mode:
+            Class<?> dcfhClass = Class.forName("com.sun.tools.javac.code.DeferredCompletionFailureHandler");
+            Class<?> dcfhHandlerClass = Class.forName("com.sun.tools.javac.code.DeferredCompletionFailureHandler$Handler");
+            Object dcfh = dcfhClass.getDeclaredMethod("instance", Context.class).invoke(null, jti.getContext());
+            Method setHandler = dcfhClass.getDeclaredMethod("setHandler", dcfhHandlerClass);
+            Object javacCodeHandler = dcfhClass.getDeclaredField("javacCodeHandler").get(dcfh);
+
+            setJavacHandler = () -> {
+                try {
+                    return setHandler.invoke(dcfh, javacCodeHandler);
+                } catch (ReflectiveOperationException ex) {
+                    LOGGER.log(Level.FINE, null, ex);
+                    return null;
+                }
+            };
+            restoreHandler = h -> {
+                if (h != null) {
+                    try {
+                        setHandler.invoke(dcfh, h);
+                    } catch (ReflectiveOperationException ex) {
+                        LOGGER.log(Level.WARNING, null, ex);
+                    }
+                }
+            };
+        } catch (ReflectiveOperationException | SecurityException ex) {
+            //ignore
+            LOGGER.log(Level.FINEST, null, ex);
+        }
+        Object oldHandler = setJavacHandler.get();
+        try {
+            return what.run(jti, data);
+        } finally {
+            restoreHandler.accept(oldHandler);
+        }
+    }
+
+    public interface JavacModeTask<D, R, E extends Throwable> {
+        public R run(JavacTaskImpl jti, D data) throws E;
     }
 }

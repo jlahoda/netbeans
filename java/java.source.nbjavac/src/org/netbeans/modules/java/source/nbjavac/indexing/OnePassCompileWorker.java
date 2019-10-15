@@ -138,7 +138,7 @@ final class OnePassCompileWorker extends CompileWorker {
                                     Collections.emptyList());
                                 jt.getContext().put(ClassNamesForFileOraculum.class, cnffOraculum);
                             }
-                            for (CompilationUnitTree cut : jt.parse(tuple.jfo)) { //TODO: should be exactly one
+                            for (CompilationUnitTree cut : JavacParser.runInJavacMode(jt, tuple.jfo, (jti, jfo) -> jti.parse(jfo))) { //TODO: should be exactly one
                                 if (units != null) {
                                     Pair<CompilationUnitTree, CompileTuple> unit = Pair.<CompilationUnitTree, CompileTuple>of(cut, tuple);
                                     units.add(unit);
@@ -215,7 +215,7 @@ final class OnePassCompileWorker extends CompileWorker {
                 if (isLowMemory(flm)) {
                     return ParsingOutput.lowMemory(moduleName.name, file2FQNs, addedTypes, addedModules, createdFiles, finished, modifiedTypes, aptGenerated);
                 }
-                final Iterable<? extends Element> types = jt.enterTrees(Collections.singletonList(unit.first()));
+                final Iterable<? extends Element> types = JavacParser.runInJavacMode(jt, unit, (jti, u) -> jti.enterTrees(Collections.singletonList(u.first())));
                 if (jfo2units.remove(active.jfo) != null) {
                     final Types ts = Types.instance(jt.getContext());
                     final Indexable activeIndexable = active.indexable;
@@ -254,7 +254,7 @@ final class OnePassCompileWorker extends CompileWorker {
                 if (isLowMemory(flm)) {
                     return ParsingOutput.lowMemory(moduleName.name, file2FQNs, addedTypes, addedModules, createdFiles, finished, modifiedTypes, aptGenerated);
                 }
-                jt.analyze(types);
+                JavacParser.runInJavacMode(jt, types, (jti, ts) -> jti.analyze(ts));
                 if (aptEnabled) {
                     JavaCustomIndexer.addAptGenerated(context, javaContext, active, aptGenerated);
                 }
@@ -284,7 +284,7 @@ final class OnePassCompileWorker extends CompileWorker {
                 barriers.offer(FileManagerTransaction.runConcurrent(new FileSystem.AtomicAction(){
                     @Override
                     public void run() throws IOException {
-                        Iterable<? extends JavaFileObject> generatedFiles = jtFin.generate(types);
+                        Iterable<? extends JavaFileObject> generatedFiles = JavacParser.runInJavacMode(jtFin, types, (jti, ts) -> jti.generate(ts));
                         if (!virtual) {
                             for (JavaFileObject generated : generatedFiles) {
                                 if (generated instanceof FileObjects.FileBase) {

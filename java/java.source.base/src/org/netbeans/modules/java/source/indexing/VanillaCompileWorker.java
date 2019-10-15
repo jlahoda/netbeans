@@ -242,7 +242,7 @@ final class VanillaCompileWorker extends CompileWorker {
                     clazz2Tuple.put(type, units.get(typeEnv.toplevel));
                 }
             }
-            jt.analyze(types);
+            JavacParser.runInJavacMode(jt, null, (jti, v) -> jti.analyze(types));
             if (context.isCancelled()) {
                 return null;
             }
@@ -314,7 +314,7 @@ final class VanillaCompileWorker extends CompileWorker {
                         TreePath tp = Trees.instance(jtFin).getPath(type);
                         assert tp != null;
                         log.nerrors = 0;
-                        Iterable<? extends JavaFileObject> generatedFiles = jtFin.generate(Collections.singletonList(type));
+                        Iterable<? extends JavaFileObject> generatedFiles = JavacParser.runInJavacMode(jt, type, (jti, t) -> jti.generate(Collections.singletonList(t)));
                         CompileTuple unit = clazz2Tuple.get(type);
                         if (unit == null || !unit.virtual) {
                             for (JavaFileObject generated : generatedFiles) {
