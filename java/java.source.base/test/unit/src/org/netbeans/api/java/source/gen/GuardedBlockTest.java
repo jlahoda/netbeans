@@ -294,7 +294,7 @@ public class GuardedBlockTest extends GeneratorTestMDRCompat {
         src.runModificationTask(task).commit();
         editorCookie.saveDocument();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -353,7 +353,7 @@ public class GuardedBlockTest extends GeneratorTestMDRCompat {
         src.runModificationTask(task).commit();
         editorCookie.saveDocument();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
     
@@ -454,7 +454,7 @@ public class GuardedBlockTest extends GeneratorTestMDRCompat {
         src.runModificationTask(task).commit();
         editorCookie.saveDocument();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
     
@@ -773,7 +773,7 @@ public class GuardedBlockTest extends GeneratorTestMDRCompat {
         src.runModificationTask(task).commit();
         editorCookie.saveDocument();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
     
@@ -829,7 +829,7 @@ public class GuardedBlockTest extends GeneratorTestMDRCompat {
         };
         src.runModificationTask(task).commit();
         String res = doc.getText(0, doc.getLength());
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -924,7 +924,7 @@ public class GuardedBlockTest extends GeneratorTestMDRCompat {
         src.runModificationTask(task).commit();
         LifecycleManager.getDefault().saveAll();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 

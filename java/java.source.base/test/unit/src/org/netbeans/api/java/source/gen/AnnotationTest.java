@@ -113,7 +113,7 @@ public class AnnotationTest extends GeneratorTestBase {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
     
@@ -153,7 +153,7 @@ public class AnnotationTest extends GeneratorTestBase {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
     
@@ -193,7 +193,7 @@ public class AnnotationTest extends GeneratorTestBase {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
     
@@ -231,7 +231,7 @@ public class AnnotationTest extends GeneratorTestBase {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
     
@@ -268,7 +268,7 @@ public class AnnotationTest extends GeneratorTestBase {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
     
@@ -315,7 +315,7 @@ public class AnnotationTest extends GeneratorTestBase {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
     
@@ -362,7 +362,7 @@ public class AnnotationTest extends GeneratorTestBase {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
     
@@ -411,7 +411,7 @@ public class AnnotationTest extends GeneratorTestBase {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
     
@@ -460,7 +460,7 @@ public class AnnotationTest extends GeneratorTestBase {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
     
@@ -498,7 +498,7 @@ public class AnnotationTest extends GeneratorTestBase {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -544,7 +544,7 @@ public class AnnotationTest extends GeneratorTestBase {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -590,7 +590,7 @@ public class AnnotationTest extends GeneratorTestBase {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -636,7 +636,7 @@ public class AnnotationTest extends GeneratorTestBase {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -759,7 +759,7 @@ public class AnnotationTest extends GeneratorTestBase {
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
         String formattedRes = Reformatter.reformat(res, CodeStyle.getDefault(FileUtil.toFileObject(testFile)));
-        System.err.println(res);
+        //System.err.println(res);
         res = res.replaceAll("\n[ ]*\n", "\n");
         System.err.println(formattedRes);
         formattedRes = formattedRes.replaceAll("\n[ ]*\n", "\n"); //XXX: workaround for a bug in reformatter
@@ -800,7 +800,7 @@ public class AnnotationTest extends GeneratorTestBase {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -839,7 +839,7 @@ public class AnnotationTest extends GeneratorTestBase {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -876,7 +876,7 @@ public class AnnotationTest extends GeneratorTestBase {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -909,7 +909,7 @@ public class AnnotationTest extends GeneratorTestBase {
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
         String formattedRes = Reformatter.reformat(res, CodeStyle.getDefault(FileUtil.toFileObject(testFile)));
-        System.err.println(res);
+        //System.err.println(res);
         res = res.replaceAll("\n[ ]*\n", "\n");
         System.err.println(formattedRes);
         formattedRes = formattedRes.replaceAll("\n[ ]*\n", "\n"); //XXX: workaround for a bug in reformatter
@@ -968,7 +968,7 @@ public class AnnotationTest extends GeneratorTestBase {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
     
@@ -1005,7 +1005,7 @@ public class AnnotationTest extends GeneratorTestBase {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
     

@@ -147,7 +147,7 @@ public class SwitchExpressionTest extends TreeRewriteTestBase {
 
         rewriteSwitchExpression();
         String res = TestUtilities.copyFileToString(getTestFile());
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
 
     }

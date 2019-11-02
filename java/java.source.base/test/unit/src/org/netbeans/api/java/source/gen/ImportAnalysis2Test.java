@@ -122,7 +122,7 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -164,7 +164,7 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -204,7 +204,7 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -254,7 +254,7 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
         src.runModificationTask(task).commit();
         preferences.remove("importInnerClasses");
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -294,7 +294,7 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -333,7 +333,7 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -372,7 +372,7 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -409,7 +409,7 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -446,7 +446,7 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -497,7 +497,7 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
         src.runModificationTask(task).commit();
         assertEquals(0, overlay.get().totalMapsSize());
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -552,7 +552,7 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
         src.runModificationTask(task).commit();
         assertEquals(0, overlay.get().totalMapsSize());
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -589,7 +589,7 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -643,7 +643,7 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -683,7 +683,7 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -726,7 +726,7 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
             src.runModificationTask(task).commit();
             preferences.remove("importInnerClasses");
             String res = TestUtilities.copyFileToString(testFile);
-            System.err.println(res);
+            //System.err.println(res);
             assertEquals(golden, res);
         } finally {
             ctx.commit();
@@ -769,7 +769,7 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
             };
             src.runModificationTask(task).commit();
             String res = TestUtilities.copyFileToString(testFile);
-            System.err.println(res);
+            //System.err.println(res);
             assertEquals(golden, res);
         } finally {
             ctx.commit();
@@ -826,7 +826,7 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
             }
         }, true);
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -874,7 +874,7 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
         src.runModificationTask(task).commit();
         preferences.remove("importInnerClasses");
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
     
@@ -923,7 +923,7 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
         src.runModificationTask(task).commit();
         preferences.remove("importInnerClasses");
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
  
