@@ -168,7 +168,7 @@ public class MethodBodyTextTest extends GeneratorTestMDRCompat {
         //System.err.println(res);
         // there is "return 0" instead
         String result = TestUtilities.copyFileToString(testFile);
-        System.err.println(result);
+        //System.err.println(result);
         assertTrue(result.contains("return false"));
     }
     

@@ -144,7 +144,7 @@ public class AnnotationTest extends GeneratorTestBase {
                     if (TreeUtilities.CLASS_TREE_KINDS.contains(typeDecl.getKind())) {
                         ClassTree ct = (ClassTree) typeDecl;
                         ClassTree copy = make.AnnotationType(ct.getModifiers(),"Foo", ct.getMembers());
-                        System.err.println(copy.toString());
+                        //System.err.println(copy.toString());
                         workingCopy.rewrite(typeDecl, copy);
                     }
                 }
@@ -184,7 +184,7 @@ public class AnnotationTest extends GeneratorTestBase {
                     if (TreeUtilities.CLASS_TREE_KINDS.contains(typeDecl.getKind())) {
                         ClassTree ct = (ClassTree) typeDecl;
                         ClassTree copy = make.AnnotationType(ct.getModifiers(),"Foo", ct.getMembers());
-                        System.err.println(copy.toString());
+                        //System.err.println(copy.toString());
                         workingCopy.rewrite(typeDecl, copy);
                     }
                 }
@@ -761,7 +761,7 @@ public class AnnotationTest extends GeneratorTestBase {
         String formattedRes = Reformatter.reformat(res, CodeStyle.getDefault(FileUtil.toFileObject(testFile)));
         //System.err.println(res);
         res = res.replaceAll("\n[ ]*\n", "\n");
-        System.err.println(formattedRes);
+        //System.err.println(formattedRes);
         formattedRes = formattedRes.replaceAll("\n[ ]*\n", "\n"); //XXX: workaround for a bug in reformatter
         assertEquals(formattedRes, res);
         setValues(preferences, origValues);
@@ -911,7 +911,7 @@ public class AnnotationTest extends GeneratorTestBase {
         String formattedRes = Reformatter.reformat(res, CodeStyle.getDefault(FileUtil.toFileObject(testFile)));
         //System.err.println(res);
         res = res.replaceAll("\n[ ]*\n", "\n");
-        System.err.println(formattedRes);
+        //System.err.println(formattedRes);
         formattedRes = formattedRes.replaceAll("\n[ ]*\n", "\n"); //XXX: workaround for a bug in reformatter
         assertEquals(formattedRes, res);
     }

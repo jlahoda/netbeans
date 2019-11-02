@@ -666,7 +666,7 @@ public class MethodBodyTest extends GeneratorTestBase {
             String res = TestUtilities.copyFileToString(testFile);
             String formattedRes = Reformatter.reformat(res.replaceAll("[\\s]+", " "), CodeStyle.getDefault(FileUtil.toFileObject(testFile)));
             //System.err.println(res);
-            System.err.println(formattedRes);
+            //System.err.println(formattedRes);
             assertEquals(formattedRes, res);
             assertEquals(golden.replaceAll("\\s", ""), res.replaceAll("\\s", ""));
         } finally {
