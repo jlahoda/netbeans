@@ -76,15 +76,15 @@ matrix:
           jdk: openjdk8
 
         - name: Run selected Java editor tests on JDK 11 with nb-javac
-          env: SIGTEST=false COMPILETEST=false LICENSE=false CV=false RUN_TESTS_JDK8=false RUN_TESTS_JDK9PLUS=true TEST_JDK_VERSION="--feature 11 --license GPL" TEST_RUN_OPTIONS='-Dtest.run.args=--limit-modules=java.base,java.logging,java.xml,java.prefs,java.desktop,java.management,java.instrument,java.naming,java.scripting -Dtest.bootclasspath.prepend.args=-Dno.netbeans.bootclasspath.prepend.needed=true' TEST_MODULES="java/java.completion java/java.source.base" OPTS="-Dcluster.config=java -quiet build -Djavac.compilerargs=-nowarn -Dbuild.compiler.deprecation=false"
+          env: SIGTEST=false COMPILETEST=false LICENSE=false CV=false RUN_TESTS_JDK8=false RUN_TESTS_JDK9PLUS=true TEST_JDK_VERSION="--feature 11 --license GPL" TEST_RUN_OPTIONS='-Dtest.run.args=--limit-modules=java.base,java.logging,java.xml,java.prefs,java.desktop,java.management,java.instrument,java.naming,java.scripting,jdk.zipfs -Dtest.bootclasspath.prepend.args=-Dno.netbeans.bootclasspath.prepend.needed=true' TEST_MODULES="java/java.completion java/java.source.base" OPTS="-Dcluster.config=java -quiet build -Djavac.compilerargs=-nowarn -Dbuild.compiler.deprecation=false -Dtest-unit-sys-prop.ignore.random.failures=true"
           jdk: openjdk8
 
         - name: Run selected Java editor tests on JDK 13 with nb-javac
-          env: SIGTEST=false COMPILETEST=false LICENSE=false CV=false RUN_TESTS_JDK8=false RUN_TESTS_JDK9PLUS=true TEST_JDK_VERSION="--feature 13 --license GPL" TEST_RUN_OPTIONS='-Dtest.run.args=--limit-modules=java.base,java.logging,java.xml,java.prefs,java.desktop,java.management,java.instrument,java.naming,java.scripting -Dtest.bootclasspath.prepend.args=-Dno.netbeans.bootclasspath.prepend.needed=true' TEST_MODULES="java/java.completion java/java.source.base" OPTS="-Dcluster.config=java -quiet build -Djavac.compilerargs=-nowarn -Dbuild.compiler.deprecation=false"
+          env: SIGTEST=false COMPILETEST=false LICENSE=false CV=false RUN_TESTS_JDK8=false RUN_TESTS_JDK9PLUS=true TEST_JDK_VERSION="--feature 13 --license GPL" TEST_RUN_OPTIONS='-Dtest.run.args=--limit-modules=java.base,java.logging,java.xml,java.prefs,java.desktop,java.management,java.instrument,java.naming,java.scripting,jdk.zipfs -Dtest.bootclasspath.prepend.args=-Dno.netbeans.bootclasspath.prepend.needed=true' TEST_MODULES="java/java.completion java/java.source.base" OPTS="-Dcluster.config=java -quiet build -Djavac.compilerargs=-nowarn -Dbuild.compiler.deprecation=false -Dtest-unit-sys-prop.ignore.random.failures=true"
           jdk: openjdk8
 
         - name: Run selected Java editor tests on JDK 13 without nb-javac
-          env: SIGTEST=false COMPILETEST=false LICENSE=false CV=false RUN_TESTS_JDK8=false RUN_TESTS_JDK9PLUS=true TEST_JDK_VERSION="--feature 13 --license GPL" TEST_RUN_OPTIONS='-Dtest.run.args=--add-exports=jdk.javadoc/com.sun.tools.javadoc.main=ALL-UNNAMED -Dtest.use.jdk.javac=true' TEST_MODULES="java/java.completion" OPTS="-Dcluster.config=java -quiet build -Djavac.compilerargs=-nowarn -Dbuild.compiler.deprecation=false"
+          env: SIGTEST=false COMPILETEST=false LICENSE=false CV=false RUN_TESTS_JDK8=false RUN_TESTS_JDK9PLUS=true TEST_JDK_VERSION="--feature 13 --license GPL" TEST_RUN_OPTIONS='-Dtest.run.args=--add-exports=jdk.javadoc/com.sun.tools.javadoc.main=ALL-UNNAMED -Dtest.use.jdk.javac=true' TEST_MODULES="java/java.completion" OPTS="-Dcluster.config=java -quiet build -Djavac.compilerargs=-nowarn -Dbuild.compiler.deprecation=false -Dtest-unit-sys-prop.ignore.random.failures=true"
           jdk: openjdk8
           
         - env: > 
