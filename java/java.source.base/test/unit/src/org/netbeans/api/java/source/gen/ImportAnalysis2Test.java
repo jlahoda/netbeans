@@ -84,6 +84,7 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
 
     @Override
     protected void setUp() throws Exception {
+        clearWorkDir();
         super.setUp();
 
         FileUtil.createData(FileUtil.getConfigRoot(), "Templates/Classes/Empty.java");
@@ -127,7 +128,6 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
     }
 
     public void testStringQualIdentNewlyCreated() throws Exception {
-        clearWorkDir();
         testFile = new File(getWorkDir(), "hierbas/del/litoral/Test.java");
         assertTrue(testFile.getParentFile().mkdirs());
         TestUtilities.copyStringToFile(testFile,
@@ -169,7 +169,6 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
     }
 
     public void testStringQualIdentNewlyCreatedSamePackage() throws Exception {
-        clearWorkDir();
         testFile = new File(getWorkDir(), "hierbas/del/litoral/Test.java");
         assertTrue(testFile.getParentFile().mkdirs());
         TestUtilities.copyStringToFile(testFile,
@@ -209,7 +208,6 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
     }
 
     public void testStringQualIdentNewlyCreatedNestedClasses() throws Exception {
-        clearWorkDir();
         testFile = new File(getWorkDir(), "hierbas/del/litoral/Test.java");
         assertTrue(testFile.getParentFile().mkdirs());
         TestUtilities.copyStringToFile(testFile,
@@ -259,7 +257,6 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
     }
 
     public void testStringQualIdentNewlyCreatedNestedClassesToCurrent() throws Exception {
-        clearWorkDir();
         testFile = new File(getWorkDir(), "hierbas/del/litoral/Test.java");
         assertTrue(testFile.getParentFile().mkdirs());
         TestUtilities.copyStringToFile(testFile,
@@ -299,7 +296,6 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
     }
 
     public void testStringQualIdentNewImplements() throws Exception {
-        clearWorkDir();
         testFile = new File(getWorkDir(), "hierbas/del/litoral/Test.java");
         assertTrue(testFile.getParentFile().mkdirs());
         TestUtilities.copyStringToFile(testFile,
@@ -338,7 +334,6 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
     }
 
     public void testType1() throws Exception {
-        clearWorkDir();
         testFile = new File(getWorkDir(), "hierbas/del/litoral/Test.java");
         assertTrue(testFile.getParentFile().mkdirs());
         TestUtilities.copyStringToFile(testFile,
@@ -377,7 +372,6 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
     }
 
     public void testType2() throws Exception {
-        clearWorkDir();
         testFile = new File(getWorkDir(), "hierbas/del/litoral/Test.java");
         assertTrue(testFile.getParentFile().mkdirs());
         TestUtilities.copyStringToFile(testFile,
@@ -414,7 +408,6 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
     }
 
     public void testStringQualIdentNonExistent() throws Exception {
-        clearWorkDir();
         testFile = new File(getWorkDir(), "hierbas/del/litoral/Test.java");
         assertTrue(testFile.getParentFile().mkdirs());
         TestUtilities.copyStringToFile(testFile,
@@ -451,7 +444,6 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
     }
 
     public void testInternalChangesAreLightweight1() throws Exception {
-        clearWorkDir();
         testFile = new File(getWorkDir(), "hierbas/del/litoral/Test.java");
         assertTrue(testFile.getParentFile().mkdirs());
         String code =
@@ -502,7 +494,6 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
     }
 
     public void testInternalChangesAreLightweight2() throws Exception {
-        clearWorkDir();
         testFile = new File(getWorkDir(), "hierbas/del/litoral/Test.java");
         assertTrue(testFile.getParentFile().mkdirs());
         String code =
@@ -594,7 +585,6 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
     }
 
     public void test195882() throws Exception {
-        clearWorkDir();
         beginTx();
         assertTrue(new File(getWorkDir(), "test").mkdirs());
         testFile = new File(getWorkDir(), "test/Test.java");
@@ -648,7 +638,6 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
     }
 
     public void testParameterizedType() throws Exception {
-        clearWorkDir();
         beginTx();
         assertTrue(new File(getWorkDir(), "test").mkdirs());
         testFile = new File(getWorkDir(), "test/Test.java");
@@ -688,7 +677,6 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
     }
 
     public void testTooSoon206957a() throws Exception {
-        clearWorkDir();
         assertTrue(new File(getWorkDir(), "test").mkdirs());
         testFile = new File(getWorkDir(), "test/Test.java");
         TestUtilities.copyStringToFile(testFile,
@@ -734,7 +722,6 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
     }
 
     public void testTooSoon206957b() throws Exception {
-        clearWorkDir();
         assertTrue(new File(getWorkDir(), "test").mkdirs());
         testFile = new File(getWorkDir(), "test/Entry.java");
         TestUtilities.copyStringToFile(testFile,
@@ -777,7 +764,6 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
     }
 
     public void test208490() throws Exception {
-        clearWorkDir();
         testFile = new File(getWorkDir(), "hierbas/del/litoral/Test.java");
         assertTrue(testFile.getParentFile().mkdirs());
         TestUtilities.copyStringToFile(testFile,
@@ -831,7 +817,6 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
     }
 
     public void testStringQualIdentClashWithRemovedClass1() throws Exception {
-        clearWorkDir();
         testFile = new File(getWorkDir(), "hierbas/del/litoral/Test.java");
         assertTrue(testFile.getParentFile().mkdirs());
         TestUtilities.copyStringToFile(testFile,
@@ -879,7 +864,6 @@ public class ImportAnalysis2Test extends GeneratorTestMDRCompat {
     }
     
     public void testStringQualIdentClashWithRemovedClass2() throws Exception {
-        clearWorkDir();
         testFile = new File(getWorkDir(), "hierbas/del/litoral/Test.java");
         assertTrue(testFile.getParentFile().mkdirs());
         TestUtilities.copyStringToFile(testFile,
