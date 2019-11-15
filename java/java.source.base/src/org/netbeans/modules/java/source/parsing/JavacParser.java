@@ -120,6 +120,7 @@ import org.netbeans.modules.parsing.api.UserTask;
 import org.netbeans.modules.parsing.impl.Utilities;
 import org.netbeans.modules.parsing.spi.ParseException;
 import org.netbeans.modules.parsing.spi.Parser;
+import org.netbeans.modules.parsing.spi.ParserBasedEmbeddingProvider;
 import org.netbeans.modules.parsing.spi.ParserResultTask;
 import org.netbeans.modules.parsing.spi.SourceModificationEvent;
 import org.openide.filesystems.FileObject;
@@ -439,6 +440,7 @@ public class JavacParser extends Parser {
 
         final boolean isJavaParserResultTask = task instanceof JavaParserResultTask;
         final boolean isParserResultTask = task instanceof ParserResultTask;
+        final boolean isParserBasedEmbeddingProvider = task instanceof ParserBasedEmbeddingProvider;
         final boolean isUserTask = task instanceof UserTask;
         final boolean isClasspathInfoProvider = task instanceof ClasspathInfo.Provider;
 
@@ -498,7 +500,7 @@ public class JavacParser extends Parser {
                 result = new JavacParserResult(JavaSourceAccessor.getINSTANCE().createCompilationInfo(ciImpl));
             }
         }
-        else if (isUserTask) {
+        else if (isUserTask || isParserBasedEmbeddingProvider) {
             result = new JavacParserResult(JavaSourceAccessor.getINSTANCE().createCompilationController(ciImpl));
         }
         else {
