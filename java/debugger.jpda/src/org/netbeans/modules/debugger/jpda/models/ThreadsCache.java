@@ -235,7 +235,7 @@ public class ThreadsCache implements Executor {
         List<ThreadGroupReference> topGroups = groupMap.get(null);
         if (topGroups == null) {
             if (vm == null) {
-                return Collections.EMPTY_LIST;
+                return Collections.emptyList();
             }
             topGroups = new ArrayList<>(VirtualMachineWrapper.topLevelThreadGroups0(vm));
             groupMap.put(null, topGroups);
@@ -321,7 +321,7 @@ public class ThreadsCache implements Executor {
     
     private List<ThreadGroupReference> addGroups(ThreadGroupReference group) throws ObjectCollectedExceptionWrapper {
         if (threadMap != null && !threadMap.containsKey(group)) {
-            List<ThreadReference> threads = new ArrayList();
+            List<ThreadReference> threads = new ArrayList<>();
             threadMap.put(group, threads);
         }
         if (groupMap == null) {
