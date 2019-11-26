@@ -16,7 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-@TemplateRegistration(folder = "Other", content = "TypeScriptDataObjectTemplate.ts")
+@TemplateRegistration(folder = "Other",
+                      content = "TypeScriptDataObjectTemplate.ts",
+                      displayName = "#DN_TypeScriptDataObjectTemplate")
+@Messages("DN_TypeScriptDataObjectTemplate=TypeScript File")
 package org.netbeans.modules.typescript.editor;
 
 import org.netbeans.api.templates.TemplateRegistration;
+import org.openide.util.NbBundle.Messages;

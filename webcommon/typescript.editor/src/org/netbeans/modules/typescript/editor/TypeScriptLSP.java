@@ -23,11 +23,14 @@ import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.netbeans.api.editor.mimelookup.MimeRegistration;
+import org.netbeans.api.options.OptionsDisplayer;
 import org.netbeans.modules.javascript.nodejs.api.NodeJsSupport;
 import org.netbeans.modules.lsp.client.spi.LanguageServerProvider;
+import org.openide.awt.NotificationDisplayer;
 import org.openide.modules.InstalledFileLocator;
-import org.openide.util.Exceptions;
+import org.openide.util.ImageUtilities;
 import org.openide.util.Lookup;
+import org.openide.util.NbBundle.Messages;
 
 /**
  *
@@ -37,9 +40,17 @@ import org.openide.util.Lookup;
 public class TypeScriptLSP implements LanguageServerProvider {
 
     @Override
+    @Messages({"WARN_NoNode=node.js not found, TypeScript support disabled.",
+               "DESC_NoNode=Please specify node.js location in the Tools/Options, and restart the IDE."
+    })
     public LanguageServerDescription startServer(Lookup lookup) {
         String node = NodeJsSupport.getInstance().getNode(null);
-        if (node == null) return null;
+        if (node == null || node.isEmpty()) {
+            NotificationDisplayer.getDefault().notify(Bundle.WARN_NoNode(), ImageUtilities.loadImageIcon("org/netbeans/modules/typescript/editor/icon.png", true), Bundle.DESC_NoNode(), evt -> {
+                OptionsDisplayer.getDefault().open("Html5/NodeJs");
+            });
+            return null;
+        }
         File server = InstalledFileLocator.getDefault().locate("typescript-lsp/node_modules/typescript-language-server/lib/cli.js", null, false);
         try {
             Process p = new ProcessBuilder(new String[] {node, server.getAbsolutePath(), "--stdio"}).directory(server.getParentFile().getParentFile()).redirectError(ProcessBuilder.Redirect.INHERIT).start();
