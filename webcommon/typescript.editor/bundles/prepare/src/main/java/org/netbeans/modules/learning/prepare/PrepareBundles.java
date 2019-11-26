@@ -51,6 +51,7 @@ public class PrepareBundles {
     private static final String[] LICENSE_FILE_NAMES = {
         "license",
         "LICENSE",
+        "LICENSE.txt",
         "License.txt",
         "LICENSE.md"
     };
@@ -63,7 +64,7 @@ public class PrepareBundles {
 
         Path targetDir = Paths.get(args[0]);
         Path packagesDir = targetDir.resolve("package");
-        new ProcessBuilder("npm", "install").directory(packagesDir.toFile()).start().waitFor();
+        new ProcessBuilder("npm", "install").directory(packagesDir.toFile()).inheritIO().start().waitFor();
         Path bundlesDir = targetDir.resolve("bundles");
         Files.createDirectories(bundlesDir);
         try (DirectoryStream<Path> ds = Files.newDirectoryStream(bundlesDir)) {
@@ -215,7 +216,7 @@ public class PrepareBundles {
     }
 
     private static List<String> licenseTextToTokens(String licenseText) {
-        return Arrays.asList(licenseText.replaceAll("[ \n\t]+", " ").split(" "));
+        return Arrays.asList(licenseText.replaceAll("[ \n\r\t]+", " ").split(" "));
     }
     private static class LicenseDescription {
         private final String name;
