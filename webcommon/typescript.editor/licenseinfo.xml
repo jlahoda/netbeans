@@ -29,8 +29,7 @@
         <comment type="COMMENT_UNSUPPORTED" />
     </fileset>
     <fileset>
-        <file>bundles/package/package.json</file>
-        <file>/homesrc/org/netbeans/modules/typescript/editor/TypeScript.tmLanguage.json</file>
+        <file>src/org/netbeans/modules/typescript/editor/TypeScript.tmLanguage.json</file>
         <license ref="MIT-vscode" />
         <comment type="COMMENT_UNSUPPORTED" />
     </fileset>
