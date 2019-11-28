@@ -60,6 +60,8 @@
         <classpath>
             <pathelement location="${ant.core.lib}"/>
         </classpath>
+        <include name="org/netbeans/nbbuild/DownloadUtils.java"/>
+        <include name="org/netbeans/nbbuild/extlibs/ConfigureProxy.java"/>
         <include name="org/netbeans/nbbuild/extlibs/DeregisterExternalHook.java"/>
         <include name="org/netbeans/nbbuild/extlibs/DownloadBinaries.java"/>
         <compilerarg line="-Xlint -Xlint:-serial"/>
