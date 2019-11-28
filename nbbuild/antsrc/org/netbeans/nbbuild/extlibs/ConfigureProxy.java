@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.Task;
+import org.netbeans.nbbuild.DownloadUtils;
 
 public final class ConfigureProxy extends Task {
     private URL connectTo;
@@ -59,7 +60,7 @@ public final class ConfigureProxy extends Task {
     public void execute() throws BuildException {
         try {
             URI[] connectedVia = { null };
-            URLConnection connect = openConnection(this, connectTo, connectedVia);
+            URLConnection connect = DownloadUtils.openConnection(this, connectTo, connectedVia);
             if (connect == null) {
                 throw new BuildException("Cannot connect to " + connectTo);
             }
@@ -81,70 +82,5 @@ public final class ConfigureProxy extends Task {
         }
     }
 
-    static URLConnection openConnection(Task task, final URL url, URI[] connectedVia) throws IOException {
-        final URLConnection[] conn = { null };
-        final List<Exception> errs = new CopyOnWriteArrayList<>();
-        final CountDownLatch connected = new CountDownLatch(1);
-        ExecutorService connectors = Executors.newFixedThreadPool(3);
-        connectors.submit(() -> {
-            String httpProxy = System.getenv("http_proxy");
-            if (httpProxy != null) {
-                try {
-                    URI uri = new URI(httpProxy);
-                    InetSocketAddress address = InetSocketAddress.createUnresolved(uri.getHost(), uri.getPort());
-                    Proxy proxy = new Proxy(Proxy.Type.HTTP, address);
-                    URLConnection test = url.openConnection(proxy);
-                    test.connect();
-                    conn[0] = test;
-                    connected.countDown();
-                    if (connectedVia != null) {
-                        connectedVia[0] = uri;
-                    }
-                } catch (IOException | URISyntaxException ex) {
-                    errs.add(ex);
-                }
-            }
-        });
-        connectors.submit(() -> {
-            String httpProxy = System.getenv("https_proxy");
-            if (httpProxy != null) {
-                try {
-                    URI uri = new URI(httpProxy);
-                    InetSocketAddress address = InetSocketAddress.createUnresolved(uri.getHost(), uri.getPort());
-                    Proxy proxy = new Proxy(Proxy.Type.HTTP, address);
-                    URLConnection test = url.openConnection(proxy);
-                    test.connect();
-                    conn[0] = test;
-                    connected.countDown();
-                    if (connectedVia != null) {
-                        connectedVia[0] = uri;
-                    }
-                } catch (IOException | URISyntaxException ex) {
-                    errs.add(ex);
-                }
-            }
-        });
-        connectors.submit(() -> {
-            try {
-                URLConnection test = url.openConnection();
-                test.connect();
-                conn[0] = test;
-                connected.countDown();
-            } catch (IOException ex) {
-                errs.add(ex);
-            }
-        });
-        try {
-            connected.await(5, TimeUnit.SECONDS);
-        } catch (InterruptedException ex) {
-        }
-        if (conn[0] == null) {
-            for (Exception ex : errs) {
-                task.log(ex, Project.MSG_ERR);
-            }
-            throw new IOException("Cannot connect to " + url);
-        }
-        return conn[0];
-    }
 
 }

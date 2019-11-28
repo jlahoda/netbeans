@@ -410,7 +410,7 @@ metabuild.hash=${metabuild.hash}</echo>
   <!-- Use of nbmerge target has the effect of automatically depending on all-X for every module. -->
   <!-- It also runs deltree(dir=wherever) and copydir(src=../X/netbeans,dest=wherever) to create the IDE install. -->
 
-  <target name="build-nozip" depends="init,download-selected-extbins,clean-cluster-flags,build-clusters,create-mandatory-files-for-binary,create-netbeans-import,finish-build,add-junit" description="Build the IDE but do not create a final ZIP file."/>
+  <target name="build-nozip" depends="init,download-selected-extbins,clean-cluster-flags,build-clusters,add-optional,create-mandatory-files-for-binary,create-netbeans-import,finish-build,add-junit" description="Build the IDE but do not create a final ZIP file."/>
   <target name="-check-nb-cluster" depends="init">
        <condition property="has.nb.cluster">
            <contains string="${nb.clusters.list}" substring="nb.cluster.nb" />
@@ -512,6 +512,15 @@ Hg ID:    ${hg.id}
           <property name="nb.cluster.experimental" value=""/>
           <property name="do.not.recurse" value="true"/>
       </ant>
+  </target>
+  <target name="add-optional" if="include.optional.modules" depends="bootstrap" description="XXX">
+    <taskdef name="autoupdate" classname="org.netbeans.nbbuild.AutoUpdate" classpath="${build.ant.classes.dir}"/>
+    <autoupdate
+        updatecenter="file://${nb_all}/nb/updatecenters/build/classes/org/netbeans/modules/updatecenters/resources/3rdparty-catalog.xml"
+        todir="${netbeans.dest.dir}/java"
+    >
+        <modules includes=".*"/>
+    </autoupdate>
   </target>
   <target name="clean-junit">
       <delete dir="../libs.junit4/build" verbose="true"/>

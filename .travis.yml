@@ -373,3 +373,6 @@ matrix:
             - travis_retry ant $OPTS $OPTS_TEST -f ide/db.metadata.model test
             - travis_retry ant $OPTS $OPTS_TEST -f ide/db.mysql test
 
+        - name: "Build with optional components"
+          env: SIGTEST=false COMPILETEST=false RAT=false EOL=false LICENSE=true CV=false RUN_TESTS_JDK8=false RUN_JAVA_TESTS=false OPTS="-Dinclude.optional.dependencies=true"
+          jdk: openjdk8

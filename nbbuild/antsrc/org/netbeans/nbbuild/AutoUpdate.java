@@ -55,6 +55,8 @@ import org.apache.tools.ant.taskdefs.Get;
 import org.apache.tools.ant.types.FileSet;
 import org.apache.tools.ant.util.FileUtils;
 import org.netbeans.nbbuild.AutoUpdateCatalogParser.ModuleItem;
+import org.netbeans.nbbuild.DownloadUtils.MavenCoordinate;
+import org.netbeans.nbbuild.extlibs.DownloadBinaries;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.Attributes;
@@ -395,7 +397,14 @@ public class AutoUpdate extends Task {
                 }
                 log("Trying external URL: " + url, Project.MSG_INFO);
                 try {
-                    conn = new URL(url).openConnection();
+                    URL resolved;
+                    if (url.startsWith("m2:/")) {
+                        MavenCoordinate mc = MavenCoordinate.fromAUCFormat(url.substring("m2:/".length()));
+                        resolved = DownloadUtils.mavenFileURL(mc);
+                    } else {
+                        resolved = new URL(url);
+                    }
+                    conn = DownloadUtils.openConnection(this, resolved, null);
                     conn.connect();
                     return conn.getInputStream();
                 } catch (IOException ex) {
