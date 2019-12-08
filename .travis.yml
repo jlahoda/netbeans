@@ -304,33 +304,46 @@ matrix:
             - ant $OPTS -f java/spring.beans test
             - ant $OPTS -f java/java.source.base test
 
-        - name: Test Java completion with Java 11
+        - name: Test Java modules with nb-javac and Java 11
           jdk: openjdk8
           env:
             - OPTS="-quiet -Dcluster.config=java -Djavac.compilerargs=-nowarn -Dbuild.compiler.deprecation=false"
           before_script:
             - wget https://raw.githubusercontent.com/sormuras/bach/master/install-jdk.sh
             - export TEST_JDK=`bash install-jdk.sh --feature 11 --license GPL --emit-java-home --silent | tail -1`
-            - export OPTS="$OPTS  -Dtest.nbjdk.home=$TEST_JDK -Dtest.run.args=--add-exports=jdk.javadoc/com.sun.tools.javadoc.main=ALL-UNNAMED -Dtest.use.jdk.javac=true"
+            - export OPTS="$OPTS  -Dtest.nbjdk.home=$TEST_JDK -Dtest.run.args=--limit-modules=java.base,java.logging,java.xml,java.prefs,java.desktop,java.management,java.instrument,jdk.zipfs,java.scripting,java.naming -Dtest.use.jdk.javac=true"
             - ant $OPTS clean
             - ant $OPTS build
           script:
             - ant $OPTS -f java/java.completion test
             - ant $OPTS -f java/java.source.base test
 
-        - name: Test Java completion with Java 13
+        - name: Test Java modules with nb-javac and Java 13
           jdk: openjdk8
           env:
             - OPTS="-quiet -Dcluster.config=java -Djavac.compilerargs=-nowarn -Dbuild.compiler.deprecation=false"
           before_script:
             - wget https://raw.githubusercontent.com/sormuras/bach/master/install-jdk.sh
             - export TEST_JDK=`bash install-jdk.sh --feature 13 --license GPL --emit-java-home --silent | tail -1`
-            - export OPTS="$OPTS  -Dtest.nbjdk.home=$TEST_JDK -Dtest.run.args=--add-exports=jdk.javadoc/com.sun.tools.javadoc.main=ALL-UNNAMED -Dtest.use.jdk.javac=true"
+            - export OPTS="$OPTS -Dtest.nbjdk.home=$TEST_JDK -Dtest.run.args=--limit-modules=java.base,java.logging,java.xml,java.prefs,java.desktop,java.management,java.instrument,jdk.zipfs,java.scripting,java.naming -Dtest.use.jdk.javac=true"
             - ant $OPTS clean
             - ant $OPTS build
           script:
             - ant $OPTS -f java/java.completion test
             - ant $OPTS -f java/java.source.base test
+
+        - name: Test Java modules without nb-javac and Java 13
+          jdk: openjdk8
+          env:
+            - OPTS="-quiet -Dcluster.config=java -Djavac.compilerargs=-nowarn -Dbuild.compiler.deprecation=false"
+          before_script:
+            - wget https://raw.githubusercontent.com/sormuras/bach/master/install-jdk.sh
+            - export TEST_JDK=`bash install-jdk.sh --feature 13 --license GPL --emit-java-home --silent | tail -1`
+            - export OPTS="$OPTS -Dtest.nbjdk.home=$TEST_JDK -Dtest.use.jdk.javac=true"
+            - ant $OPTS clean
+            - ant $OPTS build
+          script:
+            - ant $OPTS -f java/java.completion test
 
         - name: Test ergonomics modules
           jdk: openjdk8
