@@ -615,9 +615,10 @@ public class ElementHandleTest extends NbTestCase {
     
     public void testHandleClassBasedCompilations() throws Exception {
         ClassPath systemClasses = BootClassPathUtil.getModuleBootPath();
-        FileObject jlObject = systemClasses.findResource("java/lang/Object.class");
+        ClassPath bcp = BootClassPathUtil.getBootClassPath();
+        FileObject jlObject = bcp.findResource("java/lang/Object.class");
         assertNotNull(jlObject);
-        ClasspathInfo cpInfo = new ClasspathInfo.Builder(BootClassPathUtil.getBootClassPath())
+        ClasspathInfo cpInfo = new ClasspathInfo.Builder(bcp)
                                                 .setModuleBootPath(systemClasses)
                                                 .build();
         JavaSource js = JavaSource.create(cpInfo, jlObject);
