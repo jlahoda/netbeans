@@ -290,7 +290,7 @@ matrix:
             - ant $OPTS -f ide/xml.xdm test
             - ant $OPTS -f ide/xsl test
             
-        - name: Test Java modules
+        - name: Test Java modules with nb-javac on Java 8
           jdk: openjdk8
           env:
             - OPTS="-quiet -Dcluster.config=java -Djavac.compilerargs=-nowarn -Dbuild.compiler.deprecation=false -Dtest-unit-sys-prop.ignore.random.failures=true"
@@ -304,7 +304,7 @@ matrix:
             - ant $OPTS -f java/spring.beans test
             - ant $OPTS -f java/java.source.base test
 
-        - name: Test Java modules with nb-javac and Java 11
+        - name: Test Java modules with nb-javac on Java 11
           jdk: openjdk8
           env:
             - OPTS="-quiet -Dcluster.config=java -Djavac.compilerargs=-nowarn -Dbuild.compiler.deprecation=false -Dtest-unit-sys-prop.ignore.random.failures=true"
@@ -318,7 +318,7 @@ matrix:
             - ant $OPTS -f java/java.completion test
             - ant $OPTS -f java/java.source.base test
 
-        - name: Test Java modules with nb-javac and Java 13
+        - name: Test Java modules with nb-javac on Java 13
           jdk: openjdk8
           env:
             - OPTS="-quiet -Dcluster.config=java -Djavac.compilerargs=-nowarn -Dbuild.compiler.deprecation=false -Dtest-unit-sys-prop.ignore.random.failures=true"
@@ -332,7 +332,7 @@ matrix:
             - ant $OPTS -f java/java.completion test
             - ant $OPTS -f java/java.source.base test
 
-        - name: Test Java modules without nb-javac and Java 13
+        - name: Test Java modules without nb-javac on Java 13
           jdk: openjdk8
           env:
             - OPTS="-quiet -Dcluster.config=java -Djavac.compilerargs=-nowarn -Dbuild.compiler.deprecation=false -Dtest-unit-sys-prop.ignore.random.failures=true"
