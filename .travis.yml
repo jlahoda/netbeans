@@ -307,26 +307,28 @@ matrix:
         - name: Test Java completion with Java 11
           jdk: openjdk8
           env:
-            - OPTS="-quiet -Dcluster.config=java -Djavac.compilerargs=-nowarn -Dbuild.compiler.deprecation=false"
+            - OPTS="-quiet -Dcluster.config=java -Djavac.compilerargs=-nowarn -Dbuild.compiler.deprecation=false -Dtest.nbjdk.home=$TEST_JDK -Dtest.run.args=--limit-modules=java.base,java.logging,java.xml,java.prefs,java.desktop,java.management,java.instrument -Dtest.use.jdk.javac=true"
           before_script:
             - wget https://raw.githubusercontent.com/sormuras/bach/master/install-jdk.sh
             - export TEST_JDK=`bash install-jdk.sh --feature 11 --license GPL --emit-java-home --silent | tail -1`
             - ant $OPTS clean
             - ant $OPTS build
           script:
-            - ant $OPTS -f java/java.completion -Dtest.nbjdk.home=$TEST_JDK -Dtest.run.args=--limit-modules=java.base,java.logging,java.xml,java.prefs,java.desktop,java.management,java.instrument -Dtest.use.jdk.javac=true test
+            - ant $OPTS -f java/java.completion test
+            - ant $OPTS -f java/java.source.base test
 
         - name: Test Java completion with Java 13
           jdk: openjdk8
           env:
-            - OPTS="-quiet -Dcluster.config=java -Djavac.compilerargs=-nowarn -Dbuild.compiler.deprecation=false"
+            - OPTS="-quiet -Dcluster.config=java -Djavac.compilerargs=-nowarn -Dbuild.compiler.deprecation=false -Dtest.nbjdk.home=$TEST_JDK -Dtest.run.args=--add-exports=jdk.javadoc/com.sun.tools.javadoc.main=ALL-UNNAMED -Dtest.use.jdk.javac=true"
           before_script:
             - wget https://raw.githubusercontent.com/sormuras/bach/master/install-jdk.sh
             - export TEST_JDK=`bash install-jdk.sh --feature 13 --license GPL --emit-java-home --silent | tail -1`
             - ant $OPTS clean
             - ant $OPTS build
           script:
-            - ant $OPTS -f java/java.completion -Dtest.nbjdk.home=$TEST_JDK -Dtest.run.args=--add-exports=jdk.javadoc/com.sun.tools.javadoc.main=ALL-UNNAMED -Dtest.use.jdk.javac=true test
+            - ant $OPTS -f java/java.completion test
+            - ant $OPTS -f java/java.source.base test
 
         - name: Test ergonomics modules
           jdk: openjdk8
