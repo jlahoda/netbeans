@@ -311,10 +311,10 @@ matrix:
           before_script:
             - wget https://raw.githubusercontent.com/sormuras/bach/master/install-jdk.sh
             - export TEST_JDK=`bash install-jdk.sh --feature 11 --license GPL --emit-java-home --silent | tail -1`
+            - export OPTS="$OPTS  -Dtest.nbjdk.home=$TEST_JDK -Dtest.run.args=--add-exports=jdk.javadoc/com.sun.tools.javadoc.main=ALL-UNNAMED -Dtest.use.jdk.javac=true"
             - ant $OPTS clean
             - ant $OPTS build
           script:
-            - OPTS="$OPTS  -Dtest.nbjdk.home=$TEST_JDK -Dtest.run.args=--add-exports=jdk.javadoc/com.sun.tools.javadoc.main=ALL-UNNAMED -Dtest.use.jdk.javac=true"
             - ant $OPTS -f java/java.completion test
             - ant $OPTS -f java/java.source.base test
 
@@ -325,10 +325,10 @@ matrix:
           before_script:
             - wget https://raw.githubusercontent.com/sormuras/bach/master/install-jdk.sh
             - export TEST_JDK=`bash install-jdk.sh --feature 13 --license GPL --emit-java-home --silent | tail -1`
+            - export OPTS="$OPTS  -Dtest.nbjdk.home=$TEST_JDK -Dtest.run.args=--add-exports=jdk.javadoc/com.sun.tools.javadoc.main=ALL-UNNAMED -Dtest.use.jdk.javac=true"
             - ant $OPTS clean
             - ant $OPTS build
           script:
-            - OPTS="$OPTS  -Dtest.nbjdk.home=$TEST_JDK -Dtest.run.args=--add-exports=jdk.javadoc/com.sun.tools.javadoc.main=ALL-UNNAMED -Dtest.use.jdk.javac=true"
             - ant $OPTS -f java/java.completion test
             - ant $OPTS -f java/java.source.base test
 
