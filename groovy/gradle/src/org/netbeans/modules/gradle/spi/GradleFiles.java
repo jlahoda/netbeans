@@ -19,7 +19,6 @@
 
 package org.netbeans.modules.gradle.spi;
 
-import org.netbeans.modules.gradle.spi.GradleSettings;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -30,6 +29,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -63,7 +63,9 @@ public final class GradleFiles implements Serializable {
     }
 
     public static final String SETTINGS_FILE_NAME     = "settings.gradle"; //NOI18N
+    public static final String SETTINGS_FILE_NAME_KTS = "settings.gradle.kts"; //NOI18N
     public static final String BUILD_FILE_NAME        = "build.gradle"; //NOI18N
+    public static final String BUILD_FILE_NAME_KTS    = "build.gradle.kts"; //NOI18N
     public static final String GRADLE_PROPERTIES_NAME = "gradle.properties"; //NOI18N
     public static final String WRAPPER_PROPERTIES     = "gradle/wrapper/gradle-wrapper.properties"; //NOI18N
 
@@ -73,7 +75,6 @@ public final class GradleFiles implements Serializable {
     File buildScript;
     File parentScript;
     File settingsScript;
-    List<File> propertyFiles;
     File gradlew;
     File wrapperProperties;
 
@@ -94,11 +95,31 @@ public final class GradleFiles implements Serializable {
         searchWrapper();
     }
 
-    private void searchBuildScripts() {
-        File f1 = new File(projectDir, BUILD_FILE_NAME);
-        File f2 = new File(projectDir, projectDir.getName() + ".gradle");
+    private List<File> searchPropertyFiles() {
+        List<File> ret = new ArrayList<>(3);
+        for (Kind kind:Kind.PROPERTIES){
+            File f = getFile(kind);
+            if (f.exists()){
+                ret.add(f);
+            }
+        }
+        return Collections.unmodifiableList(ret);
+    }
 
-        settingsScript = searchPathUp(projectDir, SETTINGS_FILE_NAME);
+    private void searchBuildScripts() {
+        File f1 = new File(projectDir, BUILD_FILE_NAME_KTS);
+        if (!f1.canRead()) {
+            f1 = new File(projectDir, BUILD_FILE_NAME);
+        }
+        File f2 = new File(projectDir, projectDir.getName() + ".gradle.kts");
+        if (!f2.canRead()) {
+            f2 = new File(projectDir, projectDir.getName() + ".gradle");
+        }
+
+        settingsScript = searchPathUp(projectDir, SETTINGS_FILE_NAME_KTS);
+        if (settingsScript == null) {
+            settingsScript = searchPathUp(projectDir, SETTINGS_FILE_NAME);
+        }
         File settingsDir = settingsScript != null ? settingsScript.getParentFile() : null;
         buildScript = f1.canRead() ? f1 : f2.canRead() ? f2 : null;
         if (settingsDir != null) {
@@ -149,7 +170,7 @@ public final class GradleFiles implements Serializable {
     }
 
     public List<File> getPropertyFiles() {
-        return propertyFiles;
+        return searchPropertyFiles();
     }
 
     public File getProjectDir() {

@@ -73,7 +73,7 @@ public class DataObjectSyncSupport extends SyncSupport implements Synchronizator
      */
     protected Representation[] getRepresentations() {
         synchronized (reps) {
-            return (Representation[]) reps.toArray(new Representation[reps.size()]);
+            return reps.toArray(new Representation[reps.size()]);
         }
     }
 
@@ -149,8 +149,7 @@ public class DataObjectSyncSupport extends SyncSupport implements Synchronizator
             // check whether tree representation is loaded
             
             synchronized (reps) {
-                for (Iterator it = reps.iterator(); it.hasNext();) {
-                    Representation next = (Representation) it.next();
+                for (Representation next : reps) {
                     if (next.level() > 1) {
                         modelLoaded = true;
                     }                               

@@ -575,7 +575,9 @@ public final class ModelVisitor extends DefaultTreePathVisitor {
             }
         } else {
             Expression name = node.getClassName().getName();
-            if (name instanceof Variable) {
+            if (name instanceof Variable
+                    || name instanceof StaticFieldAccess // NETBEANS-3108 e.g. new self::staticProperty[self::getIndex()];
+                    || name instanceof FieldAccess) { // NETBEANS-3108 e.g. new $this->property[$this->getIndex()];
                 scan(name);
             } else {
                 ScopeImpl currentScope = modelBuilder.getCurrentScope();
@@ -760,9 +762,21 @@ public final class ModelVisitor extends DefaultTreePathVisitor {
             return;
         }
         Scope scope = modelBuilder.getCurrentScope();
+        ASTNodeInfo<Variable> varInfo = ASTNodeInfo.create(node);
+        // NETBEANS-2992
+        // when $this is used in anonymous function, change the current scope
+        if (ModelUtils.isAnonymousFunction(scope)
+                && "$this".equals(varInfo.getName())) { // NOI18N
+            Scope inScope = scope.getInScope();
+            while (!(inScope instanceof MethodScope) && inScope instanceof FunctionScope) {
+                inScope = inScope.getInScope();
+            }
+            if (inScope instanceof MethodScope) {
+                scope = inScope;
+            }
+        }
         prepareVariable(node, scope);
         if (scope instanceof VariableNameFactory) {
-            ASTNodeInfo<Variable> varInfo = ASTNodeInfo.create(node);
             if (scope instanceof MethodScope && "$this".equals(varInfo.getName())) { //NOI18N
                 scope = scope.getInScope();
             }

@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
@@ -38,8 +39,10 @@ import org.eclipse.lsp4j.ClientCapabilities;
 import org.eclipse.lsp4j.DocumentSymbolCapabilities;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
+import org.eclipse.lsp4j.ResourceOperationKind;
 import org.eclipse.lsp4j.TextDocumentClientCapabilities;
 import org.eclipse.lsp4j.WorkspaceClientCapabilities;
+import org.eclipse.lsp4j.WorkspaceEditCapabilities;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageServer;
@@ -169,7 +172,11 @@ public class LSPBindings {
        DocumentSymbolCapabilities dsc = new DocumentSymbolCapabilities();
        dsc.setHierarchicalDocumentSymbolSupport(true);
        tdcc.setDocumentSymbol(dsc);
-       initParams.setCapabilities(new ClientCapabilities(new WorkspaceClientCapabilities(), tdcc, null));
+       WorkspaceClientCapabilities wcc = new WorkspaceClientCapabilities();
+       wcc.setWorkspaceEdit(new WorkspaceEditCapabilities());
+       wcc.getWorkspaceEdit().setDocumentChanges(true);
+       wcc.getWorkspaceEdit().setResourceOperations(Arrays.asList(ResourceOperationKind.Create, ResourceOperationKind.Delete, ResourceOperationKind.Rename));
+       initParams.setCapabilities(new ClientCapabilities(wcc, tdcc, null));
        return server.initialize(initParams).get();
     }
 
@@ -227,6 +234,19 @@ public class LSPBindings {
 
     public void scheduleBackgroundTask(RequestProcessor.Task req) {
         WORKER.post(req, DELAY);
+    }
+
+    public static void rescheduleBackgroundTask(FileObject file, BackgroundTask task) {
+        LSPBindings bindings = getBindings(file);
+
+        if (bindings == null)
+            return ;
+
+        RequestProcessor.Task req = bindings.backgroundTasks.computeIfAbsent(file, f -> Collections.emptyMap()).get(task);
+
+        if (req != null) {
+            WORKER.post(req, DELAY);
+        }
     }
 
     public void scheduleBackgroundTasks(FileObject file) {

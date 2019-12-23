@@ -80,6 +80,19 @@ public class DownloadBinaries extends Task {
         this.server = server;
     }
 
+    private String repos = "https://repo1.maven.org/maven2/";
+    
+    
+    /**
+     * Space separated URL prefixes for maven repositories.
+     * Should generally include a trailing slash.
+     * You may include multiple URLs separated by spaces
+     * in which case they will be tried in order.
+     */
+    public void setRepos(String repos) {
+        this.repos = repos;
+    }
+    
     private final List<FileSet> manifests = new ArrayList<>();
     /**
      * Add one or more manifests of files to download.
@@ -119,6 +132,7 @@ public class DownloadBinaries extends Task {
 
     @Override
     public void execute() throws BuildException {
+        boolean success = true;
         for (FileSet fs : manifests) {
             DirectoryScanner scanner = fs.getDirectoryScanner(getProject());
             File basedir = scanner.getBasedir();
@@ -143,9 +157,9 @@ public class DownloadBinaries extends Task {
 
                             if (MavenCoordinate.isMavenFile(hashAndFile[1])) {
                                 MavenCoordinate mc = MavenCoordinate.fromGradleFormat(hashAndFile[1]);
-                                fillInFile(hashAndFile[0], mc.toArtifactFilename(), manifest, () -> mavenFile(mc));
+                                success &= fillInFile(hashAndFile[0], mc.toArtifactFilename(), manifest, () -> mavenFile(mc));
                             } else {
-                                fillInFile(hashAndFile[0], hashAndFile[1], manifest, () -> legacyDownload(hashAndFile[0] + "-" + hashAndFile[1]));
+                                success &= fillInFile(hashAndFile[0], hashAndFile[1], manifest, () -> legacyDownload(hashAndFile[0] + "-" + hashAndFile[1]));
                             }
                         }
                     }
@@ -154,22 +168,34 @@ public class DownloadBinaries extends Task {
                 }
             }
         }
+        if(! success) {
+            throw new BuildException("Failed to download binaries - see log message for the detailed reasons.", getLocation());
+        }
     }
     
     private byte[] mavenFile(MavenCoordinate mc) throws IOException {
         String cacheName = mc.toMavenPath();
         File local = new File(new File(new File(new File(System.getProperty("user.home")), ".m2"), "repository"), cacheName.replace('/', File.separatorChar));
-        final String url;
-        if (local.exists()) {
-            url = local.toURI().toString();
-        } else {
-            url = "http://central.maven.org/maven2/" + cacheName;
+        List<String> urls = new ArrayList<>();
+        if (local.isFile()) {
+            urls.add(local.toURI().toString());
         }
-        URL u = new URL(url);
-        return downloadFromServer(u);
+        for (String prefix : repos.split(" ")) {
+            urls.add(prefix + cacheName);
+        }
+        for (String url : urls) {
+            try {
+                URL u = new URL(url);
+                log("Trying: " + url, Project.MSG_VERBOSE);
+                return downloadFromServer(u);
+            } catch (IOException ex) {
+                //Try the next URL
+            }
+        }
+        throw new BuildException("Could not download " + cacheName + " from maven and " + server, null, getLocation());
     }
 
-    private void fillInFile(String expectedHash, String baseName, File manifest, Downloader download) throws BuildException {
+    private boolean fillInFile(String expectedHash, String baseName, File manifest, Downloader download) throws BuildException {
         File f = new File(manifest.getParentFile(), baseName);
         if (!clean) {
             if (!f.exists() || !hash(f).equals(expectedHash)) {
@@ -193,35 +219,43 @@ public class DownloadBinaries extends Task {
                     doDownload(cacheName, f, expectedHash, download);
                 }
             }
+            if(! f.exists()) {
+                return false;
+            }
             String actualHash = hash(f);
             if (!actualHash.equals(expectedHash)) {
-                throw new BuildException("File " + f + " requested by " + manifest + " to have hash " +
-                        expectedHash + " actually had hash " + actualHash, getLocation());
+                log("File " + f + " requested by " + manifest + " to have hash " +
+                        expectedHash + " actually had hash " + actualHash, Project.MSG_WARN);
+                return false;
             }
             log("Have " + f + " with expected hash", Project.MSG_VERBOSE);
+            return true;
         } else {
             if (f.exists()) {
                 String actualHash = hash(f);
                 if (!actualHash.equals(expectedHash)) {
-                    throw new BuildException("File " + f + " requested by " + manifest + " to have hash " +
-                            expectedHash + " actually had hash " + actualHash, getLocation());
+                    log("File " + f + " requested by " + manifest + " to have hash " +
+                            expectedHash + " actually had hash " + actualHash, Project.MSG_WARN);
+                    return false;
                 }
                 log("Deleting " + f);
                 f.delete();
             }
+            return true;
         }
     }
 
-    private void doDownload(String cacheName, File destination, String expectedHash, Downloader download) {
-        Throwable firstProblem = null;
+    private boolean doDownload(String cacheName, File destination, String expectedHash, Downloader download) {
         try {
             byte[] downloaded = download.download();
 
             if (expectedHash != null) {
                 String actualHash = hash(new ByteArrayInputStream(downloaded));
                 if (!expectedHash.equals(actualHash)) {
-                    throw new BuildException("Download of " + cacheName + " produced content with hash "
-                            + actualHash + " when " + expectedHash + " was expected", getLocation());
+                    this.log("Download of " + cacheName + " produced content with hash "
+                        + actualHash + " when " + expectedHash + " was expected",
+                        Project.MSG_WARN);
+                    return false;
                 }
             }
             OutputStream os = new FileOutputStream(destination);
@@ -233,15 +267,12 @@ public class DownloadBinaries extends Task {
                 throw x;
             }
             os.close();
-            return ;
-        } catch (IOException x) {
+            return true;
+        } catch (IOException | RuntimeException x) {
             String msg = "Could not download " + cacheName + " to " + destination + ": " + x;
             log(msg, Project.MSG_WARN);
-            if (firstProblem == null) {
-                firstProblem = new IOException(msg).initCause(x);
-            }
+            return false;
         }
-        throw new BuildException("Could not download " + cacheName + " from " + server + ": " + firstProblem, firstProblem, getLocation());
     }
 
     private byte[] legacyDownload(String cacheName) throws IOException {
@@ -250,8 +281,13 @@ public class DownloadBinaries extends Task {
         }
         Throwable firstProblem = null;
         for (String prefix : server.split(" ")) {
-            URL url = new URL(prefix + cacheName);
-            return downloadFromServer(url);
+            try {
+                URL url = new URL(prefix + cacheName);
+                log("Trying: " + url, Project.MSG_VERBOSE);
+                return downloadFromServer(url);
+            } catch (IOException ex) {
+                //Try the next URL
+            }
         }
         throw new BuildException("Could not download " + cacheName + " from " + server + ": " + firstProblem, firstProblem, getLocation());
     }
