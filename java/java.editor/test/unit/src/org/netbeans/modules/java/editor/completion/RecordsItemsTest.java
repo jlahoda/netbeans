@@ -53,7 +53,7 @@ public class RecordsItemsTest extends CompletionTestBase {
                     "public class T {\n" +
                     "    RecordClass\n" +
                     "}\n" +
-                    "record R(int i) {}\n",
+                    "record RecordClass(int i) {}\n",
                     "14");
     }
 }
