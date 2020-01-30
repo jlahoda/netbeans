@@ -21,16 +21,19 @@ package org.netbeans.modules.java.editor.completion;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.Writer;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.swing.JEditorPane;
 import javax.swing.SwingUtilities;
 import javax.swing.text.Document;
 
 import org.netbeans.api.java.lexer.JavaTokenId;
+import org.netbeans.api.java.source.TestUtilities;
 import org.netbeans.api.java.source.gen.WhitespaceIgnoringDiff;
 import org.netbeans.api.lexer.Language;
 import org.netbeans.modules.editor.completion.CompletionItemComparator;
@@ -46,6 +49,10 @@ import org.openide.cookies.EditorCookie;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.loaders.DataObject;
+import org.openide.util.lookup.ServiceProvider;
+import org.openide.xml.EntityCatalog;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 /**
  *
@@ -62,11 +69,28 @@ public class CompletionTestBase extends CompletionTestBaseBase {
     }
     
     protected void performTest(String source, int caretPos, String textToInsert, String toPerformItemRE, String goldenFileName, String sourceLevel) throws Exception {
-        this.sourceLevel.set(sourceLevel);
         File testSource = new File(getWorkDir(), "test/Test.java");
         testSource.getParentFile().mkdirs();
         copyToWorkDir(new File(getDataDir(), "org/netbeans/modules/java/editor/completion/data/" + source + ".java"), testSource);
         FileObject testSourceFO = FileUtil.toFileObject(testSource);
+        assertNotNull(goldenFileName);
+        File goldenFile = getGoldenFile(goldenFileName);
+        performTest(testSourceFO, caretPos, textToInsert, toPerformItemRE, goldenFile, sourceLevel);
+    }
+
+    protected void performTest(String sourceCode, String textToInsert, String toPerformItemRE, String expectedOutput, String sourceLevel) throws Exception {
+        int caretPos = sourceCode.indexOf("|");
+        sourceCode = sourceCode.substring(0, caretPos) + sourceCode.substring(caretPos + 1);
+        File testSource = new File(getWorkDir(), "test/Test.java");
+        testSource.getParentFile().mkdirs();
+        TestUtilities.copyStringToFile(testSource, sourceCode);
+        File goldenFile = new File(getWorkDir(), getName() + ".pass");
+        TestUtilities.copyStringToFile(goldenFile, expectedOutput);
+        performTest(FileUtil.toFileObject(testSource), caretPos, textToInsert, toPerformItemRE, goldenFile, sourceLevel);
+    }
+
+    protected void performTest(FileObject testSourceFO, int caretPos, String textToInsert, String toPerformItemRE, File goldenFile, String sourceLevel) throws Exception {
+        this.sourceLevel.set(sourceLevel);
         assertNotNull(testSourceFO);
         DataObject testSourceDO = DataObject.find(testSourceFO);
         assertNotNull(testSourceDO);
@@ -83,7 +107,7 @@ public class CompletionTestBase extends CompletionTestBaseBase {
         List<? extends CompletionItem> items = JavaCompletionProvider.query(s, CompletionProvider.COMPLETION_QUERY_TYPE, caretPos + textToInsertLength, caretPos + textToInsertLength);
         Collections.sort(items, CompletionItemComparator.BY_PRIORITY);
         
-        assertNotNull(goldenFileName);            
+        assertNotNull(goldenFile);
 
         Pattern p = Pattern.compile(toPerformItemRE);
         CompletionItem item = null;            
@@ -93,7 +117,8 @@ public class CompletionTestBase extends CompletionTestBaseBase {
                 break;
             }
         }            
-        assertNotNull(item);
+        assertNotNull(items.stream().map(i -> i.toString()).collect(Collectors.joining("\n")),
+                      item);
 
         JEditorPane editor = new JEditorPane();
         SwingUtilities.invokeAndWait(() -> {
@@ -110,7 +135,6 @@ public class CompletionTestBase extends CompletionTestBaseBase {
         out.write(doc.getText(0, doc.getLength()));
         out.close();
 
-        File goldenFile = getGoldenFile(goldenFileName);
         File diffFile = new File(getWorkDir(), getName() + ".diff");
 
         assertFile(output, goldenFile, diffFile, new WhitespaceIgnoringDiff());
@@ -118,4 +142,21 @@ public class CompletionTestBase extends CompletionTestBaseBase {
         LifecycleManager.getDefault().saveAll();
     }
 
+    @ServiceProvider(service=EntityCatalog.class)
+    public static final class TestEntityCatalogImpl extends EntityCatalog {
+
+        @Override
+        public InputSource resolveEntity(String publicID, String systemID) throws SAXException, IOException {
+            switch (publicID) {
+                case "-//NetBeans//DTD Editor KeyBindings settings 1.1//EN":
+                    return new InputSource(TestEntityCatalogImpl.class.getResourceAsStream("/org/netbeans/modules/editor/settings/storage/keybindings/EditorKeyBindings-1_1.dtd"));
+                case "-//NetBeans//DTD Editor Preferences 1.0//EN":
+                    return new InputSource(TestEntityCatalogImpl.class.getResourceAsStream("/org/netbeans/modules/editor/settings/storage/preferences/EditorPreferences-1_0.dtd"));
+                case "-//NetBeans//DTD Editor Fonts and Colors settings 1.1//EN":
+                    return new InputSource(TestEntityCatalogImpl.class.getResourceAsStream("/org/netbeans/modules/editor/settings/storage/fontscolors/EditorFontsColors-1_1.dtd"));
+            }
+            return null;
+        }
+
+    }
 }

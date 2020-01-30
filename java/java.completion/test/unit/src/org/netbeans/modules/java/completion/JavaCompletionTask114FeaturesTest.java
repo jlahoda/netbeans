@@ -49,6 +49,18 @@ public class JavaCompletionTask114FeaturesTest extends CompletionTestBase {
         performTest("GenericMethodInvocation", 1231, "boolean b = argO instanceof String str && st", "BindingUse.pass", SOURCE_LEVEL);
     }
 
+    public void testRecordAccessorUse() throws Exception {
+        performTest("RecordAccessorUse", 891, "r.main", "RecordAccessorUse.pass", SOURCE_LEVEL);
+    }
+
+    public void testRecordConstructorUse() throws Exception {
+        performTest("RecordAccessorUse", 891, "new RecordClass", "RecordConstructorUse.pass", SOURCE_LEVEL);
+    }
+
+    public void testRecordTypeUse() throws Exception {
+        performTest("RecordAccessorUse", 891, "RecordCla", "RecordTypeUse.pass", SOURCE_LEVEL);
+    }
+
     public void noop() {
     }
 

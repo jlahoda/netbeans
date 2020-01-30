@@ -120,6 +120,9 @@ public abstract class JavaCompletionItem implements CompletionItem {
             case ANNOTATION_TYPE:
                 return new AnnotationTypeItem(info, elem, type, 0, substitutionOffset, referencesCount, isDeprecated, insideNew, addSimpleName, smartType, autoImportEnclosingType, whiteList);
             default:
+                if ("RECORD".equals(elem.getKind().name())) {
+                    return new RecordItem(info, elem, type, 0, substitutionOffset, referencesCount, isDeprecated, insideNew, addTypeVars, addSimpleName, smartType, autoImportEnclosingType, whiteList);
+                }
                 throw new IllegalArgumentException("kind=" + elem.getKind());
         }
     }
@@ -1309,6 +1312,24 @@ public abstract class JavaCompletionItem implements CompletionItem {
         protected ImageIcon getBaseIcon() {
             if (icon == null) {
                 icon = ImageUtilities.loadImageIcon(ENUM, false);
+            }
+            return icon;
+        }
+    }
+
+    static class RecordItem extends ClassItem {
+
+        private static final String RECORD = "org/netbeans/modules/editor/resources/completion/class_16.png"; // NOI18N
+        private static ImageIcon icon;
+
+        private RecordItem(CompilationInfo info, TypeElement elem, DeclaredType type, int dim, int substitutionOffset, ReferencesCount referencesCount, boolean isDeprecated, boolean insideNew, boolean addTypeVars, boolean addSimpleName, boolean smartType, boolean autoImportEnclosingType, WhiteListQuery.WhiteList whiteList) {
+            super(info, elem, type, dim, substitutionOffset, referencesCount, isDeprecated, insideNew, addTypeVars, addSimpleName, smartType, autoImportEnclosingType, whiteList);
+        }
+
+        @Override
+        protected ImageIcon getBaseIcon() {
+            if (icon == null) {
+                icon = ImageUtilities.loadImageIcon(RECORD, false);
             }
             return icon;
         }
