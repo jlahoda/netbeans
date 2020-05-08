@@ -21,6 +21,8 @@ package org.netbeans.modules.lsp.client;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.ref.Reference;
+import java.lang.ref.WeakReference;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Arrays;
@@ -31,7 +33,10 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.WeakHashMap;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -40,6 +45,9 @@ import org.eclipse.lsp4j.DocumentSymbolCapabilities;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
 import org.eclipse.lsp4j.ResourceOperationKind;
+import org.eclipse.lsp4j.ServerCapabilities;
+import org.eclipse.lsp4j.SymbolKind;
+import org.eclipse.lsp4j.SymbolKindCapabilities;
 import org.eclipse.lsp4j.TextDocumentClientCapabilities;
 import org.eclipse.lsp4j.WorkspaceClientCapabilities;
 import org.eclipse.lsp4j.WorkspaceEditCapabilities;
@@ -53,6 +61,8 @@ import org.netbeans.api.progress.*;
 import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.api.project.Project;
 import org.netbeans.modules.lsp.client.bindings.LanguageClientImpl;
+import org.netbeans.modules.lsp.client.options.MimeTypeInfo;
+import org.netbeans.modules.lsp.client.options.ServerRestarter;
 import org.netbeans.modules.lsp.client.spi.LanguageServerProvider;
 import org.netbeans.modules.lsp.client.spi.LanguageServerProvider.LanguageServerDescription;
 import org.openide.filesystems.FileObject;
@@ -102,20 +112,41 @@ public class LSPBindings {
         LSPBindings bindings =
                 project2MimeType2Server.computeIfAbsent(prj, p -> new HashMap<>())
                                        .computeIfAbsent(mimeType, mt -> {
+                                           MimeTypeInfo mimeTypeInfo = new MimeTypeInfo(mt);
+                                           Reference<Project> prjRef = new WeakReference<>(prj);
+                                           ServerRestarter restarter = () -> {
+                                               synchronized (LSPBindings.class) {
+                                                   Project p = prjRef.get();
+                                                   if (p != null) {
+                                                       LSPBindings b = project2MimeType2Server.getOrDefault(p, Collections.emptyMap()).remove(mimeType);
+
+                                                       if (b != null && b.process != null) {
+                                                           b.process.destroy();
+                                                       }
+                                                   }
+                                               }
+                                           };
+                                           
                                            for (LanguageServerProvider provider : MimeLookup.getLookup(mimeType).lookupAll(LanguageServerProvider.class)) {
-                                               LanguageServerDescription desc = provider.startServer(Lookups.singleton(prj));
+                                               LanguageServerDescription desc = provider.startServer(Lookups.fixed(prj, mimeTypeInfo, restarter));
 
                                                if (desc != null) {
+                                                   LSPBindings b = LanguageServerProviderAccessor.getINSTANCE().getBindings(desc);
+                                                   if (b != null) {
+                                                       return b;
+                                                   }
                                                    try {
                                                        LanguageClientImpl lci = new LanguageClientImpl();
                                                        InputStream in = LanguageServerProviderAccessor.getINSTANCE().getInputStream(desc);
                                                        OutputStream out = LanguageServerProviderAccessor.getINSTANCE().getOutputStream(desc);
+                                                       Process p = LanguageServerProviderAccessor.getINSTANCE().getProcess(desc);
                                                        Launcher<LanguageServer> launcher = LSPLauncher.createClientLauncher(lci, in, out);
                                                        launcher.startListening();
                                                        LanguageServer server = launcher.getRemoteProxy();
-                                                       InitializeResult result = initServer(server, prj.getProjectDirectory()); //XXX: what if a different root is expected????
-                                                       LSPBindings b = new LSPBindings(server, result, LanguageServerProviderAccessor.getINSTANCE().getProcess(desc));
+                                                       InitializeResult result = initServer(p, server, prj.getProjectDirectory()); //XXX: what if a different root is expected????
+                                                       b = new LSPBindings(server, result, LanguageServerProviderAccessor.getINSTANCE().getProcess(desc));
                                                        lci.setBindings(b);
+                                                       LanguageServerProviderAccessor.getINSTANCE().setBindings(desc, b);
                                                        return b;
                                                    } catch (InterruptedException | ExecutionException ex) {
                                                        LOG.log(Level.WARNING, null, ex);
@@ -151,7 +182,7 @@ public class LSPBindings {
                 });
                 launcher.startListening();
                 LanguageServer server = launcher.getRemoteProxy();
-                InitializeResult result = initServer(server, root);
+                InitializeResult result = initServer(null, server, root);
                 LSPBindings bindings = new LSPBindings(server, result, null);
 
                 lc.setBindings(bindings);
@@ -163,7 +194,7 @@ public class LSPBindings {
         }, Bundle.LBL_Connecting());
     }
 
-    private static InitializeResult initServer(LanguageServer server, FileObject root) throws InterruptedException, ExecutionException {
+    private static InitializeResult initServer(Process p, LanguageServer server, FileObject root) throws InterruptedException, ExecutionException {
        InitializeParams initParams = new InitializeParams();
        initParams.setRootUri(Utils.toURI(root));
        initParams.setRootPath(FileUtil.toFile(root).getAbsolutePath()); //some servers still expect root path
@@ -171,13 +202,25 @@ public class LSPBindings {
        TextDocumentClientCapabilities tdcc = new TextDocumentClientCapabilities();
        DocumentSymbolCapabilities dsc = new DocumentSymbolCapabilities();
        dsc.setHierarchicalDocumentSymbolSupport(true);
+       dsc.setSymbolKind(new SymbolKindCapabilities(Arrays.asList(SymbolKind.values())));
        tdcc.setDocumentSymbol(dsc);
        WorkspaceClientCapabilities wcc = new WorkspaceClientCapabilities();
        wcc.setWorkspaceEdit(new WorkspaceEditCapabilities());
        wcc.getWorkspaceEdit().setDocumentChanges(true);
        wcc.getWorkspaceEdit().setResourceOperations(Arrays.asList(ResourceOperationKind.Create, ResourceOperationKind.Delete, ResourceOperationKind.Rename));
        initParams.setCapabilities(new ClientCapabilities(wcc, tdcc, null));
-       return server.initialize(initParams).get();
+       CompletableFuture<InitializeResult> initResult = server.initialize(initParams);
+       while (true) {
+           try {
+               return initResult.get(100, TimeUnit.MILLISECONDS);
+           } catch (TimeoutException ex) {
+               if (p != null && !p.isAlive()) {
+                   InitializeResult emptyResult = new InitializeResult();
+                   emptyResult.setCapabilities(new ServerCapabilities());
+                   return emptyResult;
+               }
+           }
+       }
     }
 
     private final LanguageServer server;

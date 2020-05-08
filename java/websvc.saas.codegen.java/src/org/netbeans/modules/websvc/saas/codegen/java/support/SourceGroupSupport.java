@@ -66,7 +66,7 @@ public class SourceGroupSupport {
         SourceGroup[] sourceGroups = ProjectUtils.getSources(project).getSourceGroups(
                 JavaProjectConstants.SOURCES_TYPE_JAVA);
         Set testGroups = getTestSourceGroups(sourceGroups);
-        List result = new ArrayList();
+        List<SourceGroup> result = new ArrayList<>();
         for (int i = 0; i < sourceGroups.length; i++) {
             if (!testGroups.contains(sourceGroups[i])) {
                 result.add(sourceGroups[i]);
@@ -198,8 +198,8 @@ public class SourceGroupSupport {
         return result;
     }
 
-    private static List/*<FileObject>*/ getFileObjects(URL[] urls, boolean quiet) {
-        List result = new ArrayList();
+    private static List<FileObject> getFileObjects(URL[] urls, boolean quiet) {
+        List<FileObject> result = new ArrayList<>();
         for (int i = 0; i < urls.length; i++) {
             FileObject sourceRoot = URLMapper.findFileObject(urls[i]);
             if (sourceRoot != null) {

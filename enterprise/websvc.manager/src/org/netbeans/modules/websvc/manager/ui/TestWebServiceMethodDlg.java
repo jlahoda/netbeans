@@ -677,7 +677,7 @@ public class TestWebServiceMethodDlg extends JPanel implements ActionListener, M
         private final LinkedList paramList;
         private final JavaMethod javaMethod;
         private final URLClassLoader urlClassLoader;
-        private final List listeners = new ArrayList();
+        private final List<MethodTaskListener> listeners = new ArrayList<>();
         private boolean cancelled=false;
 
 
@@ -696,9 +696,9 @@ public class TestWebServiceMethodDlg extends JPanel implements ActionListener, M
         }
 
         private void notifyListeners(Object returnedObject) {
-            Iterator listenerIterator = listeners.iterator();
+            Iterator<MethodTaskListener> listenerIterator = listeners.iterator();
             while(listenerIterator.hasNext()) {
-                MethodTaskListener currentListener = (MethodTaskListener)listenerIterator.next();
+                MethodTaskListener currentListener = listenerIterator.next();
                 currentListener.methodFinished(returnedObject, paramList);
             }
         }

@@ -131,6 +131,7 @@ import com.sun.tools.javac.util.Names;
 import com.sun.tools.javac.util.Position;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.Map.Entry;
@@ -186,6 +187,7 @@ public class CasualDiff {
     private final Context context;
     private final Names names;
     private static final Logger LOG = Logger.getLogger(CasualDiff.class.getName());
+    public static final int GENERATED_MEMBER = 1<<24;
 
     private Map<Integer, String> diffInfo = new HashMap<>();
     private final Map<Tree, ?> tree2Tag;
@@ -533,8 +535,14 @@ public class CasualDiff {
             VariableTree vt = fgt.getVariables().get(fgt.getVariables().size() - 1);
             return TreeInfo.getEndPos((JCTree)vt, oldTopLevel.endPositions);
         }
-        return TreeInfo.getEndPos(t, oldTopLevel.endPositions);
+        int endPos = TreeInfo.getEndPos(t, oldTopLevel.endPositions);
+
+        // [NETBEANS-4299], might be a synthetic annotation attribute, try rhs
+        if (endPos == Position.NOPOS && t instanceof JCAssign) {
+            endPos = TreeInfo.getEndPos(((JCAssign)t).rhs, oldTopLevel.endPositions);
         }
+        return endPos;
+    }
 
     private int endPos(com.sun.tools.javac.util.List<? extends JCTree> trees) {
         int result = -1;
@@ -2577,12 +2585,28 @@ public class CasualDiff {
         copyTo(localPointer, exprBounds[0]);
         localPointer = diffTree(oldT.expr, newT.expr, exprBounds);
         // clazz
-        int[] clazzBounds = getBounds(oldT.clazz);
+        JCTree oldPattern = getPattern(oldT);
+        JCTree newPattern = getPattern(newT);
+        int[] clazzBounds = getBounds(oldPattern);
         clazzBounds[0] = copyUpTo(localPointer, clazzBounds[0]);
-        localPointer = diffTree(oldT.clazz, newT.clazz, clazzBounds);
+        localPointer = diffTree(oldPattern, newPattern, clazzBounds);
         localPointer = copyUpTo(localPointer, bounds[1]);
 
         return localPointer;
+    }
+
+    public static JCTree getPattern(JCInstanceOf tree) {
+        try {
+            Field clazzField = JCInstanceOf.class.getField("clazz");
+            return (JCTree) clazzField.get(tree);
+        } catch (Throwable t) {
+            try {
+                Field patternField = JCInstanceOf.class.getField("pattern");
+                return (JCTree) patternField.get(tree);
+            } catch (Throwable t2) {
+                return (JCTree) tree.getType();
+            }
+        }
     }
 
     protected int diffIndexed(JCArrayAccess oldT, JCArrayAccess newT, int[] bounds) {
@@ -2715,9 +2739,8 @@ public class CasualDiff {
     }
 
     protected int diffLiteral(JCLiteral oldT, JCLiteral newT, int[] bounds) {
-        if (oldT.typetag != newT.typetag ||
-           (oldT.value != null && !oldT.value.equals(newT.value)))
-        {
+        if (oldT.typetag != newT.typetag
+                || (oldT.value != null && !oldT.value.equals(newT.value)) || possibleTextBlock(oldT, newT)) {
             int localPointer = bounds[0];
             // literal
             int[] literalBounds = getBounds(oldT);
@@ -3897,7 +3920,11 @@ public class CasualDiff {
                     // collect enum constants, make a field group from them
                     // and set the flag.
                     enumConstants.add(var);
-                } else {
+                } // filter syntetic member variable, i.e. variable which are in
+                // the tree, but not available in the source.
+                else if ((var.mods.flags & GENERATED_MEMBER) != 0)
+                    continue;
+                else {
                     if (!fieldGroup.isEmpty()) {
                         int oldPos = getOldPos(fieldGroup.get(0));
 
@@ -5830,9 +5857,13 @@ public class CasualDiff {
     }
 
     private boolean matchLiteral(JCLiteral t1, JCLiteral t2) {
-        return t1.typetag == t2.typetag && (t1.value == t2.value || (t1.value != null && t1.value.equals(t2.value)));
+        return t1.typetag == t2.typetag && (t1.value == t2.value || (t1.value != null && t1.value.equals(t2.value))) && !(possibleTextBlock(t1, t2));
     }
 
+    private boolean possibleTextBlock(JCLiteral t1, JCLiteral t2) {
+        return t1.getKind() == Tree.Kind.STRING_LITERAL && t2.getKind() == Tree.Kind.STRING_LITERAL;
+    }
+    
     private boolean matchTypeApply(JCTypeApply t1, JCTypeApply t2) {
         return treesMatch(t1.clazz, t2.clazz) &&
                listsMatch(t1.arguments, t2.arguments);

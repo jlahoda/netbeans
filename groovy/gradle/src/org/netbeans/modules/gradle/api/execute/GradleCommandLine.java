@@ -43,6 +43,7 @@ import org.openide.util.NbBundle;
 import static org.netbeans.modules.gradle.api.execute.GradleCommandLine.Argument.Kind.*;
 import org.netbeans.modules.gradle.spi.GradleSettings;
 import org.netbeans.modules.gradle.spi.GradleFiles;
+import org.openide.util.Utilities;
 
 /**
  * Object representation of a Gradle command line. This object can be used to
@@ -193,7 +194,8 @@ public final class GradleCommandLine implements Serializable {
         PROJECT_DIR(PARAM, "-p", "--project-dir"),
         PROJECT_CACHE_DIR(UNSUPPORTED, "--project-cache-dir"),
         EXCLUDE_TASK(PARAM, "-x", "--exclude-task"),
-        IMPORT_BUILD(PARAM, "--import-build");
+        IMPORT_BUILD(UNSUPPORTED),
+        INCLUDE_BUILD(PARAM, "--include-build");
 
         final Argument.Kind kind;
         final List<String> flags;
@@ -464,40 +466,7 @@ public final class GradleCommandLine implements Serializable {
     }
 
     public GradleCommandLine(CharSequence argLine) {
-        this(parseArgLine(argLine));
-    }
-
-    static String[] parseArgLine(CharSequence cli) {
-        char quote = 0;
-        StringBuilder buf = new StringBuilder();
-        List<String> args = new ArrayList<>();
-        for (int i = 0; i < cli.length(); i++) {
-            char ch = cli.charAt(i);
-            if (quote == 0) {
-                if (Character.isWhitespace(ch)) {
-                    if (buf.length() > 0) {
-                        args.add(buf.toString());
-                        buf.setLength(0);
-                    }
-                } else {
-                    if (ch == '"' || ch == '\'') {
-                        quote = ch;
-                    } else {
-                        buf.append(ch);
-                    }
-                }
-            } else {
-                if (quote == ch) {
-                    quote = 0;
-                } else {
-                    buf.append(ch);
-                }
-            }
-        }
-        if (buf.length() > 0) {
-            args.add(buf.toString());
-        }
-        return args.toArray(new String[args.size()]);
+        this(Utilities.parseParameters(argLine.toString()));
     }
 
     private List<String> getArgs(Set<Argument.Kind> kinds) {
@@ -825,28 +794,29 @@ public final class GradleCommandLine implements Serializable {
         }
     }
 
-    private void addGradleSettingJvmargs(File projectDir, List<String> jvmargs) {
+    final static void addGradleSettingJvmargs(File rootDir, List<String> jvmargs) {
         List<File> propFiles = new ArrayList<>();
+        propFiles.add(new File(GradleSettings.getDefault().getGradleUserHome(), GradleFiles.GRADLE_PROPERTIES_NAME));
 
-        if (projectDir == null) {
-            File gradleHome = GradleSettings.getDefault().getGradleUserHome();
-            File f = new File(gradleHome, GradleFiles.GRADLE_PROPERTIES_NAME);
-            if (f.exists()) {
-                propFiles.add(f);
-            }
-        } else {
-            propFiles.addAll(new GradleFiles(projectDir).getPropertyFiles());
+        if (rootDir != null) {
+            propFiles.addAll(new GradleFiles(rootDir).getPropertyFiles());
         }
-
+        //TODO: Theoretically the Gradle Distribution dir can have a gradle.properties
+        //      however computing that is not really easy, at the moment we do
+        //      not support that one.
         for (File f : propFiles) {
-            try (InputStream in = new FileInputStream(f)) {
-                Properties props = new Properties();
-                props.load(in);
-                if (props.containsKey(PROP_JVMARGS)) {
-                    jvmargs.addAll(Arrays.asList(props.getProperty(PROP_JVMARGS).split("\\s+"))); //NOI18N
+            if (f.canRead()) {
+                try (InputStream in = new FileInputStream(f)) {
+                    Properties props = new Properties();
+                    props.load(in);
+                    if (props.containsKey(PROP_JVMARGS)) {
+                        List<String> args = Arrays.asList(Utilities.parseParameters(props.getProperty(PROP_JVMARGS)));
+                        jvmargs.addAll(args);
+                        break;
+                    }
+                } catch (IOException ex) {
+                    LOGGER.log(Level.INFO, "Cannot read property file: '" + f.getAbsolutePath() + "' as: " + ex.getMessage());
                 }
-            } catch (IOException ex) {
-                LOGGER.log(Level.INFO, "Cannot read property file: '" + f.getAbsolutePath() + "' as: " + ex.getMessage());
             }
         }
     }
@@ -858,12 +828,12 @@ public final class GradleCommandLine implements Serializable {
      *
      * @since 1.3
      * @param launcher the Launcher instance to configure.
-     * @param projectDir can be {@code null} if the project properties for JVM
+     * @param rootDir can be {@code null} if the project properties for JVM
      * arguments shall not be evaluated.
      */
-    public void configure(ConfigurableLauncher<?> launcher, File projectDir) {
+    public void configure(ConfigurableLauncher<?> launcher, File rootDir) {
         List<String> jvmargs = getArgs(EnumSet.of(SYSTEM));
-        addGradleSettingJvmargs(projectDir, jvmargs);
+        addGradleSettingJvmargs(rootDir, jvmargs);
         launcher.setJvmArguments(jvmargs);
         List<String> args = new LinkedList<>(getArgs(EnumSet.of(PARAM)));
         args.addAll(tasks);

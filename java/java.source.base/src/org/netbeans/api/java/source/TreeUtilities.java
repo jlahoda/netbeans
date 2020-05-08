@@ -886,7 +886,7 @@ public final class TreeUtilities {
             Env<AttrContext> env = getEnv(scope);
             if (tree instanceof JCExpression)
                 return attr.attribExpr((JCTree) tree,env, Type.noType);
-            if (env.tree != null && env.tree.getKind() == Kind.VARIABLE) {
+            if (env.tree != null && env.tree.getKind() == Kind.VARIABLE && !VARIABLE_CAN_OWN_VARIABLES) {
                 env = env.next;
             }
             return attr.attribStat((JCTree) tree,env);
@@ -897,6 +897,18 @@ public final class TreeUtilities {
             resolve.restoreAccessbilityChecks();
 //            enter.shadowTypeEnvs(false);
         }
+    }
+
+    private static boolean VARIABLE_CAN_OWN_VARIABLES;
+    static {
+        boolean result;
+        try {
+            SourceVersion.valueOf("RELEASE_12");
+            result = true;
+        } catch (IllegalArgumentException ex) {
+            result = false;
+        }
+        VARIABLE_CAN_OWN_VARIABLES = result;
     }
 
     private static Scope attributeTreeTo(JavacTaskImpl jti, Tree tree, Scope scope, Tree to, final List<Diagnostic<? extends JavaFileObject>> errors) {
@@ -1720,7 +1732,8 @@ public final class TreeUtilities {
             public Void visitClass(ClassTree node, Void p) {
                 if (fromIdx[0] < -2)
                     return super.visitClass(node, p);
-                fromIdx[0] = ((IndexedClassDecl)node).index;
+                if (node instanceof IndexedClassDecl)
+                    fromIdx[0] = ((IndexedClassDecl)node).index;
                 return null;
             }
             @Override
@@ -1746,7 +1759,8 @@ public final class TreeUtilities {
         scanner = new ErrorAwareTreeScanner<Void, Void>() {
             @Override
             public Void visitClass(ClassTree node, Void p) {
-                ((IndexedClassDecl)node).index = fromIdx[0]++;
+                if (node instanceof IndexedClassDecl)
+                    ((IndexedClassDecl)node).index = fromIdx[0]++;
                 return null;
             }
         };

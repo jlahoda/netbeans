@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.29
+#Version 1.30
 
 CLSS public abstract java.awt.Component
 cons protected init()
@@ -624,7 +624,6 @@ fld public final static java.lang.String LICENSE_TYPE = "license-type"
 fld public final static java.lang.String LICENSE_TYPE_CUSTOM = "custom"
 fld public final static java.lang.String LICENSE_TYPE_FILE = "file"
 fld public final static java.lang.String LICENSE_TYPE_NO = "no"
-fld public final static java.lang.String USE_PACK200_COMPRESSION = "pack200-enabled"
 meth public static java.util.prefs.Preferences prefs(org.netbeans.api.project.Project)
 meth public void store() throws java.io.IOException
 supr java.lang.Object

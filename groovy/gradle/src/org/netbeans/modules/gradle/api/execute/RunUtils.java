@@ -26,6 +26,7 @@ import org.netbeans.modules.gradle.execute.GradleDaemonExecutor;
 import org.netbeans.modules.gradle.execute.GradleExecutor;
 import org.netbeans.modules.gradle.execute.ProxyNonSelectableInputOutput;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
@@ -39,12 +40,12 @@ import org.openide.windows.IOColorPrint;
 import org.openide.windows.IOColors;
 import org.openide.windows.InputOutput;
 
-import static org.netbeans.modules.gradle.api.execute.Bundle.*;
 import org.netbeans.modules.gradle.spi.actions.ReplaceTokenProvider;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -53,15 +54,14 @@ import org.netbeans.api.java.platform.JavaPlatform;
 import org.netbeans.api.java.platform.JavaPlatformManager;
 import org.netbeans.api.java.platform.Specification;
 
-import org.netbeans.api.project.ProjectUtils;
+import org.netbeans.api.project.ui.OpenProjects;
 import org.netbeans.modules.gradle.GradleDistributionManager;
+import org.netbeans.modules.gradle.api.execute.RunConfig.ExecFlag;
 import org.netbeans.modules.gradle.spi.GradleSettings;
-import org.netbeans.spi.project.ActionProvider;
 import org.netbeans.spi.project.SingleMethod;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.loaders.DataObject;
-import org.openide.util.NbBundle;
 import org.openide.util.Pair;
 
 /**
@@ -75,6 +75,7 @@ public final class RunUtils {
     public static final String PROP_JDK_PLATFORM = "jdkPlatform"; //NOI18N
     public static final String PROP_COMPILE_ON_SAVE = "compile.on.save"; //NOI18N
     public static final String PROP_AUGMENTED_BUILD = "augmented.build"; //NOI18N
+    public static final String PROP_INCLUDE_OPEN_PROJECTS = "include.open.projects"; //NOI18N
     public static final String PROP_DEFAULT_CLI = "gradle.cli"; //NOI18N
 
     private RunUtils() {}
@@ -131,8 +132,9 @@ public final class RunUtils {
      * @param displayName The display name of the output tab
      * @param args Gradle command line arguments
      * @return the Gradle execution configuration.
+     * @since 1.5
      */
-    public static RunConfig createRunConfig(Project project, String action, String displayName, String[] args) {
+    public static RunConfig createRunConfig(Project project, String action, String displayName, Set<ExecFlag> flags, String... args) {
         GradleBaseProject gbp = GradleBaseProject.get(project);
 
         GradleCommandLine syscmd = GradleCommandLine.getDefaultCommandLine();
@@ -142,6 +144,11 @@ public final class RunUtils {
             basecmd = GradleCommandLine.combine(syscmd, prjcmd);
         }
 
+        if (isIncludeOpenProjectsEnabled(project)) {
+            GradleCommandLine include = getIncludedOpenProjects(project);
+            basecmd = GradleCommandLine.combine(basecmd, include);
+        }
+
         // Make sure we only exclude 'test' and 'check' by default if the
         // project allows this (has these tasks or root project with sub projects).
         validateExclude(basecmd, gbp, GradleCommandLine.TEST_TASK);
@@ -149,8 +156,25 @@ public final class RunUtils {
 
 
         GradleCommandLine cmd = GradleCommandLine.combine(basecmd, new GradleCommandLine(args));
-        RunConfig ret = new RunConfig(project, action, displayName, EnumSet.of(RunConfig.ExecFlag.REPEATABLE), cmd);
+        RunConfig ret = new RunConfig(project, action, displayName, flags, cmd);
         return ret;
+    }
+
+    /**
+     * Create Gradle execution configuration (context). It applies the default
+     * setting from the project and the Global Gradle configuration on the
+     * command line.
+     *
+     * @param project The Gradle project
+     * @param action The name of the IDE action that's going to be executed
+     * @param displayName The display name of the output tab
+     * @param args Gradle command line arguments
+     * @return the Gradle execution configuration.
+     * @deprecated use {@link #createRunConfig(org.netbeans.api.project.Project, java.lang.String, java.lang.String, java.util.Set, java.lang.String...) } instead.
+     */
+    @Deprecated
+    public static RunConfig createRunConfig(Project project, String action, String displayName, String[] args) {
+        return createRunConfig(project, action, displayName, EnumSet.of(RunConfig.ExecFlag.REPEATABLE), args);
     }
 
     /**
@@ -192,6 +216,18 @@ public final class RunUtils {
 
     public static boolean isAugmentedBuildEnabled(Project project) {
         return isOptionEnabled(project, PROP_AUGMENTED_BUILD, true);
+    }
+
+    /**
+     * Returns true if the include open projects checkbox is marked
+     * in the project configuration.
+     *
+     * @param project the given project.
+     * @return true if the settings has been enabled.
+     * @since 1.5
+     */
+    public static boolean isIncludeOpenProjectsEnabled(Project project) {
+        return isOptionEnabled(project, PROP_INCLUDE_OPEN_PROJECTS, false);
     }
 
     public static GradleCommandLine getDefaultCommandLine(Project project) {
@@ -277,56 +313,6 @@ public final class RunUtils {
         };
     }
 
-    @NbBundle.Messages({
-        "# {0} - artifactId", "TXT_Run=Run ({0})",
-        "# {0} - artifactId", "TXT_Debug=Debug ({0})",
-        "# {0} - artifactId", "TXT_ApplyCodeChanges=Apply Code Changes ({0})",
-        "# {0} - artifactId", "TXT_Profile=Profile ({0})",
-        "# {0} - artifactId", "TXT_Test=Test ({0})",
-        "# {0} - artifactId", "TXT_Build=Build ({0})"
-    })
-    private static String taskName(String action, Lookup lkp) {
-        String title;
-        DataObject dobj = lkp.lookup(DataObject.class);
-        String dobjName = dobj != null ? dobj.getName() : "";
-        Project prj = lkp.lookup(Project.class);
-        String prjLabel = prj != null ? ProjectUtils.getInformation(prj).getDisplayName() : "No Project on Lookup";
-        switch (action) {
-            case ActionProvider.COMMAND_RUN:
-                title = TXT_Run(prjLabel);
-                break;
-            case ActionProvider.COMMAND_DEBUG:
-                title = TXT_Debug(prjLabel);
-                break;
-            case ActionProvider.COMMAND_PROFILE:
-                title = TXT_Profile(prjLabel);
-                break;
-            case ActionProvider.COMMAND_TEST:
-                title = TXT_Test(prjLabel);
-                break;
-            case ActionProvider.COMMAND_RUN_SINGLE:
-                title = TXT_Run(dobjName);
-                break;
-            case ActionProvider.COMMAND_DEBUG_SINGLE:
-            case ActionProvider.COMMAND_DEBUG_TEST_SINGLE:
-                title = TXT_Debug(dobjName);
-                break;
-            case ActionProvider.COMMAND_PROFILE_SINGLE:
-            case ActionProvider.COMMAND_PROFILE_TEST_SINGLE:
-                title = TXT_Profile(dobjName);
-                break;
-            case ActionProvider.COMMAND_TEST_SINGLE:
-                title = TXT_Test(dobjName);
-                break;
-            case "debug.fix":
-                title = TXT_ApplyCodeChanges(prjLabel);
-                break;
-            default:
-                title = TXT_Build(prjLabel);
-        }
-        return title;
-    }
-
  /**
      * Returns the active platform used by the project or null if the active
      * project platform is broken.
@@ -362,14 +348,38 @@ public final class RunUtils {
         return getActivePlatform(platformId);
     }
 
-    private static String stringsInCurly(List<String> l) {
-        StringBuilder sb = new StringBuilder("(");
-        Iterator<String> it = l.iterator();
-        while (it.hasNext()) {
-            sb.append(it.next());
-            sb.append(it.hasNext() ? ", " : ")");
+    static GradleCommandLine getIncludedOpenProjects(Project project) {
+        GradleCommandLine ret = new GradleCommandLine();
+        Set<File> openRoots = new HashSet<>();
+        for (Project openProject : OpenProjects.getDefault().getOpenProjects()){
+            GradleBaseProject gpb = GradleBaseProject.get(openProject);
+            if (gpb != null) {
+                openRoots.add(gpb.getRootDir());
+            }
         }
-        return sb.toString();
+        GradleBaseProject gbp = GradleBaseProject.get(project);
+        if (gbp != null) {
+            //Removing ourself
+            openRoots.remove(gbp.getRootDir());
+            openRoots.removeAll(gbp.getIncludedBuilds().values());
+
+            Path projectPath = gbp.getProjectDir().toPath();
+            for (File openRoot : openRoots) {
+                Path root = openRoot.toPath();
+                String ib = root.toString();
+                try {
+                    Path rel = projectPath.relativize(root);
+
+                    if (rel.getNameCount() < root.getNameCount()) {
+                        ib = rel.toString();
+                    }
+                } catch (IllegalArgumentException ex) {
+                    // Relative path cannot be computed, just use the full path then.
+                }
+                ret.addParameter(GradleCommandLine.Parameter.INCLUDE_BUILD, ib);
+            }
+        }
+        return ret;
     }
 
 }
