@@ -38,7 +38,7 @@ import org.netbeans.spi.java.hints.TriggerTreeKind;
 import org.openide.util.NbBundle.Messages;
 
 @Hint(displayName = "#DN_ForLoopToFunctionalHint", description = "#DESC_ForLoopToFunctionalHint", category = "general",
-        minSourceVersion = "8")
+        minSourceVersion = "8", enabled=false)
 @Messages({
     "DN_ForLoopToFunctionalHint=Use Functional Operations",
     "DESC_ForLoopToFunctionalHint=Use functional operations instead of imperative style loop."
