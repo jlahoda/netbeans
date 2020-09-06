@@ -40,6 +40,7 @@ import org.netbeans.api.project.ProjectUtils;
 import org.netbeans.api.project.Sources;
 import org.netbeans.api.project.ui.OpenProjects;
 import org.netbeans.junit.NbTestCase;
+import org.netbeans.modules.java.openjdk.jtreg.ModulesHint.WarningDescription;
 import org.netbeans.modules.parsing.api.Source;
 import org.netbeans.spi.editor.hints.Fix;
 import org.netbeans.spi.lexer.LanguageEmbedding;
@@ -375,15 +376,15 @@ public class ModulesHintTest extends NbTestCase {
             @Override
             public void run(CompilationController cc) throws Exception {
                 cc.toPhase(JavaSource.Phase.UP_TO_DATE);
-                Pair<Fix, int[]> change = ModulesHint.computeChange(cc);
+                WarningDescription change = ModulesHint.computeChange(cc);
                 if (change == null) {
                     assertEquals(-1, warningStart);
                     assertEquals(-1, warningEnd);
                     return ;
                 }
-                fix[0] = change.first();
-                assertEquals(warningStart, change.second()[0]);
-                assertEquals(warningEnd, change.second()[1]);
+                fix[0] = change.fix;
+                assertEquals(warningStart, change.span[0]);
+                assertEquals(warningEnd, change.span[1]);
             }
         }, true);
 

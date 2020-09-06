@@ -76,16 +76,22 @@ import org.openide.util.TopologicalSortException;
 public class ModulesHint {
 
     @TriggerTreeKind(Kind.COMPILATION_UNIT)
-    @Messages("ERR_ModulesHint=Incorrect @modules tag")
+    @Messages({
+        "# {0} - exected modules tag content",
+        "ERR_ModulesHint=Suspicious @modules tag, should be as follows?\n{0}",
+        "ERR_ModulesHintRemove=Suspicious or unnecessary @modules tag, should be removed?"
+    })
     public static ErrorDescription computeWarning(final HintContext ctx) {
-        Pair<Fix, int[]> fix = computeChange(ctx.getInfo());
-        if (fix == null)
+        WarningDescription description = computeChange(ctx.getInfo());
+        if (description == null)
             return null;
-        ErrorDescription idealED = ErrorDescriptionFactory.forName(ctx, ctx.getPath(), Bundle.ERR_ModulesHint(), fix.first());
-        return org.netbeans.spi.editor.hints.ErrorDescriptionFactory.createErrorDescription(idealED.getSeverity(), idealED.getDescription(), idealED.getFixes(), ctx.getInfo().getFileObject(), fix.second()[0], fix.second()[1]);
+        String message = description.expected.isEmpty() ? Bundle.ERR_ModulesHintRemove()
+                                                        : Bundle.ERR_ModulesHint(createAtModules(computeRecordsForExpected(description.expected)));
+        ErrorDescription idealED = ErrorDescriptionFactory.forName(ctx, ctx.getPath(), message, description.fix);
+        return org.netbeans.spi.editor.hints.ErrorDescriptionFactory.createErrorDescription(idealED.getSeverity(), idealED.getDescription(), idealED.getFixes(), ctx.getInfo().getFileObject(), description.span[0], description.span[1]);
     }
 
-    static Pair<Fix, int[]> computeChange(CompilationInfo info) {
+    static WarningDescription computeChange(CompilationInfo info) {
         Result tags = TagParser.parseTags(info);
 
         if (!tags.getName2Tag().containsKey("test"))
@@ -107,7 +113,7 @@ public class ModulesHint {
             markTag = tags.getName2Tag().get("test");
         }
 
-        return Pair.<Fix, int[]>of(new FixImpl(info, new TreePath(info.getCompilationUnit()), expected).toEditorFix(), new int[] {markTag.get(0).getTagStart(), markTag.get(0).getTagEnd()});
+        return new WarningDescription(expected, new FixImpl(info, new TreePath(info.getCompilationUnit()), expected).toEditorFix(), new int[] {markTag.get(0).getTagStart(), markTag.get(0).getTagEnd()});
     }
 
     private static Map<String, Set<String>> projectDependencies(Set<Project> projects) {
@@ -394,6 +400,57 @@ public class ModulesHint {
         return exported;
     }
 
+    private static List<String> computeRecordsForExpected(Map<String, Set<String>> expected) {
+        final List<String> records = new ArrayList<>();
+
+        for (Map.Entry<String, Set<String>> e : expected.entrySet()) {
+            if (e.getValue().isEmpty()) {
+                records.add(e.getKey());
+            } else {
+                for (String pack : e.getValue()) {
+                    records.add(e.getKey() + "/" + pack);
+                }
+            }
+        }
+
+        Collections.sort(records);
+
+        return records;
+    }
+
+    private static String createAtModules(List<String> records) {
+        final StringBuilder atModules = new StringBuilder();
+
+        atModules.append(" * "); //XXX
+        atModules.append("@modules ");
+
+        boolean first = true;
+
+        for (String r : records) {
+            if (!first) {
+                atModules.append(" * "); //XXX
+                atModules.append("         ");
+            }
+            first = false;
+            atModules.append(r).append("\n");
+        }
+
+        return atModules.toString();
+    }
+
+    static final class WarningDescription {
+        public final Map<String, Set<String>> expected;
+        public final Fix fix;
+        public final int[] span;
+
+        public WarningDescription(Map<String, Set<String>> expects, Fix fix, int[] span) {
+            this.expected = expects;
+            this.fix = fix;
+            this.span = span;
+        }
+
+    }
+
     private static final class FixImpl extends JavaFix {
 
         private final Map<String, Set<String>> expected;
@@ -411,35 +468,8 @@ public class ModulesHint {
 
         @Override
         protected void performRewrite(TransformationContext ctx) throws Exception {
-            final List<String> records = new ArrayList<>();
-
-            for (Map.Entry<String, Set<String>> e : expected.entrySet()) {
-                if (e.getValue().isEmpty()) {
-                    records.add(e.getKey());
-                } else {
-                    for (String pack : e.getValue()) {
-                        records.add(e.getKey() + "/" + pack);
-                    }
-                }
-            }
-
-            Collections.sort(records);
-
-            final StringBuilder atModules = new StringBuilder();
-
-            atModules.append(" * "); //XXX
-            atModules.append("@modules ");
-
-            boolean first = true;
-
-            for (String r : records) {
-                if (!first) {
-                    atModules.append(" * "); //XXX
-                    atModules.append("         ");
-                }
-                first = false;
-                atModules.append(r).append("\n");
-            }
+            List<String> records = computeRecordsForExpected(expected);
+            String atModules = createAtModules(records);
 
             Result tags = TagParser.parseTags(ctx.getWorkingCopy());
             int[] span = readModulesAndPackages(tags).second();
@@ -470,7 +500,8 @@ public class ModulesHint {
                 }
             }
 
-            ctx.getWorkingCopy().rewriteInComment(start, end - start, records.isEmpty() ? "" : atModules.toString());
+            ctx.getWorkingCopy().rewriteInComment(start, end - start, records.isEmpty() ? "" : atModules);
         }
+
     }
 }
