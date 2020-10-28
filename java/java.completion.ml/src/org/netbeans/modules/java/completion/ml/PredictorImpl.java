@@ -66,6 +66,10 @@ public class PredictorImpl implements Predictor {
         ((Invocable) engine).invokeMethod(installFetch, "call", null, new Window());
         Object installConsole = engine.eval("(function(self) { this['console'] = self; })");
         ((Invocable) engine).invokeMethod(installConsole, "call", null, new Console());
+        Object installDocumentObject = engine.eval("(function(self) { this['document'] = self; })");
+        ((Invocable) engine).invokeMethod(installDocumentObject, "call", null, new Document());
+        Object installGlobalObject = engine.eval("(function() { this['global'] = {}; this['window'] = {}; this['window'].document = document; })"); //"window" so that this is detected as a browser, and fetch is used
+        ((Invocable) engine).invokeMethod(installGlobalObject, "call", (Object) null);
         script.append(FileUtil.toFileObject(Paths.get(DATA_DIR + "/tf.js").toFile()).asText());
         script.append("var model; tf.loadLayersModel('" + DATA_DIR + "/model.json').then(function(m) { model = m; }, function(err) { console.log(err); });");
         engine.eval(script.toString());
@@ -123,7 +127,7 @@ public class PredictorImpl implements Predictor {
             outcomesProp.load(isOutcomes);
             String outcomesList = outcomesProp.getProperty(type);
             if (outcomesList == null) {
-                System.err.println("no outcomes");
+//                System.err.println("no outcomes");
                 return null;
             }
             return Arrays.asList(outcomesList.split(", *"));
@@ -132,20 +136,20 @@ public class PredictorImpl implements Predictor {
     
     List<String> doPredict(List<String> possibleOutcomes, List<Integer> inputData) throws ScriptException, NoSuchMethodException {
         String tensor = inputData.stream().map(i -> String.valueOf(i)).collect(Collectors.joining(", ", "[", "]"));
-        System.err.println("tensor=" + tensor);
+//        System.err.println("tensor=" + tensor);
         Receive rec = new Receive();
         Object installReceive = engine.eval("(function(self) { this['receive'] = function (d) { self.dataReceived(d); }; })");
         ((Invocable) engine).invokeMethod(installReceive, "call", null, rec);
         engine.eval("var inputData = tf.tensor([" + tensor + "]); receive(model.predict(inputData).dataSync())");
         float[] output = rec.data;
-        System.err.println("prediction result=" + output.length + ":" + Arrays.toString(output));
+//        System.err.println("prediction result=" + output.length + ":" + Arrays.toString(output));
         List<Outcome> results = new ArrayList<>();
         int i = 0;
         for (float f : output/*[0]*/) {
             if (i >= possibleOutcomes.size()) break;
             results.add(new Outcome(possibleOutcomes.get(i++), f));
         }
-        System.err.println("outcomes1= " + results);
+//        System.err.println("outcomes1= " + results);
         Collections.sort(results, (r1, r2) -> -Float.compare(r1.value, r2.value));
         return results.stream().filter(r -> r.value > 0).limit(5).map(o -> o.signature).collect(Collectors.toList());
     }
@@ -188,6 +192,22 @@ public class PredictorImpl implements Predictor {
     public static class Console {
         public void log(Object obj) {
             System.err.println("log: " + obj);
+        }
+        public void warn(Object obj) {
+            System.err.println("warn: " + obj);
+        }
+    }
+    public static class Document {
+        public Object createElement(Object obj) {
+            return new Element();
+        }
+    }
+    public static class Element {
+        public Object getContext(Object p1) {
+            return null;
+        }
+        public Object getContext(Object p1, Object p2) {
+            return null;
         }
     }
     public static class Receive {
