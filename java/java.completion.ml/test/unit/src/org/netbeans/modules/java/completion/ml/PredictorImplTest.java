@@ -18,33 +18,27 @@
  */
 package org.netbeans.modules.java.completion.ml;
 
-import com.sun.source.util.TreePath;
-import java.io.IOException;
+import java.io.File;
 import java.util.Arrays;
 import java.util.List;
-import javax.lang.model.type.TypeMirror;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import static org.junit.Assert.*;
-import org.netbeans.api.java.source.CompilationInfo;
+import org.netbeans.junit.NbTestCase;
 
 /**
  *
  * @author jlahoda
  */
-public class PredictorImplTest {
+public class PredictorImplTest extends NbTestCase {
     
-    public PredictorImplTest() {
+    public PredictorImplTest(String name) {
+        super(name);
     }
     
-    @Test
     public void testPredict() throws Exception {
+        File dir = new File(PredictorImpl.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+        System.setProperty("netbeans.dirs", dir.getParentFile().getParentFile().getAbsolutePath());
         PredictorImpl predictor = new PredictorImpl();
-        List<String> predicted = predictor.doPredict(predictor.possibleOutcomes("java.util.Map"), Arrays.asList(262, 3, 4, 0, 152, 153, 3, 199, 200, 3));
+        List<String> predicted = predictor.doPredict(predictor.possibleOutcomes("java.util.Map"), Arrays.asList(116, 8, 9, 33, 34, 49, 0, 3630, 3713, 8));
         System.err.println("predicted=" + predicted); //should include entrySet
     }
-    
+
 }
