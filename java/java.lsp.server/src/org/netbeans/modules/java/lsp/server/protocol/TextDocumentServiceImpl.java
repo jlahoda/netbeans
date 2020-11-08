@@ -62,6 +62,7 @@ import java.util.prefs.Preferences;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.QualifiedNameable;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
@@ -125,6 +126,7 @@ import org.eclipse.lsp4j.services.LanguageClientAware;
 import org.eclipse.lsp4j.services.TextDocumentService;
 import org.netbeans.api.editor.document.LineDocument;
 import org.netbeans.api.editor.document.LineDocumentUtils;
+import org.netbeans.api.java.source.CodeStyle;
 import org.netbeans.api.java.source.CompilationController;
 import org.netbeans.api.java.source.CompilationInfo;
 import org.netbeans.api.java.source.CompilationInfo.CacheClearPolicy;
@@ -181,6 +183,7 @@ import org.openide.modules.Places;
 import org.openide.text.NbDocument;
 import org.openide.text.PositionBounds;
 import org.openide.util.Exceptions;
+import org.openide.util.Pair;
 import org.openide.util.RequestProcessor;
 import org.openide.util.lookup.Lookups;
 
@@ -208,7 +211,7 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
             EditorCookie ec = file.getLookup().lookup(EditorCookie.class);
             Document doc = ec.openDocument();
             int caret = getOffset(doc, params.getPosition());
-            JavaCompletionTask<CompletionItem> task = JavaCompletionTask.create(caret, new ItemFactoryImpl(client, uri), EnumSet.noneOf(Options.class), () -> false);
+            JavaCompletionTask<CompletionItem> task = JavaCompletionTask.create(caret, new ItemFactoryImpl(client, uri, caret), EnumSet.noneOf(Options.class), () -> false);
             ParserManager.parse(Collections.singletonList(Source.create(doc)), task);
             List<CompletionItem> result = task.getResults();
             for (Iterator<CompletionItem> it = result.iterator(); it.hasNext();) {
@@ -253,10 +256,12 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
 
         private final LanguageClient client;
         private final String uri;
+        private final int caretPos;
 
-        public ItemFactoryImpl(LanguageClient client, String uri) {
+        public ItemFactoryImpl(LanguageClient client, String uri, int caretPos) {
             this.client = client;
             this.uri = uri;
+            this.caretPos = caretPos;
         }
 
         private static final Set<String> SUPPORTED_ELEMENT_KINDS = new HashSet<>(Arrays.asList("PACKAGE", "CLASS", "INTERFACE", "ENUM", "ANNOTATION_TYPE", "METHOD", "CONSTRUCTOR", "INSTANCE_INIT", "STATIC_INIT", "FIELD", "ENUM_CONSTANT", "TYPE_PARAMETER", "MODULE"));
@@ -394,42 +399,56 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
 
         @Override
         public CompletionItem createAttributeItem(CompilationInfo info, ExecutableElement elem, ExecutableType type, int substitutionOffset, boolean isDeprecated) {
-            return null; //TODO: fill
+            String name = elem.getSimpleName().toString();
+            CompletionItem item = new CompletionItem(name);
+            item.setKind(CompletionItemKind.Variable);
+            String insertPostfix = CodeStyle.getDefault(info.getFileObject()).spaceAroundAssignOps() ? " = " : "=";
+            item.setInsertText(name + insertPostfix);
+            item.setInsertTextFormat(InsertTextFormat.PlainText);
+            setCompletionData(item, elem);
+            return item;
         }
 
         @Override
         public CompletionItem createAttributeValueItem(CompilationInfo info, String value, String documentation, TypeElement element, int substitutionOffset, ReferencesCount referencesCount) {
-            return null; //TODO: fill
-        }
+            CompletionItem item = new CompletionItem(value);
+            item.setDocumentation(documentation);
+            item.setKind(CompletionItemKind.Value);
 
-        private static final Object KEY_IMPORT_TEXT_EDITS = new Object();
+            int startRemove = substitutionOffset;
+            int endRemove = caretPos;
+
+            if (element != null) {
+                Pair<String, List<TextEdit>> imported = computeImports(info, element);
+                value = imported.first() + ".class";
+                item.setAdditionalTextEdits(imported.second());
+            } else if (value.charAt(0) == '\"') { //NOI18N
+                if (value.charAt(value.length() - 1) != '\"') { //NOI18N
+                    value = value + '\"'; //NOI18N
+                }
+                if (endRemove < info.getText().length() && info.getText().charAt(endRemove) == '"') {
+                    endRemove++;
+                }
+            }
+
+            LineMap lm = info.getCompilationUnit().getLineMap();
+            Range range = new Range(createPosition(lm, startRemove),
+                                    createPosition(lm, endRemove));
+
+            item.setTextEdit(new TextEdit(range, value));
+
+            return item;
+        }
 
         @Override
         public CompletionItem createStaticMemberItem(CompilationInfo info, DeclaredType type, Element memberElem, TypeMirror memberType, boolean multipleVersions, int substitutionOffset, boolean isDeprecated, boolean addSemicolon) {
-            //TODO: prefer static imports (but would be much slower?)
-            //TODO: should be resolveImport instead of addImports:
-            Map<Element, List<TextEdit>> imports = (Map<Element, List<TextEdit>>) info.getCachedValue(KEY_IMPORT_TEXT_EDITS);
-            if (imports == null) {
-                info.putCachedValue(KEY_IMPORT_TEXT_EDITS, imports = new HashMap<>(), CacheClearPolicy.ON_TASK_END);
-            }
-            List<TextEdit> currentClassImport = imports.computeIfAbsent(type.asElement(), toImport -> {
-                try {
-                    return modify2TextEdits(JavaSource.forFileObject(info.getFileObject()), wc -> {
-                        wc.toPhase(JavaSource.Phase.ELEMENTS_RESOLVED);
-                        wc.rewrite(info.getCompilationUnit(), GeneratorUtilities.get(wc).addImports(wc.getCompilationUnit(), new HashSet<>(Arrays.asList(toImport))));
-                    });
-                } catch (IOException ex) {
-                    //TODO: include stack trace:
-                    client.logMessage(new MessageParams(MessageType.Error, ex.getMessage()));
-                    return Collections.emptyList();
-                }
-            });
-            String label = type.asElement().getSimpleName() + "." + memberElem.getSimpleName();
+            Pair<String, List<TextEdit>> nameAndEdits = computeImports(info, memberElem);
+            String label = nameAndEdits.first();
             CompletionItem item = new CompletionItem(label);
             item.setKind(elementKind2CompletionItemKind(memberElem.getKind()));
             item.setInsertText(label);
             item.setInsertTextFormat(InsertTextFormat.PlainText);
-            item.setAdditionalTextEdits(currentClassImport);
+            item.setAdditionalTextEdits(nameAndEdits.second());
             setCompletionData(item, memberElem);
             return item;
         }
@@ -487,6 +506,43 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
                 default:
                     return CompletionItemKind.Text;
             }
+        }
+
+        private static final Object KEY_IMPORT_TEXT_EDITS = new Object();
+
+        private Pair<String, List<TextEdit>> computeImports(CompilationInfo info, Element toInsert) {
+            //TODO: prefer static imports (but would be much slower?)
+            //TODO: should be resolveImport instead of addImports:
+            if (toInsert.getKind() == ElementKind.MODULE || toInsert.getKind() == ElementKind.PACKAGE) {
+                return Pair.of(((QualifiedNameable) toInsert).getQualifiedName().toString(), Collections.emptyList());
+            } else if (toInsert.getKind().isClass() || toInsert.getKind().isInterface()) {
+                return computeImports(info, (TypeElement) toInsert);
+            } else if (toInsert.getEnclosingElement().getKind().isClass() || toInsert.getEnclosingElement().getKind().isInterface()) {
+                Pair<String, List<TextEdit>> nameAndEdits = computeImports(info, (TypeElement) toInsert.getEnclosingElement());
+                return Pair.of(nameAndEdits.first() + "." + toInsert.getSimpleName(), nameAndEdits.second());
+            } else {
+                return Pair.of(toInsert.getSimpleName().toString(), Collections.emptyList());
+            }
+        }
+
+        private Pair<String, List<TextEdit>> computeImports(CompilationInfo info, TypeElement toInsert) {
+            Map<Element, Pair<String, List<TextEdit>>> imports = (Map<Element, Pair<String, List<TextEdit>>>) info.getCachedValue(KEY_IMPORT_TEXT_EDITS);
+            if (imports == null) {
+                info.putCachedValue(KEY_IMPORT_TEXT_EDITS, imports = new HashMap<>(), CacheClearPolicy.ON_TASK_END);
+            }
+            return imports.computeIfAbsent(toInsert, toImport -> {
+                try {
+                    List<TextEdit> edits = modify2TextEdits(JavaSource.forFileObject(info.getFileObject()), wc -> {
+                        wc.toPhase(JavaSource.Phase.ELEMENTS_RESOLVED);
+                        wc.rewrite(info.getCompilationUnit(), GeneratorUtilities.get(wc).addImports(wc.getCompilationUnit(), new HashSet<>(Arrays.asList(toImport))));
+                    });
+                    return Pair.of(toImport.getSimpleName().toString(), edits);
+                } catch (IOException ex) {
+                    //TODO: include stack trace:
+                    client.logMessage(new MessageParams(MessageType.Error, ex.getMessage()));
+                    return Pair.of(toInsert.getQualifiedName().toString(), Collections.emptyList());
+                }
+            });
         }
     }
 

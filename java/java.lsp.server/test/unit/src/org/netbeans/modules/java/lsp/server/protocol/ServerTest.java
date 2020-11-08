@@ -30,14 +30,17 @@ import java.lang.ref.WeakReference;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -45,6 +48,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import javax.swing.event.ChangeListener;
 import javax.swing.text.StyledDocument;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionContext;
@@ -90,6 +94,8 @@ import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.netbeans.api.java.classpath.ClassPath;
 import org.netbeans.api.java.classpath.GlobalPathRegistry;
+import org.netbeans.api.java.classpath.JavaClassPathConstants;
+import org.netbeans.api.java.queries.AnnotationProcessingQuery;
 import org.netbeans.api.java.source.JavaSource;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.sendopts.CommandLine;
@@ -98,6 +104,7 @@ import org.netbeans.modules.java.source.BootClassPathUtil;
 import org.netbeans.modules.parsing.impl.indexing.implspi.CacheFolderProvider;
 import org.netbeans.spi.java.classpath.ClassPathProvider;
 import org.netbeans.spi.java.classpath.support.ClassPathSupport;
+import org.netbeans.spi.java.queries.AnnotationProcessingQueryImplementation;
 import org.netbeans.spi.project.ProjectFactory;
 import org.netbeans.spi.project.ProjectState;
 import org.netbeans.spi.project.ui.ProjectOpenedHook;
@@ -1134,6 +1141,134 @@ public class ServerTest extends NbTestCase {
         }
     }
 
+    public void testAnnotation() throws Exception {
+        File src = new File(getWorkDir(), "Test.java");
+        src.getParentFile().mkdirs();
+        try (Writer w = new FileWriter(new File(src.getParentFile(), ".test-project"))) {}
+        String code = "public class Test extends java.util.ArrayList<String> {\n" +
+                      "    private void t(String s) {\n" +
+                      "        \n" +
+                      "    }\n" +
+                      "}\n";
+        try (Writer w = new FileWriter(src)) {
+            w.write(code);
+        }
+        List<Diagnostic>[] diags = new List[1];
+        Launcher<LanguageServer> serverLauncher = LSPLauncher.createClientLauncher(new LanguageClient() {
+            @Override
+            public void telemetryEvent(Object arg0) {
+                throw new UnsupportedOperationException("Not supported yet.");
+            }
+
+            @Override
+            public void publishDiagnostics(PublishDiagnosticsParams params) {
+                synchronized (diags) {
+                    diags[0] = params.getDiagnostics();
+                    diags.notifyAll();
+                }
+            }
+
+            @Override
+            public void showMessage(MessageParams params) {
+                if (Server.INDEXING_COMPLETED.equals(params.getMessage())) {
+                } else {
+                    throw new UnsupportedOperationException("Unexpected message.");
+                }
+            }
+
+            @Override
+            public CompletableFuture<MessageActionItem> showMessageRequest(ShowMessageRequestParams arg0) {
+                throw new UnsupportedOperationException("Not supported yet.");
+            }
+
+            @Override
+            public void logMessage(MessageParams arg0) {
+                throw new UnsupportedOperationException("Not supported yet.");
+            }
+        }, client.getInputStream(), client.getOutputStream());
+        serverLauncher.startListening();
+        LanguageServer server = serverLauncher.getRemoteProxy();
+        InitializeParams initParams = new InitializeParams();
+        initParams.setRootUri(getWorkDir().toURI().toString());
+        InitializeResult result = server.initialize(initParams).get();
+        server.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(src.toURI().toString(), "java", 0, code)));
+
+        Position nextInsertPoint = new Position(2, 8 + "@SuppressWarnings(".length());
+        {
+            VersionedTextDocumentIdentifier id1 = new VersionedTextDocumentIdentifier(src.toURI().toString(), 1);
+            server.getTextDocumentService().didChange(new DidChangeTextDocumentParams(id1, Arrays.asList(new TextDocumentContentChangeEvent(new Range(new Position(2, 8), new Position(2, 8)), 0, "@SuppressWarnings("))));
+
+            Either<List<CompletionItem>, CompletionList> completion = server.getTextDocumentService().completion(new CompletionParams(new TextDocumentIdentifier(src.toURI().toString()), nextInsertPoint)).get();
+
+            assertTrue(completion.isRight());
+
+            Optional<CompletionItem> valueItem = completion.getRight().getItems().stream().filter(ci -> "value".equals(ci.getLabel())).findAny();
+            assertTrue(valueItem.isPresent());
+            assertEquals(InsertTextFormat.PlainText, valueItem.get().getInsertTextFormat());
+            assertEquals("value = ", valueItem.get().getInsertText());
+        }
+
+        {
+            VersionedTextDocumentIdentifier id2 = new VersionedTextDocumentIdentifier(src.toURI().toString(), 2);
+            server.getTextDocumentService().didChange(new DidChangeTextDocumentParams(id2, Arrays.asList(new TextDocumentContentChangeEvent(new Range(nextInsertPoint, nextInsertPoint), 0, "\"un\""))));
+
+            Either<List<CompletionItem>, CompletionList> completion = server.getTextDocumentService().completion(new CompletionParams(new TextDocumentIdentifier(src.toURI().toString()), new Position(2, nextInsertPoint.getCharacter() + 3))).get();
+
+            assertTrue(completion.isRight());
+
+            Optional<CompletionItem> suppressKeyItem = completion.getRight().getItems().stream().filter(ci -> "\"unused\"".equals(ci.getLabel())).findAny();
+
+            assertTrue(suppressKeyItem.isPresent());
+
+            assertNull(suppressKeyItem.get().getInsertText());
+
+            TextEdit edit = suppressKeyItem.get().getTextEdit();
+
+            assertNotNull(edit);
+            assertEquals(nextInsertPoint, edit.getRange().getStart());
+            assertEquals(nextInsertPoint.getLine(), edit.getRange().getEnd().getLine());
+            assertEquals(nextInsertPoint.getCharacter() + 4, edit.getRange().getEnd().getCharacter());
+            assertEquals("\"unused\"", edit.getNewText());
+        }
+
+        {
+            VersionedTextDocumentIdentifier id3 = new VersionedTextDocumentIdentifier(src.toURI().toString(), 3);
+            Position pos = new Position(0, 0);
+            String typeText = "@org.openide.util.lookup.ServiceProvider(service=";
+
+            server.getTextDocumentService().didChange(new DidChangeTextDocumentParams(id3, Arrays.asList(new TextDocumentContentChangeEvent(new Range(pos, pos), 0, typeText))));
+
+            Either<List<CompletionItem>, CompletionList> completion = server.getTextDocumentService().completion(new CompletionParams(new TextDocumentIdentifier(src.toURI().toString()), new Position(0, typeText.length()))).get();
+
+            assertTrue(completion.isRight());
+
+            Optional<CompletionItem> classKeyItem = completion.getRight().getItems().stream().filter(ci -> "java.util.List.class".equals(ci.getLabel())).findAny();
+
+            assertTrue(classKeyItem.isPresent());
+
+            assertNull(classKeyItem.get().getInsertText());
+
+            TextEdit edit = classKeyItem.get().getTextEdit();
+
+            assertNotNull(edit);
+            assertEquals(0, edit.getRange().getStart().getLine());
+            assertEquals(49, edit.getRange().getStart().getCharacter());
+            assertEquals(0, edit.getRange().getEnd().getLine());
+            assertEquals(49, edit.getRange().getEnd().getCharacter());
+            assertEquals("List.class", edit.getNewText());
+
+            assertEquals(1, classKeyItem.get().getAdditionalTextEdits().size());
+
+            TextEdit importEdit = classKeyItem.get().getAdditionalTextEdits().get(0);
+
+            assertEquals(0, importEdit.getRange().getStart().getLine());
+            assertEquals(0, importEdit.getRange().getStart().getCharacter());
+            assertEquals(0, importEdit.getRange().getEnd().getLine());
+            assertEquals(0, importEdit.getRange().getEnd().getCharacter());
+            assertEquals("\nimport java.util.List;\n\n", importEdit.getNewText());
+        }
+    }
+
     private String toString(Location location) {
         String path = location.getUri();
         String simpleName = path.substring(path.lastIndexOf('/') + 1);
@@ -1178,6 +1313,8 @@ public class ServerTest extends NbTestCase {
 
     }
 
+    private static final ClassPath OPENIDE_UTIL_LOOKUP = ClassPathSupport.createClassPath(FileUtil.getArchiveRoot(Lookup.class.getProtectionDomain().getCodeSource().getLocation()));
+
     //tests may run as a project, so that indexing works properly:
     @ServiceProvider(service=ProjectFactory.class)
     public static class TestProjectFactory implements ProjectFactory {
@@ -1207,10 +1344,13 @@ public class ServerTest extends NbTestCase {
                             switch (type) {
                                 case ClassPath.SOURCE: return source;
                                 case ClassPath.BOOT: return BootClassPathUtil.getBootClassPath();
+                                case JavaClassPathConstants.PROCESSOR_PATH:
+                                case ClassPath.COMPILE: return OPENIDE_UTIL_LOOKUP;
                             }
                             return null;
                         }
-                    }
+                    },
+                    new AnnotationProcessingQueryImpl()
                 );
                 return new Project() {
                     @Override
@@ -1230,6 +1370,44 @@ public class ServerTest extends NbTestCase {
         @Override
         public void saveProject(Project project) throws IOException, ClassCastException {
         }
+    }
+
+    private static final class AnnotationProcessingQueryImpl implements AnnotationProcessingQueryImplementation {
+
+        @Override
+        public AnnotationProcessingQuery.Result getAnnotationProcessingOptions(FileObject file) {
+            return new AnnotationProcessingQuery.Result() {
+                @Override
+                public Set<? extends AnnotationProcessingQuery.Trigger> annotationProcessingEnabled() {
+                    return EnumSet.of(AnnotationProcessingQuery.Trigger.IN_EDITOR,
+                                      AnnotationProcessingQuery.Trigger.ON_SCAN);
+                }
+
+                @Override
+                public Iterable<? extends String> annotationProcessorsToRun() {
+                    return null;
+                }
+
+                @Override
+                public URL sourceOutputDirectory() {
+                    return null;
+                }
+
+                @Override
+                public Map<? extends String, ? extends String> processorOptions() {
+                    return Collections.emptyMap();
+                }
+
+                @Override
+                public void addChangeListener(ChangeListener l) {
+                }
+
+                @Override
+                public void removeChangeListener(ChangeListener l) {
+                }
+            };
+        }
+
     }
 
     static {
