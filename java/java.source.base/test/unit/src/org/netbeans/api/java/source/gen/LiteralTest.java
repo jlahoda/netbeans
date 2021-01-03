@@ -218,7 +218,7 @@ public class LiteralTest extends GeneratorTestMDRCompat {
 
     public void testTextBlocksReplace() throws Exception {
         try {
-            SourceVersion.valueOf("RELEASE_13");
+            SourceVersion.valueOf("RELEASE_15");
         } catch (IllegalArgumentException ex) {
             //OK, skip test
             return ;

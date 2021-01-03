@@ -25,6 +25,7 @@ import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.InstanceOfTree;
 import com.sun.source.tree.SwitchTree;
 import com.sun.source.tree.Tree;
+import com.sun.source.tree.VariableTree;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCClassDecl;
 import com.sun.tools.javac.tree.TreeMaker;
@@ -151,7 +152,30 @@ public class TreeShims {
         }
     }
 
+    public static VariableTree getBindingVariable(Tree node) {
+        if (!node.getKind().toString().equals(BINDING_PATTERN)) {
+            return null;
+        }
+        try {
+            Class bpt = Class.forName("com.sun.source.tree.BindingPatternTree");
+            Method getVariable = bpt.getDeclaredMethod("getVariable");
+            return (VariableTree) getVariable.invoke(node);
+        } catch (NoSuchMethodException | ClassNotFoundException ex) {
+            return null;
+        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
+            throw TreeShims.<RuntimeException>throwAny(ex);
+        }
+    }
+
     public static Name getBinding(Tree node) {
+        if (!node.getKind().toString().equals(BINDING_PATTERN)) {
+            return null;
+        }
+        VariableTree var = getBindingVariable(node);
+        if (var != null) {
+            return var.getName();
+        }
+        //compatibility with pre-JDK16 AST:
         try {
             Class bpt = Class.forName("com.sun.source.tree.BindingPatternTree");
             Method getBinding = bpt.getDeclaredMethod("getBinding");
@@ -221,6 +245,11 @@ public class TreeShims {
         if (!node.getKind().toString().equals(BINDING_PATTERN)) {
             return null;
         }
+        VariableTree var = getBindingVariable(node);
+        if (var != null) {
+            return var.getType();
+        }
+        //compatibility with pre-JDK16 AST:
         try {
             Class bindingPatternTreeClass = Class.forName("com.sun.source.tree.BindingPatternTree"); //NOI18N
             Method getType = bindingPatternTreeClass.getDeclaredMethod("getType");  //NOI18N

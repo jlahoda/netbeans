@@ -25,22 +25,22 @@ import org.netbeans.modules.java.source.parsing.JavacParser;
  *
  * @author arusinha
  */
-public class JavaCompletionTask114FeaturesTest extends CompletionTestBase {
+public class JavaCompletionTask116FeaturesTest extends CompletionTestBase {
 
-    private static String SOURCE_LEVEL = "14"; //NOI18N
+    private static String SOURCE_LEVEL = "16"; //NOI18N
 
-    public JavaCompletionTask114FeaturesTest(String testName) {
+    public JavaCompletionTask116FeaturesTest(String testName) {
         super(testName);
     }
 
     public static NbTestSuite suite() {
         NbTestSuite suite = new NbTestSuite();
         try {
-            SourceVersion.valueOf("RELEASE_14"); //NOI18N
-            suite.addTestSuite(JavaCompletionTask114FeaturesTest.class);
+            SourceVersion.valueOf("RELEASE_16"); //NOI18N
+            suite.addTestSuite(JavaCompletionTask116FeaturesTest.class);
         } catch (IllegalArgumentException ex) {
             //OK, no RELEASE_13, skip tests
-            suite.addTest(new JavaCompletionTask114FeaturesTest("noop")); //NOI18N
+            suite.addTest(new JavaCompletionTask116FeaturesTest("noop")); //NOI18N
         }
         return suite;
     }

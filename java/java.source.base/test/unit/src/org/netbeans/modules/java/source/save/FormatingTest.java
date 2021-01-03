@@ -40,11 +40,14 @@ import org.netbeans.modules.editor.indent.api.Reformat;
 import org.netbeans.api.java.lexer.JavaTokenId;
 import org.netbeans.api.java.source.*;
 import org.netbeans.api.java.source.JavaSource.Phase;
+import org.netbeans.api.java.source.SourceUtilsTestUtil.TestSourceLevelQueryImplementation;
 import org.netbeans.api.lexer.Language;
 import org.netbeans.junit.NbTestCase;
 import org.netbeans.junit.NbTestSuite;
 import org.netbeans.modules.java.JavaDataLoader;
 import org.netbeans.modules.java.source.BootClassPathUtil;
+import org.netbeans.modules.java.source.parsing.JavacParser;
+import static org.netbeans.modules.java.source.parsing.JavacParser.DISABLE_SOURCE_LEVEL_DOWNGRADE;
 import org.netbeans.modules.java.source.usages.IndexUtil;
 import org.netbeans.modules.java.ui.FmtOptions;
 import org.netbeans.spi.java.classpath.ClassPathProvider;
@@ -96,7 +99,7 @@ public class FormatingTest extends NbTestCase {
             }
         };
         SharedClassObject loader = JavaDataLoader.findObject(JavaDataLoader.class, true);
-        SourceUtilsTestUtil.prepareTest(new String[]{"org/netbeans/modules/java/source/resources/layer.xml","org/netbeans/modules/java/source/base/layer.xml"}, new Object[]{loader/*, cpp*/});
+        SourceUtilsTestUtil.prepareTest(new String[]{"org/netbeans/modules/java/source/resources/layer.xml","org/netbeans/modules/java/source/base/layer.xml"}, new Object[]{loader, new TestSourceLevelQueryImplementation()/*, cpp*/});
         JEditorPane.registerEditorKitForContentType("text/x-java", "org.netbeans.modules.editor.java.JavaKit");
         File cacheFolder = new File(getWorkDir(), "var/cache/index");
         cacheFolder.mkdirs();
@@ -5126,14 +5129,15 @@ public class FormatingTest extends NbTestCase {
 
     public void testRecord1() throws Exception {
         try {
-            SourceVersion.valueOf("RELEASE_14"); //NOI18N
+            SourceVersion.valueOf("RELEASE_16"); //NOI18N
         } catch (IllegalArgumentException ex) {
-            //OK, no RELEASE_14, skip test
+            //OK, no RELEASE_16, skip test
             return;
         }
         testFile = new File(getWorkDir(), "Test.java");
         TestUtilities.copyStringToFile(testFile, "");
         FileObject testSourceFO = FileUtil.toFileObject(testFile);
+        SourceUtilsTestUtil.setSourceLevel(testSourceFO, "16");
         DataObject testSourceDO = DataObject.find(testSourceFO);
         EditorCookie ec = (EditorCookie) testSourceDO.getCookie(EditorCookie.class);
         final Document doc = ec.openDocument();
@@ -5160,14 +5164,15 @@ public class FormatingTest extends NbTestCase {
 
     public void testRecord2() throws Exception {
         try {
-            SourceVersion.valueOf("RELEASE_14"); //NOI18N
+            SourceVersion.valueOf("RELEASE_16"); //NOI18N
         } catch (IllegalArgumentException ex) {
-            //OK, no RELEASE_14, skip test
+            //OK, no RELEASE_16, skip test
             return;
         }
         testFile = new File(getWorkDir(), "Test.java");
         TestUtilities.copyStringToFile(testFile, "");
         FileObject testSourceFO = FileUtil.toFileObject(testFile);
+        SourceUtilsTestUtil.setSourceLevel(testSourceFO, "16");
         DataObject testSourceDO = DataObject.find(testSourceFO);
         EditorCookie ec = (EditorCookie) testSourceDO.getCookie(EditorCookie.class);
         final Document doc = ec.openDocument();
@@ -5229,14 +5234,15 @@ public class FormatingTest extends NbTestCase {
     
     public void testRecord4() throws Exception {
         try {
-            SourceVersion.valueOf("RELEASE_14"); //NOI18N
+            SourceVersion.valueOf("RELEASE_16"); //NOI18N
         } catch (IllegalArgumentException ex) {
-            //OK, no RELEASE_14, skip test
+            //OK, no RELEASE_16, skip test
             return;
         }
         testFile = new File(getWorkDir(), "Test.java");
         TestUtilities.copyStringToFile(testFile, "");
         FileObject testSourceFO = FileUtil.toFileObject(testFile);
+        SourceUtilsTestUtil.setSourceLevel(testSourceFO, "16");
         DataObject testSourceDO = DataObject.find(testSourceFO);
         EditorCookie ec = (EditorCookie) testSourceDO.getCookie(EditorCookie.class);
         final Document doc = ec.openDocument();
@@ -5405,5 +5411,9 @@ public class FormatingTest extends NbTestCase {
         // the f might not exist and so you cannot use e.g. f.isFile() here
         String fileName = f.getName().toLowerCase();
         return fileName.endsWith(".jar") || fileName.endsWith(".zip");    //NOI18N
+    }
+
+    static {
+        JavacParser.DISABLE_SOURCE_LEVEL_DOWNGRADE = true;
     }
 }

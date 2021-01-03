@@ -56,6 +56,10 @@ import org.openide.util.*;
 */
 public abstract class DataObject extends Object
 implements Node.Cookie, Serializable, HelpCtx.Provider, Lookup.Provider {
+    static {
+        //ensure AbstractNode is load first:
+        new AbstractNode(Children.LEAF);
+    }
     /** generated Serialized Version UID */
     private static final long serialVersionUID = 3328227388376142699L;
 

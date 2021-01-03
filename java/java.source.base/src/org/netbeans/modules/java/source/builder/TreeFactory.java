@@ -48,6 +48,8 @@ import com.sun.source.doctree.VersionTree;
 import com.sun.source.tree.*;
 import com.sun.source.tree.MemberReferenceTree.ReferenceMode;
 import com.sun.source.tree.Tree.Kind;
+import com.sun.source.util.DocTreeFactory;
+import com.sun.tools.javac.api.JavacTrees;
 import com.sun.tools.javac.code.BoundKind;
 import com.sun.tools.javac.code.Flags;
 import static com.sun.tools.javac.code.Flags.*;
@@ -68,6 +70,7 @@ import com.sun.tools.javac.util.ListBuffer;
 import com.sun.tools.javac.util.Name;
 import com.sun.tools.javac.util.Names;
 import com.sun.tools.javac.util.Context;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -82,6 +85,7 @@ import javax.tools.JavaFileObject;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.modules.java.source.TreeShims;
 import static org.netbeans.modules.java.source.save.PositionEstimator.*;
+import org.openide.util.Exceptions;
 
 /**
  * Factory for creating new com.sun.source.tree instances.
@@ -114,7 +118,8 @@ public class TreeFactory {
         names = Names.instance(context);
         classReader = ClassReader.instance(context);
         make = com.sun.tools.javac.tree.TreeMaker.instance(context);
-        docMake = com.sun.tools.javac.tree.DocTreeMaker.instance(context);
+        docMake = JavacTrees.instance(context).getDocTreeFactory();
+        docMakeInternal = com.sun.tools.javac.tree.DocTreeMaker.instance(context);
         elements = JavacElements.instance(context);
         types = JavacTypes.instance(context);
         chs = CommentHandlerService.instance(context);
@@ -916,9 +921,14 @@ public class TreeFactory {
     public Tree BindingPattern(CharSequence name,
                                Tree type) {
         try {
-            return (Tree) make.getClass().getMethod("BindingPattern", Name.class, JCTree.class).invoke(make.at(NOPOS), names.fromString(name.toString()), type);
-        } catch (Throwable t) {
-            throw throwAny(t);
+            return (Tree) make.getClass().getMethod("BindingPattern", JCVariableDecl.class).invoke(make.at(NOPOS), Variable(Modifiers(Collections.emptySet()), names.fromString(name.toString()), type, null));
+        } catch (Throwable orig) {
+            try {
+                return (Tree) make.getClass().getMethod("BindingPattern", Name.class, JCTree.class).invoke(make.at(NOPOS), names.fromString(name.toString()), type);
+            } catch (Throwable t) {
+                orig.addSuppressed(t);
+                throw throwAny(orig);
+            }
         }
     }
 
@@ -1765,7 +1775,8 @@ public class TreeFactory {
     }
     
     
-    private DocTreeMaker docMake;
+    private DocTreeFactory docMake;
+    private DocTreeMaker docMakeInternal;
 
     public AttributeTree Attribute(CharSequence name, AttributeTree.ValueKind vkind, List<? extends DocTree> value) {
         return docMake.at(NOPOS).newAttributeTree((Name) names.fromString(name.toString()), vkind, value);
@@ -1922,7 +1933,18 @@ public class TreeFactory {
             }
             paramTypesList = lbl.toList();
         }
-        return docMake.at(NOPOS).newReferenceTree("", (JCExpression) qualExpr, member != null ? (Name) names.fromString(member.toString()) : null, paramTypesList);
+        try {
+            return docMakeInternal.at(NOPOS).newReferenceTree("", (JCExpression) qualExpr, member != null ? (Name) names.fromString(member.toString()) : null, paramTypesList);
+        } catch (NoSuchMethodError e) {
+            try {
+                return (ReferenceTree) docMakeInternal.getClass()
+                                                      .getMethod("newReferenceTree", String.class, JCExpression.class, JCTree.class, javax.lang.model.element.Name.class, List.class)
+                                                      .invoke(docMakeInternal.at(NOPOS), "", null, (JCExpression) qualExpr, member != null ? (Name) names.fromString(member.toString()) : null, paramTypesList);
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException | SecurityException ex) {
+                e.addSuppressed(ex);
+                throw e;
+            }
+        }
     }
     
     @SuppressWarnings("unchecked")
