@@ -24,11 +24,13 @@ import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.LineMap;
 import com.sun.source.tree.MethodTree;
+import com.sun.source.tree.PrimitiveTypeTree;
 import com.sun.source.tree.Scope;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.Tree.Kind;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePath;
+import com.sun.source.util.TreePathScanner;
 import com.vladsch.flexmark.html2md.converter.FlexmarkHtmlConverter;
 import java.io.File;
 import java.io.IOException;
@@ -59,12 +61,14 @@ import java.util.stream.Collectors;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.ExecutableType;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.swing.text.BadLocationException;
@@ -1357,12 +1361,25 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
             source.runUserActionTask(cc -> {
                 cc.toPhase(Phase.ELEMENTS_RESOLVED);
                 List<CodeLens> lens = new ArrayList<>();
+                //look for test methods:
                 for (TestMethod method : TestMethodProvider.computeTestMethods(cc, new AtomicBoolean())) {
                     lens.add(new CodeLens(new Range(Utils.createPosition(cc.getCompilationUnit(), method.start().getOffset()),
                                                     Utils.createPosition(cc.getCompilationUnit(), method.end().getOffset())),
                                           new Command("Run test", Server.JAVA_TEST_SINGLE_METHOD),
                                           null));
                 }
+                //look for main methods:
+                new TreePathScanner<Void, Void>() {
+                    public Void visitMethod(MethodTree tree, Void p) {
+                        Element el = cc.getTrees().getElement(getCurrentPath());
+                        if (el != null && el.getKind() == ElementKind.METHOD && SourceUtils.isMainMethod((ExecutableElement) el)) {
+                            lens.add(new CodeLens(Utils.treeRange(cc, tree),
+                                                  new Command("Run main", Server.JAVA_RUN_MAIN_METHOD),
+                                                  null));
+                        }
+                        return null;
+                    }
+                }.scan(cc.getCompilationUnit(), null);
                 result.complete(lens);
             }, true);
         } catch (IOException ex) {
