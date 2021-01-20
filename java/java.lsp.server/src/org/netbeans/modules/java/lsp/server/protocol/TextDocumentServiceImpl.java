@@ -136,6 +136,7 @@ import org.netbeans.api.java.source.CompilationInfo.CacheClearPolicy;
 import org.netbeans.api.java.source.ElementHandle;
 import org.netbeans.api.java.source.GeneratorUtilities;
 import org.netbeans.api.java.source.JavaSource;
+import org.netbeans.api.java.source.JavaSource.Phase;
 import org.netbeans.api.java.source.ModificationResult;
 import org.netbeans.api.java.source.SourceUtils;
 import org.netbeans.api.java.source.Task;
@@ -149,6 +150,7 @@ import org.netbeans.modules.editor.java.GoToSupport;
 import org.netbeans.modules.editor.java.GoToSupport.Context;
 import org.netbeans.modules.editor.java.GoToSupport.GoToTarget;
 import org.netbeans.modules.editor.java.Utilities;
+import org.netbeans.modules.gsf.testrunner.ui.api.TestMethodController.TestMethod;
 import org.netbeans.modules.java.completion.JavaCompletionTask;
 import org.netbeans.modules.java.completion.JavaCompletionTask.Options;
 import org.netbeans.modules.java.completion.JavaDocumentationTask;
@@ -170,6 +172,7 @@ import org.netbeans.modules.java.lsp.server.Utils;
 import org.netbeans.modules.java.lsp.server.debugging.utils.ErrorUtilities;
 import org.netbeans.modules.java.source.ElementHandleAccessor;
 import org.netbeans.modules.java.source.ui.ElementOpenAccessor;
+import org.netbeans.modules.junit.ui.api.TestMethodProvider;
 import org.netbeans.modules.parsing.api.ParserManager;
 import org.netbeans.modules.parsing.api.ResultIterator;
 import org.netbeans.modules.parsing.api.Source;
@@ -1344,8 +1347,28 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
     //end copied
 
     @Override
-    public CompletableFuture<List<? extends CodeLens>> codeLens(CodeLensParams arg0) {
-        throw new UnsupportedOperationException("Not supported yet.");
+    public CompletableFuture<List<? extends CodeLens>> codeLens(CodeLensParams params) {
+        JavaSource source = getSource(params.getTextDocument().getUri());
+        if (source == null) {
+            return CompletableFuture.completedFuture(Collections.emptyList());
+        }
+        CompletableFuture<List<? extends CodeLens>> result = new CompletableFuture<>();
+        try {
+            source.runUserActionTask(cc -> {
+                cc.toPhase(Phase.ELEMENTS_RESOLVED);
+                List<CodeLens> lens = new ArrayList<>();
+                for (TestMethod method : TestMethodProvider.computeTestMethods(cc, new AtomicBoolean())) {
+                    lens.add(new CodeLens(new Range(Utils.createPosition(cc.getCompilationUnit(), method.start().getOffset()),
+                                                    Utils.createPosition(cc.getCompilationUnit(), method.end().getOffset())),
+                                          new Command("Run test", Server.JAVA_TEST_SINGLE_METHOD),
+                                          null));
+                }
+                result.complete(lens);
+            }, true);
+        } catch (IOException ex) {
+            result.completeExceptionally(ex);
+        }
+        return result;
     }
 
     @Override
