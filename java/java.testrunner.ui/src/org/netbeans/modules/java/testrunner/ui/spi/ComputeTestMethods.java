@@ -16,19 +16,21 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.netbeans.modules.junit.ui.api;
+package org.netbeans.modules.java.testrunner.ui.spi;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.netbeans.api.java.source.CompilationInfo;
 import org.netbeans.modules.gsf.testrunner.ui.api.TestMethodController.TestMethod;
-import org.netbeans.modules.junit.ui.actions.TestClassInfoTask;
 
 /**
  *
+ * @author lahvac
  */
-public class TestMethodProvider {
-    public static List<TestMethod> computeTestMethods(CompilationInfo info, AtomicBoolean cancel) {
-        return TestClassInfoTask.computeTestMethods(info, cancel, TestClassInfoTask.ALL_MEMBERS);
+public interface ComputeTestMethods {
+    public List<TestMethod> computeTestMethods(CompilationInfo info);
+    public void cancel();
+
+    public interface Factory {
+        public ComputeTestMethods create();
     }
 }

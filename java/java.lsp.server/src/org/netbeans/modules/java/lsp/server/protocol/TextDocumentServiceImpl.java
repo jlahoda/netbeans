@@ -176,7 +176,7 @@ import org.netbeans.modules.java.lsp.server.Utils;
 import org.netbeans.modules.java.lsp.server.debugging.utils.ErrorUtilities;
 import org.netbeans.modules.java.source.ElementHandleAccessor;
 import org.netbeans.modules.java.source.ui.ElementOpenAccessor;
-import org.netbeans.modules.junit.ui.api.TestMethodProvider;
+import org.netbeans.modules.java.testrunner.ui.spi.ComputeTestMethods;
 import org.netbeans.modules.parsing.api.ParserManager;
 import org.netbeans.modules.parsing.api.ResultIterator;
 import org.netbeans.modules.parsing.api.Source;
@@ -1362,11 +1362,16 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
                 cc.toPhase(Phase.ELEMENTS_RESOLVED);
                 List<CodeLens> lens = new ArrayList<>();
                 //look for test methods:
-                for (TestMethod method : TestMethodProvider.computeTestMethods(cc, new AtomicBoolean())) {
-                    lens.add(new CodeLens(new Range(Utils.createPosition(cc.getCompilationUnit(), method.start().getOffset()),
-                                                    Utils.createPosition(cc.getCompilationUnit(), method.end().getOffset())),
-                                          new Command("Run test", Server.JAVA_TEST_SINGLE_METHOD),
-                                          null));
+                for (ComputeTestMethods.Factory methodsFactory : Lookup.getDefault().lookupAll(ComputeTestMethods.Factory.class)) {
+                    List<TestMethod> methods = methodsFactory.create().computeTestMethods(cc);
+                    if (methods != null) {
+                        for (TestMethod method : methods) {
+                            lens.add(new CodeLens(new Range(Utils.createPosition(cc.getCompilationUnit(), method.start().getOffset()),
+                                                            Utils.createPosition(cc.getCompilationUnit(), method.end().getOffset())),
+                                                  new Command("Run test", Server.JAVA_TEST_SINGLE_METHOD),
+                                                  null));
+                        }
+                    }
                 }
                 //look for main methods:
                 new TreePathScanner<Void, Void>() {

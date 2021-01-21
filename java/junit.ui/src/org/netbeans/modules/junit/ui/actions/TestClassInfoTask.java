@@ -25,7 +25,6 @@ import com.sun.source.util.SourcePositions;
 import com.sun.source.util.TreePath;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -34,7 +33,6 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
@@ -42,17 +40,13 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
-import org.netbeans.api.java.source.CancellableTask;
 import org.netbeans.api.java.source.CompilationController;
 import org.netbeans.api.java.source.CompilationInfo;
 import org.netbeans.api.java.source.JavaSource.Phase;
-import org.netbeans.api.java.source.JavaSource.Priority;
-import org.netbeans.api.java.source.JavaSourceTaskFactory;
 import org.netbeans.api.java.source.Task;
-import org.netbeans.api.java.source.support.EditorAwareJavaSourceTaskFactory;
-import org.netbeans.modules.gsf.testrunner.ui.api.TestMethodController;
 import org.netbeans.modules.gsf.testrunner.ui.api.TestMethodController.TestMethod;
-import org.netbeans.modules.parsing.spi.TaskIndexingMode;
+import org.netbeans.modules.java.testrunner.ui.spi.ComputeTestMethods;
+import org.netbeans.modules.java.testrunner.ui.spi.ComputeTestMethods.Factory;
 import org.netbeans.spi.project.SingleMethod;
 import org.openide.filesystems.FileObject;
 import org.openide.util.lookup.ServiceProvider;
@@ -73,34 +67,41 @@ public final class TestClassInfoTask implements Task<CompilationController> {
     @Override
     public void run(CompilationController controller) throws Exception {
         controller.toPhase(Phase.RESOLVED);
-        List<TestMethod> methods = computeTestMethods(controller, new AtomicBoolean(), clazz -> {
-            TreePath tp = controller.getTreeUtilities().pathFor(caretPosition);
+        List<TestMethod> methods = computeTestMethods(controller, new AtomicBoolean(), caretPosition);
+        this.singleMethod = !methods.isEmpty() ? methods.get(0).method() : null;
+    }
+
+    public static List<TestMethod> computeTestMethods(CompilationInfo info, AtomicBoolean cancel, int caretPosIfAny) {
+        //TODO: first verify if this is a test class/class in a test source group?
+        FileObject fileObject = info.getFileObject();
+        ClassTree clazz;
+        List<TreePath> methods;
+        if (caretPosIfAny == (-1)) {
+            Optional<? extends Tree> anyClass = info.getCompilationUnit().getTypeDecls().stream().filter(t -> t.getKind() == Kind.CLASS).findAny();
+            if (!anyClass.isPresent()) {
+                return Collections.emptyList();
+            }
+            clazz = (ClassTree) anyClass.get();
+            TreePath pathToClass = new TreePath(new TreePath(info.getCompilationUnit()), clazz);
+            methods = clazz.getMembers().stream().filter(m -> m.getKind() == Kind.METHOD).map(m -> new TreePath(pathToClass, m)).collect(Collectors.toList());
+        } else {
+            TreePath tp = info.getTreeUtilities().pathFor(caretPosIfAny);
             while (tp != null && tp.getLeaf().getKind() != Kind.METHOD) {
                 tp = tp.getParentPath();
             }
             if (tp != null) {
-                return Collections.singletonList(tp);
+                clazz = (ClassTree) tp.getParentPath().getLeaf();
+                methods = Collections.singletonList(tp);
             } else {
                 return Collections.emptyList();
             }
-        });
-        this.singleMethod = !methods.isEmpty() ? methods.get(0).method() : null;
-    }
-    
-    public static List<TestMethod> computeTestMethods(CompilationInfo info, AtomicBoolean cancel, Function<TreePath, Collection<? extends TreePath>> paths) {
-        //TODO: first verify if this is a test class/class in a test source group?
-        FileObject fileObject = info.getFileObject();
-        Optional<? extends Tree> anyClass = info.getCompilationUnit().getTypeDecls().stream().filter(t -> t.getKind() == Kind.CLASS).findAny();
-        if (!anyClass.isPresent()) {
-            return Collections.emptyList();
         }
-        ClassTree clazz = (ClassTree) anyClass.get();
         TypeElement typeElement = (TypeElement) info.getTrees().getElement(new TreePath(new TreePath(info.getCompilationUnit()), clazz));
         Elements elements = info.getElements();
         TypeElement testcase = elements.getTypeElement(TESTCASE);
         boolean junit3 = (testcase != null && typeElement != null) ? info.getTypes().isSubtype(typeElement.asType(), testcase.asType()) : false;
         List<TestMethod> result = new ArrayList<>();
-        for (TreePath tp : paths.apply(new TreePath(new TreePath(info.getCompilationUnit()), clazz))) {
+        for (TreePath tp : methods) {
             if (cancel.get()) {
                 return null;
             }
@@ -131,11 +132,6 @@ public final class TestClassInfoTask implements Task<CompilationController> {
         }
         return result;
     }
-
-    public static final Function<TreePath, Collection<? extends TreePath>> ALL_MEMBERS = path -> {
-        ClassTree ct = (ClassTree) path.getLeaf();
-        return ct.getMembers().stream().filter(m -> m.getKind() == Kind.METHOD).map(m -> new TreePath(path, m)).collect(Collectors.toList());
-    };
 
     SingleMethod getSingleMethod() {
         return singleMethod;
@@ -172,19 +168,15 @@ public final class TestClassInfoTask implements Task<CompilationController> {
         return false;
     }
 
-    @ServiceProvider(service=JavaSourceTaskFactory.class)
-    public static final class FactoryImpl extends EditorAwareJavaSourceTaskFactory {
-
-        public FactoryImpl() {
-            super(Phase.ELEMENTS_RESOLVED, Priority.NORMAL, TaskIndexingMode.ALLOWED_DURING_SCAN);
-        }
+    @ServiceProvider(service=Factory.class)
+    public static final class ComputeTestMethodsImpl implements Factory {
 
         @Override
-        protected CancellableTask<CompilationInfo> createTask(FileObject file) {
+        public ComputeTestMethods create() {
             return new TaskImpl();
         }
 
-        private static class TaskImpl implements CancellableTask<CompilationInfo> {
+        private static class TaskImpl implements ComputeTestMethods {
 
             private final AtomicBoolean cancel = new AtomicBoolean();
 
@@ -194,19 +186,8 @@ public final class TestClassInfoTask implements Task<CompilationController> {
             }
 
             @Override
-            public void run(CompilationInfo info) throws Exception {
-                cancel.set(false);
-                Document doc = info.getDocument();
-                
-                if (doc == null) {
-                    return ;
-                }
-
-                List<TestMethod> methods = computeTestMethods(info, cancel, ALL_MEMBERS);
-
-                if (methods != null) {
-                    TestMethodController.setTestMethods(doc, methods);
-                }
+            public List<TestMethod> computeTestMethods(CompilationInfo info) {
+                return TestClassInfoTask.computeTestMethods(info, cancel, -1);
             }
         }
 
