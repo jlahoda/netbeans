@@ -31,6 +31,7 @@ import javax.swing.text.Document;
 
 import org.netbeans.api.java.lexer.JavaTokenId;
 import org.netbeans.api.java.source.CompilationInfo;
+import org.netbeans.api.java.source.CompilationInfo.CacheClearPolicy;
 import org.netbeans.api.lexer.TokenHierarchy;
 import org.netbeans.api.lexer.TokenSequence;
 
@@ -45,9 +46,15 @@ public class TagParser {
     );
 
     private static final Pattern TAG_PATTERN = Pattern.compile("@([a-zA-Z]+)(\\s+|/|$)");
+    private static final Object PARSED_TAG_CACHE = new Object();
 
     public static Result parseTags(CompilationInfo info) {
-        return parseTags(info.getTokenHierarchy().tokenSequence(JavaTokenId.language()));
+        Result result = (Result) info.getCachedValue(PARSED_TAG_CACHE);
+        if (result == null) {
+            result = parseTags(info.getTokenHierarchy().tokenSequence(JavaTokenId.language()));
+            info.putCachedValue(PARSED_TAG_CACHE, result, CacheClearPolicy.ON_CHANGE);
+        }
+        return result;
     }
 
     public static Result parseTags(Document doc) {
