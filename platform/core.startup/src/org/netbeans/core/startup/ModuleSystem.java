@@ -40,6 +40,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.netbeans.DuplicateException;
 import org.netbeans.Events;
+import org.netbeans.JDKModules;
 import org.netbeans.JarClassLoader;
 import org.netbeans.JaveleonModule;
 import org.netbeans.Module;
@@ -178,7 +179,9 @@ public final class ModuleSystem {
             ClassLoader upperLoader = ModuleSystem.class.getClassLoader();
             // wrap alien loader, so it can be used among parent loaders of module (instanceof ProxyClassLoader)
             ClassLoader loader = new JarClassLoader(Collections.<File>emptyList(), new ClassLoader[] { Module.class.getClassLoader() });
-            
+
+            bootModules.addAll(JDKModules.loadJDKModules(mgr, ev, loader));
+
             Enumeration<URL> e = loader.getResources("META-INF/MANIFEST.MF"); // NOI18N
             Enumeration<URL> upperE = upperLoader.getResources("META-INF/MANIFEST.MF"); // NOI18N
             ev.log(Events.PERF_TICK, "got all manifests"); // NOI18N
