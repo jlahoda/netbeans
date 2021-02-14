@@ -7,5 +7,5 @@ package ejb;
  */
 public interface SessionTest2LocalBusiness {
     String greetings(String who);
-    
+
 }

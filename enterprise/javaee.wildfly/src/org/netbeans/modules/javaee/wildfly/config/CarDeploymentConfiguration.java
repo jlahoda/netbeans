@@ -35,7 +35,6 @@ import org.netbeans.modules.j2ee.deployment.plugins.spi.config.ModuleConfigurati
 import org.netbeans.modules.javaee.wildfly.config.gen.EjbRef;
 import org.netbeans.modules.javaee.wildfly.config.gen.JbossClient;
 import org.netbeans.modules.javaee.wildfly.config.gen.ResourceRef;
-import org.netbeans.modules.javaee.wildfly.config.gen.ServiceRef;
 import org.netbeans.modules.javaee.wildfly.config.mdb.MessageDestinationSupportImpl;
 import org.netbeans.modules.javaee.wildfly.ide.ui.WildflyPluginUtils;
 import org.openide.DialogDisplayer;
@@ -56,7 +55,7 @@ import org.openide.util.lookup.Lookups;
  */
 public class CarDeploymentConfiguration extends WildflyDeploymentConfiguration
 implements ModuleConfiguration, DatasourceConfiguration, DeploymentPlanConfiguration, PropertyChangeListener {
-    
+
     private File jbossClientFile;
     private JbossClient jbossClient;
 
@@ -83,7 +82,7 @@ implements ModuleConfiguration, DatasourceConfiguration, DeploymentPlanConfigura
 //            appClient.addPropertyChangeListener(this);
 //        }
     }
-    
+
 
     public void dispose() {
         // TODO: rewrite
@@ -92,11 +91,11 @@ implements ModuleConfiguration, DatasourceConfiguration, DeploymentPlanConfigura
 //            appClient.removePropertyChangeListener(this);
 //        }
     }
-    
+
     public Lookup getLookup() {
         return Lookups.fixed(this);
     }
-    
+
     /**
      * Return JbossClient graph. If it was not created yet, load it from the file
      * and cache it. If the file does not exist, generate it.
@@ -135,7 +134,7 @@ implements ModuleConfiguration, DatasourceConfiguration, DeploymentPlanConfigura
         if (evt.getPropertyName() == DataObject.PROP_MODIFIED && evt.getNewValue() == Boolean.FALSE) {
             if (evt.getSource() == deploymentDescriptorDO) { // dataobject has been modified, jbossWeb graph is out of sync
                 synchronized (this) {
-                    jbossClient = null;   
+                    jbossClient = null;
                 }
             } else {
 //                super.propertyChange(evt);
@@ -179,7 +178,7 @@ implements ModuleConfiguration, DatasourceConfiguration, DeploymentPlanConfigura
             }
         }
     }
-    
+
     public void save(OutputStream os) throws ConfigurationException {
         JbossClient jbossClientDD = getJbossClient();
         if (jbossClientDD == null) {
@@ -193,9 +192,9 @@ implements ModuleConfiguration, DatasourceConfiguration, DeploymentPlanConfigura
             throw new ConfigurationException(msg, ioe);
         }
     }
-    
+
     // private helper methods -------------------------------------------------
-    
+
     /**
      * Generate JbossWeb graph.
      */
@@ -204,10 +203,10 @@ implements ModuleConfiguration, DatasourceConfiguration, DeploymentPlanConfigura
         //jbossClientDD.setContextRoot(""); // NOI18N
         return jbossClientDD;
     }
-    
+
     /**
      * Add a new resource reference.
-     * 
+     *
      * @param name resource reference name
      */
     private void addResReference(final String name) throws ConfigurationException {
@@ -232,10 +231,10 @@ implements ModuleConfiguration, DatasourceConfiguration, DeploymentPlanConfigura
             }
         });
     }
-    
+
     /**
      * Add a new mail service reference.
-     * 
+     *
      * @param name mail service name
      */
     private void addMailReference(final String name) throws ConfigurationException {
@@ -260,10 +259,10 @@ implements ModuleConfiguration, DatasourceConfiguration, DeploymentPlanConfigura
             }
         });
     }
-    
+
     /**
      * Add a new connection factory reference.
-     * 
+     *
      * @param name connection factory name
      */
     private void addConnectionFactoryReference(final String name) throws ConfigurationException {
@@ -288,10 +287,10 @@ implements ModuleConfiguration, DatasourceConfiguration, DeploymentPlanConfigura
             }
         });
     }
-    
+
     /**
      * Add a new ejb reference.
-     * 
+     *
      * @param name ejb reference name
      */
     private void addEjbReference(final String name) throws ConfigurationException {
@@ -316,10 +315,10 @@ implements ModuleConfiguration, DatasourceConfiguration, DeploymentPlanConfigura
             }
         });
     }
-    
+
     /**
      * Add a new jndi-name.
-     * 
+     *
      * @param name jndi-name  name
      */
     private void setJndiName(final String jndiName) throws ConfigurationException {
@@ -329,10 +328,10 @@ implements ModuleConfiguration, DatasourceConfiguration, DeploymentPlanConfigura
             }
         });
     }
-    
+
     /**
      * Add a new service reference.
-     * 
+     *
      * @param name service reference name
      */
     private void addServiceReference(final String name) throws ConfigurationException {
@@ -340,9 +339,9 @@ implements ModuleConfiguration, DatasourceConfiguration, DeploymentPlanConfigura
             public void modify(JbossClient modifiedJbossClient) {
 
                 // check whether resource not already defined
-                ServiceRef serviceRefs[] = modifiedJbossClient.getServiceRef();
+                String serviceRefs[] = modifiedJbossClient.getServiceRef();
                 for (int i = 0; i < serviceRefs.length; i++) {
-                    String srn = serviceRefs[i].getServiceRefName();
+                    String srn = serviceRefs[i];
                     if (name.equals(srn)) {
                         // already exists
                         return;
@@ -350,13 +349,11 @@ implements ModuleConfiguration, DatasourceConfiguration, DeploymentPlanConfigura
                 }
 
                 //if it doesn't exist yet, create a new one
-                ServiceRef newSR = new ServiceRef();
-                newSR.setServiceRefName(name);
-                modifiedJbossClient.addServiceRef(newSR);
+                modifiedJbossClient.addServiceRef(name);
             }
         });
     }
-    
+
     /**
      * Perform jbossWeb changes defined by the jbossWeb modifier. Update editor
      * content and save changes, if appropriate.
@@ -372,7 +369,7 @@ implements ModuleConfiguration, DatasourceConfiguration, DeploymentPlanConfigura
             if (doc == null) {
                 doc = editor.openDocument();
             }
-            
+
             // get the up-to-date model
             JbossClient newJbossClient = null;
             try {
@@ -399,10 +396,10 @@ implements ModuleConfiguration, DatasourceConfiguration, DeploymentPlanConfigura
                 // use the old graph
                 newJbossClient = oldJbossClient;
             }
-            
+
             // perform changes
             modifier.modify(newJbossClient);
-            
+
             // save, if appropriate
             boolean modified = deploymentDescriptorDO.isModified();
             ResourceConfigurationHelper.replaceDocument(doc, newJbossClient);
@@ -423,9 +420,9 @@ implements ModuleConfiguration, DatasourceConfiguration, DeploymentPlanConfigura
             throw new ConfigurationException(msg, ioe);
         }
     }
-    
+
     // private helper interface -----------------------------------------------
-     
+
     private interface JbossClientModifier {
         void modify(JbossClient modifiedJbossClient);
     }

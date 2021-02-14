@@ -42,9 +42,9 @@ import org.openide.util.lookup.Lookups;
  *
  * @author sherold
  */
-public class EarDeploymentConfiguration extends WildflyDeploymentConfiguration 
+public class EarDeploymentConfiguration extends WildflyDeploymentConfiguration
 implements ModuleConfiguration, DeploymentPlanConfiguration {
-    
+
     private File jbossAppFile;
     private JbossApp jbossApp;
 
@@ -53,7 +53,7 @@ implements ModuleConfiguration, DeploymentPlanConfiguration {
     }
 
     /**
-     * Creates a new instance of EarDeploymentConfiguration 
+     * Creates a new instance of EarDeploymentConfiguration
      */
     public EarDeploymentConfiguration(J2eeModule j2eeModule, WildflyPluginUtils.Version version, boolean isWildFly) {
         super(j2eeModule, version, isWildFly);
@@ -67,16 +67,16 @@ implements ModuleConfiguration, DeploymentPlanConfiguration {
             }
         }
     }
-    
+
     @Override
     public void dispose() {
     }
-    
+
     @Override
     public Lookup getLookup() {
         return Lookups.fixed(this);
     }
-       
+
     /**
      * Return jbossApp graph. If it was not created yet, load it from the file
      * and cache it. If the file does not exist, generate it.
@@ -106,7 +106,7 @@ implements ModuleConfiguration, DeploymentPlanConfiguration {
         }
         return jbossApp;
     }
-    
+
     @Override
     public void save(OutputStream os) throws ConfigurationException {
         JbossApp jbossApp = getJbossApp();
@@ -121,13 +121,13 @@ implements ModuleConfiguration, DeploymentPlanConfiguration {
             throw new ConfigurationException(msg, ioe);
         }
     }
-    
+
     // private helper methods -------------------------------------------------
-    
+
     /**
      * Genereate Context graph.
      */
     private JbossApp genereatejbossApp() {
         return new JbossApp();
-    }    
+    }
 }

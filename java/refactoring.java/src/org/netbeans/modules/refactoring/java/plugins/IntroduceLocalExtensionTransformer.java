@@ -18,7 +18,7 @@
  */
 package org.netbeans.modules.refactoring.java.plugins;
 
-import com.sun.javadoc.Doc;
+import com.sun.source.doctree.DocCommentTree;
 import com.sun.source.tree.*;
 import com.sun.source.util.SourcePositions;
 import com.sun.source.util.TreePath;
@@ -41,6 +41,7 @@ import org.netbeans.modules.refactoring.java.api.IntroduceLocalExtensionRefactor
 import org.netbeans.modules.refactoring.java.api.IntroduceLocalExtensionRefactoring.Equality;
 import org.netbeans.modules.refactoring.java.api.JavaRefactoringUtils;
 import org.netbeans.modules.refactoring.java.spi.RefactoringVisitor;
+import org.netbeans.modules.refactoring.java.spi.ToPhaseException;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.util.MapFormat;
@@ -65,6 +66,17 @@ public class IntroduceLocalExtensionTransformer extends RefactoringVisitor {
         this.refactoring = refactoring;
         this.initialized = false;
         this.getterSetterMap = new HashMap<>();
+    }
+
+    @Override
+    public void setWorkingCopy(WorkingCopy workingCopy) throws ToPhaseException {
+        if (!initialized) {
+            FileObject origin = SourceUtils.getFile(refactoring.getRefactoringSource().lookup(TreePathHandle.class).getElementHandle(), workingCopy.getClasspathInfo());
+            if (origin != null) {
+                SourceUtils.forceSource(workingCopy, origin);
+            }
+        }
+        super.setWorkingCopy(workingCopy);
     }
 
     @Override
@@ -516,9 +528,9 @@ public class IntroduceLocalExtensionTransformer extends RefactoringVisitor {
 
         MethodTree newMethod = make.Method(modifiers, member.getSimpleName(), methodReturnType, newTypeParams, newParameters, newThrownTypes, make.Block(Collections.singletonList(statement), false), null, member.isVarArgs());
         newMethod = genUtils.importFQNs(newMethod);
-        Doc javadoc = workingCopy.getElementUtilities().javaDocFor(member);
-        if (!javadoc.getRawCommentText().isEmpty()) {
-            Comment comment = Comment.create(Comment.Style.JAVADOC, javadoc.getRawCommentText());
+        DocCommentTree javadoc = workingCopy.getDocTrees().getDocCommentTree(member);
+        if (javadoc != null && !javadoc.getFullBody().isEmpty()) {
+            Comment comment = Comment.create(Comment.Style.JAVADOC, javadoc.toString());
             make.addComment(newMethod, comment, true);
         }
         members.add(newMethod);
@@ -671,9 +683,9 @@ public class IntroduceLocalExtensionTransformer extends RefactoringVisitor {
                     newThrownTypes, block, null);
 
             newConstr = genUtils.importFQNs(newConstr);
-            Doc javadoc = workingCopy.getElementUtilities().javaDocFor(constr);
-            if (!javadoc.getRawCommentText().isEmpty()) {
-                Comment comment = Comment.create(Comment.Style.JAVADOC, javadoc.getRawCommentText());
+            DocCommentTree javadoc = workingCopy.getDocTrees().getDocCommentTree(constr);
+            if (javadoc != null && !javadoc.getFullBody().isEmpty()) {
+                Comment comment = Comment.create(Comment.Style.JAVADOC, javadoc.toString());
                 make.addComment(newConstr, comment, true);
             }
             members.add(newConstr);

@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 9.11.1
+#Version 9.18
 
 CLSS public java.awt.datatransfer.Clipboard
 cons public init(java.lang.String)
@@ -542,6 +542,11 @@ meth public abstract void putValue(java.lang.String,java.lang.Object)
 meth public abstract void removePropertyChangeListener(java.beans.PropertyChangeListener)
 meth public abstract void setEnabled(boolean)
 
+CLSS public abstract interface javax.swing.Icon
+meth public abstract int getIconHeight()
+meth public abstract int getIconWidth()
+meth public abstract void paintIcon(java.awt.Component,java.awt.Graphics,int,int)
+
 CLSS public abstract org.openide.ErrorManager
 cons public init()
 fld public final static int ERROR = 65536
@@ -694,6 +699,18 @@ supr java.lang.Object
 hfds LOG,TRANS_LOCK,operatingSystem,pathURIConsistent,transExp,transLoader
 hcls RE
 
+CLSS public abstract org.openide.util.CachedHiDPIIcon
+cons protected init(int,int)
+intf javax.swing.Icon
+meth protected abstract java.awt.Image createAndPaintImage(java.awt.Component,java.awt.image.ColorModel,int,int,double)
+meth protected final static java.awt.image.BufferedImage createBufferedImage(java.awt.image.ColorModel,int,int)
+meth public final int getIconHeight()
+meth public final int getIconWidth()
+meth public final void paintIcon(java.awt.Component,java.awt.Graphics,int,int)
+supr java.lang.Object
+hfds MAX_CACHE_SIZE,cache,cacheSize,height,width
+hcls CachedImageKey
+
 CLSS public abstract interface org.openide.util.Cancellable
 meth public abstract boolean cancel()
 
@@ -815,8 +832,8 @@ meth public final static javax.swing.ImageIcon loadImageIcon(java.lang.String,bo
 meth public static java.awt.Image createDisabledImage(java.awt.Image)
 meth public static javax.swing.Icon createDisabledIcon(javax.swing.Icon)
 supr java.lang.Object
-hfds DARK_LAF_SUFFIX,ERR,LOGGER,NO_ICON,PNG_READER,TOOLTIP_SEPAR,cache,component,compositeCache,currentLoader,extraInitialSlashes,imageIconFilter,imageToolTipCache,loaderQuery,localizedCache,mediaTrackerID,noLoaderWarned,tracker
-hcls ActiveRef,CompositeImageKey,DisabledButtonFilter,LazyDisabledIcon,ToolTipImage,ToolTipImageKey
+hfds DARK_LAF_SUFFIX,ERR,LOGGER,NO_ICON,PNG_READER,TOOLTIP_SEPAR,cache,classLoaderLoader,component,compositeCache,dummyIconComponent,extraInitialSlashes,imageIconFilter,imageToolTipCache,localizedCache,mediaTrackerID,svgLoaderLoader,tracker
+hcls ActiveRef,CachedLookupLoader,CompositeImageKey,DisabledButtonFilter,IconImageIcon,MergedIcon,ToolTipImage,ToolTipImageKey
 
 CLSS public abstract org.openide.util.Lookup
 cons public init()
@@ -1007,7 +1024,7 @@ meth public static <%0 extends java.lang.Object, %1 extends java.lang.Object> ja
 meth public static <%0 extends java.lang.Object, %1 extends java.lang.Object> java.util.Map<{%%0},{%%1}> checkedMapByFilter(java.util.Map,java.lang.Class<{%%0}>,java.lang.Class<{%%1}>,boolean)
 meth public static <%0 extends java.lang.Object> java.lang.Iterable<{%%0}> iterable(java.util.Enumeration<{%%0}>)
 meth public static <%0 extends java.lang.Object> java.lang.Iterable<{%%0}> iterable(java.util.Iterator<{%%0}>)
-meth public static <%0 extends java.lang.Object> java.util.Enumeration<{%%0}> checkedEnumerationByFilter(java.util.Enumeration,java.lang.Class<{%%0}>,boolean)
+meth public static <%0 extends java.lang.Object> java.util.Enumeration<{%%0}> checkedEnumerationByFilter(java.util.Enumeration<?>,java.lang.Class<{%%0}>,boolean)
 meth public static <%0 extends java.lang.Object> java.util.Iterator<{%%0}> checkedIteratorByFilter(java.util.Iterator,java.lang.Class<{%%0}>,boolean)
 meth public static <%0 extends java.lang.Object> java.util.List<{%%0}> checkedListByCopy(java.util.List,java.lang.Class<{%%0}>,boolean)
 meth public static <%0 extends java.lang.Object> java.util.Set<{%%0}> checkedSetByCopy(java.util.Set,java.lang.Class<{%%0}>,boolean)
@@ -1036,6 +1053,7 @@ meth public static boolean isAuthenticationDialogSuppressed()
 meth public static char[] getAuthenticationPassword(java.net.URI)
 meth public static java.lang.String getAuthenticationUsername(java.net.URI)
 meth public static java.lang.String getKeyForAuthenticationPassword(java.net.URI)
+ anno 0 java.lang.Deprecated()
 meth public static java.lang.String getProxyHost(java.net.URI)
 meth public static java.lang.String getProxyPort(java.net.URI)
 supr java.lang.Object
@@ -1349,6 +1367,19 @@ meth public java.util.Collection getUnorderable()
 meth public java.util.Map getDeps()
 supr java.lang.RuntimeException
 hfds deps,serialVersionUID,unorderable
+
+CLSS public abstract org.openide.util.VectorIcon
+cons protected init(int,int)
+intf java.io.Serializable
+intf javax.swing.Icon
+meth protected abstract void paintIcon(java.awt.Component,java.awt.Graphics2D,int,int,double)
+meth protected final static int round(double)
+meth protected final static void setAntiAliasing(java.awt.Graphics2D,boolean)
+meth public final int getIconHeight()
+meth public final int getIconWidth()
+meth public final void paintIcon(java.awt.Component,java.awt.Graphics,int,int)
+supr java.lang.Object
+hfds height,width
 
 CLSS public final org.openide.util.WeakListeners
 meth public static <%0 extends java.util.EventListener> {%%0} create(java.lang.Class<{%%0}>,java.lang.Class<? super {%%0}>,{%%0},java.lang.Object)
@@ -1691,6 +1722,22 @@ intf java.lang.annotation.Annotation
 meth public abstract !hasdefault java.lang.String position()
 meth public abstract java.lang.Class<?>[] serviceType()
 meth public abstract java.lang.String path()
+
+CLSS public abstract interface org.openide.util.spi.MutexEventProvider
+meth public abstract org.openide.util.spi.MutexImplementation createMutex()
+
+CLSS public abstract interface org.openide.util.spi.MutexImplementation
+meth public abstract <%0 extends java.lang.Object> {%%0} readAccess(org.openide.util.Mutex$ExceptionAction<{%%0}>) throws org.openide.util.MutexException
+meth public abstract <%0 extends java.lang.Object> {%%0} writeAccess(org.openide.util.Mutex$ExceptionAction<{%%0}>) throws org.openide.util.MutexException
+meth public abstract boolean isReadAccess()
+meth public abstract boolean isWriteAccess()
+meth public abstract void postReadRequest(java.lang.Runnable)
+meth public abstract void postWriteRequest(java.lang.Runnable)
+meth public abstract void readAccess(java.lang.Runnable)
+meth public abstract void writeAccess(java.lang.Runnable)
+
+CLSS public abstract interface org.openide.util.spi.SVGLoader
+meth public abstract javax.swing.Icon loadIcon(java.net.URL) throws java.io.IOException
 
 CLSS public abstract org.openide.xml.EntityCatalog
 cons protected init()

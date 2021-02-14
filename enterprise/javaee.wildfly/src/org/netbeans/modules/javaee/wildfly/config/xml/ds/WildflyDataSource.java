@@ -27,7 +27,7 @@ public class WildflyDataSource {
      private String url;
     private String username;
     private String password;
-    private String driver;    
+    private String driver;
     private String name;
     private String jndiName;
 
@@ -81,5 +81,5 @@ public class WildflyDataSource {
     public void setJndiName(String jndiName) {
         this.jndiName = jndiName;
     }
-    
+
 }

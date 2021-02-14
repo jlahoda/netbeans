@@ -28,7 +28,7 @@ import org.openide.util.RequestProcessor.Task;
 import org.openide.util.actions.NodeAction;
 
 /**
- * 
+ *
  * @author Emmanuel Hugonnet (ehsavoie) <ehsavoie@netbeans.org>
  */
 public class StopModuleAction extends NodeAction {
@@ -39,13 +39,13 @@ public class StopModuleAction extends NodeAction {
     protected void performAction(Node[] nodes) {
         if( (nodes == null) || (nodes.length < 1) )
             return;
-        
+
         for (int i = 0; i < nodes.length; i++) {
             StopModuleCookie uCookie = (StopModuleCookie)nodes[i].getCookie(StopModuleCookie.class);
             if (uCookie != null) {
                 final Task t = uCookie.stop();
                 final Node node = nodes[i].getParentNode();
-                
+
                 PROCESSOR.post(new Runnable() {
                     public void run() {
                         t.waitFinished();
@@ -68,7 +68,7 @@ public class StopModuleAction extends NodeAction {
             }
         }
     }
-    
+
     @Override
     protected boolean enable(Node[] nodes) {
         StopModuleCookie cookie;
@@ -77,18 +77,18 @@ public class StopModuleAction extends NodeAction {
             if (cookie == null || cookie.isRunning())
                 return false;
         }
-        
+
         return true;
     }
-    
+
     @Override
     public String getName() {
         return NbBundle.getMessage(StopModuleAction.class, "LBL_StopAction");
     }
-    
+
     @Override
     protected boolean asynchronous() { return false; }
-    
+
     @Override
     public org.openide.util.HelpCtx getHelpCtx() {
         return HelpCtx.DEFAULT_HELP;

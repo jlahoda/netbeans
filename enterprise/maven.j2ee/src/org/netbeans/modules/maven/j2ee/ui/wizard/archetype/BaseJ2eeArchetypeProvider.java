@@ -24,6 +24,7 @@ import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.j2ee.core.Profile;
 import org.netbeans.modules.maven.api.archetype.Archetype;
+import org.openide.util.NbBundle;
 
 /**
  *
@@ -54,6 +55,20 @@ abstract class BaseJ2eeArchetypeProvider {
         map.put(j2eeProfile, createMojoArchetype(version, artifactId));
     }
 
+    protected void addJavaEE8Archetype(Profile j2eeProfile, String groupId, String version, String artifactId) {
+        map.put(j2eeProfile, createArchetype(
+                NbBundle.getMessage(BaseJ2eeArchetypeProvider.class,groupId),
+                NbBundle.getMessage(BaseJ2eeArchetypeProvider.class,version),
+                NbBundle.getMessage(BaseJ2eeArchetypeProvider.class,artifactId)));
+    }
+
+    protected void addJakartaEEArchetype(Profile j2eeProfile, String groupId, String version, String artifactId) {
+        map.put(j2eeProfile, createArchetype(
+                NbBundle.getMessage(BaseJ2eeArchetypeProvider.class,groupId),
+                NbBundle.getMessage(BaseJ2eeArchetypeProvider.class,version),
+                NbBundle.getMessage(BaseJ2eeArchetypeProvider.class,artifactId)));
+    }
+
     protected void addSameMojoArchetypeForAllProfiles(String version, String artifactId) {
         Archetype archetype = createMojoArchetype(version, artifactId);
         map.put(Profile.J2EE_14, archetype);
@@ -62,11 +77,34 @@ abstract class BaseJ2eeArchetypeProvider {
         map.put(Profile.JAVA_EE_6_WEB, archetype);
         map.put(Profile.JAVA_EE_7_FULL, archetype);
         map.put(Profile.JAVA_EE_7_WEB, archetype);
+        Archetype javaEE8Archetype = createArchetype(
+                NbBundle.getMessage(BaseJ2eeArchetypeProvider.class,"mvn.archetypeGroupId.JavaEE8"),
+                NbBundle.getMessage(BaseJ2eeArchetypeProvider.class,"mvn.archetypeVersion.JavaEE8"),
+                NbBundle.getMessage(BaseJ2eeArchetypeProvider.class,"mvn.archetypeArtifactId.JavaEE8")
+        );
+        Archetype jakartaEE8Archetype = createArchetype(
+                NbBundle.getMessage(BaseJ2eeArchetypeProvider.class,"mvn.archetypeGroupId.JakartaEE8"),
+                NbBundle.getMessage(BaseJ2eeArchetypeProvider.class,"mvn.archetypeVersion.JakartaEE8"),
+                NbBundle.getMessage(BaseJ2eeArchetypeProvider.class,"mvn.archetypeArtifactId.JakartaEE8"));
+
+        map.put(Profile.JAVA_EE_8_FULL, javaEE8Archetype);
+        map.put(Profile.JAVA_EE_8_WEB, javaEE8Archetype);
+        map.put(Profile.JAKARTA_EE_8_FULL, jakartaEE8Archetype);
+        map.put(Profile.JAKARTA_EE_8_WEB, jakartaEE8Archetype);
     }
 
     private Archetype createMojoArchetype(String version, String artifactId) {
         Archetype archetype = new Archetype();
         archetype.setGroupId("org.codehaus.mojo.archetypes"); //NOI18N
+        archetype.setVersion(version);
+        archetype.setArtifactId(artifactId);
+
+        return archetype;
+    }
+
+    private Archetype createArchetype(String groupId, String version, String artifactId) {
+        Archetype archetype = new Archetype();
+        archetype.setGroupId(groupId); //NOI18N
         archetype.setVersion(version);
         archetype.setArtifactId(artifactId);
 

@@ -34,6 +34,7 @@ import org.netbeans.api.project.ProjectUtils;
 import org.netbeans.api.java.source.SourceUtils;
 import org.netbeans.api.j2ee.core.Profile;
 import org.netbeans.modules.j2ee.earproject.EarProjectGenerator;
+import org.netbeans.modules.j2ee.ejbjarproject.api.EjbJarProjectCreateData;
 import org.netbeans.modules.java.j2seproject.J2SEProjectGenerator;
 import org.netbeans.modules.project.ui.OpenProjectList;
 import org.netbeans.modules.web.api.webmodule.WebModule;
@@ -42,6 +43,7 @@ import org.openide.filesystems.FileUtil;
 import org.openide.util.Mutex;
 import org.netbeans.modules.web.project.api.WebProjectUtilities;
 import org.netbeans.modules.j2ee.ejbjarproject.api.EjbJarProjectGenerator;
+import org.netbeans.modules.web.project.api.WebProjectCreateData;
 
 
 /**
@@ -49,29 +51,29 @@ import org.netbeans.modules.j2ee.ejbjarproject.api.EjbJarProjectGenerator;
  * @author jungi
  */
 public class Util {
-    
+
     public static final int J2SE_PROJECT = 0;
     public static final int WEB_PROJECT = 1;
     public static final int EJB_PROJECT = 2;
     public static final int J2EE_PROJECT = 3;
-    
+
     public static final String DEFAULT_J2EE_LEVEL
             = WebModule.J2EE_14_LEVEL;
-    
+
     public static final String DEFAULT_APPSRV_ID
             = "deployer:Sun:AppServer::localhost:4848";
-    
+
 //    public static final String DEFAULT_SRC_STRUCTURE
 //            = WebProjectGenerator.SRC_STRUCT_BLUEPRINTS;
-    
+
     public static final String DEFAULT_SRC_STRUCTURE
             = WebProjectUtilities.SRC_STRUCT_BLUEPRINTS;
-    
+
     /** Creates a new instance of J2eeProjectSupport */
     private Util() {
         throw new UnsupportedOperationException("It is just a helper class.");
     }
-    
+
     /** Opens project in specified directory.
      * @param projectDir a directory with project to open
      * @return Project instance of opened project
@@ -125,7 +127,7 @@ public class Util {
             OpenProjectList.getDefault().removePropertyChangeListener(listener);
         }
     }
-    
+
     /** Opens project on specified path.
      * @param projectPath path to a directory with project to open
      * @return Project instance of opened project
@@ -133,7 +135,7 @@ public class Util {
     public static Object openProject(String projectPath) {
         return openProject(new File(projectPath));
     }
-    
+
     /** Creates an empty Java project in specified directory and opens it.
      * Its name is defined by name parameter.
      * @param projectParentPath path to directory where to create name subdirectory and
@@ -144,7 +146,7 @@ public class Util {
     public static Object createProject(String projectParentPath, String name) {
         return createProject(new File(projectParentPath), name, J2SE_PROJECT, null);
     }
-    
+
     /** Creates an empty project in specified directory and opens it.
      * Its name is defined by name parameter.
      * @param projectParentDir directory where to create name subdirectory and
@@ -153,8 +155,7 @@ public class Util {
      * @param type type of project
      * @param params parameters passed to created project
      */
-    public static Object createProject(File projectParentDir, String name,
-            int type, String[] params) {
+    public static Object createProject(File projectParentDir, String name, int type, String[] params) {
         String mainClass = null;
         try {
             File projectDir = new File(projectParentDir, name);
@@ -169,7 +170,14 @@ public class Util {
                     if (params == null){
                         params = new String[] {DEFAULT_APPSRV_ID, DEFAULT_SRC_STRUCTURE, DEFAULT_J2EE_LEVEL};
                     }
-                    WebProjectUtilities.createProject(projectDir, name, params[0], params[1], params[2], name);
+                    WebProjectCreateData createWebData = new WebProjectCreateData();
+                    createWebData.setProjectDir(projectDir);
+                    createWebData.setName(name);
+                    createWebData.setServerInstanceID(params[0]);
+                    createWebData.setSourceStructure(params[1]);
+                    createWebData.setJavaEEProfile(Profile.fromPropertiesString(params[2]));
+                    createWebData.setContextPath(name);
+                    WebProjectUtilities.createProject(createWebData);
                     break;
                 case EJB_PROJECT:
                     //params[0] = j2eeLevel
@@ -177,7 +185,13 @@ public class Util {
                     if (params == null){
                         params = new String[] {DEFAULT_J2EE_LEVEL, DEFAULT_APPSRV_ID};
                     }
-                    EjbJarProjectGenerator.createProject(projectDir, name, params[0], params[1]);
+                    EjbJarProjectCreateData createEjbData = new EjbJarProjectCreateData();
+                    createEjbData.setProjectDir(projectDir);
+                    createEjbData.setName(name);
+                    createEjbData.setJavaEEProfile(Profile.fromPropertiesString(params[0]));
+                    createEjbData.setServerInstanceID(params[1]);
+                    createEjbData.setLibrariesDefinition(null);
+                    EjbJarProjectGenerator.createProject(createEjbData);
                     break;
                 case J2EE_PROJECT:
                     //params[0] = j2eeLevel
@@ -198,7 +212,7 @@ public class Util {
             return null;
         }
     }
-    
+
     /** Closes project with system or display name equals to given name.
      * @param name system or display name of project to be closed.
      * @return true if project is closed, false otherwise (i.e. project was
@@ -222,7 +236,7 @@ public class Util {
         // project not found
         return false;
     }
-    
+
     /** Waits until metadata scanning is finished. */
     public static void waitScanFinished() {
         try {
@@ -231,7 +245,7 @@ public class Util {
             Thread.currentThread().interrupt();
         }
     }
-    
+
     /**
      *
      * @return set of file names under the project root
@@ -250,7 +264,7 @@ public class Util {
         }
         return retVal;
     }
-    
+
     public static Set getFileSet(String projectRoot) {
         File f = new File(projectRoot);
         Set dummy = new HashSet();
@@ -265,14 +279,14 @@ public class Util {
         }
         return retVal;
     }
-    
+
     public static Project getProject(File wd, String relativePath) throws Exception {
         File f = new File(wd, relativePath);
         f = f.getCanonicalFile();
         FileObject fo = FileUtil.toFileObject(f);
         return ProjectManager.getDefault().findProject(fo);
     }
-    
+
     // Process all files and directories under dir and put their names to given set
     private static void visitAllDirsAndFiles(File dir, Set s) {
         s.add(dir.isDirectory() ? dir.getPath() + File.separatorChar : dir.getPath());
@@ -283,11 +297,11 @@ public class Util {
             }
         }
     }
-    
+
     /** Listener for project open. */
     static class ProjectOpenListener implements PropertyChangeListener {
         public boolean projectOpened = false;
-        
+
         /** Listen for property which changes when project is hopefully opened. */
         public void propertyChange(PropertyChangeEvent evt) {
             if(OpenProjectList.PROPERTY_OPEN_PROJECTS.equals(evt.getPropertyName())) {
@@ -296,4 +310,3 @@ public class Util {
         }
     }
 }
-

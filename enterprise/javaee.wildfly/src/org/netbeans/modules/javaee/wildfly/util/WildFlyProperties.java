@@ -96,9 +96,9 @@ public class WildFlyProperties {
     private static final Logger LOGGER = Logger.getLogger(WildFlyProperties.class.getName());
 
     private final Version version;
-    
+
     private final boolean wildfly;
-    
+
     private final boolean servletOnly;
 
     /**

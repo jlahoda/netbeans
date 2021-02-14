@@ -33,30 +33,30 @@ import org.openide.util.actions.SystemAction;
  * @author Emmanuel Hugonnet (ehsavoie) <ehsavoie@netbeans.org>
  */
 public class WildflyEjbComponentNode extends AbstractNode {
-    
-   public enum Type { 
-        MDB("message-driven-bean", EJB_MESSAGE_ICON), 
-        SINGLETON("singleton-bean", EJB_SESSION_ICON), 
-        STATELESS( "stateless-session-bean", EJB_SESSION_ICON), 
-        ENTITY("entity-bean", EJB_ENTITY_ICON), 
+
+   public enum Type {
+        MDB("message-driven-bean", EJB_MESSAGE_ICON),
+        SINGLETON("singleton-bean", EJB_SESSION_ICON),
+        STATELESS( "stateless-session-bean", EJB_SESSION_ICON),
+        ENTITY("entity-bean", EJB_ENTITY_ICON),
         STATEFULL("stateful-session-bean", EJB_SESSION_ICON);
-        
+
         private final String propertyName;
         private final String icon;
         Type(final String propertyName, final String icon) {
             this.propertyName = propertyName;
             this.icon = icon;
         }
-        
+
         public String getPropertyName() {
             return this.propertyName;
         }
-        
+
         public String getIcon() {
             return this.icon;
         }
     };
-   
+
    private final Type ejbType;
     public WildflyEjbComponentNode(String ejbName, Type ejbType) {
         super(Children.LEAF);

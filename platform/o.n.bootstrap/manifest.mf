@@ -1,7 +1,7 @@
 Manifest-Version: 1.0
 Multi-Release: true
 OpenIDE-Module: org.netbeans.bootstrap/1
-OpenIDE-Module-Specification-Version: 2.82
+OpenIDE-Module-Specification-Version: 2.89
 OpenIDE-Module-Localizing-Bundle: org/netbeans/Bundle.properties
 OpenIDE-Module-Recommends: org.netbeans.NetigsoFramework
 

@@ -59,11 +59,11 @@ import org.openide.modules.Dependency;
 import org.openide.modules.ModuleInfo;
 import org.openide.modules.ModuleInstall;
 import org.openide.modules.SpecificationVersion;
+import org.openide.util.BaseUtilities;
 import org.openide.util.NbCollections;
 import org.openide.util.SharedClassObject;
 import org.openide.util.NbBundle;
 import org.openide.util.Task;
-import org.openide.util.Utilities;
 import org.openide.util.lookup.InstanceContent;
 
 
@@ -602,9 +602,9 @@ final class NbInstaller extends ModuleInstaller {
                     continue;
                 }
             }
-            Enumeration e = m.findResources("META-INF/generated-layer.xml"); // NOI18N
+            Enumeration<URL> e = m.findResources("META-INF/generated-layer.xml"); // NOI18N
             while (e.hasMoreElements()) {
-                URL u = (URL)e.nextElement();
+                URL u = e.nextElement();
                 theseurls.add(u);
             }
         }
@@ -1253,7 +1253,7 @@ final class NbInstaller extends ModuleInstaller {
                 return moduleProperties.getProperty(name);
             } else {
                 final Object prevValue = moduleProperties.get(name);
-                if (Utilities.compareObjects(expValue, prevValue)) {
+                if (BaseUtilities.compareObjects(expValue, prevValue)) {
                     moduleProperties.put(name, replaceValue);
                 }
                 Stamps.getModulesJARs().scheduleSave(this, CACHE, false);

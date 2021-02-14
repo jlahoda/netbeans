@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.59.1
+#Version 1.66
 
 CLSS public abstract java.awt.AWTEvent
 cons public init(java.awt.Event)
@@ -193,8 +193,6 @@ meth public java.awt.im.InputMethodRequests getInputMethodRequests()
 meth public java.awt.image.ColorModel getColorModel()
 meth public java.awt.image.VolatileImage createVolatileImage(int,int)
 meth public java.awt.image.VolatileImage createVolatileImage(int,int,java.awt.ImageCapabilities) throws java.awt.AWTException
-meth public java.awt.peer.ComponentPeer getPeer()
- anno 0 java.lang.Deprecated()
 meth public java.beans.PropertyChangeListener[] getPropertyChangeListeners()
 meth public java.beans.PropertyChangeListener[] getPropertyChangeListeners(java.lang.String)
 meth public java.lang.String getName()
@@ -2347,7 +2345,20 @@ meth public void installUI(javax.swing.JComponent)
 supr org.netbeans.swing.tabcontrol.SlidingButtonUI
 hfds AQUA_INSTANCE
 
-CLSS public final org.netbeans.swing.tabcontrol.plaf.AquaViewTabDisplayerUI
+CLSS public final org.netbeans.swing.tabcontrol.plaf.AquaVectorEditorTabDisplayerUI
+cons public init(org.netbeans.swing.tabcontrol.TabDisplayer)
+meth protected org.netbeans.swing.tabcontrol.plaf.TabCellRenderer createDefaultRenderer()
+meth public javax.swing.Icon getButtonIcon(int,int)
+meth public static javax.swing.plaf.ComponentUI createUI(javax.swing.JComponent)
+supr org.netbeans.swing.tabcontrol.plaf.AquaEditorTabDisplayerUI
+
+CLSS public final org.netbeans.swing.tabcontrol.plaf.AquaVectorViewTabDisplayerUI
+meth public javax.swing.Icon getButtonIcon(int,int)
+meth public static javax.swing.plaf.ComponentUI createUI(javax.swing.JComponent)
+supr org.netbeans.swing.tabcontrol.plaf.AquaViewTabDisplayerUI
+
+CLSS public org.netbeans.swing.tabcontrol.plaf.AquaViewTabDisplayerUI
+cons protected init(org.netbeans.swing.tabcontrol.TabDisplayer)
 meth protected org.netbeans.swing.tabcontrol.plaf.AbstractViewTabDisplayerUI$Controller createController()
 meth protected void paintTabBackground(java.awt.Graphics,int,int,int,int,int)
 meth protected void paintTabBorder(java.awt.Graphics,int,int,int,int,int)
@@ -2384,11 +2395,12 @@ meth public java.awt.Dimension getMinimumSize(javax.swing.JComponent)
 meth public java.awt.Insets getAutoscrollInsets()
 meth public java.awt.Insets getTabAreaInsets()
 meth public static java.awt.Graphics2D getOffscreenGraphics()
+meth public static java.awt.Graphics2D getOffscreenGraphics(javax.swing.JComponent)
 meth public void autoscroll(java.awt.Point)
 meth public void makeTabVisible(int)
 supr org.netbeans.swing.tabcontrol.plaf.BasicTabDisplayerUI
-hfds autoscroll,btnDropDown,btnMaximizeRestore,btnScrollLeft,btnScrollRight,controlButtons,ctx,lastKnownModelSize,scratch
-hcls Autoscroller,WCLayout
+hfds autoscroll,btnDropDown,btnMaximizeRestore,btnScrollLeft,btnScrollRight,cachedScratchGraphics,controlButtons,lastKnownModelSize,scratch
+hcls Autoscroller,ScratchGraphics,WCLayout
 
 CLSS protected org.netbeans.swing.tabcontrol.plaf.BasicScrollingTabDisplayerUI$ScrollingDisplayerComponentListener
  outer org.netbeans.swing.tabcontrol.plaf.BasicScrollingTabDisplayerUI
@@ -2594,7 +2606,7 @@ fld protected org.netbeans.swing.tabcontrol.TabDataModel model
 intf org.netbeans.swing.tabcontrol.plaf.TabLayoutModel
 meth protected int iconHeight(int)
 meth protected int iconWidth(int)
-meth protected int textHeight(int)
+meth protected int textHeight(int,javax.swing.JComponent)
 meth protected int textWidth(int)
 meth public int dropIndexOfPoint(int,int)
 meth public int getH(int)
@@ -3185,7 +3197,7 @@ supr org.netbeans.swing.tabcontrol.plaf.AbstractViewTabDisplayerUI
 hfds BUMP_X_PAD,BUMP_Y_PAD_BOTTOM,BUMP_Y_PAD_UPPER,HIGHLIGHTED_RAISE,ICON_X_PAD,TXT_X_PAD,TXT_Y_PAD,bgFillC,borderC,bottomBorderC,buttonIconPaths,colorsReady,focusFillBrightC,focusFillDarkC,prefSize,selBorderC,selFillC,tempRect,txtC,unselFillBrightC,unselFillDarkC
 hcls OwnController
 
-CLSS public final org.netbeans.swing.tabcontrol.plaf.Windows8EditorTabDisplayerUI
+CLSS public org.netbeans.swing.tabcontrol.plaf.Windows8EditorTabDisplayerUI
 cons public init(org.netbeans.swing.tabcontrol.TabDisplayer)
 meth protected java.awt.Rectangle getTabRectForRepaint(int,java.awt.Rectangle)
 meth protected org.netbeans.swing.tabcontrol.plaf.TabCellRenderer createDefaultRenderer()
@@ -3197,7 +3209,20 @@ meth public void paintBackground(java.awt.Graphics)
 supr org.netbeans.swing.tabcontrol.plaf.BasicScrollingTabDisplayerUI
 hfds buttonIconPaths
 
-CLSS public final org.netbeans.swing.tabcontrol.plaf.Windows8ViewTabDisplayerUI
+CLSS public final org.netbeans.swing.tabcontrol.plaf.Windows8VectorEditorTabDisplayerUI
+cons public init(org.netbeans.swing.tabcontrol.TabDisplayer)
+meth protected org.netbeans.swing.tabcontrol.plaf.TabCellRenderer createDefaultRenderer()
+meth public javax.swing.Icon getButtonIcon(int,int)
+meth public static javax.swing.plaf.ComponentUI createUI(javax.swing.JComponent)
+supr org.netbeans.swing.tabcontrol.plaf.Windows8EditorTabDisplayerUI
+
+CLSS public final org.netbeans.swing.tabcontrol.plaf.Windows8VectorViewTabDisplayerUI
+meth public javax.swing.Icon getButtonIcon(int,int)
+meth public static javax.swing.plaf.ComponentUI createUI(javax.swing.JComponent)
+supr org.netbeans.swing.tabcontrol.plaf.Windows8ViewTabDisplayerUI
+
+CLSS public org.netbeans.swing.tabcontrol.plaf.Windows8ViewTabDisplayerUI
+cons protected init(org.netbeans.swing.tabcontrol.TabDisplayer)
 meth protected java.awt.Font getTxtFont()
 meth protected org.netbeans.swing.tabcontrol.plaf.AbstractViewTabDisplayerUI$Controller createController()
 meth protected void paintTabBackground(java.awt.Graphics,int,int,int,int,int)

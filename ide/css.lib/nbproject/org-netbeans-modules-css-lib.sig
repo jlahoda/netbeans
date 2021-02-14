@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.85.1
+#Version 1.93
 
 CLSS public abstract interface java.io.Serializable
 
@@ -329,6 +329,7 @@ fld public final static org.netbeans.modules.css.lib.api.CssTokenId H
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId HASH
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId HASH_SYMBOL
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId HEXCHAR
+fld public final static org.netbeans.modules.css.lib.api.CssTokenId HEXCHAR_WILDCARD
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId I
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId IDENT
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId IMPORTANT_SYM
@@ -411,6 +412,7 @@ fld public final static org.netbeans.modules.css.lib.api.CssTokenId SEMI
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId SOLIDUS
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId STAR
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId STRING
+fld public final static org.netbeans.modules.css.lib.api.CssTokenId SUPPORTS_SYM
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId T
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId TILDE
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId TIME
@@ -421,9 +423,11 @@ fld public final static org.netbeans.modules.css.lib.api.CssTokenId TOPRIGHTCORN
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId TOPRIGHT_SYM
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId U
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId UNICODE
+fld public final static org.netbeans.modules.css.lib.api.CssTokenId URANGE
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId URI
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId URL
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId V
+fld public final static org.netbeans.modules.css.lib.api.CssTokenId VARIABLE
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId W
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId WEBKIT_KEYFRAMES_SYM
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId WS
@@ -606,6 +610,14 @@ fld public final static org.netbeans.modules.css.lib.api.NodeType slAttribute
 fld public final static org.netbeans.modules.css.lib.api.NodeType slAttributeName
 fld public final static org.netbeans.modules.css.lib.api.NodeType slAttributeValue
 fld public final static org.netbeans.modules.css.lib.api.NodeType styleSheet
+fld public final static org.netbeans.modules.css.lib.api.NodeType supportsAtRule
+fld public final static org.netbeans.modules.css.lib.api.NodeType supportsCondition
+fld public final static org.netbeans.modules.css.lib.api.NodeType supportsConjunction
+fld public final static org.netbeans.modules.css.lib.api.NodeType supportsDecl
+fld public final static org.netbeans.modules.css.lib.api.NodeType supportsDisjunction
+fld public final static org.netbeans.modules.css.lib.api.NodeType supportsFeature
+fld public final static org.netbeans.modules.css.lib.api.NodeType supportsInParens
+fld public final static org.netbeans.modules.css.lib.api.NodeType supportsWithOperator
 fld public final static org.netbeans.modules.css.lib.api.NodeType syncToDeclarationsRule
 fld public final static org.netbeans.modules.css.lib.api.NodeType syncToFollow
 fld public final static org.netbeans.modules.css.lib.api.NodeType syncTo_RBRACE
@@ -769,7 +781,7 @@ meth public void enableFeature(org.netbeans.modules.css.lib.api.properties.Gramm
 meth public void removeGrammarResolverListener(org.netbeans.modules.css.lib.api.properties.GrammarResolverListener)
 meth public void setFeature(org.netbeans.modules.css.lib.api.properties.GrammarResolver$Feature,java.lang.Object)
 supr java.lang.Object
-hfds FEATURES,LISTENERS,LOG,LOGGER,LOGGERS,grammar,lastResolved,resolvedSomething,resolvedTokens,tokenizer
+hfds FEATURES,LISTENERS,LOG,LOGGER,LOGGERS,globalValues,grammar,lastResolved,resolvedSomething,resolvedTokens,tokenizer
 hcls InputState
 
 CLSS public final static !enum org.netbeans.modules.css.lib.api.properties.GrammarResolver$Feature
@@ -1038,6 +1050,7 @@ innr public static Angle
 innr public static Anything
 innr public static Date
 innr public static Decibel
+innr public static Flex
 innr public static Frequency
 innr public static HashColor
 innr public static HashColorAplha
@@ -1052,7 +1065,9 @@ innr public static Resolution
 innr public static Semitones
 innr public static StringAcceptor
 innr public static Time
+innr public static Urange
 innr public static Uri
+innr public static Variable
 meth public abstract boolean accepts(org.netbeans.modules.css.lib.api.properties.Token)
 meth public final java.lang.String id()
 meth public static <%0 extends org.netbeans.modules.css.lib.api.properties.TokenAcceptor> {%%0} getAcceptor(java.lang.Class<{%%0}>)
@@ -1081,6 +1096,13 @@ meth public boolean accepts(java.lang.String)
 supr org.netbeans.modules.css.lib.api.properties.TokenAcceptor$TokenImageAcceptor
 
 CLSS public static org.netbeans.modules.css.lib.api.properties.TokenAcceptor$Decibel
+ outer org.netbeans.modules.css.lib.api.properties.TokenAcceptor
+cons public init(java.lang.String)
+meth protected java.util.List<java.lang.String> postfixes()
+supr org.netbeans.modules.css.lib.api.properties.TokenAcceptor$NumberPostfixAcceptor
+hfds POSTFIXES
+
+CLSS public static org.netbeans.modules.css.lib.api.properties.TokenAcceptor$Flex
  outer org.netbeans.modules.css.lib.api.properties.TokenAcceptor
 cons public init(java.lang.String)
 meth protected java.util.List<java.lang.String> postfixes()
@@ -1200,12 +1222,25 @@ meth public abstract boolean accepts(java.lang.String)
 meth public boolean accepts(org.netbeans.modules.css.lib.api.properties.Token)
 supr org.netbeans.modules.css.lib.api.properties.TokenAcceptor
 
+CLSS public static org.netbeans.modules.css.lib.api.properties.TokenAcceptor$Urange
+ outer org.netbeans.modules.css.lib.api.properties.TokenAcceptor
+cons public init(java.lang.String)
+meth public boolean accepts(org.netbeans.modules.css.lib.api.properties.Token)
+supr org.netbeans.modules.css.lib.api.properties.TokenAcceptor
+hfds URANGE_TOKEN_IMAGE
+
 CLSS public static org.netbeans.modules.css.lib.api.properties.TokenAcceptor$Uri
  outer org.netbeans.modules.css.lib.api.properties.TokenAcceptor
 cons public init(java.lang.String)
 meth public boolean accepts(org.netbeans.modules.css.lib.api.properties.Token)
 supr org.netbeans.modules.css.lib.api.properties.TokenAcceptor
 hfds URL_TOKEN_IMAGE
+
+CLSS public static org.netbeans.modules.css.lib.api.properties.TokenAcceptor$Variable
+ outer org.netbeans.modules.css.lib.api.properties.TokenAcceptor
+cons public init(java.lang.String)
+meth public boolean accepts(org.netbeans.modules.css.lib.api.properties.Token)
+supr org.netbeans.modules.css.lib.api.properties.TokenAcceptor
 
 CLSS public abstract interface org.netbeans.modules.css.lib.api.properties.TokenNode
 intf org.netbeans.modules.css.lib.api.properties.Node
@@ -1231,6 +1266,7 @@ meth public final java.lang.String getTokenAcceptorId()
 meth public java.lang.String getValue()
 meth public java.lang.String toString()
 meth public java.util.Collection<java.lang.String> getFixedValues()
+ anno 0 java.lang.Deprecated()
 meth public void accept(org.netbeans.modules.css.lib.api.properties.GrammarElementVisitor)
 supr org.netbeans.modules.css.lib.api.properties.ValueGrammarElement
 hfds name,tokenAcceptor

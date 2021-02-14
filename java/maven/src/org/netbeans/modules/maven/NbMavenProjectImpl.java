@@ -74,9 +74,11 @@ import org.netbeans.modules.maven.configurations.M2ConfigProvider;
 import org.netbeans.modules.maven.configurations.M2Configuration;
 import org.netbeans.modules.maven.configurations.ProjectProfileHandlerImpl;
 import org.netbeans.modules.maven.cos.CopyResourcesOnSave;
+import org.netbeans.modules.maven.debug.MavenJPDAStart;
 import org.netbeans.modules.maven.embedder.EmbedderFactory;
 import org.netbeans.modules.maven.embedder.MavenEmbedder;
 import org.netbeans.modules.maven.modelcache.MavenProjectCache;
+import org.netbeans.modules.maven.options.MavenSettings;
 import org.netbeans.modules.maven.problems.ProblemReporterImpl;
 import org.netbeans.modules.maven.queries.PomCompilerOptionsQueryImpl;
 import org.netbeans.modules.maven.queries.UnitTestsCompilerOptionsQueryImpl;
@@ -230,8 +232,13 @@ public final class NbMavenProjectImpl implements Project {
 
             @Override
             public File[] getFiles() {
-                File homeFile = FileUtil.normalizeFile(MavenCli.userMavenConfigurationHome);
-                return new File[] {new File(projectFile.getParentFile(), "nb-configuration.xml"), projectFile, new File(homeFile, "settings.xml")}; //NOI18N
+                File homeFile = FileUtil.normalizeFile(MavenCli.USER_MAVEN_CONFIGURATION_HOME);
+                return new File[] {
+                    new File(projectFile.getParentFile(), "nb-configuration.xml"), //NOI18N
+                    projectFile,
+                    new File(new File(projectFile.getParentFile(), ".mvn"), "maven.config"), //NOI18N
+                    new File(homeFile, "settings.xml"), //NOI18N
+                };
             }
         });
         problemReporter = new ProblemReporterImpl(this);
@@ -255,6 +262,14 @@ public final class NbMavenProjectImpl implements Project {
 
     public ProblemReporterImpl getProblemReporter() {
         return problemReporter;
+    }
+
+    public String getHintJavaPlatform() {
+        String hint = getAuxProps().get(Constants.HINT_JDK_PLATFORM, true);
+        if (hint == null) {
+            hint = MavenSettings.getDefault().getDefaultJdk();
+        }
+        return hint == null || hint.isEmpty() ? null : hint;
     }
 
     /**
@@ -452,15 +467,16 @@ public final class NbMavenProjectImpl implements Project {
 
 
 
-    public void fireProjectReload() {
+    public RequestProcessor.Task fireProjectReload() {
         //#227101 not only AWT and project read/write mutex has to be checked, there are some additional more
         //complex scenarios that can lead to deadlock. Just give up and always fire changes in separate RP.
         if (Boolean.getBoolean("test.reload.sync")) {
             reloadTask.run();
             //for tests just do sync reload, even though silly, even sillier is to attempt to sync the threads..
-            return;
+        } else {
+            reloadTask.schedule(0); //asuming here that schedule(0) will move the scheduled task in the queue if not yet executed
         }
-        reloadTask.schedule(0); //asuming here that schedule(0) will move the scheduled task in the queue if not yet executed
+        return reloadTask;
     }
 
     public static void refreshLocalRepository(NbMavenProjectImpl project) {
@@ -867,7 +883,8 @@ public final class NbMavenProjectImpl implements Project {
                     LookupMergerSupport.createClassPathModifierMerger(),
                     new UnitTestsCompilerOptionsQueryImpl(this),
                     new PomCompilerOptionsQueryImpl(this),
-                    LookupMergerSupport.createCompilerOptionsQueryMerger()
+                    LookupMergerSupport.createCompilerOptionsQueryMerger(),
+                    MavenJPDAStart.create(this)
         );
     }
 
@@ -961,7 +978,7 @@ public final class NbMavenProjectImpl implements Project {
         }
 
         synchronized void attachAll() {
-            this.filesToWatch = new ArrayList(Arrays.asList(fileProvider.getFiles()));
+            this.filesToWatch = new ArrayList<>(Arrays.asList(fileProvider.getFiles()));
             
             filesToWatch.addAll(getParents()); 
             Collections.sort(filesToWatch);

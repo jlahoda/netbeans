@@ -109,11 +109,11 @@ import org.openide.util.io.NbObjectInputStream;
  */
 @SuppressWarnings("unchecked")
 final class XMLMapAttr implements Map {
-    Map/*<String,Attr>*/ map;
+    Map<String, Attr> map;
 
     /** Creates new XMLMapAttr and delegetaor is instanced */
     public XMLMapAttr() {
-        this.map = new HashMap(5);
+        this.map = new HashMap<>(5);
     }
 
     static Attr createAttributeAndDecode(String key, String value) {
@@ -204,10 +204,14 @@ final class XMLMapAttr implements Map {
 
         Object retVal = null;
         if (attr == null && origAttrName.startsWith("class:")) { // NOI18N
-            attr = (Attr) map.get(origAttrName.substring(6));
+            synchronized (this) {
+                attr = (Attr) map.get(origAttrName.substring(6));
+            }
             retVal = attr != null ? attr.getType(params) : null;
         } else if (attr == null && origAttrName.startsWith("raw:")) { // NOI18N
-            attr = (Attr) map.get(origAttrName.substring(4));
+            synchronized (this) {
+                attr = (Attr) map.get(origAttrName.substring(4));
+            }
             if (attr != null && attr.keyIndex == 9) {
                 return attr.methodValue(attr.value, params).getMethod();
             }
@@ -258,11 +262,11 @@ final class XMLMapAttr implements Map {
         Object[] keyValuePair = ModifiedAttribute.translateInto((String) p1, p2);
         String key = (String) keyValuePair[0];
         Object value = keyValuePair[1];
-        Object toStore;
+        Attr toStore;
         if (value == null) {
             toStore = null;
         } else if (value instanceof Attr) {
-            toStore = value;
+            toStore = (Attr)value;
         } else if (value instanceof Method && key.startsWith("methodvalue:")) { // NOI18N
             Method m = (Method)value;
             key = key.substring("methodvalue:".length()); // NOI18N
@@ -1031,7 +1035,7 @@ final class XMLMapAttr implements Map {
         }
 
         static final Map wrapToMap(FileObject fo) {
-            return fo == null ? Collections.EMPTY_MAP : new FileMap(fo);
+            return fo == null ? Collections.emptyMap() : new FileMap(fo);
         }
 
         /**

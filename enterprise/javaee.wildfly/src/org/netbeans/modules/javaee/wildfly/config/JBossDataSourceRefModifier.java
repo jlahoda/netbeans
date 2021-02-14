@@ -62,10 +62,10 @@ final class JBossDataSourceRefModifier {
             addEntityResReference(modifiedJboss, resRefName, beanNames, jndiName);
         }
     }
-    
+
     /**
      * Add a new resource reference to the session beans without it.
-     * 
+     *
      * @param modifiedJboss Jboss instance being modified
      * @param resRefName resource reference name
      * @param sessionNames the sessions (ejb-name value) which might need to add resource reference specified by resRefName
@@ -76,7 +76,7 @@ final class JBossDataSourceRefModifier {
         List/*<Session>*/ sesssionsWithoutReference = new LinkedList();
 
         EnterpriseBeans eb = modifiedJboss.getEnterpriseBeans();
-        
+
         Session[] sessions = eb.getSession();
         for (int i = 0; i < sessions.length; i++) {
             String ejbName = sessions[i].getEjbName();
@@ -94,7 +94,7 @@ final class JBossDataSourceRefModifier {
             }
         }
 
-        //no session tag yet (sessions.length == 0) or 
+        //no session tag yet (sessions.length == 0) or
         //there are sessions in sessionNames which were not found among the existing ones (those were not removed)
         for (Iterator it = sessionNames.iterator(); it.hasNext(); ) {
             String sessionName = (String)it.next();
@@ -119,10 +119,10 @@ final class JBossDataSourceRefModifier {
         }
 
     }
-    
+
     /**
      * Add a new resource reference to the entity beans without it.
-     * 
+     *
      * @param modifiedJboss Jboss instance being modified
      * @param resRefName resource reference name
      * @param entityNames the entities (ejb-name value) which might need to add resource reference specified by resRefName
@@ -151,7 +151,7 @@ final class JBossDataSourceRefModifier {
             }
         }
 
-        //no entity tag yet (entities.length == 0) or 
+        //no entity tag yet (entities.length == 0) or
         //there are entities in entityNames which were not found among the existing ones (those were not removed)
         for (Iterator it = entityNames.iterator(); it.hasNext(); ) {
             String entityName = (String)it.next();
@@ -176,7 +176,7 @@ final class JBossDataSourceRefModifier {
         }
 
     }
-    
+
     /**
      * Add a reference to the given resource to the message-driven beans if it does not exist yet.
      *
@@ -185,7 +185,7 @@ final class JBossDataSourceRefModifier {
      * @param beans the bean names (ejb-name) mapped to the message destinations (message-destination-link)
      * which might need to add resource reference specified by resRefName
      * @param jndiName JNDI name of the resource
-     * 
+     *
      * @deprecated
      */
     static void modifyMsgDrv(Jboss modifiedJboss, String resRefName, Map beans, String jndiName) {
@@ -197,16 +197,16 @@ final class JBossDataSourceRefModifier {
 
         addMsgDrvResReference(modifiedJboss, resRefName, beans, jndiName);
     }
-    
+
     /**
      * Add a new resource reference to the message-driven beans without it.
-     * 
+     *
      * @param modifiedJboss Jboss instance being modified
      * @param resRefName resource reference name
      * @param beans the bean names (ejb-name) mapped to the message destinations (message-destination-link)
      * which might need to add resource reference specified by resRefName
      * @param jndiName JNDI name of the resource
-     * 
+     *
      * @deprecated
      */
     private static void addMsgDrvResReference(Jboss modifiedJboss, String resRefName, Map beans, String jndiName) {
@@ -232,7 +232,7 @@ final class JBossDataSourceRefModifier {
             }
         }
 
-        //no message-driven tag yet (msgDrivens.length == 0) or 
+        //no message-driven tag yet (msgDrivens.length == 0) or
         //there are MDBs in beans map which were not found among the existing ones (those were not removed)
         for (Iterator it = beans.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry entry = (Map.Entry) it.next();
@@ -273,7 +273,7 @@ final class JBossDataSourceRefModifier {
 
         addMsgDrvResReference(modifiedJboss, resRefName, mdbName, jndiName);
     }
-    
+
     private static void addMsgDrvResReference(Jboss modifiedJboss, String resRefName, String mdbName, String jndiName) {
 
         EnterpriseBeans eb = modifiedJboss.getEnterpriseBeans();
@@ -297,5 +297,5 @@ final class JBossDataSourceRefModifier {
             }
         }
     }
-    
+
 }

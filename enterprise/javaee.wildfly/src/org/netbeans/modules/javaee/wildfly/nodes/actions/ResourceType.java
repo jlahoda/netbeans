@@ -24,5 +24,5 @@ package org.netbeans.modules.javaee.wildfly.nodes.actions;
  */
 public enum ResourceType {
     EAR, EJB, CAR, RAR, WAR, QUEUE, TOPIC, DATASOURCE;
-    
+
 }

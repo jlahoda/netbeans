@@ -18,7 +18,6 @@
  */
 package org.netbeans.api.java.source;
 
-import com.sun.javadoc.Doc;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.Scope;
 import com.sun.source.util.DocTrees;
@@ -47,7 +46,6 @@ import com.sun.tools.javac.model.JavacElements;
 import com.sun.tools.javac.model.JavacTypes;
 import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.Names;
-import com.sun.tools.javadoc.main.DocEnv;
 import java.util.ArrayDeque;
 
 import java.util.ArrayList;
@@ -87,8 +85,8 @@ import javax.lang.model.util.Types;
 import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.annotations.common.NullAllowed;
+import org.netbeans.modules.java.source.TreeShims;
 import org.netbeans.modules.java.source.builder.ElementsService;
-import org.netbeans.modules.java.source.JavadocEnv;
 import org.netbeans.modules.java.source.base.SourceLevelUtils;
 import org.openide.util.Parameters;
 
@@ -206,45 +204,6 @@ public final class ElementUtilities {
         else {
             throw new IllegalArgumentException ();
         } 
-    }
-    
-    /**Get javadoc for given element.
-     * @deprecated The new DocTree API should be used to traverse Javadoc comments.
-     * Use {@link DocTrees#getDocCommentTree(javax.lang.model.element.Element)} instead.
-     */
-    @Deprecated
-    public Doc javaDocFor(Element element) {
-        if (element != null) {
-            DocEnv env = DocEnv.instance(ctx);
-            switch (element.getKind()) {
-                case ANNOTATION_TYPE:
-                case CLASS:
-                case ENUM:
-                case INTERFACE:
-                    return env.getClassDoc((ClassSymbol)element);
-                case ENUM_CONSTANT:
-                case FIELD:
-                    return env.getFieldDoc((VarSymbol)element);
-                case METHOD:
-                    if (((MethodSymbol)element).enclClass().getKind() == ElementKind.ANNOTATION_TYPE)
-                        return env.getAnnotationTypeElementDoc((MethodSymbol)element);
-                    return env.getMethodDoc((MethodSymbol)element);
-                case CONSTRUCTOR:
-                    return env.getConstructorDoc((MethodSymbol)element);
-                case PACKAGE:
-                    return env.getPackageDoc((PackageSymbol)element);
-            }
-        }
-        return null;
-    }
-    
-    /**Find a {@link Element} corresponding to a given {@link Doc}.
-     * @deprecated The new DocTree API should be used to traverse Javadoc comments.
-     * Use {@link DocTrees#getElement(com.sun.source.util.DocTreePath)} instead.
-     */
-    @Deprecated
-    public Element elementFor(Doc doc) {
-        return (doc instanceof JavadocEnv.ElementHolder) ? ((JavadocEnv.ElementHolder)doc).getElement() : null;
     }
     
     /**
@@ -633,6 +592,19 @@ public final class ElementUtilities {
         @Override
         public StringBuilder visitModule(ModuleElement e, Boolean p) {
             return DEFAULT_VALUE.append((p ? e.getQualifiedName() : e.getSimpleName()).toString());
+        }
+
+        @Override
+        public StringBuilder visitUnknown(Element e, Boolean p) {
+            if (TreeShims.isRecord(e)) {
+                //TODO: test!
+                return visitType((TypeElement) e, p);
+            }
+            if (TreeShims.isRecordComponent(e)) {
+                //TODO: test!
+                return visitVariable((VariableElement) e, p);
+            }
+            return super.visitUnknown(e, p);
         }
     }
 

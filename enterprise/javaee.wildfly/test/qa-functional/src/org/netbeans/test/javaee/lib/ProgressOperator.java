@@ -49,9 +49,9 @@ public class ProgressOperator {
         } catch (InterruptedException e) {
             throw new JemmyException("Interrupted.", e);
         }
-        
+
     }
-    
+
     /** Wait process with given name finished.
      */
     public static void waitFinished(final String name, long timeout) {
@@ -69,33 +69,33 @@ public class ProgressOperator {
         } catch (InterruptedException e) {
             throw new JemmyException("Interrupted.", e);
         }
-        
+
     }
-    
+
     /** Wait all processes finished.
      */
     public static void waitFinished(long timeout) {
         waitFinished("", timeout); // NOI18N
     }
-    
+
     private static boolean processInProgress(String name) {
         try {
-            Class clazz = Class.forName("org.netbeans.progress.module.Controller");
+            Class<?> clazz = Class.forName("org.netbeans.progress.module.Controller");
             Method getDefaultMethod = clazz.getDeclaredMethod("getDefault", (Class[])null);
             getDefaultMethod.setAccessible(true);
             Object controllerInstance = getDefaultMethod.invoke(null, (Object[])null);
-            
+
             Method getModelMethod = clazz.getDeclaredMethod("getModel", (Class[])null);
             getModelMethod.setAccessible(true);
             Object taskModelInstance = getModelMethod.invoke(controllerInstance, (Object[])null);
-            
+
             //Method getSizeMethod = taskModelInstance.getClass().getDeclaredMethod("getSize", (Class[])null);
             //Object size = getSizeMethod.invoke(taskModelInstance, (Object[])null);
             //System.out.println("SIZE="+((Integer)size));
-            
+
             Method getHandlesMethod = taskModelInstance.getClass().getDeclaredMethod("getHandles", (Class[])null);
             Object[] handles = (Object[])getHandlesMethod.invoke(taskModelInstance, (Object[])null);
-            
+
             for(int i=0;i<handles.length;i++) {
                 Method getDisplayNameMethod = handles[i].getClass().getDeclaredMethod("getDisplayName", (Class[])null);
                 String displayName = (String)getDisplayNameMethod.invoke(handles[i], (Object[])null);
@@ -105,11 +105,11 @@ public class ProgressOperator {
                 }
             }
             return false;
-            
+
             //Method addListDataListenerMethod = taskModelInstance.getClass().getDeclaredMethod("addListDataListener", ListDataListener.class);
             //addListDataListenerMethod.invoke(taskModelInstance, new TestProgressBar());
-            
-            
+
+
         } catch (Exception e) {
             throw new JemmyException("Reflection operation failed.", e);
         }

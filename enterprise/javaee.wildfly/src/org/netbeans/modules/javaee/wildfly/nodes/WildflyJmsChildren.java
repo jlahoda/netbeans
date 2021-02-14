@@ -54,12 +54,12 @@ public class WildflyJmsChildren  extends Children.Keys {
 
 
     final WildflyResourcesItemNode createConnectionFactoriesNode(Lookup lookup) {
-        return new WildflyResourcesItemNode(new WildflyConnectionFactoriesChildren(lookup), 
+        return new WildflyResourcesItemNode(new WildflyConnectionFactoriesChildren(lookup),
                 NbBundle.getMessage(WildflyTargetNode.class, "LBL_Resources_ConnectionFactories"), Util.CONNECTOR_ICON);
     }
-    
+
     final WildflyResourcesItemNode createDestinationsNode(Lookup lookup) {
-        return new WildflyResourcesItemNode(new WildflyDestinationsChildren(lookup), 
+        return new WildflyResourcesItemNode(new WildflyDestinationsChildren(lookup),
                 NbBundle.getMessage(WildflyTargetNode.class, "LBL_Resources_Destinations"), Util.JMS_ICON);
     }
 }

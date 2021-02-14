@@ -42,7 +42,7 @@ public class WildflyJaxrsResourceNode extends AbstractNode {
         setDisplayName(String.format("%s [%s]", resourceName, resource.getPath()));
         setDisplayName(String.format("%s [%s]", resourceName, resource.getPath()));
     }
-            
+
     @Override
     public Image getIcon(int type) {
         return ImageUtilities.loadImage(Util.JAXRS_ICON);

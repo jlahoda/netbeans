@@ -188,7 +188,7 @@ implements Cloneable, Stamps.Updater {
 
     /** contributed by Alex Bowen (trajar@netbeans.org) */
     private void injectSystemProperties(Map configProps) {
-        for (Enumeration e = System.getProperties().propertyNames(); e.hasMoreElements(); ) {
+        for (Enumeration<?> e = System.getProperties().propertyNames(); e.hasMoreElements(); ) {
             String key = e.nextElement().toString();
             if (key.startsWith("felix.") || key.startsWith("org.osgi.framework.")) { // NOI18N
                 configProps.put(key, System.getProperty(key));
@@ -267,7 +267,7 @@ implements Cloneable, Stamps.Updater {
                 }
                 throw new IOException("Not found bundle:" + m.getCodeNameBase());
             }
-            ClassLoader l = new NetigsoLoader(b, m, jar);
+            NetigsoLoader l = new NetigsoLoader(b, m, jar);
             Set<String> pkgs = new HashSet<String>();
             String[] knownPkgs = registered.get(m.getCodeNameBase());
             Object exported = b.getHeaders("").get("Export-Package");
@@ -275,12 +275,12 @@ implements Cloneable, Stamps.Updater {
                 try {
                     SELF_QUERY.set(true);
                     if (findCoveredPkgs(exported)) {
-                        Enumeration en = b.findEntries("", null, true);
+                        Enumeration<URL> en = b.findEntries("", null, true);
                         if (en == null) {
                             LOG.log(Level.INFO, "Bundle {0}: {1} is empty", new Object[] { b.getBundleId(), b.getSymbolicName() });
                         } else {
                             while (en.hasMoreElements()) {
-                                URL url = (URL) en.nextElement();
+                                URL url = en.nextElement();
                                 if (url.getFile().startsWith("/META-INF")) {
                                     pkgs.add(url.getFile().substring(9));
                                     continue;
@@ -326,7 +326,17 @@ implements Cloneable, Stamps.Updater {
                 if (isRealBundle(b)) {
                     throw possible;
                 }
-                LOG.log(Level.FINE, "Not starting fragment {0}", m.getCodeNameBase());
+                // Bundle is a fragment, replace it with host in classloader
+                String fragmentHost = b.getHeaders("").get("Fragment-Host");
+                Bundle hostBundle = findBundle(fragmentHost);
+                if (hostBundle == null) {
+                    LOG.log(Level.WARNING, "Failed to locate fragment host bundle {0} for fragment bundle {1}",
+                            new Object[]{fragmentHost, m.getCodeNameBase()});
+                    throw new IOException("Not found bundle: " + hostBundle);
+                }
+                l.setBundle(hostBundle);
+                LOG.log(Level.FINE, "Not starting fragment {0}, using host bundle {1} for classloading instead", 
+                        new Object[]{m.getCodeNameBase(), fragmentHost});
             }
             return pkgs;
         } catch (BundleException ex) {
@@ -349,7 +359,7 @@ implements Cloneable, Stamps.Updater {
     @Override
     protected void stopLoader(ModuleInfo m, ClassLoader loader) {
         NetigsoLoader nl = (NetigsoLoader)loader;
-        Bundle b = nl.bundle;
+        Bundle b = nl.getBundle();
         try {
             assert b != null;
             try {

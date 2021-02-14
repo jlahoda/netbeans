@@ -186,13 +186,30 @@ public class Analyzer2Test extends NbTestCase {
         HintTest.create()
                 .input(
                 "package test;\n" +
-                "class ZimaImpl implements Zima {\n" +
+                "class ZimaImpl extends Intermediate implements Zima {\n" +
+                "    /**\n" +
+                "     * \n" +
+                "     */\n" +
+                "    public <T> String base(T prvniho) throws Exception {\n" +
+                "        return \"\";\n" +
+                "    }\n" +
                 "    /**\n" +
                 "     * \n" +
                 "     */\n" +
                 "    public <T> String leden(T prvniho) throws Exception {\n" +
                 "        return \"\";\n" +
                 "    }\n" +
+                "}\n" +
+                "abstract class Intermediate extends Base {}\n" +
+                "abstract class Base {\n" +
+                "    /**\n" +
+                "     * \n" +
+                "     * @param prvniho \n" +
+                "     * @param <T> \n" +
+                "     * @return \n" +
+                "     * @throws Exception \n" +
+                "     */\n" +
+                "    abstract <T> String base(T prvniho) throws Exception;\n" +
                 "}\n" +
                 "interface Zima {\n" +
                 "    /**\n" +
@@ -329,4 +346,19 @@ public class Analyzer2Test extends NbTestCase {
                 .run(JavadocHint.class)
                 .assertContainsWarnings("2:3-2:11:warning:End Tag Missing: </strong>");
     }
+    
+    public void testOptionalEndTag() throws Exception {
+        HintTest.create()
+                .input(
+                "package test;\n" +
+                "/**\n" +
+                " * <ul><li>One<li>Two</li></ul>\n" +
+                " */\n" +
+                "class Zima {\n" +
+                "}\n")
+                .preference(AVAILABILITY_KEY + true, true)
+                .preference(SCOPE_KEY, "private")
+                .run(JavadocHint.class)
+                .assertWarnings();
+    }    
 }

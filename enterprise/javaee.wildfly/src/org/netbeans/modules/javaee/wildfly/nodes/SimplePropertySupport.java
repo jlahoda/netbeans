@@ -43,5 +43,5 @@ public class SimplePropertySupport extends PropertySupport<String> {
     public void setValue(String val) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         this.value = val;
     }
-    
+
 }

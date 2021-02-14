@@ -126,6 +126,15 @@ ${cursor}]]>
         </code>
     </codetemplate>
 
+    <codetemplate uuid="org.netbeans.modules.php.editor.codetemplate.match" abbreviation="mat" contexts="php-code">
+        <code>
+<![CDATA[match (${VARIABLE variableFromPreviousAssignment default="$variable"}) {
+    ${condition} => ${expr},
+    default => ${defaultExpr},
+}${cursor}]]>
+        </code>
+    </codetemplate>
+
     <codetemplate uuid="org.netbeans.modules.php.editor.codetemplate.instanceof" abbreviation="inst" contexts="php-code">
         <code>
 <![CDATA[if (${VARIABLE variableFromPreviousAssignment default="$variable"} instanceof ${ClassName}) {
@@ -170,6 +179,30 @@ ${cursor}]]>
     <codetemplate uuid="org.netbeans.modules.php.editor.codetemplate.ifnc" abbreviation="ifnc" contexts="php-code">
         <code>
 <![CDATA[public function ${functionName}($$${param});]]>
+        </code>
+    </codetemplate>
+
+    <codetemplate uuid="org.netbeans.modules.php.editor.codetemplate.fn" abbreviation="fn" contexts="php-code">
+        <code>
+<![CDATA[fn() => ${selection}${cursor}]]>
+        </code>
+    </codetemplate>
+
+    <codetemplate uuid="org.netbeans.modules.php.editor.codetemplate.fnp" abbreviation="fnp" contexts="php-code">
+        <code>
+<![CDATA[fn($$${param}) => ${selection}${cursor}]]>
+        </code>
+    </codetemplate>
+
+    <codetemplate uuid="org.netbeans.modules.php.editor.codetemplate.fnr" abbreviation="fnr" contexts="php-code">
+        <code>
+<![CDATA[fn(): ${type} => ${selection}${cursor}]]>
+        </code>
+    </codetemplate>
+
+    <codetemplate uuid="org.netbeans.modules.php.editor.codetemplate.fnpr" abbreviation="fnpr" contexts="php-code">
+        <code>
+<![CDATA[fn($$${param}): ${type} => ${selection}${cursor}]]>
         </code>
     </codetemplate>
 

@@ -26,6 +26,7 @@ import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -35,6 +36,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 import org.netbeans.api.annotations.common.NonNull;
 import org.openide.util.Exceptions;
+import org.openide.util.Lookup;
 import org.openide.util.RequestProcessor;
 
 /**
@@ -52,7 +54,18 @@ public class IpAddressUtils {
     private static final Pattern IPV4_PATTERN = Pattern.compile("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$");
     private static final RequestProcessor RP = new RequestProcessor("DNSBackgroundResolvers", 10);
 
-    private IpAddressUtils() {}
+    IpAddressUtils() {}
+
+    private static IpAddressUtils INSTANCE;
+    private static synchronized IpAddressUtils getDefault() {
+        if (INSTANCE == null) {
+            INSTANCE = Lookup.getDefault().lookup(IpAddressUtils.class);
+            if (INSTANCE == null) {
+                INSTANCE = new IpAddressUtils();
+            }
+        }
+        return INSTANCE;
+    }
     
     /**
      * Filters the result of a method according to IP protocol preference.
@@ -142,7 +155,7 @@ public class IpAddressUtils {
      * @throws UnknownHostException if no IP address for the host could be
      *    found.
      */
-    public static @NonNull InetAddress[] nameResolveArr(String host, int timeoutMs, IpTypePreference ipTypePref) 
+    public static @NonNull InetAddress[] nameResolveArr(String host, int timeoutMs, IpTypePreference ipTypePref)
             throws InterruptedException, UnknownHostException, TimeoutException {
         
         if (looksLikeIpv6Literal(host) || looksLikeIpv4Literal(host)) {
@@ -158,7 +171,7 @@ public class IpAddressUtils {
             return new InetAddress[]{addr};
         }
         
-        Callable<InetAddress[]> lookupTask = new DnsTimeoutTask(host);
+        Callable<InetAddress[]> lookupTask = getDefault().createDnsTimeoutTask(host);
         Future<InetAddress[]> future = RP.submit(lookupTask);
         try {
             InetAddress[] ipAddresses;
@@ -191,7 +204,7 @@ public class IpAddressUtils {
             throw new TimeoutException("No answer from name service within " + timeoutMs + " milliseconds when resolving \"" + host+ "\"");
         } 
     }
-    
+
     /**
      * Performs a name service lookup with a timeout. Same as 
      * {@link #nameResolveArr(java.lang.String, int, org.netbeans.network.IpAddressUtils.IpTypePreference) nameResolveArr()}
@@ -212,7 +225,7 @@ public class IpAddressUtils {
      * @throws UnknownHostException if no IP address for the host could be
      *    found.
      */
-    public static @NonNull InetAddress nameResolve(String host, int timeoutMs, IpTypePreference ipTypePref) 
+    public static @NonNull InetAddress nameResolve(String host, int timeoutMs, IpTypePreference ipTypePref)
             throws InterruptedException, UnknownHostException, TimeoutException {
         InetAddress[] ipAddresses = nameResolveArr(host, timeoutMs, ipTypePref);
         // We're guaranteed the array will have length > 0 and never null,
@@ -245,7 +258,7 @@ public class IpAddressUtils {
      * @throws UnknownHostException if no IP address for the host could be
      *    found.
      */
-    public static @NonNull InetAddress nameResolve(String host, int timeoutMs) 
+    public static @NonNull InetAddress nameResolve(String host, int timeoutMs)
             throws InterruptedException, UnknownHostException, TimeoutException {
         return nameResolve(host, timeoutMs, IpTypePreference.ANY_JDK_PREF);
     }
@@ -415,6 +428,23 @@ public class IpAddressUtils {
     }
 
     /**
+     * Removes loopback addresses from the provided list.
+     * @param addresses 
+     */
+    public static void removeLoopback(List<InetAddress> addresses) {
+        if (addresses == null) {
+            return;
+        }
+        Iterator<InetAddress> iterator = addresses.iterator();
+        while (iterator.hasNext()) {
+            InetAddress a = iterator.next();
+            if (a.isLoopbackAddress()) {
+                iterator.remove();
+            }
+        }
+    }
+    
+    /**
      * Sorts a list of IP addresses.
      * 
      * @param addresses IP addresses
@@ -444,7 +474,7 @@ public class IpAddressUtils {
     }
 
 
-    
+
     private static class DnsTimeoutTask implements Callable<InetAddress[]> {
 
         private final String host;
@@ -521,6 +551,12 @@ public class IpAddressUtils {
         return c >= 48 && c <= 57;
     }
 
+    //
+    // hook for tests
+    //
     
+    Callable<InetAddress[]> createDnsTimeoutTask(String host) {
+        return new DnsTimeoutTask(host);
+    }
 
 }

@@ -57,7 +57,11 @@ args=""
 
 case "`uname`" in
     Darwin*)
-        userdir="${default_mac_userdir}"
+        if [ ! -z "$default_mac_userdir" ]; then
+          userdir="${default_mac_userdir}"
+        else
+          userdir="${default_userdir}"
+        fi
         ;;
     *)
         userdir="${default_userdir}"
@@ -72,6 +76,8 @@ while [ $# -gt 0 ] ; do
     esac
     shift
 done
+
+cachedir="${default_cachedir}"
 
 if [ -f "${userdir}/etc/$APPNAME".conf ] ; then
     . "${userdir}/etc/$APPNAME".conf
@@ -121,6 +127,7 @@ case "`uname`" in
             '"-J-Xdock:icon=$progdir/../../$APPNAME.icns"' \
             --clusters '"$clusters"' \
             --userdir '"${userdir}"' \
+            --cachedir '"${cachedir}"' \
             ${default_options} \
             "$args"
         ;;
@@ -135,6 +142,7 @@ case "`uname`" in
             --jdkhome '"$jdkhome"' \
             --clusters '"$clusters"' \
             --userdir '"${userdir}"' \
+            --cachedir '"${cachedir}"' \
             ${default_options} \
             "$args"
        exit 1

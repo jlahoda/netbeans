@@ -26,6 +26,6 @@ import org.openide.nodes.Node;
  * @author Michal Mocnak
  */
 public interface OpenURLActionCookie extends Node.Cookie {
-    
+
     public String getWebURL();
 }

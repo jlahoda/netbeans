@@ -19,6 +19,7 @@
 
 package org.netbeans.api.java.source;
 
+import com.sun.source.tree.Tree;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -38,7 +39,12 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeVariable;
+import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.ElementFilter;
 import javax.swing.event.ChangeListener;
 import org.netbeans.api.java.classpath.ClassPath;
@@ -47,6 +53,7 @@ import org.netbeans.api.java.queries.SourceForBinaryQuery.Result;
 import org.netbeans.api.java.source.ClasspathInfo.PathKind;
 import org.netbeans.modules.java.source.ClassIndexTestCase;
 import org.netbeans.modules.java.source.TestUtil;
+import org.netbeans.modules.java.source.parsing.ParameterNameProviderImpl;
 import org.netbeans.modules.java.source.usages.ClasspathInfoAccessor;
 import org.netbeans.modules.parsing.api.indexing.IndexingManager;
 import org.netbeans.modules.parsing.impl.RunWhenScanFinishedSupport;
@@ -427,6 +434,21 @@ public class SourceUtilsTest extends ClassIndexTestCase {
         assertEquals("TestDollarSourceName.java", f.getNameExt());
     }
 
+    public void testGetBound() throws Exception {
+        //only a scatch of the test, add testcases as needed:
+        prepareTest();
+
+        TypeElement test = info.getElements().getTypeElement("sourceutils.TestGetBound");
+
+        assertNotNull(test);
+
+        TypeParameterElement typeParam = test.getTypeParameters().get(0);
+        TypeMirror outerBound = ((TypeVariable) typeParam.asType()).getUpperBound();
+
+        TypeMirror bound = SourceUtils.getBound((WildcardType) ((DeclaredType) outerBound).getTypeArguments().get(0));
+        assertEquals("java.lang.CharSequence", String.valueOf(bound));
+    }
+
     //<editor-fold defaultstate="collapsed" desc="Helper methods & Mock services">
     
     private void prepareTest() throws Exception {
@@ -612,7 +634,7 @@ public class SourceUtilsTest extends ClassIndexTestCase {
             for (int i = 0; i < fqns.length; i++) {
                 String fqn = fqns[i];
                 String expected = names[i];
-                String got = SourceUtils.generateReadableParameterName(fqn, used);
+                String got = ParameterNameProviderImpl.generateReadableParameterName(fqn, used);
                 String msg = "For " + Arrays.asList(fqns) + " expected " + Arrays.asList(names);
                 assertEquals (msg, expected, got);
             }

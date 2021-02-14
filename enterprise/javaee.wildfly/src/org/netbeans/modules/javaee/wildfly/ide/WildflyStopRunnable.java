@@ -154,4 +154,3 @@ class WildflyStopRunnable implements Runnable {
         }
     }
 }
-

@@ -18,7 +18,7 @@ import javax.servlet.http.*;
  * @version
  */
 public class Test extends HttpServlet {
-    
+
     /** Processes requests for both HTTP <code>GET</code> and <code>POST</code> methods.
      * @param request servlet request
      * @param response servlet response
@@ -39,7 +39,7 @@ public class Test extends HttpServlet {
 
         out.close();
     }
-    
+
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /** Handles the HTTP <code>GET</code> method.
      * @param request servlet request
@@ -49,7 +49,7 @@ public class Test extends HttpServlet {
     throws ServletException, IOException {
         processRequest(request, response);
     }
-    
+
     /** Handles the HTTP <code>POST</code> method.
      * @param request servlet request
      * @param response servlet response
@@ -58,7 +58,7 @@ public class Test extends HttpServlet {
     throws ServletException, IOException {
         processRequest(request, response);
     }
-    
+
     /** Returns a short description of the servlet.
      */
     public String getServletInfo() {

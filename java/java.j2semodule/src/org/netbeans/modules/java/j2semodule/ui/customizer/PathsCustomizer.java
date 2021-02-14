@@ -34,6 +34,7 @@ import javax.swing.JList;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import javax.swing.JTree;
+import javax.swing.UIManager;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
 import javax.swing.event.TreeSelectionEvent;
@@ -65,22 +66,30 @@ public final class PathsCustomizer extends javax.swing.JPanel {
      */
     public PathsCustomizer() {
         initComponents();
-        mpTree.setUI(new BasicTreeUI() {
-            @Override
-            protected void paintHorizontalLine(Graphics g, JComponent c, int y, int left, int right) {
-            }
-            @Override
-            protected void paintVerticalLine(Graphics g, JComponent c, int x, int top, int bottom) {
-            }
-        });
-        cpTree.setUI(new javax.swing.plaf.basic.BasicTreeUI() {
-            @Override
-            protected void paintHorizontalLine(Graphics g, JComponent c, int y, int left, int right) {
-            }
-            @Override
-            protected void paintVerticalLine(Graphics g, JComponent c, int x, int top, int bottom) {
-            }
-        });
+
+        // Disable tree line painting if enabled in current look and feel.
+        // Do not use BasicTreeUI for all look and feels because this would
+        // break selection painting in FlatLaf and Nimbus.
+        // https://issues.apache.org/jira/browse/NETBEANS-4030
+        if (UIManager.getBoolean("Tree.paintLines")) {
+            mpTree.setUI(new BasicTreeUI() {
+                @Override
+                protected void paintHorizontalLine(Graphics g, JComponent c, int y, int left, int right) {
+                }
+                @Override
+                protected void paintVerticalLine(Graphics g, JComponent c, int x, int top, int bottom) {
+                }
+            });
+            cpTree.setUI(new javax.swing.plaf.basic.BasicTreeUI() {
+                @Override
+                protected void paintHorizontalLine(Graphics g, JComponent c, int y, int left, int right) {
+                }
+                @Override
+                protected void paintVerticalLine(Graphics g, JComponent c, int x, int top, int bottom) {
+                }
+            });
+        }
+
         setBackground(mpTree.getBackground());
         Mnemonics.setLocalizedText(addProject, NbBundle.getMessage(PathsCustomizer.class, "LBL_CustomizeLibraries_AddProject_JButton"));
         Mnemonics.setLocalizedText(addLibrary, NbBundle.getMessage(PathsCustomizer.class, "LBL_CustomizeLibraries_AddLibary_JButton"));
@@ -301,6 +310,7 @@ public final class PathsCustomizer extends javax.swing.JPanel {
         private final DefaultListModel mpModel;
         private final DefaultListModel cpModel;
         private byte active = 0;
+        private byte previousActive = 0;
 
         public JoinModel(DefaultListModel mpModel, DefaultListModel cpModel) {
             this.mpModel = mpModel;
@@ -413,6 +423,7 @@ public final class PathsCustomizer extends javax.swing.JPanel {
                 cpModel.setElementAt(element, index - mpModel.getSize() - 1);
             }
             active = 0;
+            previousActive = 0;
         }
 
         @Override
@@ -423,6 +434,7 @@ public final class PathsCustomizer extends javax.swing.JPanel {
                 cpModel.removeElementAt(index - mpModel.getSize() - 1);
             }
             active = 0;
+            previousActive = 0;
         }
 
         @Override
@@ -433,21 +445,34 @@ public final class PathsCustomizer extends javax.swing.JPanel {
                 cpModel.insertElementAt(element, index - mpModel.getSize());
             }
             active = 0;
+            previousActive = 0;
         }
 
         @Override
         public void addElement(Object element) {
-            if (active == MP_ACTIVE) {
-                mpModel.addElement(element);
-            } else {
-                cpModel.addElement(element);
-            }
+            switch(active) {
+                case CP_ACTIVE:
+                    cpModel.addElement(element);
+                    previousActive = active;
+                    break;
+                case MP_ACTIVE:
+                    mpModel.addElement(element);
+                    previousActive = active;
+                    break;
+                default:
+                    if (previousActive == MP_ACTIVE) {
+                        mpModel.addElement(element);
+                    } else {
+                        cpModel.addElement(element);
+                    }
+            }       
             active = 0;
         }
 
         @Override
         public boolean removeElement(Object obj) {
             active = 0;
+            previousActive = 0;
             return mpModel.removeElement(obj) || cpModel.removeElement(obj);
         }
 
@@ -456,6 +481,7 @@ public final class PathsCustomizer extends javax.swing.JPanel {
             mpModel.removeAllElements();
             cpModel.removeAllElements();
             active = 0;
+            previousActive = 0;
         }
 
         @Override
@@ -481,6 +507,7 @@ public final class PathsCustomizer extends javax.swing.JPanel {
         @Override
         public Object set(int index, Object element) {
             active = 0;
+            previousActive = 0;
             return index <= mpModel.getSize() ? mpModel.set(index, element) : cpModel.set(index - mpModel.getSize() - 1, element);
         }
 
@@ -489,16 +516,27 @@ public final class PathsCustomizer extends javax.swing.JPanel {
             switch(active) {
                 case CP_ACTIVE:
                     cpModel.add(Math.max(index - mpModel.getSize() - 1, 0), element);
+                    previousActive = active;
                     break;
                 case MP_ACTIVE:
                     mpModel.add(Math.min(index, mpModel.getSize()), element);
+                    previousActive = active;
                     break;
                 default:
-                    if (index <= mpModel.getSize()) {
-                        mpModel.add(index, element);
-                    } else {
-                        cpModel.add(index - mpModel.getSize() - 1, element);
-                    }
+                    switch(previousActive) {
+                        case CP_ACTIVE:
+                            cpModel.add(Math.max(index - mpModel.getSize() - 1, 0), element);
+                            break;
+                        case MP_ACTIVE:
+                            mpModel.add(Math.min(index, mpModel.getSize()), element);
+                            break;
+                        default:
+                            if (index <= mpModel.getSize()) {
+                                mpModel.add(index, element);
+                            } else {
+                                cpModel.add(index - mpModel.getSize() - 1, element);
+                            }
+                    }                    
             }
             active = 0;
         }
@@ -506,6 +544,7 @@ public final class PathsCustomizer extends javax.swing.JPanel {
         @Override
         public Object remove(int index) {
             active = 0;
+            previousActive = 0;
             return index < mpModel.getSize()
                     ? mpModel.remove(index)
                     : index == mpModel.getSize() ? null : cpModel.remove(index - mpModel.getSize() - 1);
@@ -514,6 +553,7 @@ public final class PathsCustomizer extends javax.swing.JPanel {
         @Override
         public void clear() {
             active = 0;
+            previousActive = 0;
             mpModel.clear();
             cpModel.clear();
         }
@@ -571,9 +611,9 @@ public final class PathsCustomizer extends javax.swing.JPanel {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(cpTree, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(mpTree, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(cpTree, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(mpTree, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(cpAddButton, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(mpAddButton, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))

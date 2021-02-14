@@ -49,7 +49,10 @@ import org.openide.filesystems.FileUtil;
 import org.netbeans.api.templates.TemplateRegistration;
 import org.openide.util.NbBundle.Messages;
 import static org.netbeans.modules.maven.apisupport.Bundle.*;
+import static org.netbeans.modules.maven.apisupport.MavenNbModuleImpl.APACHE_SNAPSHOT_REPO_ID;
 import org.netbeans.modules.maven.embedder.EmbedderFactory;
+import org.netbeans.modules.maven.indexer.api.NBVersionInfo;
+import org.netbeans.modules.maven.indexer.api.RepositoryQueries;
 import org.netbeans.spi.project.ui.support.CommonProjectActions;
 
 public class NbmWizardIterator implements WizardDescriptor.BackgroundInstantiatingIterator<WizardDescriptor> {
@@ -60,13 +63,13 @@ public class NbmWizardIterator implements WizardDescriptor.BackgroundInstantiati
     public static final String SNAPSHOT_VERSION = "dev-SNAPSHOT";
     static {
         NB_MODULE_ARCH = new Archetype();
-        NB_MODULE_ARCH.setGroupId("org.codehaus.mojo.archetypes"); //NOI18N
-        NB_MODULE_ARCH.setVersion("1.15"); //NOI18N
+        NB_MODULE_ARCH.setGroupId("org.apache.netbeans.archetypes"); //NOI18N
+        NB_MODULE_ARCH.setVersion("1.17"); //NOI18N
         NB_MODULE_ARCH.setArtifactId("nbm-archetype"); //NOI18N
 
         NB_APP_ARCH = new Archetype();
-        NB_APP_ARCH.setGroupId("org.codehaus.mojo.archetypes"); //NOI18N
-        NB_APP_ARCH.setVersion("1.20"); //NOI18N
+        NB_APP_ARCH.setGroupId("org.apache.netbeans.archetypes"); //NOI18N
+        NB_APP_ARCH.setVersion("1.22"); //NOI18N
         NB_APP_ARCH.setArtifactId("netbeans-platform-app-archetype"); //NOI18N
 
     }
@@ -112,7 +115,21 @@ public class NbmWizardIterator implements WizardDescriptor.BackgroundInstantiati
                 LBL_CreateProjectStepNbm()
             };
     }
-    
+
+    private static void getLatestArchetypeVersion(Archetype archetype) {
+        RepositoryQueries.Result<NBVersionInfo> versionsResult = RepositoryQueries.getVersionsResult(archetype.getGroupId(), archetype.getArtifactId(), null);
+
+        if (versionsResult.isPartial()) {
+            versionsResult.waitForSkipped();
+        }
+
+        // Versions are sorted in descending order
+        List<NBVersionInfo> results = versionsResult.getResults();
+        if (!results.isEmpty()) {
+            archetype.setVersion(results.get(0).getVersion());
+        }
+    }
+
     @Override
     public Set<FileObject> instantiate() throws IOException {
         ProjectInfo vi = new ProjectInfo((String) wiz.getProperty("groupId"), (String) wiz.getProperty("artifactId"), (String) wiz.getProperty("version"), (String) wiz.getProperty("package")); //NOI18N
@@ -126,10 +143,11 @@ public class NbmWizardIterator implements WizardDescriptor.BackgroundInstantiati
             Map<String,String> additional = Collections.singletonMap("netbeansVersion", version); // NOI18N
             
             if (archetype == NB_MODULE_ARCH) {
+                getLatestArchetypeVersion(NB_MODULE_ARCH);
                 NBMNativeMWI.instantiate(vi, projFile, version, Boolean.TRUE.equals(wiz.getProperty(OSGIDEPENDENCIES)), null);
-                
+
             } else {
-            
+            getLatestArchetypeVersion(NB_APP_ARCH);
             ArchetypeWizards.createFromArchetype(projFile, vi, archetype, additional, true);
             List<ModelOperation<POMModel>> opers = new ArrayList<ModelOperation<POMModel>>();
             if (Boolean.TRUE.equals(wiz.getProperty(OSGIDEPENDENCIES))) {
@@ -288,14 +306,14 @@ public class NbmWizardIterator implements WizardDescriptor.BackgroundInstantiati
         return new ModelOperation<POMModel>() {
                     public @Override void performOperation(POMModel model) {
                         Repository repo = model.getFactory().createRepository();
-                        repo.setId("netbeans-snapshot"); // NOI18N
-                        repo.setName("NetBeans Snapshots"); // NOI18N
+                        repo.setId(APACHE_SNAPSHOT_REPO_ID); // NOI18N
+                        repo.setName("Apache Development Snapshot Repository"); // NOI18N
                         /* Is the following necessary?
                         RepositoryPolicy policy = model.getFactory().createSnapshotRepositoryPolicy();
                         policy.setEnabled(true);
                         repo.setSnapshots(policy);
                          */
-                        repo.setUrl("http://bits.netbeans.org/nexus/content/repositories/snapshots/"); // NOI18N
+                        repo.setUrl("https://repository.apache.org/content/repositories/snapshots/"); // NOI18N
                         model.getProject().addRepository(repo);
                     }
                 };

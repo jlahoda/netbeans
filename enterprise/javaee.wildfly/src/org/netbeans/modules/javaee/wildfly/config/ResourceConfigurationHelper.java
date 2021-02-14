@@ -45,7 +45,7 @@ public class ResourceConfigurationHelper {
     private static final Logger LOGGER = Logger.getLogger(ResourceConfigurationHelper.class.getName());
     private ResourceConfigurationHelper() {
     }
-    
+
     public static void writeFile(final File file, final BaseBean bean) throws ConfigurationException {
         assert file != null : "File to write can't be null"; // NOI18N
         assert file.getParentFile() != null : "File parent folder can't be null"; // NOI18N
@@ -83,7 +83,7 @@ public class ResourceConfigurationHelper {
                         if (os != null) {
                             try { os.close(); } catch(IOException ioe) {}
                         }
-                        if (lock != null) 
+                        if (lock != null)
                             lock.releaseLock();
                     }
                 }
@@ -92,7 +92,7 @@ public class ResourceConfigurationHelper {
             throw new ConfigurationException (e.getLocalizedMessage ());
         }
     }
-    
+
     /**
      * Replace the content of the document by the graph.
      */
@@ -114,5 +114,5 @@ public class ResourceConfigurationHelper {
             }
         });
     }
-    
+
 }

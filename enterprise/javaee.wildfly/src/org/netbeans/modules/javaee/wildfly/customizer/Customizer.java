@@ -32,7 +32,7 @@ import org.netbeans.modules.j2ee.deployment.plugins.spi.J2eePlatformImpl;
 /**
  * JBoss instance customizer which is accessible from server manager.
  *
- * 
+ *
  */
 public class Customizer extends JTabbedPane {
 
@@ -77,11 +77,11 @@ public class Customizer extends JTabbedPane {
         });
         addTab(NbBundle.getMessage(Customizer.class,"TXT_Platform"), new WildflyTabVisualPanel(this.dmp));
         addTab(NbBundle.getMessage(Customizer.class,"TXT_Platform"), new CustomizerJVM(custData));
-        addTab(NbBundle.getMessage(Customizer.class,"TXT_Tab_Classes"), 
+        addTab(NbBundle.getMessage(Customizer.class,"TXT_Tab_Classes"),
                CustomizerSupport.createClassesCustomizer(custData.getClassModel()));
-        addTab(NbBundle.getMessage(Customizer.class,"TXT_Tab_Sources"), 
+        addTab(NbBundle.getMessage(Customizer.class,"TXT_Tab_Sources"),
                 CustomizerSupport.createSourcesCustomizer(custData.getSourceModel(), null));
-        addTab(NbBundle.getMessage(Customizer.class,"TXT_Tab_Javadoc"), 
+        addTab(NbBundle.getMessage(Customizer.class,"TXT_Tab_Javadoc"),
                 CustomizerSupport.createJavadocCustomizer(custData.getJavadocsModel(), null));
     }
 }

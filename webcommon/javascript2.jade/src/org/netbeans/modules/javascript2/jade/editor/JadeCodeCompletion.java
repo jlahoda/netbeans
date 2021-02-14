@@ -74,6 +74,7 @@ public class JadeCodeCompletion implements CodeCompletionHandler2 {
     protected final static String CSS_CLASS_PREFIX = ".";
     
     @Override
+    @SuppressWarnings("fallthrough")
     public CodeCompletionResult complete(CodeCompletionContext context) {
         ParserResult info = context.getParserResult();
         int carretOffset = context.getParserResult().getSnapshot().getEmbeddedOffset(context.getCaretOffset());
@@ -159,6 +160,13 @@ public class JadeCodeCompletion implements CodeCompletionHandler2 {
 
     @Override
     public QueryType getAutoQuery(JTextComponent component, String typedText) {
+        if(typedText != null) {
+            int length = typedText.length();
+            if(length > 0 &&  !Character.isWhitespace(typedText.charAt(length - 1))) {
+                return QueryType.COMPLETION;
+            }
+        }
+        
         return QueryType.NONE;
     }
 

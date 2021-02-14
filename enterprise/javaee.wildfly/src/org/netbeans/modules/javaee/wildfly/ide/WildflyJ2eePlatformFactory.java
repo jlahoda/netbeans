@@ -108,6 +108,8 @@ public class WildflyJ2eePlatformFactory extends J2eePlatformFactory {
             WILDFLY_PROFILES.add(Profile.JAVA_EE_6_FULL);
             WILDFLY_PROFILES.add(Profile.JAVA_EE_7_WEB);
             WILDFLY_PROFILES.add(Profile.JAVA_EE_7_FULL);
+            WILDFLY_PROFILES.add(Profile.JAVA_EE_8_WEB);
+            WILDFLY_PROFILES.add(Profile.JAVA_EE_8_FULL);
         }
 
         private static final Set<Profile> EAP6_PROFILES = new HashSet<Profile>();
@@ -116,12 +118,13 @@ public class WildflyJ2eePlatformFactory extends J2eePlatformFactory {
             EAP6_PROFILES.add(Profile.JAVA_EE_6_WEB);
             EAP6_PROFILES.add(Profile.JAVA_EE_6_FULL);
         }
-        
+
         private static final Set<Profile> WILDFLY_WEB_PROFILES = new HashSet<Profile>();
 
         static {
             WILDFLY_WEB_PROFILES.add(Profile.JAVA_EE_6_WEB);
             WILDFLY_WEB_PROFILES.add(Profile.JAVA_EE_7_WEB);
+            WILDFLY_WEB_PROFILES.add(Profile.JAVA_EE_8_WEB);
         }
         private LibraryImplementation[] libraries;
 
@@ -163,6 +166,9 @@ public class WildflyJ2eePlatformFactory extends J2eePlatformFactory {
             Set versions = new HashSet();
             versions.add("1.7"); // NOI18N
             versions.add("1.8"); // NOI18N
+            versions.add("1.8"); // NOI18N
+            versions.add("1.9"); // NOI18N
+            versions.add("11"); // NOI18N
             return versions;
         }
 
@@ -224,6 +230,7 @@ public class WildflyJ2eePlatformFactory extends J2eePlatformFactory {
         }
 
         @Override
+        @Deprecated
         public boolean isToolSupported(String toolName) {
 
             if (J2eePlatform.TOOL_JSR109.equals(toolName)) {
@@ -439,6 +446,7 @@ public class WildflyJ2eePlatformFactory extends J2eePlatformFactory {
         }
 
         @Override
+        @Deprecated
         public String getToolProperty(String toolName, String propertyName) {
             if (J2eePlatform.TOOL_APP_CLIENT_RUNTIME.equals(toolName)) {
                 if (J2eePlatform.TOOL_PROP_MAIN_CLASS.equals(propertyName)) {

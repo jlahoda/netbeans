@@ -60,7 +60,7 @@ public final class PersistenceProviderSupplierImpl implements PersistenceProvide
     @Override
     public List<Provider> getSupportedProviders() {
         try {
-            J2eeModuleProvider j2eeModuleProvider = (J2eeModuleProvider) project.getLookup().lookup(J2eeModuleProvider.class);
+            J2eeModuleProvider j2eeModuleProvider = project.getLookup().lookup(J2eeModuleProvider.class);
             String serverInstanceId = j2eeModuleProvider.getServerInstanceID();
             ServerInstance si = serverInstanceId != null ? Deployment.getDefault().getServerInstance(serverInstanceId) : null;
             J2eePlatform platform = null;
@@ -81,7 +81,7 @@ public final class PersistenceProviderSupplierImpl implements PersistenceProvide
 
             boolean defaultFound = false; // see issue #225071
 
-            lessEE7 = !platform.getSupportedProfiles().contains(Profile.JAVA_EE_7_WEB) && !platform.getSupportedProfiles().contains(Profile.JAVA_EE_7_FULL);//we know gf4 do not support old providers, #233726
+            lessEE7 = !platform.getSupportedProfiles().contains(Profile.JAVA_EE_8_WEB) && !platform.getSupportedProfiles().contains(Profile.JAVA_EE_8_FULL) && !platform.getSupportedProfiles().contains(Profile.JAVA_EE_7_WEB) && !platform.getSupportedProfiles().contains(Profile.JAVA_EE_7_FULL);//we know gf4 do not support old providers, #233726
             // Here we are mapping the JpaProvider to the correct Provider
             for (Provider provider : ProviderUtil.getAllProviders()) {
 

@@ -62,6 +62,7 @@ public class NetworkProxyReloader extends ProxySettings.Reloader {
      * The first it tries to retrieve proxy settings directly from system,
      * if it is unsuccessful it tries fallback (from environment property http_proxy etc.).
      */
+    @SuppressWarnings("fallthrough")
     public static void reloadNetworkProxy() {        
         LOGGER.log(Level.FINE, "System network proxy reloading started."); //NOI18N
         NetworkProxySettings networkProxySettings = NETWORK_PROXY_RESOLVER.getNetworkProxySettings();
@@ -78,8 +79,9 @@ public class NetworkProxyReloader extends ProxySettings.Reloader {
         } else {
             LOGGER.log(Level.INFO, "System network proxy reloading succeeded."); //NOI18N
         }
-                       
-        switch (networkProxySettings.getProxyMode()) {
+
+        NetworkProxySettings.ProxyMode mode = networkProxySettings.getProxyMode();
+        switch (mode) {
             case AUTO:
                 final ProxyAutoConfig pacForTest = ProxyAutoConfig.get(networkProxySettings.getPacFileUrl());
                 List<Proxy> testHttpProxy = null;
@@ -139,6 +141,7 @@ public class NetworkProxyReloader extends ProxySettings.Reloader {
                 break;
             case DIRECT:
                 LOGGER.log(Level.INFO, "System network proxy - mode: direct"); //NOI18N
+
             default:
                 LOGGER.log(Level.INFO, "System network proxy: fell to default (correct if direct mode went before)"); //NOI18N
                 getPreferences().remove(ProxySettings.SYSTEM_PROXY_HTTP_HOST);

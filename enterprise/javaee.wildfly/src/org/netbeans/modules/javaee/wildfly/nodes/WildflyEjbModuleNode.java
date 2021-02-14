@@ -33,18 +33,18 @@ import org.openide.util.Lookup;
 import org.openide.util.actions.SystemAction;
 
 /**
- * 
+ *
  * Node which describes an EJB Module.
  *
  * @author Michal Mocnak
  * @author Emmanuel Hugonnet (ehsavoie) <ehsavoie@netbeans.org>
  */
 public class WildflyEjbModuleNode extends AbstractNode {
-    
+
     public WildflyEjbModuleNode(String fileName, Lookup lookup) {
         this(fileName, lookup, new ArrayList<WildflyEjbComponentNode>(), false);
     }
-    
+
     public WildflyEjbModuleNode(String fileName, Lookup lookup, boolean isEJB3) {
         this(fileName, lookup, new ArrayList<WildflyEjbComponentNode>(), isEJB3);
     }
@@ -59,7 +59,7 @@ public class WildflyEjbModuleNode extends AbstractNode {
             getCookieSet().add(new UndeployModuleCookieImpl(fileName, ResourceType.EJB, lookup));
         }
     }
-    
+
     @Override
     public Action[] getActions(boolean context){
         if(getParentNode() instanceof WildflyEarApplicationNode)
@@ -69,7 +69,7 @@ public class WildflyEjbModuleNode extends AbstractNode {
                 SystemAction.get(UndeployModuleAction.class)
             };
     }
-    
+
     @Override
     public Image getIcon(int type) {
         return UISupport.getIcon(ServerIcon.EJB_ARCHIVE);

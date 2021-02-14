@@ -49,7 +49,7 @@ final class JBossMsgDestRefModifier {
      * @param destPrefix prefix of the message destination
      * @param destName message destination name
      */
-    static void modify(Jboss modifiedJboss, String msgDestRefName, Set beanNames, 
+    static void modify(Jboss modifiedJboss, String msgDestRefName, Set beanNames,
             BEAN_TYPE beanType, String destPrefix, String destName) {
 
         assert(beanNames.size() > 0);
@@ -64,23 +64,23 @@ final class JBossMsgDestRefModifier {
             addEntityMsgDestReference(modifiedJboss, msgDestRefName, beanNames, destPrefix, destName);
         }
     }
-    
+
     /**
      * Add a new message destination reference to the session beans without it.
-     * 
+     *
      * @param modifiedJboss Jboss instance being modified
      * @param resRefName message destination reference name
      * @param sessionNames the sessions (ejb-name value) which might need to add message destination reference specified by msgDestRefName
      * @param destPrefix prefix of the message destination
      * @param destName message destination name
      */
-    private static void addSessionMsgDestReference(Jboss modifiedJboss, String msgDestRefName, 
+    private static void addSessionMsgDestReference(Jboss modifiedJboss, String msgDestRefName,
             Set sessionNames, String destPrefix, String destName) {
 
         List/*<Session>*/ sesssionsWithoutReference = new LinkedList();
 
         EnterpriseBeans eb = modifiedJboss.getEnterpriseBeans();
-        
+
         Session[] sessions = eb.getSession();
         for (int i = 0; i < sessions.length; i++) {
             String ejbName = sessions[i].getEjbName();
@@ -98,7 +98,7 @@ final class JBossMsgDestRefModifier {
             }
         }
 
-        //no session tag yet (sessions.length == 0) or 
+        //no session tag yet (sessions.length == 0) or
         //there are sessions in sessionNames which were not found among the existing ones (those were not removed)
         for (Iterator it = sessionNames.iterator(); it.hasNext(); ) {
             String sessionName = (String)it.next();
@@ -124,17 +124,17 @@ final class JBossMsgDestRefModifier {
         }
 
     }
-    
+
     /**
      * Add a new message destination reference to the entity beans without it.
-     * 
+     *
      * @param modifiedJboss Jboss instance being modified
      * @param resRefName message destination reference name
      * @param sessionNames the entities (ejb-name value) which might need to add message destination reference specified by msgDestRefName
      * @param destPrefix prefix of the message destination
      * @param destName message destination name
      */
-    private static void addEntityMsgDestReference(Jboss modifiedJboss, String msgDestRefName, 
+    private static void addEntityMsgDestReference(Jboss modifiedJboss, String msgDestRefName,
             Set entityNames, String destPrefix, String destName) {
 
         List/*<Entity>*/ entitiesWithoutReference = new LinkedList();
@@ -158,7 +158,7 @@ final class JBossMsgDestRefModifier {
             }
         }
 
-        //no entity tag yet (entities.length == 0) or 
+        //no entity tag yet (entities.length == 0) or
         //there are entities in entityNames which were not found among the existing ones (those were not removed)
         for (Iterator it = entityNames.iterator(); it.hasNext(); ) {
             String entityName = (String)it.next();
@@ -184,7 +184,7 @@ final class JBossMsgDestRefModifier {
         }
 
     }
-    
+
     /**
      * Add a reference to the given message destination to the message-driven beans if it does not exist yet.
      *
@@ -192,7 +192,7 @@ final class JBossMsgDestRefModifier {
      * @param msgDestRefName message destination reference name
      * @param beans the beans (ejb-name value) which might need to add message destination reference specified by msgDestRefName
      * @param destPrefix prefix of the message destination
-     * 
+     *
      * @deprecated
      */
     static void modifyMsgDrv(Jboss modifiedJboss, String msgDestRefName, Map beans, String destPrefix) {
@@ -204,15 +204,15 @@ final class JBossMsgDestRefModifier {
 
         addMsgDrvMsgDestReference(modifiedJboss, msgDestRefName, beans, destPrefix);
     }
-    
+
     /**
      * Add a new message destination reference to the message-driven beans without it.
-     * 
+     *
      * @param modifiedJboss Jboss instance being modified
      * @param msgDestRefName message destination reference name
      * @param beans the beans (ejb-name value) which might need to add message destination reference specified by msgDestRefName
      * @param destPrefix prefix of the message destination
-     * 
+     *
      * @deprecated
      */
     private static void addMsgDrvMsgDestReference(Jboss modifiedJboss, String msgDestRefName, Map beans, String destPrefix) {
@@ -238,7 +238,7 @@ final class JBossMsgDestRefModifier {
             }
         }
 
-        //no message-driven tag yet (msgDrivens.length == 0) or 
+        //no message-driven tag yet (msgDrivens.length == 0) or
         //there are MDBs in beans map which were not found among the existing ones (those were not removed)
         for (Iterator it = beans.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry entry = (Map.Entry) it.next();
@@ -264,18 +264,18 @@ final class JBossMsgDestRefModifier {
         }
 
     }
-    
+
     /**
      * Add a reference to the given message destination to the message-driven beans if it does not exist yet.
      *
      * @param modifiedJboss Jboss graph instance being modified
      * @param msgDestRefName message destination reference name
-     * @param mdbName the MDB (ejb-name value) which might need to add message 
+     * @param mdbName the MDB (ejb-name value) which might need to add message
      *        destination reference specified by msgDestRefName
      * @param destPrefix prefix of the message destination
      * @param destName message destination name
      */
-    static void modifyMsgDrv(Jboss modifiedJboss, String msgDestRefName, 
+    static void modifyMsgDrv(Jboss modifiedJboss, String msgDestRefName,
             String mdbName, String destPrefix, String destName) {
 
         if (modifiedJboss.getEnterpriseBeans() == null)
@@ -283,8 +283,8 @@ final class JBossMsgDestRefModifier {
 
         addMsgDrvMsgDestReference(modifiedJboss, msgDestRefName, mdbName, destPrefix, destName);
     }
-    
-    private static void addMsgDrvMsgDestReference(Jboss modifiedJboss, String msgDestRefName, 
+
+    private static void addMsgDrvMsgDestReference(Jboss modifiedJboss, String msgDestRefName,
             String mdbName, String destPrefix, String destName) {
 
         EnterpriseBeans eb = modifiedJboss.getEnterpriseBeans();
@@ -309,9 +309,9 @@ final class JBossMsgDestRefModifier {
             }
         }
     }
-    
+
     private static String getJndiName(String destName, String destPrefix) {
         return destPrefix + destName;
     }
-    
+
 }

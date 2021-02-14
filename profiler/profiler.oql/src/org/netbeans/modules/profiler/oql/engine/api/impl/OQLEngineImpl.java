@@ -30,6 +30,7 @@ import javax.script.Invocable;
 import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
+import org.netbeans.api.scripting.Scripting;
 import org.netbeans.lib.profiler.heap.Instance;
 import org.netbeans.lib.profiler.heap.JavaClass;
 import org.netbeans.modules.profiler.oql.engine.api.OQLEngine.OQLQuery;
@@ -51,7 +52,7 @@ public class OQLEngineImpl {
     static {
         try {
             // Do we have JavaScript engine?
-            ScriptEngineManager manager = new ScriptEngineManager();
+            ScriptEngineManager manager = Scripting.createManager();
             Object engine = manager.getEngineByName("JavaScript"); // NOI18N
 
             oqlSupported = engine != null;
@@ -241,20 +242,20 @@ public class OQLEngineImpl {
             }
 
             if (q.className != null) {
-                Stack toInspect = new Stack();
-                Set inspected = new HashSet();
+                Stack<JavaClass> toInspect = new Stack<>();
+                Set<JavaClass> inspected = new HashSet<>();
 
                 toInspect.push(clazz);
 
-                Object inspecting = null;
+                JavaClass inspecting = null;
                 while(!toInspect.isEmpty()) {
                     inspecting = toInspect.pop();
                     inspected.add(inspecting);
-                    JavaClass clz = (JavaClass)inspecting;
+                    JavaClass clz = inspecting;
                     if (q.isInstanceOf) {
                         for(Object subclass : clz.getSubClasses()) {
                             if (!inspected.contains(subclass) && !toInspect.contains(subclass)) {
-                                toInspect.push(subclass);
+                                toInspect.push((JavaClass) subclass);
                             }
                         }
                     }
@@ -379,7 +380,7 @@ public class OQLEngineImpl {
     private void init(Snapshot snapshot) throws RuntimeException {
         this.snapshot = snapshot;
         try {
-            ScriptEngineManager manager = new ScriptEngineManager();
+            ScriptEngineManager manager = Scripting.newBuilder().allowAllAccess(true).build();
             engine = manager.getEngineByName("JavaScript"); // NOI18N
             InputStream strm = getInitStream();
             CompiledScript cs = ((Compilable)engine).compile(new InputStreamReader(strm));

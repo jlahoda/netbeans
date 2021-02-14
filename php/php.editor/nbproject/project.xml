@@ -304,7 +304,7 @@
                     <build-prerequisite/>
                     <compile-dependency/>
                     <run-dependency>
-                        <specification-version>2.62</specification-version>
+                        <specification-version>2.74</specification-version>
                     </run-dependency>
                 </dependency>
                 <dependency>
@@ -474,6 +474,12 @@
                         <compile-dependency/>
                     </test-dependency>
                     <test-dependency>
+                        <code-name-base>org.netbeans.libs.nashorn</code-name-base>
+                        <recursive/>
+                        <compile-dependency/>
+                        <test/>
+                    </test-dependency>
+                    <test-dependency>
                         <code-name-base>org.netbeans.modules.csl.api</code-name-base>
                         <recursive/>
                         <compile-dependency/>
@@ -600,6 +606,8 @@
                 <friend>org.netbeans.modules.php.refactoring</friend>
                 <friend>org.netbeans.modules.php.smarty</friend>
                 <friend>org.netbeans.modules.php.symfony</friend>
+                <friend>org.netbeans.modules.php.zend</friend>
+                <friend>org.netbeans.modules.php.zend2</friend>
                 <friend>org.netbeans.modules.spellchecker.bindings.php</friend>
                 <package>org.netbeans.modules.php.editor.api</package>
                 <package>org.netbeans.modules.php.editor.api.elements</package>

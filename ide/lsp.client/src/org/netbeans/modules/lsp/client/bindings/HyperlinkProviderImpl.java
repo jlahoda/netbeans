@@ -18,39 +18,38 @@
  */
 package org.netbeans.modules.lsp.client.bindings;
 
-import java.net.MalformedURLException;
-import java.net.URI;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import javax.swing.SwingUtilities;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
+import org.eclipse.lsp4j.DefinitionParams;
 import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.LocationLink;
+import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
-import org.eclipse.lsp4j.TextDocumentPositionParams;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.netbeans.api.editor.mimelookup.MimeRegistration;
+import org.netbeans.api.lexer.TokenHierarchy;
+import org.netbeans.api.lexer.TokenSequence;
 import org.netbeans.editor.BaseDocument;
 import org.netbeans.editor.Utilities;
 import org.netbeans.lib.editor.hyperlink.spi.HyperlinkProviderExt;
 import org.netbeans.lib.editor.hyperlink.spi.HyperlinkType;
 import org.netbeans.modules.editor.NbEditorUtilities;
 import org.netbeans.modules.lsp.client.LSPBindings;
-import org.openide.cookies.LineCookie;
+import org.netbeans.modules.lsp.client.Utils;
+import org.netbeans.modules.textmate.lexer.TextmateTokenId;
 import org.openide.filesystems.FileObject;
-import org.openide.filesystems.URLMapper;
-import org.openide.text.Line;
-import org.openide.text.Line.ShowOpenType;
-import org.openide.text.Line.ShowVisibilityType;
 import org.openide.util.Exceptions;
 
 /**
  *
  * @author lahvac
  */
-@MimeRegistration(mimeType="", service=HyperlinkProviderExt.class)
+@MimeRegistration(mimeType="", service=HyperlinkProviderExt.class, position = 1600)
 public class HyperlinkProviderImpl implements HyperlinkProviderExt {
 
     @Override
@@ -65,9 +64,26 @@ public class HyperlinkProviderImpl implements HyperlinkProviderExt {
 
     @Override
     public int[] getHyperlinkSpan(Document doc, int offset, HyperlinkType type) {
+        if (doc.getProperty(HyperlinkProviderImpl.class) != Boolean.TRUE) {
+            //not handled by a LSP handler
+            return null;
+        }
+
         try {
             //XXX: not really using the server, are we?
-            return Utilities.getIdentifierBlock((BaseDocument) doc, offset);
+            int[] ident = Utilities.getIdentifierBlock((BaseDocument) doc, offset);
+            if (ident == null) {
+                return null;
+            }
+            TokenSequence<?> ts = TokenHierarchy.get(doc).tokenSequence();
+            if (ts == null) {
+                return ident;
+            }
+            ts.move(offset);
+            if (ts.moveNext() && ts.token().id() == TextmateTokenId.TEXTMATE) {
+                return new int[]{ts.offset(), ts.offset() + ts.token().length()};
+            }
+            return ident;
         } catch (BadLocationException ex) {
             return null;
         }
@@ -84,39 +100,32 @@ public class HyperlinkProviderImpl implements HyperlinkProviderExt {
         if (server == null) {
             return ;
         }
-        URI uri = file.toURI();
+        String uri = Utils.toURI(file);
         try {
-            TextDocumentPositionParams params;
-            params = new TextDocumentPositionParams(new TextDocumentIdentifier(uri.toString()),
-                                                    Utils.createPosition(doc, offset));
+            DefinitionParams params;
+            params = new DefinitionParams(new TextDocumentIdentifier(uri),
+                                          Utils.createPosition(doc, offset));
             //TODO: Location or Location[]
-            CompletableFuture<List<? extends Location>> def = server.getTextDocumentService().definition(params);
+            CompletableFuture<Either<List<? extends Location>, List<? extends LocationLink>>> def = server.getTextDocumentService().definition(params);
             def.handleAsync((locations, exception) -> {
                 if (exception != null) {
                     exception.printStackTrace();
                 }
-                if (locations != null && locations.size() == 1) { //TODO: what to do when there are multiple locations?
-                    try {
-                        URI target = URI.create(locations.get(0).getUri());
-                        FileObject targetFile = URLMapper.findFileObject(target.toURL());
-
-                        if (targetFile != null) {
-                            LineCookie lc = targetFile.getLookup().lookup(LineCookie.class);
-
-                            //TODO: expecting lc != null!
-
-                            Line line = lc.getLineSet().getCurrent(locations.get(0).getRange().getStart().getLine());
-
-                            SwingUtilities.invokeLater(() ->
-                                line.show(ShowOpenType.OPEN, ShowVisibilityType.FOCUS, locations.get(0).getRange().getStart().getCharacter())
-                            );
-                        } else {
-                            //TODO: beep
-                        }
-                    } catch (MalformedURLException ex) {
-                        Exceptions.printStackTrace(ex);
-                    }
+                if (locations == null) {
+                    return null;
                 }
+                String targetUri;
+                Range targetRange;
+                if (locations.isLeft() && locations.getLeft().size() == 1) { //TODO: what to do when there are multiple locations?
+                    targetUri = locations.getLeft().get(0).getUri();
+                    targetRange = locations.getLeft().get(0).getRange();
+                } else if (locations.isRight() && locations.getRight().size() == 1) { //TODO: what to do when there are multiple locations?
+                    targetUri = locations.getRight().get(0).getTargetUri();
+                    targetRange = locations.getRight().get(0).getTargetRange();
+                } else {
+                    return null;
+                }
+                Utils.open(targetUri, targetRange);
                 return null;
             }).get();
         } catch (BadLocationException ex) {

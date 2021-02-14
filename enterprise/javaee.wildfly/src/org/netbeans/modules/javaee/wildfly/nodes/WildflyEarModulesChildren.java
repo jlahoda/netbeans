@@ -55,7 +55,7 @@ public class WildflyEarModulesChildren extends WildflyAsyncChildren implements R
         setKeys(new Object[]{Util.WAIT_NODE});
         getExecutorService().submit(new WildflyEarModulesNodeUpdater(), 0);
     }
-    
+
     class WildflyEarModulesNodeUpdater implements Runnable {
 
         List keys = new ArrayList();

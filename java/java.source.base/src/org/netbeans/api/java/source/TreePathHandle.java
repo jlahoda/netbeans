@@ -51,6 +51,7 @@ import javax.tools.JavaFileObject;
 import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.modules.java.source.PositionRefProvider;
+import org.netbeans.modules.java.source.TreeShims;
 import org.netbeans.modules.java.source.parsing.FileObjects;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileStateInvalidException;
@@ -322,7 +323,7 @@ public final class TreePathHandle {
             case ENUM_CONSTANT:
                 return true;
             default:
-                return false;
+                return (el.getKind().name().equals(TreeShims.RECORD));
         }
     }
 
@@ -434,22 +435,9 @@ public final class TreePathHandle {
                 
                 debug.append("TreePathHandle [" + FileUtil.getFileDisplayName(mine) + "] was not created from " + FileUtil.getFileDisplayName(remote));
                 debug.append("\n");
-
-                try {
-                    debug.append("mine: id=").append(mine).append(", url=")
-                    .append(mine.getURL().toExternalForm());
-                } catch (FileStateInvalidException ex) {
-                    debug.append(ex.getMessage());
-                }
-
+                debug.append("mine: id=").append(mine).append(", url=").append(mine.toURL().toExternalForm());
                 debug.append("\n");
-                
-                try {
-                    debug.append("remote: id=").append(remote).append(", url=")
-                    .append(remote.getURL().toExternalForm());
-                } catch (FileStateInvalidException ex) {
-                    debug.append(ex.getMessage());
-                }
+                debug.append("remote: id=").append(remote).append(", url=").append(remote.toURL().toExternalForm());
 
                 throw new IllegalArgumentException(debug.toString());
             }
@@ -680,18 +668,14 @@ public final class TreePathHandle {
                         fo = fo.getParent();
                     }
                     if (fo != null) {
-                        try {
-                            URL url = fo.getURL();
-                            URL sourceRoot = null;//XXX: Index.getSourceRootForClassFolder(url);
-                            if (sourceRoot != null) {
-                                FileObject root = URLMapper.findFileObject(sourceRoot);
-                                String resourceName = FileUtil.getRelativePath(fo, URLMapper.findFileObject(source));
-                                file = root.getFileObject(resourceName.replace('.'+FileObjects.SIG, '.'+FileObjects.CLASS)); //NOI18N
-                            } else {
-                                Logger.getLogger(TreePathHandle.class.getName()).fine("Index.getSourceRootForClassFolder(url) returned null for url=" + url); //NOI18N
-                            }
-                        } catch (FileStateInvalidException ex) {
-                            Exceptions.printStackTrace(ex);
+                        URL url = fo.toURL();
+                        URL sourceRoot = null;//XXX: Index.getSourceRootForClassFolder(url);
+                        if (sourceRoot != null) {
+                            FileObject root = URLMapper.findFileObject(sourceRoot);
+                            String resourceName = FileUtil.getRelativePath(fo, URLMapper.findFileObject(source));
+                            file = root.getFileObject(resourceName.replace('.'+FileObjects.SIG, '.'+FileObjects.CLASS)); //NOI18N
+                        } else {
+                            Logger.getLogger(TreePathHandle.class.getName()).fine("Index.getSourceRootForClassFolder(url) returned null for url=" + url); //NOI18N
                         }
                     }
                 }

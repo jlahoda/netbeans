@@ -33,7 +33,7 @@ import org.xml.sax.helpers.DefaultHandler;
 public class WildflyDriversHandler extends AbstractHierarchicalHandler {
 
     private final Map<String, WildflyDriver> drivers = new HashMap<String, WildflyDriver>();
-    
+
     private WildflyDriverHandler childHandler;
 
     public WildflyDriversHandler(DefaultHandler parent, XMLReader parser) {

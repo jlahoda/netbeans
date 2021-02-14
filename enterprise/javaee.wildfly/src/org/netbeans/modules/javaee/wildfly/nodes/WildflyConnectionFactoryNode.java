@@ -33,7 +33,7 @@ import org.openide.util.NbBundle;
 import org.openide.util.actions.SystemAction;
 
 /**
- * 
+ *
  * @author Emmanuel Hugonnet (ehsavoie) <ehsavoie@netbeans.org>
  */
 public class WildflyConnectionFactoryNode extends AbstractNode {
@@ -47,8 +47,8 @@ public class WildflyConnectionFactoryNode extends AbstractNode {
         initProperties(connectionFactory.getConfiguration());
     }
 
-    protected final void initProperties(Map<String, String> configuration) {       
-        for(Map.Entry<String, String> property : configuration.entrySet()) {            
+    protected final void initProperties(Map<String, String> configuration) {
+        for(Map.Entry<String, String> property : configuration.entrySet()) {
             addProperty(property.getKey(), property.getValue());
         }
     }

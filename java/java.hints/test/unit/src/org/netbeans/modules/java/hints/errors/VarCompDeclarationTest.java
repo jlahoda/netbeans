@@ -26,6 +26,7 @@ import org.netbeans.modules.java.hints.infrastructure.ErrorHintsTestBase;
 import org.netbeans.modules.java.source.parsing.JavacParser;
 import org.netbeans.spi.editor.hints.Fix;
 import org.openide.util.NbBundle;
+import org.netbeans.junit.RandomlyFails;
 
 /**
  * Test cases for handing the 'var' compound declaration errors.
@@ -43,7 +44,7 @@ public class VarCompDeclarationTest extends ErrorHintsTestBase {
         sourceLevel = "1.10";
         JavacParser.DISABLE_SOURCE_LEVEL_DOWNGRADE = true;
     }
-    
+    @RandomlyFails
     public void testCase1() throws Exception {
         performFixTest("test/Test.java",
                        "package test; \n" +
@@ -62,13 +63,13 @@ public class VarCompDeclarationTest extends ErrorHintsTestBase {
                        "    } \n" +
                        "}").replaceAll("[\\s]+", " "));
     }
-    
+    @RandomlyFails
     public void testCase2() throws Exception {        
         performFixTest("test/Test.java",
                        "package test; \n" +
                        "public class Test {\n" +
                        "    private void test() { \n" +
-                       "        var v = 1, /*comment*/ v1 = 10;\n" +
+                       "        var v = 1, v1 = 10, v2 = 100;\n" +
                        "    } \n" +
                        "}",
                        -1,
@@ -76,12 +77,13 @@ public class VarCompDeclarationTest extends ErrorHintsTestBase {
                        ("package test; \n" +
                        "public class Test {\n" +
                        "    private void test() { \n" +
-                       "        var v = 1; /*comment*/ \n" +
+                       "        var v = 1;\n" +
                        "        var v1 = 10;\n" +
+                       "        var v2 = 100;\n" +
                        "    } \n" +
                        "}").replaceAll("[\\s]+", " "));
     }
-    
+    @RandomlyFails
     public void testCase3() throws Exception {
         performFixTest("test/Test.java",
                        "package test; \n" +
@@ -100,7 +102,7 @@ public class VarCompDeclarationTest extends ErrorHintsTestBase {
                        "    } \n" +
                        "}").replaceAll("[\\s]+", " "));
     }
-    
+    @RandomlyFails
     public void testCase4() throws Exception {
         performFixTest("test/Test.java",
                        "package test; \n" +
@@ -120,7 +122,7 @@ public class VarCompDeclarationTest extends ErrorHintsTestBase {
                        "    } \n" +
                        "}").replaceAll("[\\s]+", " "));
     }
-    
+    @RandomlyFails
     public void testCase5() throws Exception {
         performFixTest("test/Test.java",
                        "package test; \n" +
@@ -149,7 +151,7 @@ public class VarCompDeclarationTest extends ErrorHintsTestBase {
                        "    } \n" +
                        "}").replaceAll("[\\s]+", " "));       
     }
-    
+    @RandomlyFails
     public void testCase6() throws Exception {
         performFixTest("test/Test.java",
                        "package test; \n" +
@@ -167,7 +169,7 @@ public class VarCompDeclarationTest extends ErrorHintsTestBase {
                        "        var v1 = 11;} \n" +
                        "}").replaceAll("[\\s]+", " "));       
     }
-    
+    @RandomlyFails
     public void testCase7() throws Exception {
         performFixTest("test/Test.java",
                        "package test; \n" +
@@ -185,7 +187,7 @@ public class VarCompDeclarationTest extends ErrorHintsTestBase {
                        "        @DA final var y = 11;} \n" +
                        "}").replaceAll("[\\s]+", " "));       
     }
-    
+    @RandomlyFails
     public void testCase8() throws Exception {
         performFixTest("test/Test.java",
                        "package test; \n" +
@@ -204,7 +206,7 @@ public class VarCompDeclarationTest extends ErrorHintsTestBase {
                        "    } \n" +
                        "}").replaceAll("[\\s]+", " "));
     }
-
+    @RandomlyFails
     public void testCase9() throws Exception {
         performFixTest("test/Test.java",
                        "package test; \n" +
@@ -231,7 +233,7 @@ public class VarCompDeclarationTest extends ErrorHintsTestBase {
                        "    } \n" +
                        "}").replaceAll("[\\s]+", " "));
     }
-
+    @RandomlyFails
     public void testCase10() throws Exception {
         performFixTest("test/Test.java",
                        "package test; \n" +
@@ -258,7 +260,26 @@ public class VarCompDeclarationTest extends ErrorHintsTestBase {
                        "    } \n" +
                        "}").replaceAll("[\\s]+", " "));
     }
-    
+    @RandomlyFails
+    public void testCase11() throws Exception {
+        performFixTest("test/Test.java",
+                       "package test; \n" +
+                       "public class Test {\n" +
+                       "    private void test() { \n" +
+                       "        var v = {1, 2}, w = 2;\n" +
+                       "    } \n" +
+                       "}",
+                       -1,
+                       NbBundle.getMessage(VarCompDeclarationTest.class, "FIX_VarCompDeclaration"),
+                       ("package test; \n" +
+                       "public class Test {\n" +
+                       "    private void test() { \n" +
+                       "        var v = {1, 2};\n" +
+                       "        var w = 2;\n" +
+                       "    } \n" +
+                       "}").replaceAll("[\\s]+", " "));
+    }
+
     @Override
     protected List<Fix> computeFixes(CompilationInfo info, int pos, TreePath path) throws Exception {
         return new VarCompDeclaration().run(info, null, pos, path, null);

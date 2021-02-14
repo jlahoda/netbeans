@@ -35,7 +35,7 @@ public class WildflyDeploymentStatus implements DeploymentStatus {
     private final CommandType command;
     private final StateType state;
     private final String message;
-    
+
     /** Creates a new instance of JBDeploymentStatus */
     public WildflyDeploymentStatus(ActionType action, CommandType command, StateType state, String message) {
         this.action = action;
@@ -59,7 +59,7 @@ public class WildflyDeploymentStatus implements DeploymentStatus {
     public ActionType getAction() {
         return action;
     }
-    
+
     public boolean isRunning() {
         return StateType.RUNNING.equals(state);
     }

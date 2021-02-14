@@ -134,9 +134,9 @@ class WildflyStartRunnable implements Runnable {
             if (!logManagerJar.isEmpty()) {
                 javaOptsBuilder.append(" -Xbootclasspath/p:").append(logManagerJar)
                         .append(" -Djava.util.logging.manager=org.jboss.logmanager.LogManager");
-                FileObject loggingProperties = FileUtil.toFileObject(new File(ip.getProperty(WildflyPluginProperties.PROPERTY_ROOT_DIR) 
+                FileObject loggingProperties = FileUtil.toFileObject(new File(ip.getProperty(WildflyPluginProperties.PROPERTY_ROOT_DIR)
                         + separatorChar + "standalone" + separatorChar + "configuration", "logging.properties")); // NOI18N
-                
+
                 javaOptsBuilder.append(" -Dlogging.configuration=").append(loggingProperties.toURL());
             }
         }
@@ -200,7 +200,7 @@ class WildflyStartRunnable implements Runnable {
         } else {
             javaOptsBuilder.append(" -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true");
         }
-        
+
         if (ip.getProperty(WildflyPluginProperties.PROPERTY_CONFIG_FILE) != null) {
             File configFile = new File(ip.getProperty(WildflyPluginProperties.PROPERTY_CONFIG_FILE));
             if (configFile.exists() && configFile.getParentFile().exists() && configFile.getParentFile().getParentFile().exists()) {

@@ -71,6 +71,11 @@ import com.sun.source.tree.WhileLoopTree;
 import com.sun.source.tree.WildcardTree;
 import com.sun.source.util.SourcePositions;
 import com.sun.source.util.TreePath;
+import com.sun.tools.javac.api.JavacScope;
+import com.sun.tools.javac.code.Symbol.ClassSymbol;
+import com.sun.tools.javac.comp.AttrContext;
+import com.sun.tools.javac.comp.Enter;
+import com.sun.tools.javac.comp.Env;
 import org.netbeans.api.java.source.support.ErrorAwareTreeScanner;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -100,6 +105,9 @@ import javax.lang.model.type.TypeMirror;
 import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.java.source.CompilationInfo;
+import org.netbeans.api.java.source.TreeUtilities;
+import org.netbeans.modules.java.source.JavaSourceAccessor;
+import org.netbeans.modules.java.source.TreeShims;
 
 /**TODO: tested by CopyFinderTest in java.hints module.
  *
@@ -1742,23 +1750,60 @@ public class CopyFinder extends ErrorAwareTreeScanner<Boolean, TreePath> {
 
     private Iterable<? extends TreePath> fullPrepareThis(TreePath tp) {
         //XXX: is there a faster way to do this?
+        Enter enter = Enter.instance(JavaSourceAccessor.getINSTANCE().getJavacTask(info).getContext());
         Collection<TreePath> result = new LinkedList<TreePath>();
-        Scope scope = info.getTrees().getScope(tp);
-        TypeElement lastClass = null;
 
-        while (scope != null && scope.getEnclosingClass() != null) {
-            if (lastClass != scope.getEnclosingClass()) {
+        while (tp != null) {
+            if (TreeUtilities.CLASS_TREE_KINDS.contains(tp.getLeaf().getKind())) {
+                Element currentElement = info.getTrees().getElement(tp);
+
+                if (currentElement == null || !(currentElement instanceof ClassSymbol)) continue;
+                Env<AttrContext> env = enter.getEnv((ClassSymbol) currentElement);
                 ExpressionTree thisTree = info.getTreeUtilities().parseExpression("this", new SourcePositions[1]);
 
-                info.getTreeUtilities().attributeTree(thisTree, scope);
+                info.getTreeUtilities().attributeTree(thisTree, new HackScope(env));
 
                 result.add(new TreePath(tp, thisTree));
             }
             
-            scope = scope.getEnclosingScope();
+            tp = tp.getParentPath();
         }
 
         return result;
+    }
+
+    public static final class HackScope implements Scope {
+
+        private final Env<AttrContext> env;
+
+        public HackScope(Env<AttrContext> env) {
+            this.env = env;
+        }
+
+        public Env<AttrContext> getEnv() {
+            return env;
+        }
+
+        @Override
+        public Scope getEnclosingScope() {
+            throw new UnsupportedOperationException("Not supported.");
+        }
+
+        @Override
+        public TypeElement getEnclosingClass() {
+            throw new UnsupportedOperationException("Not supported.");
+        }
+
+        @Override
+        public ExecutableElement getEnclosingMethod() {
+            throw new UnsupportedOperationException("Not supported.");
+        }
+
+        @Override
+        public Iterable<? extends Element> getLocalElements() {
+            throw new UnsupportedOperationException("Not supported.");
+        }
+        
     }
 
     private Iterable<? extends TreePath> unattributedPrepareThis(TreePath tp) {
@@ -1789,7 +1834,14 @@ public class CopyFinder extends ErrorAwareTreeScanner<Boolean, TreePath> {
             case BLOCK:
                 return ((BlockTree) firstLeaf.getParentPath().getLeaf()).getStatements();
             case CASE:
-                return ((CaseTree) firstLeaf.getParentPath().getLeaf()).getStatements();
+                CaseTree caseTree = (CaseTree) firstLeaf.getParentPath().getLeaf();
+                if (caseTree.getStatements() != null) {
+                    return caseTree.getStatements();
+                } else if (TreeShims.getBody(caseTree) instanceof StatementTree) {
+                    return Collections.singletonList((StatementTree) TreeShims.getBody(caseTree));
+                } else {
+                    return null;
+                }
             default:
                 return Collections.singletonList((StatementTree) firstLeaf.getLeaf());
         }

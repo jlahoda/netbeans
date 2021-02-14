@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.40.1
+#Version 1.47
 
 CLSS public abstract java.awt.Component
 cons protected init()
@@ -159,8 +159,6 @@ meth public java.awt.im.InputMethodRequests getInputMethodRequests()
 meth public java.awt.image.ColorModel getColorModel()
 meth public java.awt.image.VolatileImage createVolatileImage(int,int)
 meth public java.awt.image.VolatileImage createVolatileImage(int,int,java.awt.ImageCapabilities) throws java.awt.AWTException
-meth public java.awt.peer.ComponentPeer getPeer()
- anno 0 java.lang.Deprecated()
 meth public java.beans.PropertyChangeListener[] getPropertyChangeListeners()
 meth public java.beans.PropertyChangeListener[] getPropertyChangeListeners(java.lang.String)
 meth public java.lang.String getName()
@@ -1199,6 +1197,7 @@ meth public void setColumns(int)
 meth public void setCursorCoord(org.netbeans.lib.terminalemulator.Coord)
 meth public void setCursorVisible(boolean)
 meth public void setCustomColor(int,java.awt.Color)
+ anno 0 java.lang.Deprecated()
 meth public void setDebugFlags(int)
 meth public void setEmulation(java.lang.String)
 meth public void setEnabled(boolean)

@@ -34,10 +34,10 @@ public class WildflyTargetNode extends AbstractNode {
     public WildflyTargetNode(Lookup lookup) {
         super(new Children.Array());
         getChildren().add(new Node[] {
-            new WildflyItemNode(new WildflyApplicationsChildren(lookup), NbBundle.getMessage(WildflyTargetNode.class, "LBL_Apps")), 
+            new WildflyItemNode(new WildflyApplicationsChildren(lookup), NbBundle.getMessage(WildflyTargetNode.class, "LBL_Apps")),
             new WildflyResourcesItemNode(new WildflyResourcesChildren(lookup), NbBundle.getMessage(WildflyTargetNode.class, "LBL_Resources"), Util.RESOURCES_ICON)});
     }
-    
+
     @Override
     public Action[] getActions(boolean b) {
         return new Action[] {};

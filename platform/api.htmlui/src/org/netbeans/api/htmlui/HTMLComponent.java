@@ -25,16 +25,15 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.Locale;
 import javax.swing.JComponent;
-import javafx.scene.Node;
 import org.netbeans.html.context.spi.Contexts.Id;
 
 /** Generates factory method in class specified by {@link #className()}
  * that will return a component of requested {@link #type()} which can
  * later be embedded into Swing or JavaFX UI elements. When the factory
- * method is called, it returns immediatelly and starts loading of
+ * method is called, it returns immediately and starts loading of
  * the {@link #url() specified HTML page}. Once the page is ready
  * it calls back method annotated by this annotation to finish 
- * initialization. The method is supposed to make the page live, preferrably 
+ * initialization. The method is supposed to make the page live, preferably
  * by using {@link net.java.html.json.Model} generated class and calling 
  * <code>applyBindings()</code> on it.
  *
@@ -58,9 +57,9 @@ public @interface HTMLComponent {
      * two types: <em>Swing</em> and <em>JavaFX</em>. 
      * To request Swing component
      * return {@link JComponent}.<b>class</b>. To request JavaFX 
-     * component, return {@link Node}.<b>class</b>.
+     * component, return {@link javafx.scene.Node}.<b>class</b>.
      * 
-     * @return either {@link JComponent} or {@link Node} class
+     * @return either {@link JComponent} or {@link javafx.scene.Node} class
      */
     Class<?> type();
     

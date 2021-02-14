@@ -55,7 +55,7 @@ public class DDHelper {
     public static FileObject createWebXml(Profile j2eeProfile, FileObject dir) throws IOException {
         return createWebXml(j2eeProfile, true, dir);
     }
-    
+
     /**
      * Creates web.xml deployment descriptor.
      * @param j2eeProfile Java EE profile to specify which version of web.xml should be created
@@ -66,7 +66,11 @@ public class DDHelper {
      */
     public static FileObject createWebXml(Profile j2eeProfile, boolean webXmlRequired, FileObject dir) throws IOException {
         String template = null;
-        if ((Profile.JAVA_EE_7_FULL == j2eeProfile || Profile.JAVA_EE_7_WEB == j2eeProfile) && webXmlRequired) {
+        if ((Profile.JAKARTA_EE_8_FULL == j2eeProfile || Profile.JAKARTA_EE_8_WEB == j2eeProfile) && webXmlRequired) {
+            template = "web-4.0.xml"; //NOI18N
+        } else if ((Profile.JAVA_EE_8_FULL == j2eeProfile || Profile.JAVA_EE_8_WEB == j2eeProfile) && webXmlRequired) {
+            template = "web-4.0.xml"; //NOI18N
+        } else if ((Profile.JAVA_EE_7_FULL == j2eeProfile || Profile.JAVA_EE_7_WEB == j2eeProfile) && webXmlRequired) {
             template = "web-3.1.xml"; //NOI18N
         } else if ((Profile.JAVA_EE_6_FULL == j2eeProfile || Profile.JAVA_EE_6_WEB == j2eeProfile) && webXmlRequired) {
             template = "web-3.0.xml"; //NOI18N
@@ -98,7 +102,11 @@ public class DDHelper {
      */
     public static FileObject createWebFragmentXml(Profile j2eeProfile, FileObject dir) throws IOException {
         String template = null;
-        if (Profile.JAVA_EE_7_FULL == j2eeProfile || Profile.JAVA_EE_7_WEB == j2eeProfile) {
+        if (Profile.JAKARTA_EE_8_FULL == j2eeProfile || Profile.JAKARTA_EE_8_WEB == j2eeProfile) {
+            template = "web-fragment-4.0.xml"; //NOI18N
+        } else if (Profile.JAVA_EE_8_FULL == j2eeProfile || Profile.JAVA_EE_8_WEB == j2eeProfile) {
+            template = "web-fragment-4.0.xml"; //NOI18N
+        } else if (Profile.JAVA_EE_7_FULL == j2eeProfile || Profile.JAVA_EE_7_WEB == j2eeProfile) {
             template = "web-fragment-3.1.xml"; //NOI18N
         } else if (Profile.JAVA_EE_6_FULL == j2eeProfile || Profile.JAVA_EE_6_WEB == j2eeProfile) {
             template = "web-fragment-3.0.xml"; //NOI18N
@@ -114,7 +122,7 @@ public class DDHelper {
         else
             return action.getResult();
     }
-    
+
     /**
      * Creates beans.xml deployment descriptor.
      * @param j2eeProfile Java EE profile to specify which version of beans.xml should be created
@@ -143,6 +151,12 @@ public class DDHelper {
         }
         if (Profile.JAVA_EE_7_FULL == j2eeProfile || Profile.JAVA_EE_7_WEB == j2eeProfile) {
             template = "beans-1.1.xml"; //NOI18N
+        }
+        if (Profile.JAVA_EE_8_FULL == j2eeProfile || Profile.JAVA_EE_8_WEB == j2eeProfile) {
+            template = "beans-2.0.xml"; //NOI18N
+        }
+        if (Profile.JAKARTA_EE_8_FULL == j2eeProfile || Profile.JAKARTA_EE_8_WEB == j2eeProfile) {
+            template = "beans-2.0.xml"; //NOI18N
         }
 
         if (template == null)
@@ -180,7 +194,9 @@ public class DDHelper {
     public static FileObject createValidationXml(Profile j2eeProfile, FileObject dir, String name) throws IOException {
         String template = null;
         if (Profile.JAVA_EE_6_FULL == j2eeProfile || Profile.JAVA_EE_6_WEB == j2eeProfile ||
-                Profile.JAVA_EE_7_FULL == j2eeProfile || Profile.JAVA_EE_7_WEB == j2eeProfile) {
+                Profile.JAVA_EE_7_FULL == j2eeProfile || Profile.JAVA_EE_7_WEB == j2eeProfile ||
+                Profile.JAVA_EE_8_FULL == j2eeProfile || Profile.JAVA_EE_8_WEB == j2eeProfile ||
+                Profile.JAKARTA_EE_8_FULL == j2eeProfile || Profile.JAKARTA_EE_8_WEB == j2eeProfile) {
             template = "validation.xml"; //NOI18N
         }
 
@@ -219,7 +235,9 @@ public class DDHelper {
     public static FileObject createConstraintXml(Profile j2eeProfile, FileObject dir, String name) throws IOException {
         String template = null;
         if (Profile.JAVA_EE_6_FULL == j2eeProfile || Profile.JAVA_EE_6_WEB == j2eeProfile ||
-                Profile.JAVA_EE_7_FULL == j2eeProfile || Profile.JAVA_EE_7_WEB == j2eeProfile) {
+                Profile.JAVA_EE_7_FULL == j2eeProfile || Profile.JAVA_EE_7_WEB == j2eeProfile ||
+                Profile.JAVA_EE_8_FULL == j2eeProfile || Profile.JAVA_EE_8_WEB == j2eeProfile ||
+                Profile.JAKARTA_EE_8_FULL == j2eeProfile || Profile.JAKARTA_EE_8_WEB == j2eeProfile) {
             template = "constraint.xml"; //NOI18N
         }
 
@@ -262,7 +280,7 @@ public class DDHelper {
         if (template == null) {
             return null;
         }
-        
+
         MakeFileCopy action = new MakeFileCopy(RESOURCE_FOLDER + template, dir, "application.xml");
         FileUtil.runAtomicAction(action);
         if (action.getException() != null) {

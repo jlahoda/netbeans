@@ -71,18 +71,22 @@
                 <test-type>
                     <name>unit</name>
                     <test-dependency>
+                        <code-name-base>org.netbeans.api.scripting</code-name-base>
+                        <compile-dependency/>
+                    </test-dependency>
+                    <test-dependency>
                         <code-name-base>org.netbeans.libs.junit4</code-name-base>
+                        <compile-dependency/>
+                    </test-dependency>
+                    <test-dependency>
+                        <code-name-base>org.netbeans.modules.editor.indent</code-name-base>
+                        <recursive/>
                         <compile-dependency/>
                     </test-dependency>
                     <test-dependency>
                         <code-name-base>org.netbeans.modules.editor.mimelookup</code-name-base>
                         <compile-dependency/>
                         <test/>
-                    </test-dependency>
-                    <test-dependency>
-                        <code-name-base>org.netbeans.modules.editor.indent</code-name-base>
-                        <recursive/>
-                        <compile-dependency/>
                     </test-dependency>
                     <test-dependency>
                         <code-name-base>org.netbeans.modules.masterfs</code-name-base>
@@ -115,8 +119,8 @@
             </test-dependencies>
             <public-packages/>
             <class-path-extension>
-                <runtime-relative-path>ext/freemarker-2.3.19.jar</runtime-relative-path>
-                <binary-origin>external/freemarker-2.3.19.jar</binary-origin>
+                <runtime-relative-path>ext/freemarker-2.3.30.jar</runtime-relative-path>
+                <binary-origin>external/freemarker-2.3.30.jar</binary-origin>
             </class-path-extension>
         </data>
     </configuration>

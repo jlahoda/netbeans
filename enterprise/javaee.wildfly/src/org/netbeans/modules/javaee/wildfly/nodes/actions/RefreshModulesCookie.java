@@ -26,6 +26,6 @@ import org.openide.nodes.Node;
  * @author Michal Mocnak
  */
 public interface RefreshModulesCookie extends Node.Cookie {
-    
-    public void refresh();    
+
+    public void refresh();
 }

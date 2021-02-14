@@ -34,7 +34,7 @@ import javax.enterprise.deploy.spi.status.ProgressObject;
  * @author Petr Hejl
  */
 public class WildflyProgressObject implements ProgressObject {
-    
+
     private final List<ProgressListener> listeners = new CopyOnWriteArrayList<ProgressListener>();
 
     private final TargetModuleID[] moduleIds;

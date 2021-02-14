@@ -176,6 +176,7 @@ KEYWORD    exit()                                     Language Construct
 KEYWORD    extends                                    null
 KEYWORD    final                                      null
 KEYWORD    finally                                    null
+KEYWORD    fn                                         null
 KEYWORD    for                                        null
 KEYWORD    foreach                                    null
 KEYWORD    function                                   null
@@ -189,6 +190,7 @@ KEYWORD    instanceof                                 null
 KEYWORD    interface                                  null
 KEYWORD    isset()                                    Language Construct
 KEYWORD    list()                                     Language Construct
+KEYWORD    match                                      null
 KEYWORD    namespace                                  null
 KEYWORD    new                                        null
 KEYWORD    or                                         null

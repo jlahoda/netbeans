@@ -589,8 +589,3 @@ class DomainComboModel extends AbstractListModel implements ComboBoxModel{
     }
 
 }
-
-
-
-
-

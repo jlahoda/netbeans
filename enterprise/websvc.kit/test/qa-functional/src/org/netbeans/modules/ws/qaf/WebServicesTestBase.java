@@ -185,7 +185,9 @@ public abstract class WebServicesTestBase extends J2eeTestCase {
         J2EE14,
         JAVAEE5,
         JAVAEE6,
-        JAVAEE7;
+        JAVAEE7,
+        JAVAEE8,
+        JAKARTAEE8;
 
         @Override
         public String toString() {
@@ -202,6 +204,12 @@ public abstract class WebServicesTestBase extends J2eeTestCase {
                 case JAVAEE7:
                     //Java EE 7
                     return "Java EE 7";
+                case JAVAEE8:
+                      //Java EE 8
+                      return "Java EE 8";
+                case JAKARTAEE8:
+                      //Jakarta EE 8
+                     return "Jakarta EE 8";
             }
             throw new AssertionError("Unknown type: " + this); //NOI18N
         }
@@ -475,7 +483,11 @@ public abstract class WebServicesTestBase extends J2eeTestCase {
                 jcboVersion.selectItem(javaeeVersion.toString());
             } else {
                 // cannot use display name for Maven project
-                if (JavaEEVersion.JAVAEE7.equals(javaeeVersion)) {
+                if (JavaEEVersion.JAKARTAEE8.equals(javaeeVersion)) {
+                    jcboVersion.selectItem("1.8.0");
+                } else if( JavaEEVersion.JAVAEE8.equals(javaeeVersion)) {
+                    jcboVersion.selectItem("1.8");
+                } else if (JavaEEVersion.JAVAEE7.equals(javaeeVersion)) {
                     jcboVersion.selectItem("1.7");
                 } else if (JavaEEVersion.JAVAEE6.equals(javaeeVersion)) {
                     jcboVersion.selectItem("1.6");
@@ -790,7 +802,7 @@ public abstract class WebServicesTestBase extends J2eeTestCase {
     /**
      * Opens Services tab, go to specified Maven repository, call Update Index
      * and immediately cancel this action.
-     * @param repositoryName 
+     * @param repositoryName
      */
     private static void runAndCancelUpdateIndex(String repositoryName) {
         RuntimeTabOperator servicesOper = RuntimeTabOperator.invoke();
@@ -809,7 +821,7 @@ public abstract class WebServicesTestBase extends J2eeTestCase {
             JemmyProperties.setCurrentTimeout("ComponentOperator.WaitComponentTimeout", oldTimeout);
         }
     }
-    
+
     protected File getProjectsRootDir() throws IOException {
         File f = getWorkDir();
         LOGGER.log(Level.FINE, "Working directory is set to: {0}", f);

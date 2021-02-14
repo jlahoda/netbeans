@@ -40,21 +40,21 @@ public final class WildflyTabVisualPanel extends JPanel {
      * If you need to fire state changes or something similar, you can
      * use this handle to do so.
      */
-    
+
     transient private final WildFlyProperties targetData;
     transient private final WildflyDeploymentManager dm;
-    
-    
+
+
     /**
      * Creates new form WildflyTabVisualPanel
      */
     public WildflyTabVisualPanel(DeploymentManager dm) {
         this.dm = (WildflyDeploymentManager)dm;
-        targetData = new WildFlyProperties(this.dm);        
+        targetData = new WildFlyProperties(this.dm);
         initComponents();
         configFile.setText(targetData.getServerProfile());
-        
-        
+
+
         configFile.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void changedUpdate(DocumentEvent e) {
@@ -70,19 +70,19 @@ public final class WildflyTabVisualPanel extends JPanel {
             }
         });
     }
-    
+
     @Override
     public String getName() {
         return NbBundle.getMessage(WildflyTabVisualPanel.class,
                 "StepName_EnterDomainDirectory");                                // NOI18N
     }
-    
-    
-    
+
+
+
     String getParentDirectory() {
         return configFile.getText();
     }
-    
+
     // Event handling
     //
     private final Set/*<ChangeListener>*/ listeners = new HashSet/*<ChangeListener>*/(1);
@@ -106,33 +106,33 @@ public final class WildflyTabVisualPanel extends JPanel {
             ((ChangeListener)it.next()).stateChanged(ev);
         }
     }
-    
+
     void locationChanged() {
         fireChangeEvent();
     }
-    
-    
+
+
     private String browseDomainLocation(){
         String insLocation = null;
         JFileChooser chooser = new JFileChooser();
-        
+
         decorateChooser(chooser,configFile.getText(),
                 NbBundle.getMessage(WildflyTabVisualPanel.class,
                 "LBL_Choose_Domain"));                                          //NOI18N
         int returnValue = chooser.showDialog(this,
                 NbBundle.getMessage(WildflyTabVisualPanel.class,
                 "LBL_Choose_Button"));                                          //NOI18N
-        
+
         if(returnValue == JFileChooser.APPROVE_OPTION){
             insLocation = chooser.getSelectedFile().getAbsolutePath();
         }
         return insLocation;
     }
-    
+
     void decorateChooser(JFileChooser chooser,String fname,String title) {
         chooser.setDialogTitle(title);                                           //NOI18N
         chooser.setDialogType(JFileChooser.CUSTOM_DIALOG);
-        
+
         chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
         chooser.setFileFilter(new FileFilter() {
 
@@ -146,18 +146,18 @@ public final class WildflyTabVisualPanel extends JPanel {
                 return "";
             }
         });
-        chooser.setApproveButtonMnemonic(NbBundle.getMessage(WildflyTabVisualPanel.class, 
+        chooser.setApproveButtonMnemonic(NbBundle.getMessage(WildflyTabVisualPanel.class,
                 "Choose_Button_Mnemonic").charAt(0));                           //NOI18N
         chooser.setMultiSelectionEnabled(false);
         chooser.setAcceptAllFileFilterUsed(false);
-        chooser.setApproveButtonToolTipText(NbBundle.getMessage(WildflyTabVisualPanel.class, 
+        chooser.setApproveButtonToolTipText(NbBundle.getMessage(WildflyTabVisualPanel.class,
                 "LBL_Chooser_Name"));                                           //NOI18N
-        
+
         chooser.getAccessibleContext().
-                setAccessibleName(NbBundle.getMessage(WildflyTabVisualPanel.class, 
+                setAccessibleName(NbBundle.getMessage(WildflyTabVisualPanel.class,
                 "LBL_Chooser_Name"));                                           //NOI18N
         chooser.getAccessibleContext().
-                setAccessibleDescription(NbBundle.getMessage(WildflyTabVisualPanel.class, 
+                setAccessibleDescription(NbBundle.getMessage(WildflyTabVisualPanel.class,
                 "LBL_Chooser_Name"));                                           //NOI18N
         if (null != fname && fname.length() > 0) {
             File sel = new File(fname);
@@ -167,9 +167,9 @@ public final class WildflyTabVisualPanel extends JPanel {
                 chooser.setSelectedFile(sel);
         }
     }
-    
-    
-    
+
+
+
     /** This method is called from within the constructor to
      * initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is
@@ -241,15 +241,15 @@ public final class WildflyTabVisualPanel extends JPanel {
         gridBagConstraints.weighty = 1.0;
         add(spaceHack, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
-    
+
     private void openInstanceDirectorySelectorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openInstanceDirectorySelectorActionPerformed
         String val = browseDomainLocation();
-        dm.getInstanceProperties().setProperty(WildflyPluginProperties.PROPERTY_CONFIG_FILE, val);      
+        dm.getInstanceProperties().setProperty(WildflyPluginProperties.PROPERTY_CONFIG_FILE, val);
         if (null != val && val.length() >=1)
             configFile.setText(val);
     }//GEN-LAST:event_openInstanceDirectorySelectorActionPerformed
-    
-    
+
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTextField configFile;
     private javax.swing.JLabel description;
@@ -257,6 +257,5 @@ public final class WildflyTabVisualPanel extends JPanel {
     private javax.swing.JLabel parentDirectoryLabel;
     private javax.swing.JLabel spaceHack;
     // End of variables declaration//GEN-END:variables
-    
-}
 
+}

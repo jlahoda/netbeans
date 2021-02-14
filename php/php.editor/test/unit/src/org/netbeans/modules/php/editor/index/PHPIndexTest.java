@@ -575,8 +575,36 @@ public class PHPIndexTest extends PHPNavTestBase {
         checkIndexer(getTestPath());
     }
 
+    // PHP 7.4
+    public void testPHP74TypedPropertiesClass() throws Exception {
+        checkIndexer(getTestPath());
+    }
+
+    public void testPHP74TypedPropertiesTrait() throws Exception {
+        checkIndexer(getTestPath());
+    }
+
     // #241740
     public void testMixin() throws Exception {
+        checkIndexer(getTestPath());
+    }
+
+    // NETBEANS-4443 PHP 8.0
+    public void testPHP80UnionTypesFunctions() throws Exception {
+        // function, lambda function, arrow function
+        checkIndexer(getTestPath());
+    }
+
+    public void testPHP80UnionTypesTypes() throws Exception {
+        // class, abstract class, interface, trait
+        checkIndexer(getTestPath());
+    }
+
+    public void testPHP80MixedReturnType() throws Exception {
+        checkIndexer(getTestPath());
+    }
+
+    public void testPHP80ConstructorPropertyPromotion() throws Exception {
         checkIndexer(getTestPath());
     }
 

@@ -30,9 +30,9 @@ import org.netbeans.modules.javaee.wildfly.ide.ui.WildflyPluginProperties;
  * @author Libor Kotouc
  */
 public class WildFlyFindJSPServlet implements FindJSPServlet {
-    
+
     private final WildflyDeploymentManager dm;
-    
+
     public WildFlyFindJSPServlet(WildflyDeploymentManager manager) {
         dm = manager;
     }
@@ -53,14 +53,14 @@ public class WildFlyFindJSPServlet implements FindJSPServlet {
         if (moduleContextPath.length() == 0) {
             moduleContextPath = "/";
         }
-        
+
         return moduleContextPath.replace('/', '_');
     }
-    
+
     public String getServletResourcePath(String moduleContextPath, String jspResourcePath) {
 
         String path = null;
-        
+
         String extension = jspResourcePath.substring(jspResourcePath.lastIndexOf("."));
         if (".jsp".equals(extension)) { // NOI18N
             String pkgName = getServletPackageName(jspResourcePath);
@@ -68,7 +68,7 @@ public class WildFlyFindJSPServlet implements FindJSPServlet {
             String clzName = getServletClassName(jspResourcePath);
             path = pkgPath + '/' + clzName + ".java"; // NOI18N
         }
-        
+
         return path;
     }
 
@@ -99,12 +99,12 @@ public class WildFlyFindJSPServlet implements FindJSPServlet {
             }
         }
         return modClassName.toString();
-    }     
-    
+    }
+
     public String getServletEncoding(String moduleContextPath, String jspResourcePath) {
         return "UTF8"; // NOI18N
     }
-    
-    
-    
+
+
+
 }

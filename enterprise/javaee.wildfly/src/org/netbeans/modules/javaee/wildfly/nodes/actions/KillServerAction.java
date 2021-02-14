@@ -46,7 +46,7 @@ import org.openide.util.RequestProcessor;
 public class KillServerAction extends CookieAction {
 
     private static final RequestProcessor PROCESSOR = new RequestProcessor ("JBoss kill UI", 1); // NOI18N
-    
+
     private static final Logger LOGGER = Logger.getLogger(KillServerAction.class.getName());
 
     private final WildflyKiller killer = new WildflyKiller();
@@ -62,7 +62,7 @@ public class KillServerAction extends CookieAction {
         if ((nodes == null) || (nodes.length != 1)) {
             return;
         }
-        
+
         final WildflyManagerNode managerNode = nodes[0].getCookie(WildflyManagerNode.class);
         if (managerNode == null) {
             return;

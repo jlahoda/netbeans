@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.65.1
+#Version 1.72.0
 
 CLSS public abstract interface java.io.Serializable
 
@@ -259,6 +259,12 @@ meth public java.lang.String[] getInstallBefore()
 supr org.netbeans.core.startup.ManifestSection
 hfds installAfter,installBefore
 
+CLSS public final org.netbeans.core.startup.MavenRepoURLHandler
+cons public init()
+meth protected java.net.URLConnection openConnection(java.net.URL) throws java.io.IOException
+supr java.net.URLStreamHandler
+hfds CENTRAL_REPO_URI
+
 CLSS public final org.netbeans.core.startup.ModuleHistory
 cons public init(java.lang.String)
 meth public java.lang.String toString()
@@ -334,8 +340,8 @@ meth public void increment(int)
 meth public void print(java.lang.String)
 meth public void setRunning(boolean)
 supr java.lang.Object
-hfds ICON_1024,ICON_16,ICON_256,ICON_32,ICON_48,ICON_512,comp,frame,noBar,painter,splash,splashScreen
-hcls SplashComponent,SplashDialog,SplashPainter,SplashRunner
+hfds ICON_1024,ICON_16,ICON_256,ICON_32,ICON_48,ICON_512,USE_LAUNCHER_SPLASH,comp,frame,noBar,painter,splash,splashScreen
+hcls SplashComponent,SplashDialog,SplashPainter,SplashRunner,TextBox
 
 CLSS public org.netbeans.core.startup.StartLog
 cons public init()
@@ -732,6 +738,8 @@ meth public abstract void resultChanged(org.openide.util.LookupEvent)
 CLSS public org.openide.util.lookup.ProxyLookup
 cons protected init()
 cons public !varargs init(org.openide.util.Lookup[])
+cons public init(org.openide.util.lookup.ProxyLookup$Controller)
+innr public final static Controller
 meth protected !varargs final void setLookups(java.util.concurrent.Executor,org.openide.util.Lookup[])
 meth protected !varargs final void setLookups(org.openide.util.Lookup[])
 meth protected final org.openide.util.Lookup[] getLookups()

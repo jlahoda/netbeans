@@ -60,7 +60,7 @@ public class UndeployModuleCookieImpl implements UndeployModuleCookie {
     @Override
     public Task undeploy() {
         final WildflyDeploymentManager dm = (WildflyDeploymentManager) lookup.lookup(WildflyDeploymentManager.class);
-        
+
         final String nameWoExt;
         if(fileName.indexOf('.') > 0) {
             nameWoExt = fileName.substring(0, fileName.lastIndexOf('.'));
@@ -91,7 +91,7 @@ public class UndeployModuleCookieImpl implements UndeployModuleCookie {
                         case DATASOURCE:
                             dm.getClient().removeDatasource(fileName);
                             break;
-                        
+
                     }
                 } catch (IOException ex) {
                     Logger.getLogger(UndeployModuleCookieImpl.class.getName()).log(Level.INFO, null, ex);

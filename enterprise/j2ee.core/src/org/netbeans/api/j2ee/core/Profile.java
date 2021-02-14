@@ -57,6 +57,14 @@ public final class Profile {
 
     public static final Profile JAVA_EE_7_WEB  = new Profile(7, "1.7", "web", "JavaEE7Web.displayName");
 
+    public static final Profile JAVA_EE_8_FULL  = new Profile(8, "1.8", null, "JavaEE8Full.displayName");
+
+    public static final Profile JAVA_EE_8_WEB  = new Profile(9, "1.8", "web", "JavaEE8Web.displayName");
+
+    public static final Profile JAKARTA_EE_8_WEB  = new Profile(10, "8.0", "web", "JakartaEE8Web.displayName");
+
+    public static final Profile JAKARTA_EE_8_FULL  = new Profile(11, "8.0", "web", "JakartaEE8Full.displayName");
+
     private final int order;
 
     // cache
@@ -120,24 +128,40 @@ public final class Profile {
 
     @CheckForNull
     public static Profile fromPropertiesString(@NullAllowed String value) {
-        if (J2EE_13.toPropertiesString().equals(value)) {
+        String valueMinusQuotes = value;
+        if(value != null && value.contains("\"")){
+            valueMinusQuotes = value.replace("\"","");
+        }
+        if (J2EE_13.toPropertiesString().equals(valueMinusQuotes)) {
             return J2EE_13;
-        } else if (J2EE_14.toPropertiesString().equals(value)) {
+        } else if (J2EE_14.toPropertiesString().equals(valueMinusQuotes)) {
             return J2EE_14;
-        } else if (JAVA_EE_5.toPropertiesString().equals(value)) {
+        } else if (JAVA_EE_5.toPropertiesString().equals(valueMinusQuotes)) {
             return JAVA_EE_5;
-        } else if (JAVA_EE_6_FULL.toPropertiesString().equals(value)
-                || "EE_6_FULL".equals(value)) { // NOI18N
+        } else if (JAVA_EE_6_FULL.toPropertiesString().equals(valueMinusQuotes)
+                || "EE_6_FULL".equals(value)){ // NOI18N
             return JAVA_EE_6_FULL;
-        } else if (JAVA_EE_6_WEB.toPropertiesString().equals(value)
+        } else if (JAVA_EE_6_WEB.toPropertiesString().equals(valueMinusQuotes)
                 || "EE_6_WEB".equals(value)) {
             return JAVA_EE_6_WEB;
-        } else if (JAVA_EE_7_FULL.toPropertiesString().equals(value)
+        } else if (JAVA_EE_7_FULL.toPropertiesString().equals(valueMinusQuotes)
                 || "EE_7_FULL".equals(value)) { // NOI18N
             return JAVA_EE_7_FULL;
-        } else if (JAVA_EE_7_WEB.toPropertiesString().equals(value)
+        } else if (JAVA_EE_7_WEB.toPropertiesString().equals(valueMinusQuotes)
                 || "EE_7_WEB".equals(value)) {
             return JAVA_EE_7_WEB;
+        } else if (JAVA_EE_8_FULL.toPropertiesString().equals(valueMinusQuotes)
+                || "EE_8_FULL".equals(value)) { // NOI18N
+            return JAVA_EE_8_FULL;
+        } else if (JAVA_EE_8_WEB.toPropertiesString().equals(valueMinusQuotes)
+                || "EE_8_WEB".equals(value)) {
+            return JAVA_EE_8_WEB;
+        } else if (JAKARTA_EE_8_FULL.toPropertiesString().equals(valueMinusQuotes)
+                || "JAKARTA_EE_8_FULL".equals(value)) {
+            return JAKARTA_EE_8_FULL;
+        } else if (JAKARTA_EE_8_WEB.toPropertiesString().equals(valueMinusQuotes)
+                || "JAKARTA_EE_8_WEB".equals(value)) {
+            return JAKARTA_EE_8_WEB;
         } else {
             return null;
         }

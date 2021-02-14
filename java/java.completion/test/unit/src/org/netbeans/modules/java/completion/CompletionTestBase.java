@@ -45,6 +45,10 @@ import org.openide.cookies.EditorCookie;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.loaders.DataObject;
+import org.openide.util.lookup.ServiceProvider;
+import org.openide.xml.EntityCatalog;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 /**
  *
@@ -208,7 +212,11 @@ public class CompletionTestBase extends CompletionTestBaseBase {
         public CI createVariableItem(CompilationInfo info, VariableElement elem, TypeMirror type, int substitutionOffset, ReferencesCount referencesCount, boolean isInherited, boolean isDeprecated, boolean smartType, int assignToVarOffset) {
             String varName = elem.getSimpleName().toString();
             String typeName = type != null ? info.getTypeUtilities().getTypeName(type).toString() : null;
-            switch (elem.getKind()) {
+            ElementKind ek = elem.getKind();
+            if (TreeShims.BINDING_VARIABLE.equals(ek.name())) {
+                ek = ElementKind.LOCAL_VARIABLE;
+            }
+            switch (ek) {
                 case LOCAL_VARIABLE:
                 case RESOURCE_VARIABLE:
                 case PARAMETER:
@@ -709,5 +717,21 @@ public class CompletionTestBase extends CompletionTestBaseBase {
             }
             return text1.length() - text2.length();
         }
+    }
+
+    @ServiceProvider(service=EntityCatalog.class)
+    public static final class TestEntityCatalogImpl extends EntityCatalog {
+
+        @Override
+        public InputSource resolveEntity(String publicID, String systemID) throws SAXException, IOException {
+            switch (publicID) {
+                case "-//NetBeans//DTD Editor KeyBindings settings 1.1//EN":
+                    return new InputSource(TestEntityCatalogImpl.class.getResourceAsStream("/org/netbeans/modules/editor/settings/storage/keybindings/EditorKeyBindings-1_1.dtd"));
+                case "-//NetBeans//DTD Editor Preferences 1.0//EN":
+                    return new InputSource(TestEntityCatalogImpl.class.getResourceAsStream("/org/netbeans/modules/editor/settings/storage/preferences/EditorPreferences-1_0.dtd"));
+            }
+            return null;
+        }
+
     }
 }

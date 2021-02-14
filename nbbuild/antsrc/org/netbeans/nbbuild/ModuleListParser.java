@@ -257,7 +257,7 @@ final class ModuleListParser {
                 }
             }
             File jreDir = new File(System.getProperty("java.home"));
-            File jdkDir = jreDir.getParentFile();
+            File jdkDir = jreDir.getParentFile(); //XXX: does not hold for JDK 9+!!
             Properties modules2Packages = new Properties();
             Properties modules2Jars = new Properties();
             try (InputStream packagesIn = new FileInputStream(new File(root, "platform/o.n.bootstrap/src/org/netbeans/jdk/jdk8-modules-packages"));
@@ -282,7 +282,7 @@ final class ModuleListParser {
             attr.put(new Attributes.Name("OpenIDE-Module"), "legacy.java.base");
             attr.put(new Attributes.Name("OpenIDE-Module-Specification-Version"), "8");
             List<File> jars = new ArrayList<>();
-            findJars(jreDir, jars);
+            findJars(jreDir, jars); //XXX: won't work for JDK 9+!
             entries.put("legacy.java.base", new Entry("legacy.java.base", jars.get(0), jars.subList(1, jars.size()).toArray(new File[0]), null, null, null, new String[0], null, new String[0], Collections.<String, String[]>emptyMap(), null, attr));
             SOURCE_SCAN_CACHE.put(root, entries);
         }
@@ -810,6 +810,13 @@ final class ModuleListParser {
                 Entry e = scanStandaloneSource(properties, project);
                 entries.put(e.getCnb(), e);
             }
+            Attributes attr = new Attributes();
+            attr.put(new Attributes.Name("OpenIDE-Module"), "legacy.java.base");
+            attr.put(new Attributes.Name("OpenIDE-Module-Specification-Version"), "8");
+            List<File> jars = new ArrayList<>();
+            File jreDir = new File(System.getProperty("java.home"));
+            findJars(jreDir, jars); //XXX: won't work for JDK 9+!
+            entries.put("legacy.java.base", new Entry("legacy.java.base", jars.get(0), jars.subList(1, jars.size()).toArray(new File[0]), null, null, null, new String[0], null, new String[0], Collections.<String, String[]>emptyMap(), null, attr));
         } else {
             // netbeans.org module.
             String buildS = (String) properties.get("netbeans.dest.dir");

@@ -34,7 +34,7 @@ public class WildflyMessageDestination implements MessageDestination {
     private final String name;
     private final Set<String> jndiNames = new HashSet<String>(1);
     private final Type type;
-    
+
     public WildflyMessageDestination(String name, Type type) {
         this.name = name;
         this.type = type;
@@ -49,13 +49,13 @@ public class WildflyMessageDestination implements MessageDestination {
     public Type getType() {
         return type;
     }
-    
+
     public void addEntry(String jndiName) {
         jndiNames.add(jndiName);
     }
-    
+
     public Set<String> getJndiNames() {
         return jndiNames;
     }
-    
+
 }

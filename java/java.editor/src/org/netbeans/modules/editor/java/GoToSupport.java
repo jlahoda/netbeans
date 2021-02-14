@@ -24,6 +24,7 @@ import com.sun.source.tree.ExportsTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.IdentifierTree;
 import com.sun.source.tree.ImportTree;
+import com.sun.source.tree.InstanceOfTree;
 import com.sun.source.tree.MemberSelectTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
@@ -108,6 +109,9 @@ import org.openide.filesystems.FileObject;
 import org.openide.loaders.DataObject;
 import org.openide.util.Exceptions;
 import org.openide.util.NbBundle;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Objects;
 
 /**
  *
@@ -180,12 +184,8 @@ public class GoToSupport {
                 return ;
             }
             
-            final int[] offsetToOpen = new int[] {-1};
-            final ElementHandle[] elementToOpen = new ElementHandle[1];
-            final String[] displayNameForError = new String[1];
-            final boolean[] tryToOpen = new boolean[1];
-            final ClasspathInfo[] cpInfo = new ClasspathInfo[1];
-            
+            GoToTarget[] target = new GoToTarget[1];
+
             ParserManager.parse(Collections.singleton (Source.create(doc)), new UserTask() {
                 @Override
                 public void run(ResultIterator resultIterator) throws Exception {
@@ -197,12 +197,11 @@ public class GoToSupport {
                     if (controller == null || controller.toPhase(Phase.RESOLVED).compareTo(Phase.RESOLVED) < 0) {
                         return;
                     }
-                    cpInfo[0] = controller.getClasspathInfo();
 
                     Context resolved = resolveContext(controller, doc, offset, goToSource, false);
 
                     if (resolved == null) {
-                        CALLER.beep(goToSource, javadoc);
+                        target[0] = new GoToTarget(-1, -1, null, null, null, null, null, false);
                         return;
                     }
                     
@@ -211,53 +210,34 @@ public class GoToSupport {
                         if (url != null) {
                             HtmlBrowser.URLDisplayer.getDefault().showURL(url);
                         } else {
-                            CALLER.beep(goToSource, javadoc);
+                            target[0] = new GoToTarget(-1, -1, null, null, null, null, null, false);
                         }
                     } else {
-                        TreePath elpath = getPath(controller, resolved.resolved);
-                        
-                        if (elpath != null) {
-                            Tree tree = elpath.getLeaf();
-                            long startPos = controller.getTrees().getSourcePositions().getStartPosition(controller.getCompilationUnit(), tree);
-                            
-                            if (startPos != (-1)) {
-                                //check if the caret is inside the declaration itself, as jump in this case is not very usefull:
-                                if (isCaretInsideDeclarationName(controller, tree, elpath, offset)) {
-                                    CALLER.beep(goToSource, javadoc);
-                                } else {
-                                    //#71272: it is necessary to translate the offset:
-                                    offsetToOpen[0] = controller.getSnapshot().getOriginalOffset((int) startPos);
-                                    displayNameForError[0] = controller.getElementUtilities().getElementName(resolved.resolved, false).toString();
-                                    tryToOpen[0] = true;
-                                }
-                            } else {
-                                CALLER.beep(goToSource, javadoc);
-                            }
-                        } else {
-                            elementToOpen[0] = ElementHandle.create(resolved.resolved);
-                            displayNameForError[0] = controller.getElementUtilities().getElementName(resolved.resolved, false).toString();
-                            tryToOpen[0] = true;
-                        }
+                        target[0] = computeGoToTarget(controller, resolved, offset);
                     }
                 }
             });
             
-            if (tryToOpen[0]) {
+            if (target[0] != null) {
                 boolean openSucceeded = false;
 
                 if (cancel.get()) {
                     return ;
                 }
 
-                if (offsetToOpen[0] >= 0) {
-                    openSucceeded = CALLER.open(fo, offsetToOpen[0]);
+                if (!target[0].success)  {
+                    CALLER.beep(goToSource, javadoc);
                 } else {
-                    if (elementToOpen[0] != null) {
-                        openSucceeded = CALLER.open(cpInfo[0], elementToOpen[0]);
+                    if (target[0].offsetToOpen >= 0) {
+                        openSucceeded = CALLER.open(fo, target[0].offsetToOpen);
+                    } else {
+                        if (target[0].elementToOpen != null) {
+                            openSucceeded = CALLER.open(target[0].cpInfo, target[0].elementToOpen);
+                        }
                     }
-                }
-                if (!openSucceeded) {
-                    CALLER.warnCannotOpen(displayNameForError[0]);
+                    if (!openSucceeded) {
+                        CALLER.warnCannotOpen(target[0].displayNameForError);
+                    }
                 }
             }
         } catch (ParseException ex) {
@@ -265,6 +245,87 @@ public class GoToSupport {
         }
     }
     
+    public static GoToTarget computeGoToTarget(CompilationController controller, Context resolved, int offset) {
+        TreePath elpath = getPath(controller, resolved.resolved);
+
+        if (elpath != null) {
+            Tree tree = elpath.getLeaf();
+            long startPos = controller.getTrees().getSourcePositions().getStartPosition(controller.getCompilationUnit(), tree);
+
+            if (startPos != (-1)) {
+                //check if the caret is inside the declaration itself, as jump in this case is not very usefull:
+                if (isCaretInsideDeclarationName(controller, tree, elpath, offset)) {
+                    return new GoToTarget(-1, -1, null, null, null, null, null, false);
+                } else {
+                    long endPos = controller.getTrees().getSourcePositions().getEndPosition(controller.getCompilationUnit(), tree);
+                    //#71272: it is necessary to translate the offset:
+                    return new GoToTarget(controller.getSnapshot().getOriginalOffset((int) startPos),
+                                          controller.getSnapshot().getOriginalOffset((int) endPos),
+                                          getNameSpan(tree, controller.getTreeUtilities()),
+                                          null,
+                                          null,
+                                          null,
+                                          controller.getElementUtilities().getElementName(resolved.resolved, false).toString(),
+                                          true);
+                }
+            } else {
+                return new GoToTarget(-1, -1, null, null, null, null, null, false);
+            }
+        } else {
+            TypeElement te = resolved.resolved != null ? controller.getElementUtilities().outermostTypeElement(resolved.resolved) : null;
+            return new GoToTarget(-1,
+                                  -1,
+                                  null,
+                                  controller.getClasspathInfo(),
+                                  ElementHandle.create(resolved.resolved),
+                                  te != null ? te.getQualifiedName().toString().replace('.', '/') + ".class" : null,
+                                  controller.getElementUtilities().getElementName(resolved.resolved, false).toString(),
+                                  true);
+        }
+    }
+
+    public static int[] getNameSpan(Tree tree, TreeUtilities tu) {
+        int[] span = null;
+        switch(tree.getKind()) {
+            case CLASS:
+            case INTERFACE:
+            case ENUM:
+            case ANNOTATION_TYPE:
+                span = tu.findNameSpan((ClassTree)tree);
+                break;
+            case METHOD:
+                span = tu.findNameSpan((MethodTree)tree);
+                break;
+            case VARIABLE:
+                span = tu.findNameSpan((VariableTree)tree);
+                break;
+        }
+        return span;
+    }
+
+    public static final class GoToTarget {
+        public final int offsetToOpen;
+        public final int endPos;
+        public final int[] nameSpan;
+        public final ClasspathInfo cpInfo;
+        public final ElementHandle elementToOpen;
+        public final String resourceName;
+        public final String displayNameForError;
+        public final boolean success;
+
+        public GoToTarget(int offsetToOpen, int endPos, int[] nameSpan, ClasspathInfo cpInfo, ElementHandle elementToOpen, String resourceName, String displayNameForError, boolean success) {
+            this.offsetToOpen = offsetToOpen;
+            this.endPos = endPos;
+            this.nameSpan = nameSpan;
+            this.cpInfo = cpInfo;
+            this.elementToOpen = elementToOpen;
+            this.resourceName = resourceName;
+            this.displayNameForError = displayNameForError;
+            this.success = success;
+        }
+
+    }
+
     public static void goTo(final Document doc, final int offset, final boolean goToSource) {
         performGoTo(doc, offset, goToSource, false);
     }
@@ -323,6 +384,7 @@ public class GoToSupport {
                     el = controller.getTrees().getElement(path);
 
                     if (parentLeaf.getKind() == Kind.METHOD_INVOCATION && isError(el)) {
+                        //TODO: accessor handling?
                         List<ExecutableElement> ee = Utilities.fuzzyResolveMethodInvocation(controller, path.getParentPath(), new ArrayList<TypeMirror>(), new int[1]);
 
                         if (!ee.isEmpty()) {
@@ -354,6 +416,35 @@ public class GoToSupport {
                         Element e = controller.getTrees().getElement(new TreePath(path, ((VariableTree)path.getLeaf()).getInitializer()));
                         if (!controller.getElementUtilities().isSynthetic(e)) {
                             el = e;
+                        }
+                    }
+                    if (el != null && el.getKind() == ElementKind.METHOD) {
+                        for (Element peer : el.getEnclosingElement().getEnclosedElements()) {
+                            if (peer.getKind().name().contains("RECORD_COMPONENT")) {
+                                try {
+                                    Class<?> recordComponent = Class.forName("javax.lang.model.element.RecordComponentElement", true, VariableTree.class.getClassLoader());
+                                    Method getAccessor = recordComponent.getDeclaredMethod("getAccessor");
+                                    Method getRecordComponents = TypeElement.class.getDeclaredMethod("getRecordComponents");
+                                    for (Element component : (Iterable<Element>) getRecordComponents.invoke(peer.getEnclosingElement())) {
+                                        if (Objects.equals(el, getAccessor.invoke(component))) {
+                                            el = component;
+                                            break;
+                                        }
+                                    }
+                                } catch (ClassNotFoundException ex) {
+                                    Exceptions.printStackTrace(ex);
+                                } catch (IllegalAccessException ex) {
+                                    Exceptions.printStackTrace(ex);
+                                } catch (IllegalArgumentException ex) {
+                                    Exceptions.printStackTrace(ex);
+                                } catch (InvocationTargetException ex) {
+                                    Exceptions.printStackTrace(ex);
+                                } catch (NoSuchMethodException ex) {
+                                    Exceptions.printStackTrace(ex);
+                                } catch (SecurityException ex) {
+                                    Exceptions.printStackTrace(ex);
+                                }
+                            }
                         }
                     }
                 }
@@ -644,6 +735,11 @@ public class GoToSupport {
     private static boolean isCaretInsideDeclarationName(CompilationInfo info, Tree t, TreePath path, int caret) {
         try {
             switch (t.getKind()) {
+                case INSTANCE_OF:
+                    Tree pattern = TreeShims.getPattern((InstanceOfTree) t);
+                    if (pattern == null || !"BINDING_PATTERN".equals(pattern.getKind().name())) {
+                        return false;
+                    }
                 case ANNOTATION_TYPE:
                 case CLASS:
                 case ENUM:
@@ -713,10 +809,19 @@ public class GoToSupport {
                 if (found != null) {
                     return null;
                 }
+                if (tree != null && "BINDING_PATTERN".equals(tree.getKind().name())) {
+                    if (process(new TreePath(getCurrentPath(), tree))) {
+                        return null;
+                    }
+                }
                 return super.scan(tree, p);
             }
             private boolean process() {
-                Element resolved = info.getTrees().getElement(getCurrentPath());
+                return process(getCurrentPath());
+            }
+            private boolean process(TreePath path) {
+
+                Element resolved = TreeShims.toRecordComponent(info.getTrees().getElement(path));
                 if (toFind.equals(resolved)) {
                     found = getCurrentPath();
                     return true;
@@ -885,7 +990,8 @@ public class GoToSupport {
                 Element enclosing = e.getEnclosingElement();
                 
                 if (e.getKind() != ElementKind.PARAMETER && e.getKind() != ElementKind.LOCAL_VARIABLE
-                        && e.getKind() != ElementKind.RESOURCE_VARIABLE && e.getKind() != ElementKind.EXCEPTION_PARAMETER) {
+                        && e.getKind() != ElementKind.RESOURCE_VARIABLE && e.getKind() != ElementKind.EXCEPTION_PARAMETER
+                        && !TreeShims.BINDING_VARIABLE.equals(e.getKind().name())) {
                     result.append(" in ");
 
                     //short typename:
@@ -945,6 +1051,14 @@ public class GoToSupport {
         @Override
         public Void visitTypeParameter(TypeParameterElement e, Boolean highlightName) {
             return null;
+        }
+        
+        @Override
+        public Void visitUnknown(Element e, Boolean p) {
+            if (TreeShims.isRecordComponent(e)) {
+                return visitVariable((VariableElement) e, p);
+            }
+            return super.visitUnknown(e, p);
         }
         
         private void modifier(Set<Modifier> modifiers) {

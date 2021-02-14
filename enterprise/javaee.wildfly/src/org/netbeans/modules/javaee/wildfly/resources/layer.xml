@@ -59,7 +59,7 @@
                 </file>
                 <folder name="DeploymentFileNames">
                     <folder name="WAR">
-                       <file name="WEB-INF\jboss-web.xml"/>                         
+                       <file name="WEB-INF\jboss-web.xml"/>
                     </folder>
                     <folder name="EJB">
 			<file name="META-INF\jboss.xml"/>
@@ -71,7 +71,7 @@
 			<file name="META-INF\jboss-app.xml"/>
                     </folder>
                 </folder>
-                
+
             </folder>
         </folder>
     </folder>

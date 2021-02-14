@@ -27,8 +27,8 @@ import org.openide.util.RequestProcessor.Task;
  * @author Michal Mocnak
  */
 public interface UndeployModuleCookie extends Node.Cookie {
-    
+
     public Task undeploy();
-    
+
     public boolean isRunning();
 }

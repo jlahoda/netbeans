@@ -48,7 +48,7 @@ public class Authentication {
         this.password = Arrays.copyOf(password, password.length);
         this.callBackHandler = createCallBackHandler();
     }
-    
+
     private CallbackHandler createCallBackHandler(){
         return new CallbackHandler() {
 

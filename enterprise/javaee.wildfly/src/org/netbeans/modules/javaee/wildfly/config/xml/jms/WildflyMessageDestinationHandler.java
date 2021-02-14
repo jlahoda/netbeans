@@ -39,7 +39,7 @@ public class WildflyMessageDestinationHandler extends DefaultHandler {
     private boolean isDestination;
 
     private final List<String> jndiNames = new ArrayList<String>();
-    
+
     private WildflyMessageDestination currentDestination;
 
     public List<WildflyMessageDestination> getMessageDestinations() {

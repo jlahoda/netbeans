@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.64.1
+#Version 1.71
 
 CLSS public abstract java.awt.Component
 cons protected init()
@@ -159,8 +159,6 @@ meth public java.awt.im.InputMethodRequests getInputMethodRequests()
 meth public java.awt.image.ColorModel getColorModel()
 meth public java.awt.image.VolatileImage createVolatileImage(int,int)
 meth public java.awt.image.VolatileImage createVolatileImage(int,int,java.awt.ImageCapabilities) throws java.awt.AWTException
-meth public java.awt.peer.ComponentPeer getPeer()
- anno 0 java.lang.Deprecated()
 meth public java.beans.PropertyChangeListener[] getPropertyChangeListeners()
 meth public java.beans.PropertyChangeListener[] getPropertyChangeListeners(java.lang.String)
 meth public java.lang.String getName()
@@ -383,6 +381,10 @@ fld public final static int PROPERTIES = 4
 fld public final static int SOMEBITS = 8
 fld public final static int WIDTH = 1
 meth public abstract boolean imageUpdate(java.awt.Image,int,int,int,int,int)
+
+CLSS public abstract interface java.beans.PropertyChangeListener
+intf java.util.EventListener
+meth public abstract void propertyChange(java.beans.PropertyChangeEvent)
 
 CLSS public abstract interface java.io.Serializable
 
@@ -670,12 +672,6 @@ CLSS public abstract interface javax.swing.event.ChangeListener
 intf java.util.EventListener
 meth public abstract void stateChanged(javax.swing.event.ChangeEvent)
 
-CLSS public abstract interface javax.swing.event.PopupMenuListener
-intf java.util.EventListener
-meth public abstract void popupMenuCanceled(javax.swing.event.PopupMenuEvent)
-meth public abstract void popupMenuWillBecomeInvisible(javax.swing.event.PopupMenuEvent)
-meth public abstract void popupMenuWillBecomeVisible(javax.swing.event.PopupMenuEvent)
-
 CLSS public abstract javax.swing.filechooser.FileFilter
 cons public init()
 meth public abstract boolean accept(java.io.File)
@@ -756,17 +752,15 @@ hfds cancelButton,dirs,f,list,okButton,pkgLevel,pkgs,textArea
 
 CLSS public org.netbeans.modules.openfile.RecentFileAction
 cons public init()
+intf java.beans.PropertyChangeListener
 intf javax.swing.event.ChangeListener
-intf javax.swing.event.PopupMenuListener
 intf org.openide.util.actions.Presenter$Menu
 meth public javax.swing.JMenuItem getMenuPresenter()
 meth public void actionPerformed(java.awt.event.ActionEvent)
-meth public void popupMenuCanceled(javax.swing.event.PopupMenuEvent)
-meth public void popupMenuWillBecomeInvisible(javax.swing.event.PopupMenuEvent)
-meth public void popupMenuWillBecomeVisible(javax.swing.event.PopupMenuEvent)
+meth public void propertyChange(java.beans.PropertyChangeEvent)
 meth public void stateChanged(javax.swing.event.ChangeEvent)
 supr javax.swing.AbstractAction
-hfds OFMSG_FILE_NOT_EXISTS,OFMSG_NO_RECENT_FILE,OFMSG_PATH_IS_NOT_DEFINED,PATH_PROP,RP,menu
+hfds OFMSG_FILE_NOT_EXISTS,OFMSG_NO_RECENT_FILE,OFMSG_PATH_IS_NOT_DEFINED,PATH_PROP,RP,menu,recreate
 hcls UpdatingMenu
 
 CLSS public final org.netbeans.modules.openfile.RecentFiles
@@ -774,7 +768,7 @@ innr public final static NonPersistentDocumentsAdder
 meth public static boolean hasRecentFiles()
 meth public static void init()
 supr java.lang.Object
-hfds HISTORY_LOCK,LOG,MAX_HISTORY_ITEMS,PREFS_NODE,PROP_ICON_PREFIX,PROP_URL_PREFIX,RECENT_FILE_KEY,RP,history,historyProbablyValid,prefs,windowRegistryListener
+hfds HISTORY_LOCK,LOG,MAX_HISTORY_ITEMS,PCH_SUPPORT,PREFS_NODE,PROPERTY_RECENT_FILES,PROP_ICON_PREFIX,PROP_URL_PREFIX,RECENT_FILE_KEY,RP,history,historyProbablyValid,prefs,windowRegistryListener
 hcls HistoryItem,WindowRegistryL
 
 CLSS public final static org.netbeans.modules.openfile.RecentFiles$NonPersistentDocumentsAdder

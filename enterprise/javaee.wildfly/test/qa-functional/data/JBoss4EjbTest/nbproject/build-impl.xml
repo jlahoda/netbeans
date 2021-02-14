@@ -17,9 +17,9 @@ is divided into following sections:
 -->
 <project name="JBoss4EjbTest-impl" default="build" basedir=".." xmlns:ejbjarproject3="http://www.netbeans.org/ns/j2ee-ejbjarproject/3" xmlns:ejbjarproject2="http://www.netbeans.org/ns/j2ee-ejbjarproject/2" xmlns:ejbjarproject1="http://www.netbeans.org/ns/j2ee-ejbjarproject/1">
     <target name="default" depends="dist,javadoc" description="Build whole project."/>
-    <!-- 
+    <!--
     ======================
-    INITIALIZATION SECTION 
+    INITIALIZATION SECTION
     ======================
     -->
     <target name="-pre-init">

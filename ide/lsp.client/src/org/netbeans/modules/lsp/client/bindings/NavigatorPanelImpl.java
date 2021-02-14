@@ -19,19 +19,31 @@
 package org.netbeans.modules.lsp.client.bindings;
 
 import java.awt.BorderLayout;
+import java.awt.event.ActionEvent;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.AbstractAction;
+import javax.swing.Action;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
+import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.DocumentSymbolParams;
+import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.Position;
+import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.SymbolInformation;
+import org.eclipse.lsp4j.SymbolKind;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.netbeans.modules.lsp.client.LSPBindings;
 import org.netbeans.modules.lsp.client.LSPBindings.BackgroundTask;
+import org.netbeans.modules.lsp.client.Utils;
 import org.netbeans.spi.navigator.NavigatorPanel;
 import org.openide.explorer.ExplorerManager;
 import org.openide.explorer.view.BeanTreeView;
@@ -51,12 +63,13 @@ import org.openide.util.lookup.ServiceProvider;
  *
  * @author lahvac
  */
-public class NavigatorPanelImpl extends Children.Keys<SymbolInformation> implements NavigatorPanel, BackgroundTask, LookupListener {
+public class NavigatorPanelImpl extends Children.Keys<Either<SymbolInformation, DocumentSymbol>> implements NavigatorPanel, BackgroundTask, LookupListener {
 
+    private static final Logger LOG = Logger.getLogger(NavigatorPanelImpl.class.getName());
     private static final NavigatorPanelImpl INSTANCE = new NavigatorPanelImpl();
 
     private final ExplorerManager manager;
-    private JComponent view;
+    private View view;
     private Lookup.Result<FileObject> result;
     private FileObject file;
 
@@ -79,21 +92,6 @@ public class NavigatorPanelImpl extends Children.Keys<SymbolInformation> impleme
     @Override
     public JComponent getComponent() {
         if (view == null) {
-            class View extends JPanel implements ExplorerManager.Provider {
-
-                public View() {
-                    setLayout(new BorderLayout());
-                    BeanTreeView btv = new BeanTreeView();
-                    add(btv, BorderLayout.CENTER);
-
-                    btv.setRootVisible(false);
-                }
-
-                @Override
-                public ExplorerManager getExplorerManager() {
-                    return manager;
-                }
-            }
             view = new View();
         }
         return view;
@@ -135,28 +133,125 @@ public class NavigatorPanelImpl extends Children.Keys<SymbolInformation> impleme
     public void run(LSPBindings bindings, FileObject file) {
         if (file.equals(this.file)) {
             try {
-                List<? extends SymbolInformation> symbols = bindings.getTextDocumentService().documentSymbol(new DocumentSymbolParams(new TextDocumentIdentifier(file.toURI().toString()))).get();
+                String uri = Utils.toURI(file);
+                List<Either<SymbolInformation, DocumentSymbol>> symbols = bindings.getTextDocumentService().documentSymbol(new DocumentSymbolParams(new TextDocumentIdentifier(uri))).get();
 
                 setKeys(symbols);
-            } catch (InterruptedException | ExecutionException ex) {
-                Exceptions.printStackTrace(ex);
+                view.expandAll();
+            } catch (ExecutionException ex) {
+                LOG.log(Level.FINE, null, ex);
+                setKeys(Collections.emptyList());
+            } catch (InterruptedException ex) {
+                //try again:
+                LSPBindings.addBackgroundTask(file, this);
             }
         } else {
-            System.err.println("!!!");
+            //ignore, should be called with the other file eventually.
         }
     }
 
     @Override
-    protected Node[] createNodes(SymbolInformation sym) {
-        AbstractNode n = new AbstractNode(LEAF);
-        n.setDisplayName(sym.getName());
-        n.setIconBaseWithExtension(Icons.getSymbolIconBase(sym.getKind()));
-        return new Node[] {n};
+    protected Node[] createNodes(Either<SymbolInformation, DocumentSymbol> sym) {
+        return new Node[] {new NodeImpl(Utils.toURI(file), sym)};
     }
 
     @Override
     public void resultChanged(LookupEvent arg0) {
         updateFile();
+    }
+
+    private static final class NodeImpl extends AbstractNode {
+
+        private static Children createChildren(String currentFileUri, Either<SymbolInformation, DocumentSymbol> sym) {
+            if (sym.isLeft()) {
+                return LEAF;
+            }
+            return createChildren(currentFileUri, sym.getRight());
+        }
+
+        private static Children createChildren(String currentFileUri, DocumentSymbol sym) {
+            if (sym.getChildren() == null || sym.getChildren().isEmpty()) {
+                return LEAF;
+            }
+            return new Keys<DocumentSymbol>() {
+                @Override
+                protected void addNotify() {
+                    setKeys(sym.getChildren());
+                }
+
+                @Override
+                protected Node[] createNodes(DocumentSymbol sym) {
+                    return new Node[] {
+                        new NodeImpl(currentFileUri, sym)
+                    };
+                }
+
+                @Override
+                protected void removeNotify() {
+                    setKeys(Collections.emptyList());
+                }
+
+            };
+        }
+
+        private static Action createOpenAction(String uri, Range range) {
+            return new AbstractAction() {
+                @Override
+                public void actionPerformed(ActionEvent ae) {
+                    Utils.open(uri, range);
+                }
+            };
+        }
+
+        private final Action open;
+
+        public NodeImpl(String currentFileUri, Either<SymbolInformation, DocumentSymbol> symbol) {
+            super(createChildren(currentFileUri, symbol));
+            if (symbol.isLeft()) {
+                setDisplayName(symbol.getLeft().getName());
+                setIconBaseWithExtension(Icons.getSymbolIconBase(symbol.getLeft().getKind()));
+                this.open = createOpenAction(symbol.getLeft().getLocation().getUri(), symbol.getLeft().getLocation().getRange());
+            } else {
+                setDisplayName(symbol.getRight().getName());
+                setIconBaseWithExtension(Icons.getSymbolIconBase(symbol.getRight().getKind()));
+                this.open = createOpenAction(currentFileUri, symbol.getRight().getRange());
+            }
+        }
+
+        public NodeImpl(String currentFileUri, DocumentSymbol symbol) {
+            super(createChildren(currentFileUri, symbol));
+            setDisplayName(symbol.getName());
+            setIconBaseWithExtension(Icons.getSymbolIconBase(symbol.getKind()));
+            this.open = createOpenAction(currentFileUri, symbol.getRange());
+        }
+
+        @Override
+        public Action getPreferredAction() {
+            return open;
+        }
+
+    }
+
+    private class View extends JPanel implements ExplorerManager.Provider {
+
+        private final BeanTreeView internalView;
+
+        public View() {
+            setLayout(new BorderLayout());
+            this.internalView = new BeanTreeView();
+            add(internalView, BorderLayout.CENTER);
+
+            internalView.setRootVisible(false);
+        }
+
+        @Override
+        public ExplorerManager getExplorerManager() {
+            return manager;
+        }
+
+        public void expandAll() {
+            internalView.expandAll();
+        }
     }
 
     @ServiceProvider(service=DynamicRegistration.class)

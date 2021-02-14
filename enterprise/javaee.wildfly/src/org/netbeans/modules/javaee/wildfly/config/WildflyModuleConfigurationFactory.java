@@ -30,15 +30,15 @@ import org.netbeans.modules.javaee.wildfly.ide.ui.WildflyPluginUtils.Version;
 
 /**
  * JBoss implementation of the ModuleConfigurationFactory.
- * 
+ *
  * @author sherold
  */
 public class WildflyModuleConfigurationFactory implements ModuleConfigurationFactory2 {
-    
+
     /** Creates a new instance of JBModuleConfigurationFactory */
     public WildflyModuleConfigurationFactory() {
     }
-    
+
     @Override
     public ModuleConfiguration create(J2eeModule j2eeModule) throws ConfigurationException {
         if (J2eeModule.Type.WAR.equals(j2eeModule.getType())) {

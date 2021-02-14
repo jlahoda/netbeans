@@ -7,5 +7,5 @@ package ejb;
  */
 public interface SessionTest2RemoteBusiness {
     String greetings(String who) throws java.rmi.RemoteException;
-    
+
 }

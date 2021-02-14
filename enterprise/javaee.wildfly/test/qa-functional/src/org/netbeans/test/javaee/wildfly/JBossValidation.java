@@ -37,23 +37,23 @@ import org.netbeans.jemmy.operators.*;
  * @author jpospisil
  */
 public class JBossValidation extends JellyTestCase {
-    
+
     public static final String PROJECT_NAME = "TestDeployDebugWebApp";
     public static final String EJB_PROJECT_NAME = "ejb";
     public static final String EJB_PROJECT_PATH = System.getProperty("xtest.tmpdir") + File.separator + EJB_PROJECT_NAME;
     public static final String WEB_PROJECT_PATH = System.getProperty("xtest.tmpdir") + File.separator + PROJECT_NAME;
-    
-    
-    
+
+
+
     int modifiers;
-    
+
     public static String openSourceAction = Bundle.getStringTrimmed("org.openide.actions.Bundle", "Open");
-    
+
     /** Need to be defined because of JUnit */
     public JBossValidation(String name) {
         super(name);
     }
-    
+
     public static NbTestSuite suite() {
         NbTestSuite suite = new NbTestSuite();
         suite.addTest(new JBossValidation("addDefaultJBoss"));
@@ -64,7 +64,7 @@ public class JBossValidation extends JellyTestCase {
         suite.addTest(new JBossValidation("stopJBoss"));
         return suite;
     }
-  
+
     public void setUp() {
         System.out.println("########  "+getName()+"  #######");
         if (System.getProperty("os.name").startsWith("Mac OS X")) {
@@ -73,8 +73,8 @@ public class JBossValidation extends JellyTestCase {
             modifiers = KeyEvent.CTRL_DOWN_MASK;
         }
     }
-    
-   public void addJBoss(String domain){  
+
+   public void addJBoss(String domain){
        String path = System.getProperty("jboss.server.path");
        if (path == null) {
             throw new RuntimeException("Cannot setup jboss, property jboss.server.path is not set.");
@@ -91,48 +91,48 @@ public class JBossValidation extends JellyTestCase {
         new JButtonOperator(dialog,Bundle.getStringTrimmed("org.openide.Bundle", "CTL_FINISH")).push();
         new ProjectsTabOperator();
     }
-    
-    
+
+
     // Adds JBoss server instance in default domain - working
-    public void addDefaultJBoss(){  
+    public void addDefaultJBoss(){
         addJBoss("default");
     }
-    
-   
+
+
     // Adds JBoss server instance in minimal domain - working
     public void addMinimalJBoss(){
        addJBoss("minimal");
     }
-    
+
     // Adds JBoss server instance in all domain - working
     public void addAllJBoss(){
         addJBoss("all");
     }
-    
-    
+
+
     // Stops running JBoss server - working,test of working server recommended to add
     public void stopJBoss(){
         RuntimeTabOperator runtimeTab = RuntimeTabOperator.invoke();
         Node serverNode = new Node(runtimeTab.getRootNode(), Bundle.getStringTrimmed("org.netbeans.modules.j2ee.deployment.impl.ui.Bundle", "SERVER_REGISTRY_NODE")
-                                   +"|JBoss");        
+                                   +"|JBoss");
         serverNode.performPopupAction(Bundle.getStringTrimmed("org.netbeans.modules.j2ee.deployment.impl.ui.Bundle", "LBL_Stop"));
         org.netbeans.test.javaee.lib.ProgressOperator.waitFinished("Stopping JBoss Application Server",300000);
         new org.netbeans.jemmy.EventTool().waitNoEvent(2000);
     }
-    
-     public void refreshJBoss(){  
+
+     public void refreshJBoss(){
         RuntimeTabOperator runtimeTab = RuntimeTabOperator.invoke();
         Node serverNode = new Node(runtimeTab.getRootNode(), Bundle.getStringTrimmed("org.netbeans.modules.j2ee.deployment.impl.ui.Bundle", "SERVER_REGISTRY_NODE")
-                                   +"|JBoss");     
+                                   +"|JBoss");
         serverNode.performPopupAction(Bundle.getStringTrimmed("org.netbeans.modules.j2ee.deployment.impl.ui.actions.Bundle", "LBL_Refresh"));
     }
-    
-     
+
+
     // Removes JBoss server from Runtime tab - doesn't work/problem with pressing the OK button in Remove dialog
     public void removeJBoss(){
         RuntimeTabOperator runtimeTab = RuntimeTabOperator.invoke();
         Node serverNode = new Node(runtimeTab.getRootNode(), Bundle.getStringTrimmed("org.netbeans.modules.j2ee.deployment.impl.ui.Bundle", "SERVER_REGISTRY_NODE")
-                                   +"|JBoss");     
+                                   +"|JBoss");
         serverNode.performPopupAction(Bundle.getStringTrimmed("org.netbeans.modules.j2ee.deployment.impl.ui.actions.Bundle", "LBL_Remove"));
         // The moment test is failing - now is on display dialog with Remove Server Instance in title
         JDialogOperator rsi = new JDialogOperator(Bundle.getStringTrimmed("org.netbeans.modules.j2ee.deployment.impl.ui.actions.Bundle", "MSG_RemoveInstanceTitle"));
@@ -160,10 +160,10 @@ public class JBossValidation extends JellyTestCase {
         //yesButton.push();
         //new ProjectsTabOperator();
     }
-     
-   
-   
-   // Deploys web module on JBoss twice - working 
+
+
+
+   // Deploys web module on JBoss twice - working
     public void redeployWebModule() {
         System.err.println(WEB_PROJECT_PATH);
         Util.openProject(WEB_PROJECT_PATH);
@@ -179,7 +179,7 @@ public class JBossValidation extends JellyTestCase {
         prn.performPopupAction(Bundle.getStringTrimmed("org.netbeans.modules.j2ee.ejbjarproject.ui.Bundle", "LBL_RedeployAction_Name"));
         MainWindowOperator.getDefault().getTimeouts().setTimeout("Waiter.WaitingTime", 500000);
         MainWindowOperator.getDefault().waitStatusText("Finished building "+PROJECT_NAME+" (run-deploy)");
-    }  
+    }
     // Debugs web module on JBoss - working
     public void debugWebModule() {
         System.err.println(WEB_PROJECT_PATH);
@@ -192,9 +192,9 @@ public class JBossValidation extends JellyTestCase {
         MainWindowOperator.getDefault().getTimeouts().setTimeout("Waiter.WaitingTime", 300000);
         MainWindowOperator.getDefault().waitStatusText("User program running");
         new org.netbeans.jemmy.EventTool().waitNoEvent(2000);
-    }  
-    
-    
+    }
+
+
     public void deployEJBModule() {
         System.err.println(EJB_PROJECT_PATH);
         Util.openProject(EJB_PROJECT_PATH);
@@ -206,31 +206,31 @@ public class JBossValidation extends JellyTestCase {
         MainWindowOperator.getDefault().getTimeouts().setTimeout("Waiter.WaitingTime", 300000);
         MainWindowOperator.getDefault().waitStatusText("Finished building build.xml (run)");
         //new org.netbeans.jemmy.EventTool().waitNoEvent(5000);
-        
+
     }
-    
+
    // Starts JBoss server in default mode - working
     public void startJBoss(){
         RuntimeTabOperator runtimeTab = RuntimeTabOperator.invoke();
         Node serverNode = new Node(runtimeTab.getRootNode(), Bundle.getStringTrimmed("org.netbeans.modules.j2ee.deployment.impl.ui.Bundle", "SERVER_REGISTRY_NODE")
                                    +"|JBoss");
-                
+
         serverNode.performPopupAction(Bundle.getStringTrimmed("org.netbeans.modules.j2ee.deployment.impl.ui.Bundle", "LBL_Start"));
         org.netbeans.test.javaee.lib.ProgressOperator.waitFinished("Starting JBoss Application Server",300000);
         new org.netbeans.jemmy.EventTool().waitNoEvent(2000);
     }
-    
+
     // Starts JBoss server id debug mode - working
     public void startJBossDebug(){
         RuntimeTabOperator runtimeTab = RuntimeTabOperator.invoke();
         Node serverNode = new Node(runtimeTab.getRootNode(), Bundle.getStringTrimmed("org.netbeans.modules.j2ee.deployment.impl.ui.Bundle", "SERVER_REGISTRY_NODE")
                                    +"|JBoss");
-                
+
         serverNode.performPopupAction(Bundle.getStringTrimmed("org.netbeans.modules.j2ee.deployment.impl.ui.actions.Bundle", "LBL_DebugOutput"));
        // org.netbeans.test.j2ee.lib.ProgressOperator.waitFinished();
         new org.netbeans.jemmy.EventTool().waitNoEvent(5000);
     }
-    
+
      // Deploys web module on JBoss - working
     public void deployWebModule() {
         System.err.println(WEB_PROJECT_PATH);
@@ -243,8 +243,8 @@ public class JBossValidation extends JellyTestCase {
         MainWindowOperator.getDefault().getTimeouts().setTimeout("Waiter.WaitingTime", 300000);
         MainWindowOperator.getDefault().waitStatusText("Finished building "+PROJECT_NAME+" (run-deploy)");
 
-    }  
-    
+    }
+
      // Deploys web module on JBoss and then debugs it - working partially
     public void runDebugWebModule() {
         System.err.println(WEB_PROJECT_PATH);
@@ -259,9 +259,9 @@ public class JBossValidation extends JellyTestCase {
         prn = projectTab.getProjectRootNode(PROJECT_NAME);
         prn.performPopupAction(Bundle.getStringTrimmed("org.netbeans.modules.j2ee.ejbjarproject.ui.Bundle", "LBL_DebugAction_Name"));
         new org.netbeans.jemmy.EventTool().waitNoEvent(1000);
-        
-    }  
-    
+
+    }
+
     //Sets the web browser to Swing
     public static void setSwingBrowser() {
         OptionsOperator optionsOper = OptionsOperator.invoke();
@@ -270,13 +270,13 @@ public class JBossValidation extends JellyTestCase {
         new JButtonOperator(optionsOper,"OK").push();
         new org.netbeans.jemmy.EventTool().waitNoEvent(1000);
     }
-   
-    
+
+
     /** Use for execution inside IDE */
     public static void main(java.lang.String[] args) {
         // run whole suite
         TestRunner.run(suite());
     }
-    
+
 
 }

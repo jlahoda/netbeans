@@ -77,19 +77,19 @@ public abstract class AbstractStateNode extends AbstractNode {
         } else if (isRunning()) {
             badge = ImageUtilities.loadImage(RUNNING_ICON);
         }
-        /*  case ServerInstance.STATE_DEBUGGING : 
+        /*  case ServerInstance.STATE_DEBUGGING :
          badge = ImageUtilities.loadImage(DEBUGGING_ICON);
          break;
-         case ServerInstance.STATE_SUSPENDED : 
+         case ServerInstance.STATE_SUSPENDED :
          badge = ImageUtilities.loadImage(SUSPENDED_ICON);
          break;
-         case ServerInstance.STATE_PROFILING : 
+         case ServerInstance.STATE_PROFILING :
          badge = ImageUtilities.loadImage(PROFILING_ICON);
          break;
-         case ServerInstance.STATE_PROFILER_BLOCKING : 
+         case ServerInstance.STATE_PROFILER_BLOCKING :
          badge = ImageUtilities.loadImage(PROFILER_BLOCKING_ICON);
          break;
-         case ServerInstance.STATE_PROFILER_STARTING : 
+         case ServerInstance.STATE_PROFILER_STARTING :
          badge = ImageUtilities.loadImage(WAITING_ICON);
          break;
          default:

@@ -62,7 +62,7 @@ public class WildflyMailSessionResource {
     public String getHostName() {
         return socket.getHost();
     }
-    
+
     public String getUserName() {
         return userName;
     }

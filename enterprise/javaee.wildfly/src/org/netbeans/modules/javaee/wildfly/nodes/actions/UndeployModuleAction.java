@@ -38,13 +38,13 @@ public class UndeployModuleAction extends NodeAction {
     protected void performAction(Node[] nodes) {
         if( (nodes == null) || (nodes.length < 1) )
             return;
-        
+
         for (int i = 0; i < nodes.length; i++) {
             UndeployModuleCookie uCookie = (UndeployModuleCookie)nodes[i].getCookie(UndeployModuleCookie.class);
             if (uCookie != null) {
                 final Task t = uCookie.undeploy();
                 final Node node = nodes[i].getParentNode();
-                
+
                 PROCESSOR.post(new Runnable() {
                     public void run() {
                         t.waitFinished();
@@ -67,7 +67,7 @@ public class UndeployModuleAction extends NodeAction {
             }
         }
     }
-    
+
     protected boolean enable(Node[] nodes) {
         UndeployModuleCookie cookie;
         for (int i=0; i<nodes.length; i++) {
@@ -75,16 +75,16 @@ public class UndeployModuleAction extends NodeAction {
             if (cookie == null || cookie.isRunning())
                 return false;
         }
-        
+
         return true;
     }
-    
+
     public String getName() {
         return NbBundle.getMessage(UndeployModuleAction.class, "LBL_UndeployAction");
     }
-    
+
     protected boolean asynchronous() { return false; }
-    
+
     public org.openide.util.HelpCtx getHelpCtx() {
         return HelpCtx.DEFAULT_HELP;
     }

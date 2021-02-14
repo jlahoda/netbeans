@@ -62,22 +62,22 @@ final class JBossEjbRefModifier {
             addEntityEjbReference(modifiedJboss, ejbRefName, referencedEjbName, beanNames);
         }
     }
-    
+
     /**
      * Add a new ejb reference to the session beans without it.
-     * 
+     *
      * @param modifiedJboss Jboss instance being modified
      * @param ejbRefName ejb reference name
      * @param referencedEjbName name of the referenced EJB
      * @param sessionNames the sessions (ejb-name value) which might need to add ejb reference specified by ejbRefName
      */
-    private static void addSessionEjbReference(Jboss modifiedJboss, String ejbRefName, 
+    private static void addSessionEjbReference(Jboss modifiedJboss, String ejbRefName,
             String referencedEjbName, Set sessionNames) {
 
         List/*<Session>*/ sesssionsWithoutReference = new LinkedList();
 
         EnterpriseBeans eb = modifiedJboss.getEnterpriseBeans();
-        
+
         Session[] sessions = eb.getSession();
         for (int i = 0; i < sessions.length; i++) {
             String ejbName = sessions[i].getEjbName();
@@ -95,7 +95,7 @@ final class JBossEjbRefModifier {
             }
         }
 
-        //no session tag yet (sessions.length == 0) or 
+        //no session tag yet (sessions.length == 0) or
         //there are sessions in sessionNames which were not found among the existing ones (those were not removed)
         for (Iterator it = sessionNames.iterator(); it.hasNext(); ) {
             String sessionName = (String)it.next();
@@ -120,10 +120,10 @@ final class JBossEjbRefModifier {
         }
 
     }
-    
+
     /**
      * Add a new ejb reference to the entity beans without it.
-     * 
+     *
      * @param modifiedJboss Jboss instance being modified
      * @param ejbRefName ejb reference name
      * @param referencedEjbName name of the referenced EJB
@@ -153,7 +153,7 @@ final class JBossEjbRefModifier {
             }
         }
 
-        //no entity tag yet (entities.length == 0) or 
+        //no entity tag yet (entities.length == 0) or
         //there are entities in entityNames which were not found among the existing ones (those were not removed)
         for (Iterator it = entityNames.iterator(); it.hasNext(); ) {
             String entityName = (String)it.next();
@@ -186,7 +186,7 @@ final class JBossEjbRefModifier {
      * @param ejbRefName ejb reference name
      * @param beans the bean names (ejb-name) mapped to the message destinations (message-destination-link)
      * which might need to add ejb reference specified by ejbRefName
-     * 
+     *
      * @deprecated
      */
     static void modifyMsgDrv(Jboss modifiedJboss, String ejbRefName, Map beans) {
@@ -201,12 +201,12 @@ final class JBossEjbRefModifier {
 
     /**
      * Add a new ejb reference to the message-driven beans without it.
-     * 
+     *
      * @param modifiedJboss Jboss instance being modified
      * @param ejbRefName ejb reference name
      * @param beans the bean names (ejb-name) mapped to the message destinations (message-destination-link)
      * which might need to add ejb reference specified by ejbRefName
-     * 
+     *
      * @deprecated
      */
     private static void addMsgDrvEjbReference(Jboss modifiedJboss, String ejbRefName, Map beans) {
@@ -232,7 +232,7 @@ final class JBossEjbRefModifier {
             }
         }
 
-        //no message-driven tag yet (msgDrivens.length == 0) or 
+        //no message-driven tag yet (msgDrivens.length == 0) or
         //there are MDBs in beans map which were not found among the existing ones (those were not removed)
         for (Iterator it = beans.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry entry = (Map.Entry) it.next();
@@ -267,7 +267,7 @@ final class JBossEjbRefModifier {
      * @param ejbRefName ejb reference name
      * @param referencedEjbName name of the referenced EJB
      */
-    static void modifyMsgDrv(Jboss modifiedJboss, String mdbName, 
+    static void modifyMsgDrv(Jboss modifiedJboss, String mdbName,
             String ejbRefName, String referencedEjbName) {
 
         if (modifiedJboss.getEnterpriseBeans() == null)
@@ -278,7 +278,7 @@ final class JBossEjbRefModifier {
 
     /**
      * Add a new ejb reference to the message-driven beans without it.
-     * 
+     *
      * @param modifiedJboss Jboss instance being modified
      * @param mdbName the MDB (ejb-name value) which might need to add EJB
      *        reference specified by ejbRefName
@@ -309,5 +309,5 @@ final class JBossEjbRefModifier {
             }
         }
     }
-    
+
 }

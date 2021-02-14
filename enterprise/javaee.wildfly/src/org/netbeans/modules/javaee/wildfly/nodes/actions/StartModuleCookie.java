@@ -23,12 +23,12 @@ import org.openide.nodes.Node;
 import org.openide.util.RequestProcessor.Task;
 
 /**
- * 
+ *
  * @author Emmanuel Hugonnet (ehsavoie) <ehsavoie@netbeans.org>
  */
 public interface StartModuleCookie extends Node.Cookie {
-    
+
     public Task start();
-    
+
     public boolean isRunning();
 }

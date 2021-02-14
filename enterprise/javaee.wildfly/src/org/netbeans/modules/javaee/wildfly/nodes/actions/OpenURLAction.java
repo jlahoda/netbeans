@@ -35,7 +35,7 @@ import org.openide.util.actions.NodeAction;
  * @author Michal Mocnak
  */
 public class OpenURLAction extends NodeAction {
-    
+
     protected void performAction(Node[] nodes) {
         for (int i = 0; i < nodes.length; i++) {
             OpenURLActionCookie oCookie = (OpenURLActionCookie) nodes[i].getCookie(OpenURLActionCookie.class);
@@ -49,36 +49,36 @@ public class OpenURLAction extends NodeAction {
             }
         }
     }
-    
+
     protected boolean enable(Node[] nodes) {
         for (int i = 0; i < nodes.length; i++) {
             OpenURLActionCookie oCookie = (OpenURLActionCookie)nodes[i].getCookie(OpenURLActionCookie.class);
             UndeployModuleCookie uCookie = (UndeployModuleCookie)nodes[i].getCookie(UndeployModuleCookie.class);
             UndeployModuleCookie upCookie = (UndeployModuleCookie)nodes[i].getParentNode().getCookie(UndeployModuleCookie.class);
-            
+
             if(uCookie != null)
                 if(uCookie.isRunning())
                     return false;
-            
+
             if(upCookie != null)
                 if(upCookie.isRunning())
                     return false;
-            
+
             if (oCookie != null)
                 return true;
         }
-        
+
         return false;
     }
-    
+
     public String getName() {
         return NbBundle.getMessage(OpenURLAction.class, "LBL_OpenInBrowserAction"); // NOI18N
     }
-    
+
     protected boolean asynchronous() {
         return false;
     }
-    
+
     public HelpCtx getHelpCtx() {
         return HelpCtx.DEFAULT_HELP;
     }

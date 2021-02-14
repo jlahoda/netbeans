@@ -30,6 +30,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.StringTokenizer;
 import java.util.prefs.Preferences;
+import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Modifier;
 import javax.swing.JEditorPane;
 import javax.swing.text.Document;
@@ -43,7 +44,9 @@ import org.netbeans.api.lexer.Language;
 import org.netbeans.junit.NbTestCase;
 import org.netbeans.junit.NbTestSuite;
 import org.netbeans.modules.java.JavaDataLoader;
+import org.netbeans.modules.java.source.BootClassPathUtil;
 import org.netbeans.modules.java.source.usages.IndexUtil;
+import org.netbeans.modules.java.ui.FmtOptions;
 import org.netbeans.spi.java.classpath.ClassPathProvider;
 import org.netbeans.spi.java.classpath.support.ClassPathSupport;
 import org.openide.cookies.EditorCookie;
@@ -54,8 +57,8 @@ import org.openide.util.SharedClassObject;
 import org.openide.util.Utilities;
 
 /**
- * Test different formating options
- * 
+ * Test different formatting options
+ *
  * @author Dusan Balek
  */
 public class FormatingTest extends NbTestCase {
@@ -87,7 +90,7 @@ public class FormatingTest extends NbTestCase {
                     return ClassPathSupport.createClassPath(new FileObject[0]);
                 }
                 if (type.equals(ClassPath.BOOT)) {
-                    return createClassPath(System.getProperty("sun.boot.class.path"));
+                    return BootClassPathUtil.getBootClassPath();
                 }
                 return null;
             }
@@ -98,6 +101,7 @@ public class FormatingTest extends NbTestCase {
         File cacheFolder = new File(getWorkDir(), "var/cache/index");
         cacheFolder.mkdirs();
         IndexUtil.setCacheFolder(cacheFolder);
+        MimeLookup.getLookup(JavaTokenId.language().mimeType()).lookup(Preferences.class).clear();
     }
 
     public void testClass() throws Exception {
@@ -1950,6 +1954,405 @@ public class FormatingTest extends NbTestCase {
         reformat(doc, content, golden);
         preferences.putBoolean("indentCasesFromSwitch", true);
     }
+    public void testRuleSwitch() throws Exception {
+        testFile = new File(getWorkDir(), "Test.java");
+        TestUtilities.copyStringToFile(testFile,
+                "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n"
+                + "    public void taragui(int i) {\n"
+                + "    }\n"
+                + "}\n");
+        FileObject testSourceFO = FileUtil.toFileObject(testFile);
+        DataObject testSourceDO = DataObject.find(testSourceFO);
+        EditorCookie ec = (EditorCookie)testSourceDO.getCookie(EditorCookie.class);
+        final Document doc = ec.openDocument();
+        doc.putProperty(Language.class, JavaTokenId.language());
+        Preferences preferences = MimeLookup.getLookup(JavaTokenId.language().mimeType()).lookup(Preferences.class);
+
+        String content =
+                "package hierbas.del.litoral;"
+                + "public class Test{"
+                + "public void taragui(int i){"
+                + "switch(i){"
+                + "case 0->"
+                + "System.out.println(i);"
+                + "default->"
+                + "System.out.println(\"DEFAULT\");"
+                + "}"
+                + "}"
+                + "}\n";
+
+        String golden =
+                "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "    public void taragui(int i) {\n"
+                + "        switch (i) {\n"
+                + "            case 0 ->\n"
+                + "                System.out.println(i);\n"
+                + "            default ->\n"
+                + "                System.out.println(\"DEFAULT\");\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
+        reformat(doc, content, golden);
+
+        golden =
+                "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "    public void taragui(int i) {\n"
+                + "        switch( i ){\n"
+                + "            case 0 ->\n"
+                + "                System.out.println(i);\n"
+                + "            default ->\n"
+                + "                System.out.println(\"DEFAULT\");\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
+        preferences.putBoolean("spaceBeforeSwitchParen", false);
+        preferences.putBoolean("spaceWithinSwitchParens", true);
+        preferences.putBoolean("spaceBeforeSwitchLeftBrace", false);
+        reformat(doc, content, golden);
+        preferences.putBoolean("spaceBeforeSwitchParen", true);
+        preferences.putBoolean("spaceWithinSwitchParens", false);
+        preferences.putBoolean("spaceBeforeSwitchLeftBrace", true);
+
+        golden =
+                "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "    public void taragui(int i) {\n"
+                + "        switch (i)\n"
+                + "        {\n"
+                + "            case 0 ->\n"
+                + "                System.out.println(i);\n"
+                + "            default ->\n"
+                + "                System.out.println(\"DEFAULT\");\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
+        preferences.put("otherBracePlacement", CodeStyle.BracePlacement.NEW_LINE.name());
+        reformat(doc, content, golden);
+
+        golden =
+                "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "    public void taragui(int i) {\n"
+                + "        switch (i)\n"
+                + "          {\n"
+                + "            case 0 ->\n"
+                + "                System.out.println(i);\n"
+                + "            default ->\n"
+                + "                System.out.println(\"DEFAULT\");\n"
+                + "          }\n"
+                + "    }\n"
+                + "}\n";
+        preferences.put("otherBracePlacement", CodeStyle.BracePlacement.NEW_LINE_HALF_INDENTED.name());
+        reformat(doc, content, golden);
+
+        golden =
+                "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "    public void taragui(int i) {\n"
+                + "        switch (i)\n"
+                + "            {\n"
+                + "            case 0 ->\n"
+                + "                System.out.println(i);\n"
+                + "            default ->\n"
+                + "                System.out.println(\"DEFAULT\");\n"
+                + "            }\n"
+                + "    }\n"
+                + "}\n";
+        preferences.put("otherBracePlacement", CodeStyle.BracePlacement.NEW_LINE_INDENTED.name());
+        reformat(doc, content, golden);
+        preferences.put("otherBracePlacement", CodeStyle.BracePlacement.SAME_LINE.name());
+
+        golden =
+                "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "    public void taragui(int i) {\n"
+                + "        switch (i) {\n"
+                + "        case 0 ->\n"
+                + "            System.out.println(i);\n"
+                + "        default ->\n"
+                + "            System.out.println(\"DEFAULT\");\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
+        preferences.putBoolean("indentCasesFromSwitch", false);
+        reformat(doc, content, golden);
+        preferences.putBoolean("indentCasesFromSwitch", true);
+    }
+    public void testSwitchExpression() throws Exception {
+        try {
+            SourceVersion.valueOf("RELEASE_13");
+        } catch (IllegalArgumentException ex) {
+            //OK, skip test
+            return ;
+        }
+
+        testFile = new File(getWorkDir(), "Test.java");
+        TestUtilities.copyStringToFile(testFile,
+                "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n"
+                + "    public void taragui(int i) {\n"
+                + "    }\n"
+                + "}\n");
+        FileObject testSourceFO = FileUtil.toFileObject(testFile);
+        DataObject testSourceDO = DataObject.find(testSourceFO);
+        EditorCookie ec = (EditorCookie)testSourceDO.getCookie(EditorCookie.class);
+        final Document doc = ec.openDocument();
+        doc.putProperty(Language.class, JavaTokenId.language());
+
+        Preferences preferences = MimeLookup.getLookup(JavaTokenId.language().mimeType()).lookup(Preferences.class);
+
+        String content =
+                "package hierbas.del.litoral;"
+                + "public class Test{"
+                + "public void taragui(int i){"
+                + "int i = switch(i){"
+                + "case 0:"
+                + "{System.out.println(i);"
+                + "yield 5;}"
+                + "default:"
+                + "{System.out.println(\"DEFAULT\");"
+                + "yield 6;}"
+                + "};"
+                + "System.out.println(i);"
+                + "}"
+                + "}\n";
+
+        String golden =
+                "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "    public void taragui(int i) {\n"
+                + "        int i = switch (i) {\n"
+                + "            case 0: {\n"
+                + "                System.out.println(i);\n"
+                + "                yield 5;\n"
+                + "            }\n"
+                + "            default: {\n"
+                + "                System.out.println(\"DEFAULT\");\n"
+                + "                yield 6;\n"
+                + "            }\n"
+                + "        };\n"
+                + "        System.out.println(i);\n"
+                + "    }\n"
+                + "}\n";
+        preferences.putBoolean("spaceBeforeSwitchParen", true);
+        preferences.putBoolean("spaceWithinSwitchParens", false);
+        preferences.putBoolean("spaceBeforeSwitchLeftBrace", true);
+        preferences.put("otherBracePlacement", CodeStyle.BracePlacement.SAME_LINE.name());
+        reformat(doc, content, golden);
+
+        golden =
+                "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "    public void taragui(int i) {\n"
+                + "        int i = switch( i ){\n"
+                + "            case 0: {\n"
+                + "                System.out.println(i);\n"
+                + "                yield 5;\n"
+                + "            }\n"
+                + "            default: {\n"
+                + "                System.out.println(\"DEFAULT\");\n"
+                + "                yield 6;\n"
+                + "            }\n"
+                + "        };\n"
+                + "        System.out.println(i);\n"
+                + "    }\n"
+                + "}\n";
+
+        preferences.putBoolean("spaceBeforeSwitchParen", false);
+        preferences.putBoolean("spaceWithinSwitchParens", true);
+        preferences.putBoolean("spaceBeforeSwitchLeftBrace", false);
+        preferences.put("otherBracePlacement", CodeStyle.BracePlacement.SAME_LINE.name());
+        reformat(doc, content, golden);
+
+        preferences.putBoolean("spaceBeforeSwitchParen", true);
+        preferences.putBoolean("spaceWithinSwitchParens", false);
+        preferences.putBoolean("spaceBeforeSwitchLeftBrace", true);
+        preferences.put("otherBracePlacement", CodeStyle.BracePlacement.SAME_LINE.name());
+
+        golden =
+                "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "    public void taragui(int i) {\n"
+                + "        int i = switch (i)\n"
+                + "          {\n"
+                + "              case 0:\n"
+                + "                {\n"
+                + "                  System.out.println(i);\n"
+                + "                  yield 5;\n"
+                + "                }\n"
+                + "              default:\n"
+                + "                {\n"
+                + "                  System.out.println(\"DEFAULT\");\n"
+                + "                  yield 6;\n"
+                + "                }\n"
+                + "          };\n"
+                + "        System.out.println(i);\n"
+                + "    }\n"
+                + "}\n";
+        preferences.putBoolean("spaceBeforeSwitchParen", true);
+        preferences.putBoolean("spaceWithinSwitchParens", false);
+        preferences.putBoolean("spaceBeforeSwitchLeftBrace", false);
+        preferences.put("otherBracePlacement", CodeStyle.BracePlacement.NEW_LINE_HALF_INDENTED.name());
+        reformat(doc, content, golden);
+
+        golden =
+                "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "    public void taragui(int i) {\n"
+                + "        int i = switch (i)\n"
+                + "            {\n"
+                + "                case 0:\n"
+                + "                    {\n"
+                + "                    System.out.println(i);\n"
+                + "                    yield 5;\n"
+                + "                    }\n"
+                + "                default:\n"
+                + "                    {\n"
+                + "                    System.out.println(\"DEFAULT\");\n"
+                + "                    yield 6;\n"
+                + "                    }\n"
+                + "            };\n"
+                + "        System.out.println(i);\n"
+                + "    }\n"
+                + "}\n";
+
+        preferences.put("otherBracePlacement", CodeStyle.BracePlacement.NEW_LINE_INDENTED.name());
+        reformat(doc, content, golden);
+
+        preferences.putBoolean("spaceBeforeSwitchParen", true);
+        preferences.putBoolean("spaceWithinSwitchParens", false);
+        preferences.putBoolean("spaceBeforeSwitchLeftBrace", true);
+        preferences.put("otherBracePlacement", CodeStyle.BracePlacement.SAME_LINE.name());
+    }
+    public void testSwitchExprWithRuleCase() throws Exception {
+        try {
+            SourceVersion.valueOf("RELEASE_13");
+        } catch (IllegalArgumentException ex) {
+            //OK, skip test
+            return ;
+        }
+        testFile = new File(getWorkDir(), "Test.java");
+        TestUtilities.copyStringToFile(testFile,
+                "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n"
+                + "    public void taragui(int i) {\n"
+                + "    }\n"
+                + "}\n");
+        FileObject testSourceFO = FileUtil.toFileObject(testFile);
+        DataObject testSourceDO = DataObject.find(testSourceFO);
+        EditorCookie ec = (EditorCookie)testSourceDO.getCookie(EditorCookie.class);
+        final Document doc = ec.openDocument();
+        Preferences preferences = MimeLookup.getLookup(JavaTokenId.language().mimeType()).lookup(Preferences.class);
+        String content =
+                "package hierbas.del.litoral;"
+                + "public class Test{"
+                + "public void taragui(int i){"
+                + "int i = switch(i){"
+                + "case 0->"
+                + "{System.out.println(i);"
+                + "yield 5;}"
+                + "default->"
+                + "{System.out.println(\"DEFAULT\");"
+                + "yield 6;}"
+                + "}"
+                + "}"
+                + "}\n";
+        String golden =
+                "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "    public void taragui(int i) {\n"
+                + "        int i = switch( i )\n"
+                + "        {\n"
+                + "            case 0 ->\n"
+                + "            {\n"
+                + "                System.out.println(i);\n"
+                + "                yield 5;\n"
+                + "            }\n"
+                + "            default ->\n"
+                + "            {\n"
+                + "                System.out.println(\"DEFAULT\");\n"
+                + "                yield 6;\n"
+                + "            }\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
+                preferences.putBoolean("spaceBeforeSwitchParen", false);
+        preferences.putBoolean("spaceWithinSwitchParens", true);
+        preferences.putBoolean("spaceBeforeSwitchLeftBrace", true);
+        preferences.put("otherBracePlacement", CodeStyle.BracePlacement.NEW_LINE.name());
+                reformat(doc, content, golden);
+        preferences.putBoolean("spaceBeforeSwitchParen", true);
+        preferences.putBoolean("spaceWithinSwitchParens", false);
+        preferences.putBoolean("spaceBeforeSwitchLeftBrace", true);
+        preferences.put("otherBracePlacement", CodeStyle.BracePlacement.SAME_LINE.name());
+            content =
+                "package hierbas.del.litoral;"
+                + "public class Test{"
+                + "public void taragui(int i){"
+                + "Runnable r = switch(i){"
+                + "case 0-> new Runnable(){public void run(){}};"
+                + "default->"
+                + "{System.out.println(\"DEFAULT\");"
+                + "yield new Runnable(){public void run(){}};}"
+                + "}"
+                + "}"
+                + "}\n";
+                golden =
+                "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "    public void taragui(int i) {\n"
+                + "        Runnable r = switch (i) {\n"
+                + "            case 0 ->\n"
+                + "                new Runnable() {\n"
+                + "                    public void run() {\n"
+                + "                    }\n"
+                + "                };\n"
+                + "            default -> {\n"
+                + "                System.out.println(\"DEFAULT\");\n"
+                + "                yield new Runnable() {\n"
+                + "                    public void run() {\n"
+                + "                    }\n"
+                + "                };\n"
+                + "            }\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
+        reformat(doc, content, golden);
+         content =
+                "package hierbas.del.litoral;"
+                + "public class Test{"
+                +"public int get(){ return 1; }"
+                + "public void taragui(int i){"
+                + "int i = switch(i){"
+                + "case 0-> get();"
+                + "default->"
+                + "{System.out.println(\"DEFAULT\");"
+                + "yield get();}"
+                + "}"
+                + "}"
+                + "}\n";
+                golden =
+                "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "    public int get() {\n"
+                + "        return 1;\n"
+                + "    }\n\n"
+                + "    public void taragui(int i) {\n"
+                + "        int i = switch (i) {\n"
+                + "            case 0 ->\n"
+                + "                get();\n"
+                + "            default -> {\n"
+                + "                System.out.println(\"DEFAULT\");\n"
+                + "                yield get();\n"
+                + "            }\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
+        reformat(doc, content, golden);
+    }
 
     public void testDoWhile() throws Exception {
         testFile = new File(getWorkDir(), "Test.java");
@@ -3050,7 +3453,7 @@ public class FormatingTest extends NbTestCase {
         Preferences preferences = MimeLookup.getLookup(JavaTokenId.language().mimeType()).lookup(Preferences.class);
 
         preferences.putBoolean("enableBlockCommentFormatting", true);
-        
+
         String content =
                 "package hierbas.del.litoral;\n"
                 + "public class Test{\n"
@@ -3112,9 +3515,9 @@ public class FormatingTest extends NbTestCase {
                 + "         */\n"
                 + "        return null;\n"
                 + "    }\n"
-                + "}\n";        
+                + "}\n";
         reformat(doc, content, golden);
-        
+
         golden =
                 "package hierbas.del.litoral;\n"
                 + "\n"
@@ -3140,11 +3543,11 @@ public class FormatingTest extends NbTestCase {
                 + "        /*  This is a block comment.*/\n"
                 + "        return null;\n"
                 + "    }\n"
-                + "}\n";        
+                + "}\n";
         preferences.putBoolean("enableCommentFormatting", false);
         reformat(doc, content, golden);
         preferences.remove("enableCommentFormatting");
-        
+
         golden =
                 "package hierbas.del.litoral;\n"
                 + "\n"
@@ -3173,11 +3576,11 @@ public class FormatingTest extends NbTestCase {
                 + "         */\n"
                 + "        return null;\n"
                 + "    }\n"
-                + "}\n";        
+                + "}\n";
         preferences.putBoolean("wrapCommentText", false);
         reformat(doc, content, golden);
         preferences.remove("wrapCommentText");
-        
+
         golden =
                 "package hierbas.del.litoral;\n"
                 + "\n"
@@ -3211,7 +3614,7 @@ public class FormatingTest extends NbTestCase {
                 + "         */\n"
                 + "        return null;\n"
                 + "    }\n"
-                + "}\n";        
+                + "}\n";
         preferences.putBoolean("addLeadingStarInComment", false);
         reformat(doc, content, golden);
 
@@ -3249,7 +3652,7 @@ public class FormatingTest extends NbTestCase {
                 + "         */\n"
                 + "        return null;\n"
                 + "    }\n"
-                + "}\n";        
+                + "}\n";
         preferences.putBoolean("preserveNewLinesInComments", true);
         reformat(doc, content, golden);
         preferences.remove("addLeadingStarInComment");
@@ -3288,7 +3691,7 @@ public class FormatingTest extends NbTestCase {
                 + "         */\n"
                 + "        return null;\n"
                 + "    }\n"
-                + "}\n";        
+                + "}\n";
         reformat(doc, content, golden);
         preferences.remove("preserveNewLinesInComments");
 
@@ -3325,7 +3728,7 @@ public class FormatingTest extends NbTestCase {
                 + "         */\n"
                 + "        return null;\n"
                 + "    }\n"
-                + "}\n";        
+                + "}\n";
         preferences.putBoolean("generateParagraphTagOnBlankLines", false);
         reformat(doc, content, golden);
 
@@ -3362,12 +3765,12 @@ public class FormatingTest extends NbTestCase {
                 + "         */\n"
                 + "        return null;\n"
                 + "    }\n"
-                + "}\n";        
+                + "}\n";
         preferences.putBoolean("addLeadingStarInComment", false);
         reformat(doc, content, golden);
         preferences.remove("addLeadingStarInComment");
         preferences.putBoolean("generateParagraphTagOnBlankLines", true);
-        
+
         golden =
                 "package hierbas.del.litoral;\n"
                 + "\n"
@@ -3399,11 +3802,11 @@ public class FormatingTest extends NbTestCase {
                 + "        /* This is a block comment. */\n"
                 + "        return null;\n"
                 + "    }\n"
-                + "}\n";        
+                + "}\n";
         preferences.putBoolean("wrapOneLineComment", false);
         reformat(doc, content, golden);
         preferences.remove("wrapOneLineComment");
-        
+
         golden =
                 "package hierbas.del.litoral;\n"
                 + "\n"
@@ -3436,11 +3839,11 @@ public class FormatingTest extends NbTestCase {
                 + "         */\n"
                 + "        return null;\n"
                 + "    }\n"
-                + "}\n";        
+                + "}\n";
         preferences.putBoolean("blankLineAfterJavadocDescription", false);
         reformat(doc, content, golden);
         preferences.remove("blankLineAfterJavadocDescription");
-        
+
         golden =
                 "package hierbas.del.litoral;\n"
                 + "\n"
@@ -3476,7 +3879,7 @@ public class FormatingTest extends NbTestCase {
                 + "         */\n"
                 + "        return null;\n"
                 + "    }\n"
-                + "}\n";        
+                + "}\n";
         preferences.putBoolean("alignJavadocParameterDescriptions", true);
         preferences.putBoolean("alignJavadocReturnDescription", true);
         preferences.putBoolean("alignJavadocExceptionDescriptions", true);
@@ -3484,7 +3887,7 @@ public class FormatingTest extends NbTestCase {
         preferences.remove("alignJavadocExceptionDescriptions");
         preferences.remove("alignJavadocReturnDescription");
         preferences.remove("alignJavadocParameterDescriptions");
-        
+
         golden =
                 "package hierbas.del.litoral;\n"
                 + "\n"
@@ -3520,13 +3923,13 @@ public class FormatingTest extends NbTestCase {
                 + "         */\n"
                 + "        return null;\n"
                 + "    }\n"
-                + "}\n";        
+                + "}\n";
         preferences.putBoolean("blankLineAfterJavadocParameterDescriptions", true);
         preferences.putBoolean("blankLineAfterJavadocReturnTag", true);
         reformat(doc, content, golden);
         preferences.remove("blankLineAfterJavadocReturnTag");
         preferences.remove("blankLineAfterJavadocParameterDescriptions");
-        
+
         content =
                 "package hierbas.del.litoral;\n"
                 + "\n"
@@ -3538,7 +3941,7 @@ public class FormatingTest extends NbTestCase {
                 + "         */\n"
                 + "    public void taragui() {\n"
                 + "    }\n"
-                + "}\n";        
+                + "}\n";
         golden =
                 "package hierbas.del.litoral;\n"
                 + "\n"
@@ -3552,9 +3955,9 @@ public class FormatingTest extends NbTestCase {
                 + "     */\n"
                 + "    public void taragui() {\n"
                 + "    }\n"
-                + "}\n";        
+                + "}\n";
         reformat(doc, content, golden);
-        preferences.remove("generateParagraphTagOnBlankLines");        
+        preferences.remove("generateParagraphTagOnBlankLines");
 
         content =
                 "package hierbas.del.litoral;\n"
@@ -3563,7 +3966,7 @@ public class FormatingTest extends NbTestCase {
                 + " * Test JavaDoc \n"
                 + " */\n"
                 + "public class Test {\n"
-                + "}\n";        
+                + "}\n";
         golden =
                 "package hierbas.del.litoral;\n"
                 + "\n"
@@ -3571,7 +3974,7 @@ public class FormatingTest extends NbTestCase {
                 + " * Test JavaDoc\n"
                 + " */\n"
                 + "public class Test {\n"
-                + "}\n";        
+                + "}\n";
         reformat(doc, content, golden);
 
         content =
@@ -3581,7 +3984,7 @@ public class FormatingTest extends NbTestCase {
                 + " * @author XYZ\n"
                 + " */\n"
                 + "public class Test {\n"
-                + "}\n";        
+                + "}\n";
         golden =
                 "package hierbas.del.litoral;\n"
                 + "\n"
@@ -3589,7 +3992,7 @@ public class FormatingTest extends NbTestCase {
                 + " * @author XYZ\n"
                 + " */\n"
                 + "public class Test {\n"
-                + "}\n";        
+                + "}\n";
         reformat(doc, content, golden);
 
         content =
@@ -3601,7 +4004,7 @@ public class FormatingTest extends NbTestCase {
                 + " * {@link #write(ByteBuffer,long,TimeUnit,Object,CompletionHandler) write} methods.\n"
                 + " */\n"
                 + "public class Test {\n"
-                + "}\n";        
+                + "}\n";
         golden =
                 "package hierbas.del.litoral;\n"
                 + "\n"
@@ -3613,7 +4016,7 @@ public class FormatingTest extends NbTestCase {
                 + " * methods.\n"
                 + " */\n"
                 + "public class Test {\n"
-                + "}\n";        
+                + "}\n";
         reformat(doc, content, golden);
 
         content =
@@ -3627,7 +4030,7 @@ public class FormatingTest extends NbTestCase {
                 + " * @author XYZ\n"
                 + " */\n"
                 + "public class Test {\n"
-                + "}\n";        
+                + "}\n";
         golden =
                 "package hierbas.del.litoral;\n"
                 + "\n"
@@ -3639,9 +4042,9 @@ public class FormatingTest extends NbTestCase {
                 + " * @author XYZ\n"
                 + " */\n"
                 + "public class Test {\n"
-                + "}\n";        
+                + "}\n";
         reformat(doc, content, golden);
-        
+
         content =
                 "package hierbas.del.litoral;\n"
                 + "\n"
@@ -3651,7 +4054,7 @@ public class FormatingTest extends NbTestCase {
                 + " * </pre>\n"
                 + " */\n"
                 + "public class Test {\n"
-                + "}\n";        
+                + "}\n";
         golden =
                 "package hierbas.del.litoral;\n"
                 + "\n"
@@ -3661,9 +4064,9 @@ public class FormatingTest extends NbTestCase {
                 + " * </pre>\n"
                 + " */\n"
                 + "public class Test {\n"
-                + "}\n";        
+                + "}\n";
         reformat(doc, content, golden);
-        
+
         content =
                 "package hierbas.del.litoral;\n"
                 + "\n"
@@ -3673,7 +4076,7 @@ public class FormatingTest extends NbTestCase {
                 + " * @author XYZ\n"
                 + " */\n"
                 + "public class Test {\n"
-                + "}\n";        
+                + "}\n";
         golden =
                 "package hierbas.del.litoral;\n"
                 + "\n"
@@ -3683,9 +4086,9 @@ public class FormatingTest extends NbTestCase {
                 + " * @author XYZ\n"
                 + " */\n"
                 + "public class Test {\n"
-                + "}\n";        
+                + "}\n";
         reformat(doc, content, golden);
-        
+
         content =
                 "package hierbas.del.litoral;\n"
                 + "\n"
@@ -3695,7 +4098,7 @@ public class FormatingTest extends NbTestCase {
                 + " * @author XYZ\n"
                 + " */\n"
                 + "public class Test {\n"
-                + "}\n";        
+                + "}\n";
         golden =
                 "package hierbas.del.litoral;\n"
                 + "\n"
@@ -3705,9 +4108,9 @@ public class FormatingTest extends NbTestCase {
                 + " * @author XYZ\n"
                 + " */\n"
                 + "public class Test {\n"
-                + "}\n";        
+                + "}\n";
         reformat(doc, content, golden);
-        
+
         content =
                 "package hierbas.del.litoral;\n"
                 + "\n"
@@ -3717,7 +4120,7 @@ public class FormatingTest extends NbTestCase {
                 + " * @author XYZ\n"
                 + " */\n"
                 + "public class Test {\n"
-                + "}\n";        
+                + "}\n";
         golden =
                 "package hierbas.del.litoral;\n"
                 + "\n"
@@ -3728,9 +4131,9 @@ public class FormatingTest extends NbTestCase {
                 + " * @author XYZ\n"
                 + " */\n"
                 + "public class Test {\n"
-                + "}\n";        
+                + "}\n";
         reformat(doc, content, golden);
-        
+
         content =
                 "package hierbas.del.litoral;\n"
                 + "\n"
@@ -3741,7 +4144,7 @@ public class FormatingTest extends NbTestCase {
                 + " * @Deprecated\n"
                 + " */\n"
                 + "public class Test {\n"
-                + "}\n";        
+                + "}\n";
         golden =
                 "package hierbas.del.litoral;\n"
                 + "\n"
@@ -3752,14 +4155,14 @@ public class FormatingTest extends NbTestCase {
                 + " @Deprecated\n"
                 + " */\n"
                 + "public class Test {\n"
-                + "}\n";        
+                + "}\n";
         preferences.putBoolean("addLeadingStarInComment", false);
         preferences.putBoolean("wrapCommentText", false);
         preferences.putBoolean("blankLineAfterJavadocDescription", false);
         reformat(doc, content, golden);
-        preferences.remove("blankLineAfterJavadocDescription");        
-        preferences.remove("wrapCommentText");        
-        preferences.remove("addLeadingStarInComment");        
+        preferences.remove("blankLineAfterJavadocDescription");
+        preferences.remove("wrapCommentText");
+        preferences.remove("addLeadingStarInComment");
 
         content =
                 "package hierbas.del.litoral;\n"
@@ -3777,7 +4180,7 @@ public class FormatingTest extends NbTestCase {
                 + "    public <S> S get(S in, Object o, String... vararg) {\n"
                 + "        return null;\n"
                 + "    }\n"
-                + "}\n";        
+                + "}\n";
         golden =
                 "package hierbas.del.litoral;\n"
                 + "\n"
@@ -3796,10 +4199,10 @@ public class FormatingTest extends NbTestCase {
                 + "    public <S> S get(S in, Object o, String... vararg) {\n"
                 + "        return null;\n"
                 + "    }\n"
-                + "}\n";        
+                + "}\n";
         preferences.putBoolean("alignJavadocParameterDescriptions", true);
         reformat(doc, content, golden);
-        preferences.remove("alignJavadocParameterDescriptions");        
+        preferences.remove("alignJavadocParameterDescriptions");
 
         content =
                 "package hierbas.del.litoral;\n"
@@ -3813,7 +4216,7 @@ public class FormatingTest extends NbTestCase {
                 + "    public void get(Object o) {\n"
                 + "        return o;\n"
                 + "    }\n"
-                + "}\n";        
+                + "}\n";
         golden =
                 "package hierbas.del.litoral;\n"
                 + "\n"
@@ -3826,7 +4229,7 @@ public class FormatingTest extends NbTestCase {
                 + "    public void get(Object o) {\n"
                 + "        return o;\n"
                 + "    }\n"
-                + "}\n";        
+                + "}\n";
         preferences.putBoolean("alignJavadocParameterDescriptions", true);
         reformat(doc, content, golden);
 
@@ -3843,7 +4246,7 @@ public class FormatingTest extends NbTestCase {
                 + "    public Object get(Object o) {\n"
                 + "        return o;\n"
                 + "    }\n"
-                + "}\n";        
+                + "}\n";
         golden =
                 "package hierbas.del.litoral;\n"
                 + "\n"
@@ -3857,7 +4260,7 @@ public class FormatingTest extends NbTestCase {
                 + "    public Object get(Object o) {\n"
                 + "        return o;\n"
                 + "    }\n"
-                + "}\n";        
+                + "}\n";
         reformat(doc, content, golden);
 
         content =
@@ -3873,7 +4276,7 @@ public class FormatingTest extends NbTestCase {
                 + "    public Object get(Object o, String str) {\n"
                 + "        return o;\n"
                 + "    }\n"
-                + "}\n";        
+                + "}\n";
         golden =
                 "package hierbas.del.litoral;\n"
                 + "\n"
@@ -3887,9 +4290,9 @@ public class FormatingTest extends NbTestCase {
                 + "    public Object get(Object o, String str) {\n"
                 + "        return o;\n"
                 + "    }\n"
-                + "}\n";        
+                + "}\n";
         reformat(doc, content, golden);
-        preferences.remove("alignJavadocParameterDescriptions");        
+        preferences.remove("alignJavadocParameterDescriptions");
 
         preferences.remove("text-limit-width");
     }
@@ -3898,7 +4301,7 @@ public class FormatingTest extends NbTestCase {
      * Do not put spaces to parenthesis when method declaration has no
      * parameters. The same rule should be applied to method invocation.
      * Regression test.
-     * 
+     *
      * http://www.netbeans.org/issues/show_bug.cgi?id=116225
      */
     public void test116225() throws Exception {
@@ -4428,7 +4831,18 @@ public class FormatingTest extends NbTestCase {
                 + "        java.util.Arrays.asList(args).map((val) -> val.length());\n"
                 + "    }\n"
                 + "}\n";
+        // Testing with wrapping lambda arrow deactivated
         reformat(doc, content, golden);
+
+        final String wrapAfterLambdaArrow = FmtOptions.wrapAfterLambdaArrow;
+        Preferences preferences = MimeLookup.getLookup(JavaTokenId.language().mimeType()).lookup(Preferences.class);
+        preferences.putBoolean(wrapAfterLambdaArrow, true);
+
+        // Testing with wrapping lambda arrow activated
+        reformat(doc, content, golden);
+
+        // Returning the setting to the default value
+        preferences.putBoolean(wrapAfterLambdaArrow, FmtOptions.getDefaultAsBoolean(wrapAfterLambdaArrow));
     }
 
     public void testForNoCondition() throws Exception {
@@ -4515,6 +4929,426 @@ public class FormatingTest extends NbTestCase {
         JavaSourceTest.SourceLevelQueryImpl.sourceLevel = oldLevel;
     }
 
+    public void testTryBlockAfterIf() throws Exception {
+        testFile = new File(getWorkDir(), "Test.java");
+        TestUtilities.copyStringToFile(testFile, "");
+        FileObject testSourceFO = FileUtil.toFileObject(testFile);
+        DataObject testSourceDO = DataObject.find(testSourceFO);
+        EditorCookie ec = (EditorCookie)testSourceDO.getCookie(EditorCookie.class);
+        final Document doc = ec.openDocument();
+        doc.putProperty(Language.class, JavaTokenId.language());
+        String content =
+                "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "    public static void main(String[] args) {\n"
+                + "        if (2 == 2) try {\n"
+                + "            int x = 3;\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
+
+        String golden =  // no change
+                "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "    public static void main(String[] args) {\n"
+                + "        if (2 == 2) try {\n"
+                + "            int x = 3;\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
+        reformat(doc, content, golden);
+    }
+
+    public void testTryBlockAfterElse() throws Exception {
+        testFile = new File(getWorkDir(), "Test.java");
+        TestUtilities.copyStringToFile(testFile, "");
+        FileObject testSourceFO = FileUtil.toFileObject(testFile);
+        DataObject testSourceDO = DataObject.find(testSourceFO);
+        EditorCookie ec = (EditorCookie)testSourceDO.getCookie(EditorCookie.class);
+        final Document doc = ec.openDocument();
+        doc.putProperty(Language.class, JavaTokenId.language());
+        String content =
+                "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "    public static void main(String[] args) {\n"
+                + "        if (2 == 2) {\n"
+                + "            int x = 3;\n"
+                + "        } else try {\n"
+                + "            int x = 6;\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
+
+        String golden = // no change
+                "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "    public static void main(String[] args) {\n"
+                + "        if (2 == 2) {\n"
+                + "            int x = 3;\n"
+                + "        } else try {\n"
+                + "            int x = 6;\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
+        reformat(doc, content, golden);
+    }
+
+    public void testTryBlockAfterWhile() throws Exception {
+        testFile = new File(getWorkDir(), "Test.java");
+        TestUtilities.copyStringToFile(testFile, "");
+        FileObject testSourceFO = FileUtil.toFileObject(testFile);
+        DataObject testSourceDO = DataObject.find(testSourceFO);
+        EditorCookie ec = (EditorCookie)testSourceDO.getCookie(EditorCookie.class);
+        final Document doc = ec.openDocument();
+        doc.putProperty(Language.class, JavaTokenId.language());
+        String content =
+                "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "    public static void main(String[] args) {\n"
+                + "        while (2 == 2) try {\n"
+                + "            int x = 3;\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
+
+        String golden = // no change
+                "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "    public static void main(String[] args) {\n"
+                + "        while (2 == 2) try {\n"
+                + "            int x = 3;\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
+        reformat(doc, content, golden);
+    }
+
+    public void testTryBlockAfterFor() throws Exception {
+        testFile = new File(getWorkDir(), "Test.java");
+        TestUtilities.copyStringToFile(testFile, "");
+        FileObject testSourceFO = FileUtil.toFileObject(testFile);
+        DataObject testSourceDO = DataObject.find(testSourceFO);
+        EditorCookie ec = (EditorCookie)testSourceDO.getCookie(EditorCookie.class);
+        final Document doc = ec.openDocument();
+        doc.putProperty(Language.class, JavaTokenId.language());
+        String content =
+                "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "    public static void main(String[] args) {\n"
+                + "        for (int y : Arrays.asList(1, 2, 3)) try {\n"
+                + "            int x = 3;\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
+
+        String golden = // no change
+                "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "    public static void main(String[] args) {\n"
+                + "        for (int y : Arrays.asList(1, 2, 3)) try {\n"
+                + "            int x = 3;\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
+        reformat(doc, content, golden);
+    }
+
+
+    public void testSynchronizedBlockAfterFor() throws Exception {
+        testFile = new File(getWorkDir(), "Test.java");
+        TestUtilities.copyStringToFile(testFile, "");
+        FileObject testSourceFO = FileUtil.toFileObject(testFile);
+        DataObject testSourceDO = DataObject.find(testSourceFO);
+        EditorCookie ec = (EditorCookie)testSourceDO.getCookie(EditorCookie.class);
+        final Document doc = ec.openDocument();
+        doc.putProperty(Language.class, JavaTokenId.language());
+        String content =
+                "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "    public static void main(String[] args) {\n"
+                + "        for (int y : Arrays.asList(1, 2, 3)) synchronized(Test.class) {\n"
+                + "            int x = 3;\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
+
+        String golden = // no change
+                "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "    public static void main(String[] args) {\n"
+                + "        for (int y : Arrays.asList(1, 2, 3)) synchronized (Test.class) {\n"
+                + "            int x = 3;\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
+        reformat(doc, content, golden);
+    }
+
+    public void testTypeTestPatterns() throws Exception {
+        try {
+            SourceVersion.valueOf("RELEASE_14"); //NOI18N
+        } catch (IllegalArgumentException ex) {
+            //OK, no RELEASE_14, skip test
+            return;
+        }
+        testFile = new File(getWorkDir(), "Test.java");
+        TestUtilities.copyStringToFile(testFile, "");
+        FileObject testSourceFO = FileUtil.toFileObject(testFile);
+        DataObject testSourceDO = DataObject.find(testSourceFO);
+        EditorCookie ec = (EditorCookie)testSourceDO.getCookie(EditorCookie.class);
+        final Document doc = ec.openDocument();
+        doc.putProperty(Language.class, JavaTokenId.language());
+        String content =
+                "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "    public boolean main(Object o) {\n"
+                + "        if (o instanceof String s) {\n"
+                + "            return s.isEmpty();\n"
+                + "        } else {\n"
+                + "            return false;\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
+
+        String golden = // no change
+                "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "    public boolean main(Object o) {\n"
+                + "        if (o instanceof String s) {\n"
+                + "            return s.isEmpty();\n"
+                + "        } else {\n"
+                + "            return false;\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
+        reformat(doc, content, golden);
+    }
+
+    public void testRecord1() throws Exception {
+        try {
+            SourceVersion.valueOf("RELEASE_14"); //NOI18N
+        } catch (IllegalArgumentException ex) {
+            //OK, no RELEASE_14, skip test
+            return;
+        }
+        testFile = new File(getWorkDir(), "Test.java");
+        TestUtilities.copyStringToFile(testFile, "");
+        FileObject testSourceFO = FileUtil.toFileObject(testFile);
+        DataObject testSourceDO = DataObject.find(testSourceFO);
+        EditorCookie ec = (EditorCookie) testSourceDO.getCookie(EditorCookie.class);
+        final Document doc = ec.openDocument();
+        doc.putProperty(Language.class, JavaTokenId.language());
+        String content
+                = "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "public record g3<T extends Object>() implements Cloneable{\n"
+                + "public g3 {\n"
+                + "System.out.println(\"hello\");\n"
+                + "}}}";
+
+        String golden
+                = "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "    public record g3<T extends Object>() implements Cloneable {\n\n"
+                + "        public g3 {\n"
+                + "            System.out.println(\"hello\");\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
+        reformat(doc, content, golden);
+    }
+
+    public void testRecord2() throws Exception {
+        try {
+            SourceVersion.valueOf("RELEASE_14"); //NOI18N
+        } catch (IllegalArgumentException ex) {
+            //OK, no RELEASE_14, skip test
+            return;
+        }
+        testFile = new File(getWorkDir(), "Test.java");
+        TestUtilities.copyStringToFile(testFile, "");
+        FileObject testSourceFO = FileUtil.toFileObject(testFile);
+        DataObject testSourceDO = DataObject.find(testSourceFO);
+        EditorCookie ec = (EditorCookie) testSourceDO.getCookie(EditorCookie.class);
+        final Document doc = ec.openDocument();
+        doc.putProperty(Language.class, JavaTokenId.language());
+        String content
+                = "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n"
+                + "public record g3<T extends Object>() {static int r =10;\n"
+                + "public g3 {\n"
+                + "System.out.println(\"hello\");\n"
+                + "}"
+                + "static{}"
+                + "}}";
+
+        String golden
+                = "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "    public record g3<T extends Object>() {\n\n"
+                + "        static int r = 10;\n\n"
+                + "        public g3 {\n"
+                + "            System.out.println(\"hello\");\n"
+                + "        }\n\n"
+                + "        static {\n"
+                + "        }\n"
+                + "    }\n"
+                + "}\n";
+        Preferences preferences = MimeLookup.getLookup(JavaTokenId.language().mimeType()).lookup(Preferences.class);
+        reformat(doc, content, golden);
+    }
+
+    public void testRecord3() throws Exception {
+        try {
+            SourceVersion.valueOf("RELEASE_14"); //NOI18N
+        } catch (IllegalArgumentException ex) {
+            //OK, no RELEASE_14, skip test
+            return;
+        }
+        testFile = new File(getWorkDir(), "Test.java");
+        TestUtilities.copyStringToFile(testFile, "");
+        FileObject testSourceFO = FileUtil.toFileObject(testFile);
+        DataObject testSourceDO = DataObject.find(testSourceFO);
+        EditorCookie ec = (EditorCookie) testSourceDO.getCookie(EditorCookie.class);
+        final Document doc = ec.openDocument();
+        doc.putProperty(Language.class, JavaTokenId.language());
+        String content
+                = "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "public record g3(){}}";
+
+        String golden
+                = "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "    public record g3() {\n"
+                + "    }\n"
+                + "}\n";
+        reformat(doc, content, golden);
+    }
+
+    
+    public void testRecord4() throws Exception {
+        try {
+            SourceVersion.valueOf("RELEASE_14"); //NOI18N
+        } catch (IllegalArgumentException ex) {
+            //OK, no RELEASE_14, skip test
+            return;
+        }
+        testFile = new File(getWorkDir(), "Test.java");
+        TestUtilities.copyStringToFile(testFile, "");
+        FileObject testSourceFO = FileUtil.toFileObject(testFile);
+        DataObject testSourceDO = DataObject.find(testSourceFO);
+        EditorCookie ec = (EditorCookie) testSourceDO.getCookie(EditorCookie.class);
+        final Document doc = ec.openDocument();
+        doc.putProperty(Language.class, JavaTokenId.language());
+        String content = "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "public record g3(@Override int a, @Override int b){}}";
+        String golden
+                = "package hierbas.del.litoral;\n\n"
+                + "public class Test {\n\n"
+                + "    public record g3(@Override int a, @Override int b) {\n\n"
+                + "    }\n"
+                + "}\n";
+        reformat(doc, content, golden);
+    }
+  
+    public void testSealed() throws Exception {
+        try {
+            SourceVersion.valueOf("RELEASE_15"); //NOI18N
+        } catch (IllegalArgumentException ex) {
+            //OK, no RELEASE_15, skip test
+            return;
+        }
+        testFile = new File(getWorkDir(), "Test.java");
+        TestUtilities.copyStringToFile(testFile, "");
+        FileObject testSourceFO = FileUtil.toFileObject(testFile);
+        DataObject testSourceDO = DataObject.find(testSourceFO);
+        EditorCookie ec = (EditorCookie) testSourceDO.getCookie(EditorCookie.class);
+        final Document doc = ec.openDocument();
+        doc.putProperty(Language.class, JavaTokenId.language());
+        String content = "sealed class x{}\n"
+                + "non-sealed class y extends x {}\n"
+                + "final class z extends x {}";
+
+        String golden
+                = "\nsealed class x {\n"
+                + "}\n"
+                + "\n"
+                + "non-sealed class y extends x {\n"
+                + "}\n"
+                + "\n"
+                + "final class z extends x {\n"
+                + "}\n";
+        reformat(doc, content, golden);
+    }
+
+    public void testSealed2() throws Exception {
+        try {
+            SourceVersion.valueOf("RELEASE_15"); //NOI18N
+        } catch (IllegalArgumentException ex) {
+            //OK, no RELEASE_15, skip test
+            return;
+        }
+        testFile = new File(getWorkDir(), "Test.java");
+        TestUtilities.copyStringToFile(testFile, "");
+        FileObject testSourceFO = FileUtil.toFileObject(testFile);
+        DataObject testSourceDO = DataObject.find(testSourceFO);
+        EditorCookie ec = (EditorCookie) testSourceDO.getCookie(EditorCookie.class);
+        final Document doc = ec.openDocument();
+        doc.putProperty(Language.class, JavaTokenId.language());
+        String content
+                = "sealed class x{}\n"
+                + "non-sealed class y extends x {}";
+
+        String golden
+                = "\nsealed class x {\n"
+                + "}\n"
+                + "\n"
+                + "non-sealed class y extends x {\n"
+                + "}\n";
+        reformat(doc, content, golden);
+    }
+
+    public void testSealed3() throws Exception {
+        try {
+            SourceVersion.valueOf("RELEASE_15"); //NOI18N
+        } catch (IllegalArgumentException ex) {
+            //OK, no RELEASE_15, skip test
+            return;
+        }
+        testFile = new File(getWorkDir(), "Test.java");
+        TestUtilities.copyStringToFile(testFile, "");
+        FileObject testSourceFO = FileUtil.toFileObject(testFile);
+        DataObject testSourceDO = DataObject.find(testSourceFO);
+        EditorCookie ec = (EditorCookie) testSourceDO.getCookie(EditorCookie.class);
+        final Document doc = ec.openDocument();
+        doc.putProperty(Language.class, JavaTokenId.language());
+        String content
+                = "sealed class x{}\n"
+                + "final class c1 extends x {}\n"
+                + "non-sealed class c2 extends x {}\n"
+                + "final class c3 extends x {}\n"
+                + "non-sealed class c4 extends x {}";
+
+        String golden
+                = "\nsealed class x {\n"
+                + "}\n"
+                + "\n"
+                + "final class c1 extends x {\n"
+                + "}\n"
+                + "\n"
+                + "non-sealed class c2 extends x {\n"
+                + "}\n"
+                + "\n"
+                + "final class c3 extends x {\n"
+                + "}\n"
+                + "\n"
+                + "non-sealed class c4 extends x {\n"
+                + "}\n";
+        reformat(doc, content, golden);
+    }
+  
     private void reformat(Document doc, String content, String golden) throws Exception {
         reformat(doc, content, golden, 0, content.length());
     }

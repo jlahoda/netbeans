@@ -75,7 +75,7 @@ public class WildflyStartServer extends StartServer implements ProgressObject {
     private MODE mode;
 
     private final WildflyDeploymentManager dm;
-    
+
     private boolean consoleConfigured = false;
 
     private static final Set<String> IS_DEBUG_MODE_URI = Collections.synchronizedSet(
@@ -276,7 +276,7 @@ public class WildflyStartServer extends StartServer implements ProgressObject {
         }
         return true;
     }
-    
+
     private InputOutput openConsole() {
         InputOutput io = UISupport.getServerIO(dm.getUrl());
         if (io == null) {
@@ -290,9 +290,9 @@ public class WildflyStartServer extends StartServer implements ProgressObject {
             // no op
         }
         io.select();
-        
+
         return io;
-    }            
+    }
 
     // ----------  Implementation of ProgressObject interface
     private Vector listeners = new Vector();
@@ -370,7 +370,7 @@ public class WildflyStartServer extends StartServer implements ProgressObject {
         return mode;
     }
 
-    
+
     void setConsoleConfigured(boolean console){
         this.consoleConfigured = console;
     }

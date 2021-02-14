@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.14.1
+#Version 1.22
 
 CLSS public abstract interface java.io.Serializable
 
@@ -206,8 +206,9 @@ meth public java.lang.String getEngineInfo()
 meth public java.lang.String getJsEntryFunction()
 meth public java.lang.String getPacScriptSource()
 meth public java.util.List<java.net.Proxy> findProxyForURL(java.net.URI) throws org.netbeans.core.network.proxy.pac.PacValidationException
+meth public static javax.script.ScriptEngine newAllowedPacEngine(java.lang.String,java.lang.StringBuilder)
 supr java.lang.Object
-hfds LOGGER,PAC_DIRECT,PAC_HTTPS_FFEXT,PAC_HTTP_FFEXT,PAC_PROXY,PAC_SOCKS,PAC_SOCKS4_FFEXT,PAC_SOCKS5_FFEXT,canUseURLCaching,nashornJava8u40Available,pacScriptSource,resultCache,scriptEngine
+hfds LOGGER,PAC_DIRECT,PAC_HTTPS_FFEXT,PAC_HTTP_FFEXT,PAC_PROXY,PAC_SOCKS,PAC_SOCKS4_FFEXT,PAC_SOCKS5_FFEXT,canUseURLCaching,pacScriptSource,resultCache,scriptEngine
 hcls PacScriptEngine
 
 CLSS public org.netbeans.core.network.proxy.pac.impl.NbPacScriptEvaluatorFactory
@@ -237,10 +238,11 @@ meth public static java.net.InetAddress nameResolve(java.lang.String,int,org.net
  anno 0 org.netbeans.api.annotations.common.NonNull()
 meth public static java.net.InetAddress[] nameResolveArr(java.lang.String,int,org.netbeans.core.network.utils.IpAddressUtils$IpTypePreference) throws java.lang.InterruptedException,java.net.UnknownHostException,java.util.concurrent.TimeoutException
  anno 0 org.netbeans.api.annotations.common.NonNull()
+meth public static void removeLoopback(java.util.List<java.net.InetAddress>)
 meth public static void sortIpAddresses(java.util.List<java.net.InetAddress>,boolean)
 meth public static void sortIpAddressesShallow(java.util.List<java.net.InetAddress>,boolean)
 supr java.lang.Object
-hfds IPV4_PATTERN,RP
+hfds INSTANCE,IPV4_PATTERN,RP
 hcls DnsTimeoutTask,InetAddressComparator
 
 CLSS public final static !enum org.netbeans.core.network.utils.IpAddressUtils$IpTypePreference
@@ -266,12 +268,14 @@ meth public static java.net.InetAddress[] getLocalHostAddresses(org.netbeans.cor
  anno 0 org.netbeans.api.annotations.common.NonNull()
 meth public static java.net.InetAddress[] getMostLikelyLocalInetAddresses(org.netbeans.core.network.utils.IpAddressUtils$IpTypePreference)
  anno 0 org.netbeans.api.annotations.common.NonNull()
+meth public static java.util.List<java.net.InetAddress> getDatagramLocalInetAddress(org.netbeans.core.network.utils.IpAddressUtils$IpTypePreference)
+ anno 0 org.netbeans.api.annotations.common.NonNull()
 meth public static java.util.List<java.net.InetAddress> getPrioritizedLocalHostAddresses(org.netbeans.core.network.utils.IpAddressUtils$IpTypePreference)
  anno 0 org.netbeans.api.annotations.common.NonNull()
 meth public static void refreshNetworkInfo(boolean)
 meth public static void warmUp()
 supr java.lang.Object
-hfds C1,C2,C3,LOCK,LOG,LOOPBACK_IPV4,LOOPBACK_IPV4_RAW,LOOPBACK_IPV6,LOOPBACK_IPV6_RAW,RP,fut1,fut2,fut3
+hfds C1,C2,C3,C4,LOCK,LOG,LOOPBACK_IPV4,LOOPBACK_IPV4_RAW,LOOPBACK_IPV6,LOOPBACK_IPV6_RAW,RP,SOMEADDR_IPV4,SOMEADDR_IPV4_RAW,SOMEADDR_IPV6,SOMEADDR_IPV6_RAW,fut1,fut2,fut3,fut4
 
 CLSS public org.netbeans.core.network.utils.NativeException
 cons public init(int)

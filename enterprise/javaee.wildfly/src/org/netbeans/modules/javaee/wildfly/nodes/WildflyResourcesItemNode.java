@@ -38,7 +38,7 @@ import org.openide.util.actions.SystemAction;
  * @author Emmanuel Hugonnet (ehsavoie) <ehsavoie@netbeans.org>
  */
 public class WildflyResourcesItemNode extends AbstractNode {
-    
+
     private final String icon;
 
     public WildflyResourcesItemNode(Children children, String name, String icon) {
@@ -56,7 +56,7 @@ public class WildflyResourcesItemNode extends AbstractNode {
     }
 
     @Override
-    public Image getOpenedIcon(int type) {        
+    public Image getOpenedIcon(int type) {
         return ImageUtilities.loadImage(icon);
     }
 
@@ -86,4 +86,3 @@ public class WildflyResourcesItemNode extends AbstractNode {
     }
 
 }
-

@@ -27,18 +27,18 @@ import org.netbeans.api.java.platform.PlatformsCustomizer;
  * @author  sherold
  */
 public class CustomizerJVM extends javax.swing.JPanel {
-    
+
     private CustomizerDataSupport custData;
-    
+
     /** Creates new form CustomizerJVM */
     public CustomizerJVM(CustomizerDataSupport custData) {
         this.custData = custData;
         initComponents();
-        
+
         // mnemonics generated in the guarded block do not work
         proxyCheckBox.setMnemonic(org.openide.util.NbBundle.getMessage(CustomizerJVM.class, "MNE_Proxy").charAt(0));
     }
-    
+
     /** This method is called from within the constructor to
      * initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is
@@ -168,8 +168,8 @@ public class CustomizerJVM extends javax.swing.JPanel {
         PlatformsCustomizer.showCustomizer(null);
         custData.loadJvmModel();
     }//GEN-LAST:event_jvmButtonActionPerformed
-    
-    
+
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
@@ -181,5 +181,5 @@ public class CustomizerJVM extends javax.swing.JPanel {
     private javax.swing.JLabel jvmLabel;
     private javax.swing.JCheckBox proxyCheckBox;
     // End of variables declaration//GEN-END:variables
-    
+
 }

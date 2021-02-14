@@ -202,7 +202,7 @@ public class EditorView extends ViewElement {
             if(imageSource != null) {
                 Image image = ImageUtilities.loadImage(imageSource);
                 if(image != null) {
-                    JLabel label = new JLabel(new ImageIcon(image));
+                    JLabel label = new JLabel(ImageUtilities.image2Icon(image));
                     label.setMinimumSize(new Dimension(0, 0)); // XXX To be able shrink the area.
                     add(label, BorderLayout.CENTER);
                 } else {
@@ -256,6 +256,18 @@ public class EditorView extends ViewElement {
                     || "Aqua".equals(UIManager.getLookAndFeel().getID()) ) //NOI18N
                 setOpaque( false);
         }
+
+        @Override
+        public void updateUI() {
+            super.updateUI();
+
+            Color background = UIManager.getColor("Nb.EmptyEditorArea.background");
+            if (background == null) {
+                // restore to default (on LaF switch)
+                background = UIManager.getColor("Panel.background");
+            }
+            setBackground(background);
+        }
         
         public void setAreaComponent(Component areaComponent) {
             if(this.areaComponent == areaComponent) {
@@ -278,6 +290,8 @@ public class EditorView extends ViewElement {
             if(this.areaComponent != null) {
                 add(this.areaComponent, BorderLayout.CENTER);
             }
+
+            repaint();
         }
         
         @Override

@@ -46,11 +46,11 @@ import org.netbeans.modules.websvc.wsstack.spi.WSToolImplementation;
  */
 public class JBossJaxWsStack implements WSStackImplementation<JaxWs> {
     private static final String JAXWS_TOOLS_JAR = "client/jaxws-tools.jar"; //NOI18N
-    
+
     private File root;
     private String version;
     private JaxWs jaxWs;
-    
+
     public JBossJaxWsStack(File root) {
         this.root = root;
         try {
@@ -91,28 +91,28 @@ public class JBossJaxWsStack implements WSStackImplementation<JaxWs> {
         return new JaxWs.UriDescriptor() {
 
             @Override
-            public String getServiceUri(String applicationRoot, String serviceName, 
-                    String portName, boolean isEjb) 
+            public String getServiceUri(String applicationRoot, String serviceName,
+                    String portName, boolean isEjb)
             {
                 return applicationRoot+"/"+serviceName; //NOI18N
             }
 
             @Override
-            public String getDescriptorUri(String applicationRoot, 
-                    String serviceName, String portName, boolean isEjb) 
+            public String getDescriptorUri(String applicationRoot,
+                    String serviceName, String portName, boolean isEjb)
             {
-                return getServiceUri(applicationRoot, serviceName, portName, 
+                return getServiceUri(applicationRoot, serviceName, portName,
                         isEjb)+"?wsdl"; //NOI18N
             }
 
             @Override
-            public String getTesterPageUri(String host, String port, 
-                    String applicationRoot, String serviceName, String portName, 
-                        boolean isEjb) 
+            public String getTesterPageUri(String host, String port,
+                    String applicationRoot, String serviceName, String portName,
+                        boolean isEjb)
             {
                 return "";
             }
-            
+
         };
     }
 
@@ -120,7 +120,7 @@ public class JBossJaxWsStack implements WSStackImplementation<JaxWs> {
     public boolean isFeatureSupported(Feature feature) {
         if (feature == JaxWs.Feature.JSR109) {
             return true;
-        } else if (feature == JaxWs.Feature.WSIT && new File(root, 
+        } else if (feature == JaxWs.Feature.WSIT && new File(root,
                 "client/jbossws-metro-wsit-tools.jar").exists())  //NOI18N
         {
             return true;
@@ -128,12 +128,12 @@ public class JBossJaxWsStack implements WSStackImplementation<JaxWs> {
             return false;
         }
     }
-    
+
     private String resolveImplementationVersion() throws IOException {
         // take webservices-tools.jar file
         File wsToolsJar = new File(root, JAXWS_TOOLS_JAR);
-        
-        if (wsToolsJar.exists()) {            
+
+        if (wsToolsJar.exists()) {
             JarFile jarFile = new JarFile(wsToolsJar);
             JarEntry entry = jarFile.getJarEntry("com/sun/tools/ws/version.properties"); //NOI18N
             if (entry != null) {
@@ -149,11 +149,11 @@ public class JBossJaxWsStack implements WSStackImplementation<JaxWs> {
                 }
                 r.close();
                 return ver;
-            }           
+            }
         }
         return null;
     }
-    
+
     private class JaxWsTool implements WSToolImplementation {
         JaxWs.Tool tool;
         JaxWsTool(JaxWs.Tool tool) {
@@ -167,16 +167,16 @@ public class JBossJaxWsStack implements WSStackImplementation<JaxWs> {
 
         @Override
         public URL[] getLibraries() {
-            
+
             File clientRoot = new File(root, "client"); // NOI18N
             try {
                 File loggingJar = new File(clientRoot, "jboss-common-client.jar"); // NOI18N
                 if (!loggingJar.exists()) {
                     loggingJar = new File(clientRoot, "jboss-logging-spi.jar");  // NOI18N
                 }
-  
+
                 File jaxWsAPILib = new File(clientRoot, "jboss-jaxws.jar"); // NOI18N
-                // JBoss without jbossws 
+                // JBoss without jbossws
                 if (jaxWsAPILib.exists()) {
                     return new URL[] {
                         new File(clientRoot, "wstx.jar").toURI().toURL(),   // NOI18N
@@ -191,10 +191,10 @@ public class JBossJaxWsStack implements WSStackImplementation<JaxWs> {
                 }
                 jaxWsAPILib = new File(clientRoot, "jbossws-native-jaxws.jar"); // NOI18N
                 // JBoss+jbossws-native
-                if (jaxWsAPILib.exists()) {                 
+                if (jaxWsAPILib.exists()) {
                     return new URL[] {
                         new File(clientRoot, "wstx.jar").toURI().toURL(),   // NOI18N
-                        new File(clientRoot, "jaxws-tools.jar").toURI().toURL(),  // NOI18N                     
+                        new File(clientRoot, "jaxws-tools.jar").toURI().toURL(),  // NOI18N
                         loggingJar.toURI().toURL(),
                         new File(clientRoot, "stax-api.jar").toURI().toURL(),    // NOI18N
                         jaxWsAPILib.toURI().toURL(),    // NOI18N
@@ -221,7 +221,7 @@ public class JBossJaxWsStack implements WSStackImplementation<JaxWs> {
             }
             return new URL[0];
         }
-        
+
     }
 
 }

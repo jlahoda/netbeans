@@ -72,18 +72,25 @@ import javax.tools.SimpleJavaFileObject;
 
 import com.sun.source.util.DocTrees;
 import com.sun.tools.javac.api.JavacTaskImpl;
+import com.sun.tools.javac.code.Kinds;
 import com.sun.tools.javac.comp.ArgumentAttr;
 import com.sun.tools.javac.comp.Attr;
+import com.sun.tools.javac.comp.Check.CheckContext;
+import com.sun.tools.javac.comp.DeferredAttr;
+import com.sun.tools.javac.comp.InferenceContext;
 import com.sun.tools.javac.main.JavaCompiler;
 import com.sun.tools.javac.parser.JavacParser;
 import com.sun.tools.javac.parser.Parser;
 import com.sun.tools.javac.parser.ParserFactory;
 import com.sun.tools.javac.parser.ScannerFactory;
+import com.sun.tools.javac.tree.JCTree.JCBlock;
 import com.sun.tools.javac.tree.JCTree.JCClassDecl;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
+import com.sun.tools.javac.tree.JCTree.JCVariableDecl;
 import com.sun.tools.javac.util.JCDiagnostic;
 import com.sun.tools.javac.util.Log;
 import com.sun.tools.javac.util.Names;
+import com.sun.tools.javac.util.Warner;
 import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.annotations.common.NullAllowed;
@@ -96,9 +103,12 @@ import org.netbeans.lib.nbjavac.services.NBAttr;
 import org.netbeans.lib.nbjavac.services.NBParserFactory;
 import org.netbeans.lib.nbjavac.services.NBResolve;
 import org.netbeans.lib.nbjavac.services.NBTreeMaker.IndexedClassDecl;
+import org.netbeans.modules.java.source.TreeShims;
 import org.netbeans.modules.java.source.TreeUtilitiesAccessor;
 import org.netbeans.modules.java.source.builder.CommentHandlerService;
 import org.netbeans.modules.java.source.builder.CommentSetImpl;
+import org.netbeans.modules.java.source.matching.CopyFinder;
+import org.netbeans.modules.java.source.matching.CopyFinder.HackScope;
 import org.netbeans.modules.java.source.pretty.ImportAnalysis2;
 import org.netbeans.modules.java.source.transform.ImmutableDocTreeTranslator;
 import org.netbeans.modules.java.source.transform.ImmutableTreeTranslator;
@@ -115,7 +125,14 @@ public final class TreeUtilities {
      * @since 0.67
      */
     public static final Set<Kind> CLASS_TREE_KINDS = EnumSet.of(Kind.ANNOTATION_TYPE, Kind.CLASS, Kind.ENUM, Kind.INTERFACE);
-    
+    static {
+        Kind recKind = null;
+        try {
+            recKind = Kind.valueOf(TreeShims.RECORD);
+            CLASS_TREE_KINDS.add(recKind);
+        } catch (IllegalArgumentException ex) {
+        }
+    }
     private final CompilationInfo info;
     private final CommentHandlerService handler;
     
@@ -196,7 +213,19 @@ public final class TreeUtilities {
         while (path != null) {
             if (isSynthetic(path.getCompilationUnit(), path.getLeaf()))
                 return true;
-            
+            if (path.getParentPath() != null &&
+                path.getParentPath().getParentPath() != null &&
+                path.getParentPath().getParentPath().getLeaf().getKind() == Kind.NEW_CLASS) {
+                NewClassTree nct = (NewClassTree) path.getParentPath().getParentPath().getLeaf();
+                ClassTree body = nct.getClassBody();
+
+                if (body != null &&
+                    (body.getExtendsClause() == path.getLeaf() ||
+                     body.getImplementsClause().contains(path.getLeaf()))) {
+                    return true;
+                }
+            }
+
             path = path.getParentPath();
         }
         
@@ -797,6 +826,10 @@ public final class TreeUtilities {
             scope = ((NBScope) scope).delegate;
         }
         
+        if (scope instanceof HackScope) {
+            return ((HackScope) scope).getEnv();
+        }
+
         return ((JavacScope) scope).getEnv();
     }
     
@@ -874,7 +907,7 @@ public final class TreeUtilities {
             Env<AttrContext> env = getEnv(scope);
             if (tree instanceof JCExpression)
                 return attr.attribExpr((JCTree) tree,env, Type.noType);
-            if (env.tree != null && env.tree.getKind() == Kind.VARIABLE) {
+            if (env.tree != null && env.tree.getKind() == Kind.VARIABLE && !VARIABLE_CAN_OWN_VARIABLES) {
                 env = env.next;
             }
             return attr.attribStat((JCTree) tree,env);
@@ -885,6 +918,18 @@ public final class TreeUtilities {
             resolve.restoreAccessbilityChecks();
 //            enter.shadowTypeEnvs(false);
         }
+    }
+
+    private static boolean VARIABLE_CAN_OWN_VARIABLES;
+    static {
+        boolean result;
+        try {
+            SourceVersion.valueOf("RELEASE_12");
+            result = true;
+        } catch (IllegalArgumentException ex) {
+            result = false;
+        }
+        VARIABLE_CAN_OWN_VARIABLES = result;
     }
 
     private static Scope attributeTreeTo(JavacTaskImpl jti, Tree tree, Scope scope, Tree to, final List<Diagnostic<? extends JavaFileObject>> errors) {
@@ -1340,6 +1385,57 @@ public final class TreeUtilities {
      * 
      * @param breakOrContinue {@link TreePath} to the tree that should be inspected.
      *                        The <code>breakOrContinue.getLeaf().getKind()</code>
+     *                        has to be one of {@link Kind#BREAK}, {@link Kind#CONTINUE}, or {@link Kind#YIELD}, or
+     *                        an IllegalArgumentException is thrown
+     * @return the tree that is the "target" for the given break or continue statement, or null if there is none. Tree can be of type StatementTree or ExpressionTree
+     * @throws IllegalArgumentException if the given tree is not a break or continue tree or if the given {@link CompilationInfo}
+     *         is not in the {@link Phase#RESOLVED} phase.
+     * @since 2.40
+     */
+    public Tree getBreakContinueTargetTree(TreePath breakOrContinue) throws IllegalArgumentException {
+        if (info.getPhase().compareTo(Phase.RESOLVED) < 0)
+            throw new IllegalArgumentException("Not in correct Phase. Required: Phase.RESOLVED, got: Phase." + info.getPhase().toString());
+        
+        Tree leaf = breakOrContinue.getLeaf();
+        
+        switch (leaf.getKind()) {
+            case BREAK:
+                return (Tree) ((JCTree.JCBreak) leaf).target;
+            case CONTINUE:
+                Tree target = (Tree) ((JCTree.JCContinue) leaf).target;
+                
+                if (target == null)
+                    return null;
+                
+                if (((JCTree.JCContinue) leaf).label == null)
+                    return target;
+                
+                TreePath tp = breakOrContinue;
+                
+                while (tp.getLeaf() != target) {
+                    tp = tp.getParentPath();
+                }
+                
+                Tree parent = tp.getParentPath().getLeaf();
+                
+                if (parent.getKind() == Kind.LABELED_STATEMENT) {
+                    return (StatementTree) parent;
+                } else {
+                    return target;
+                }
+            default:
+                if (TreeShims.YIELD.equals(leaf.getKind().name())) {
+                    return TreeShims.getTarget(leaf);
+                }
+                throw new IllegalArgumentException("Unsupported kind: " + leaf.getKind());
+        }
+    }
+    
+    /**Find the target of <code>break</code> or <code>continue</code>. The given
+     * {@link CompilationInfo} has to be at least in the {@link Phase#RESOLVED} phase.
+     * 
+     * @param breakOrContinue {@link TreePath} to the tree that should be inspected.
+     *                        The <code>breakOrContinue.getLeaf().getKind()</code>
      *                        has to be either {@link Kind#BREAK} or {@link Kind#CONTINUE}, or
      *                        an IllegalArgumentException is thrown
      * @return the tree that is the "target" for the given break or continue statement, or null if there is none.
@@ -1355,7 +1451,11 @@ public final class TreeUtilities {
         
         switch (leaf.getKind()) {
             case BREAK:
-                return (StatementTree) ((JCTree.JCBreak) leaf).target;
+                Tree breakTarget = (Tree) ((JCTree.JCBreak) leaf).target;
+                if (breakTarget == null || !(breakTarget instanceof StatementTree)) {
+                    return null;
+                }
+                return (StatementTree) breakTarget;
             case CONTINUE:
                 StatementTree target = (StatementTree) ((JCTree.JCContinue) leaf).target;
                 
@@ -1656,7 +1756,8 @@ public final class TreeUtilities {
             public Void visitClass(ClassTree node, Void p) {
                 if (fromIdx[0] < -2)
                     return super.visitClass(node, p);
-                fromIdx[0] = ((IndexedClassDecl)node).index;
+                if (node instanceof IndexedClassDecl)
+                    fromIdx[0] = ((IndexedClassDecl)node).index;
                 return null;
             }
             @Override
@@ -1682,7 +1783,8 @@ public final class TreeUtilities {
         scanner = new ErrorAwareTreeScanner<Void, Void>() {
             @Override
             public Void visitClass(ClassTree node, Void p) {
-                ((IndexedClassDecl)node).index = fromIdx[0]++;
+                if (node instanceof IndexedClassDecl)
+                    ((IndexedClassDecl)node).index = fromIdx[0]++;
                 return null;
             }
         };

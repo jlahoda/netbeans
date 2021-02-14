@@ -66,6 +66,7 @@ public class EditorWindowOperator {
     /** Creates new instance of EditorWindowOperator.
      * @deprecated Use static methods instead.
      */
+    @Deprecated
     public EditorWindowOperator() {
         // useless now because all methods are static
     }
@@ -122,9 +123,9 @@ public class EditorWindowOperator {
             SwingUtilities.invokeAndWait(new Runnable() {
 
                 public void run() {
-                    Iterator iter = Arrays.asList(mode.getTopComponents()).iterator();
+                    Iterator<TopComponent> iter = Arrays.asList(mode.getTopComponents()).iterator();
                     while (iter.hasNext()) {
-                        EditorOperator.close((TopComponent) iter.next(), false);
+                        EditorOperator.close(iter.next(), false);
                     }
                 }
             });

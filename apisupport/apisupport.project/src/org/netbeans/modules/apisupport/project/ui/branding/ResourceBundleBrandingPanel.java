@@ -375,11 +375,11 @@ public class ResourceBundleBrandingPanel extends AbstractBrandingPanel
 
         @Override
         protected void removeNotify() {
-            setKeys(Collections.EMPTY_SET);
+            setKeys(Collections.emptySet());
         }
 
         private void refreshList() {
-            List<BundleNode> keys = new ArrayList();
+            List<BundleNode> keys = new ArrayList<BundleNode>();
             for (BundleNode node : resourceBundleNodes) {
                 keys.add(node);
             }
@@ -498,11 +498,11 @@ public class ResourceBundleBrandingPanel extends AbstractBrandingPanel
 
         @Override
         protected void removeNotify() {
-            setKeys(Collections.EMPTY_SET);
+            setKeys(Collections.emptySet());
         }
 
         private void refreshList() {
-            List keys = new ArrayList();
+            List<Node> keys = new ArrayList<>();
             Node[] origChildren = original.getChildren().getNodes();
             for (Node node : origChildren) {
                 keys.add(node);

@@ -19,23 +19,27 @@
 
 package org.openide.util;
 
-import java.awt.Color;
 import java.awt.Component;
+import java.awt.EventQueue;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.HeadlessException;
 import java.awt.Image;
 import java.awt.MediaTracker;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.Transparency;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
-import java.awt.image.FilteredImageSource;
 import java.awt.image.ImageObserver;
-import java.awt.image.ImageProducer;
-import java.awt.image.IndexColorModel;
 import java.awt.image.RGBImageFilter;
 import java.awt.image.WritableRaster;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.ObjectStreamException;
 import java.lang.ref.SoftReference;
 import java.net.URL;
 import java.util.HashMap;
@@ -43,7 +47,9 @@ import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
@@ -53,10 +59,19 @@ import javax.imageio.stream.ImageInputStream;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import org.openide.util.spi.SVGLoader;
 
 /** 
  * Useful static methods for manipulation with images/icons, results are cached.
+ *
+ * <p>Images can be represented as instances of either {@link Image} or {@link Icon}. For best
+ * results on HiDPI displays, clients should use the {@link #image2Icon(Image)} method provided by
+ * this class when converting an {@code Image} to an {@code Icon}, rather than constructing
+ * {@link ImageIcon} instances themselves. When doing manual painting, clients should use
+ * {@link Icon#paintIcon(Component, Graphics, int, int)} rather than
+ * {@link Graphics#drawImage(Image, int, int, ImageObserver)}.
  * 
  * @author Jaroslav Tulach, Tomas Holy
  * @since 7.15
@@ -81,9 +96,10 @@ public final class ImageUtilities {
      * @see "#20072"
      */
     private static final Set<String> extraInitialSlashes = new HashSet<String>();
-    private static volatile Object currentLoader;
-    private static Lookup.Result<ClassLoader> loaderQuery = null;
-    private static boolean noLoaderWarned = false;
+    private static final CachedLookupLoader<ClassLoader> classLoaderLoader =
+            new CachedLookupLoader<ClassLoader>(ClassLoader.class);
+    private static final CachedLookupLoader<SVGLoader> svgLoaderLoader =
+            new CachedLookupLoader<SVGLoader>(SVGLoader.class);
     private static final Component component = new Component() {
     };
 
@@ -91,11 +107,32 @@ public final class ImageUtilities {
     private static int mediaTrackerID;
     
     private static ImageReader PNG_READER;
-//    private static ImageReader GIF_READER;
     
     private static final Logger ERR = Logger.getLogger(ImageUtilities.class.getName());
     
     private static final String DARK_LAF_SUFFIX = "_dark"; //NOI18N
+
+    /**
+     * Dummy component to be passed to the first parameter  of
+     * {@link Icon#paintIcon(Component, Graphics, int, int)} when converting an {@code Icon} to an
+     * {@code Image}. See comment in {@link #icon2ToolTipImage(Icon, URL)}.
+     */
+    private static volatile Component dummyIconComponent;
+
+    static {
+        /* Could have used Mutex.EVENT.writeAccess here, but it doesn't seem to be available during
+        testing. */
+        if (EventQueue.isDispatchThread()) {
+            dummyIconComponent = new JLabel();
+        } else {
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    dummyIconComponent = new JLabel();
+                }
+            });
+        }
+    }
     
     private ImageUtilities() {
     }
@@ -103,12 +140,25 @@ public final class ImageUtilities {
     static {
         ImageIO.setUseCache(false);
         PNG_READER = ImageIO.getImageReadersByMIMEType("image/png").next();
-//        GIF_READER = ImageIO.getImageReadersByMIMEType("image/gif").next();
     }
 
     /**
      * Loads an image from the specified resource ID. The image is loaded using the "system" classloader registered in
      * Lookup.
+     *
+     * <p>If the default lookup contains a service provider for the {@link SVGLoader} interface, and
+     * there exists an SVG version of the requested image (e.g. "icon.svg" exists when "icon.png"
+     * was requested), the SVG version will be loaded instead of the originally requested bitmap.
+     * SVG images can also be requested directly. The SVG document's root element must contain
+     * explicit width/height attributes. An SVG loader implementation can be installed via the
+     * optional {@code openide.util.ui.svg} module.
+     *
+     * <p>To paint SVG images at arbitrary resolutions, convert the returned {@link Image} to an
+     * {@link Icon} using {@link #image2Icon(Image)}, and set an appropriate transform on the
+     * {@link Graphics2D} instance passed to {@link Icon#paintIcon(Component, Graphics, int, int)}.
+     * When painting on HiDPI-capable {@code Graphics2D} instances provided by Swing, the
+     * appropriate transform will already be in place.
+     *
      * @param resourceID resource path of the icon (no initial slash)
      * @return icon's Image, or null, if the icon cannot be loaded.     
      */
@@ -138,7 +188,17 @@ public final class ImageUtilities {
      * @return icon's Image or null if the icon cannot be loaded
      */
     public static final Image loadImage(String resource, boolean localized) {
-        Image image = null;
+        return loadImageInternal(resource, localized);
+    }
+
+    /* Private version of the method showing the more specific return type. We always return a
+    ToolTipImage, to take advantage of its rendering tweaks for HiDPI screens. */
+    private static ToolTipImage loadImageInternal(String resource, boolean localized) {
+        // Avoid a NPE that could previously occur in the isDarkLaF case only. See NETBEANS-2401.
+        if (resource == null) {
+            return null;
+        }
+        ToolTipImage image = null;
         if( isDarkLaF() ) {
             image = getIcon(addDarkSuffix(resource), localized);
             // found an image with _dark-suffix, so there no need to apply an
@@ -149,8 +209,7 @@ public final class ImageUtilities {
             // only non _dark images need filtering
             RGBImageFilter imageFilter = getImageIconFilter();
             if (null != image && null != imageFilter) {
-                image = Toolkit.getDefaultToolkit()
-                        .createImage(new FilteredImageSource(image.getSource(), imageFilter));
+                image = icon2ToolTipImage(FilteredIcon.create(imageFilter, image), image.url);
             }
         }
         return image;
@@ -171,11 +230,11 @@ public final class ImageUtilities {
      * @since 7.22
      */
     public static final ImageIcon loadImageIcon( String resource, boolean localized ) {
-        Image image = loadImage(resource, localized);
+        ToolTipImage image = loadImageInternal(resource, localized);
         if( image == null ) {
             return null;
         }
-        return ( ImageIcon ) image2Icon( image );
+        return image.asImageIcon();
     }
     
     private static boolean isDarkLaF() {
@@ -224,7 +283,7 @@ public final class ImageUtilities {
         }
         
         CompositeImageKey k = new CompositeImageKey(image1, image2, x, y);
-        Image cached;
+        ToolTipImage cached;
 
         synchronized (compositeCache) {
             ActiveRef<CompositeImageKey> r = compositeCache.get(k);
@@ -246,15 +305,17 @@ public final class ImageUtilities {
      * @return icon corresponding icon
      */    
     public static final Icon image2Icon(Image image) {
-        if (image instanceof ToolTipImage) {
-            return ((ToolTipImage) image).getIcon();
-        } else {
-            return new ImageIcon(image);
-        }
+        /* Make sure to always return a ToolTipImage, to take advantage of its rendering tweaks for
+        HiDPI screens. */
+        return (image instanceof ToolTipImage)
+                ? (ToolTipImage) image : assignToolTipToImageInternal(image, "");
     }
     
     /**
      * Converts given icon to a {@link java.awt.Image}.
+     *
+     * <p>A scalable {@link Icon} instance can always be recovered by passing the returned
+     * {@code Image} to {@link #image2Icon(Image)} again, i.e. for painting on HiDPI screens.
      *
      * @param icon {@link javax.swing.Icon} to be converted.
      */
@@ -263,15 +324,37 @@ public final class ImageUtilities {
             LOGGER.log(Level.WARNING, null, new NullPointerException());
             return loadImage("org/openide/nodes/defaultNode.png", true);
         }
-        if (icon instanceof ImageIcon) {
-            return ((ImageIcon) icon).getImage();
-        } else {
-            ToolTipImage image = new ToolTipImage("", icon.getIconWidth(), icon.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
-            Graphics g = image.getGraphics();
-            icon.paintIcon(new JLabel(), g, 0, 0);
-            g.dispose();
-            return image;
+        if (icon instanceof ToolTipImage) {
+            return (ToolTipImage) icon;
+        } else if (icon instanceof IconImageIcon) {
+            return icon2Image(((IconImageIcon) icon).getDelegateIcon());
+        } else if (icon instanceof ImageIcon) {
+            Image ret = ((ImageIcon) icon).getImage();
+            if (ret != null)
+                return ret;
         }
+        return icon2ToolTipImage(icon, null);
+    }
+
+    /**
+     * @param url may be null
+     */
+    private static ToolTipImage icon2ToolTipImage(Icon icon, URL url) {
+        Parameters.notNull("icon", icon);
+        if (icon instanceof ToolTipImage) {
+            return (ToolTipImage) icon;
+        }
+        ToolTipImage image = new ToolTipImage(icon, "", url, BufferedImage.TYPE_INT_ARGB);
+        Graphics g = image.getGraphics();
+        /* Previously, we'd create a new JLabel here every time; this once led to a deadlock on
+        startup when the nb.imageicon.filter setting was enabled. The underlying problem is that
+        methods in this class may be called from any thread, while JLabel's methods and constructors
+        should really only be called on the Event Dispatch Thread. Constructing the component once
+        on the EDT fixed the problem. Read-only operations from non-EDT threads shouldn't really be
+        a problem; most Icon implementations won't ever access the component parameter anyway. */
+        icon.paintIcon(dummyIconComponent, g, 0, 0);
+        g.dispose();
+        return image;
     }
     
     /**
@@ -282,10 +365,15 @@ public final class ImageUtilities {
      * @return Image with attached tool tip 
      */    
     public static final Image assignToolTipToImage(Image image, String text) {
+        return assignToolTipToImageInternal(image, text);
+    }
+
+    // Private version with more specific return type.
+    private static ToolTipImage assignToolTipToImageInternal(Image image, String text) {
         Parameters.notNull("image", image);
         Parameters.notNull("text", text);
         ToolTipImageKey key = new ToolTipImageKey(image, text);
-        Image cached;
+        ToolTipImage cached;
         synchronized (imageToolTipCache) {
             ActiveRef<ToolTipImageKey> r = imageToolTipCache.get(key);
             if (r != null) {
@@ -342,7 +430,10 @@ public final class ImageUtilities {
      */
     public static Icon createDisabledIcon(Icon icon)  {
         Parameters.notNull("icon", icon);
-        return new LazyDisabledIcon(icon2Image(icon));
+        /* FilteredIcon's Javadoc mentions a caveat about the Component parameter that is passed to
+        Icon.paintIcon. It's not really a problem; previous implementations had the same
+        behavior. */
+        return FilteredIcon.create(DisabledButtonFilter.INSTANCE, icon);
     }
 
     /**
@@ -353,7 +444,26 @@ public final class ImageUtilities {
      */
     public static Image createDisabledImage(Image image)  {
         Parameters.notNull("image", image);
-        return LazyDisabledIcon.createDisabledImage(image);
+        // Go through FilteredIcon to preserve scalable icons.
+        return icon2Image(createDisabledIcon(image2Icon(image)));
+    }
+
+    /**
+     * Get an SVG icon loader, if the appropriate service provider module is installed. To ensure
+     * lazy loading of the SVG loader module, this method should only be called when there actually
+     * exists an SVG file to load. The result is cached.
+     *
+     * @return may be null
+     */
+    private static SVGLoader getSVGLoader() {
+        /* "Objects contained in the default lookup are instantiated lazily when first requested."
+        ( http://wiki.netbeans.org/DevFaqLookupDefault ) So the SVGLoader implementation module will
+        only be loaded the first time an SVG file is actually encountered for loading, rather than,
+        for instance, when the startup splash screen initializes ImageUtilities to load its PNG
+        image. This was confirmed by printing a debugging message from a static initializer in
+        SVGLoaderImpl in the implementation module; the message appears well after the splash
+        screen's PNG graphics first becomes visible. */
+        return svgLoaderLoader.getLoader();
     }
 
     /**
@@ -361,54 +471,97 @@ public final class ImageUtilities {
      * Since this is done very frequently, it is wasteful to query lookup each time.
      * Instead, remember the last result and just listen for changes.
      */
-    static ClassLoader getLoader() {
-        Object is = currentLoader;
-        if (is instanceof ClassLoader) {
-            return (ClassLoader)is;
-        }
-            
-        currentLoader = Thread.currentThread();
-            
-        if (loaderQuery == null) {
-            loaderQuery = Lookup.getDefault().lookup(new Lookup.Template<ClassLoader>(ClassLoader.class));
-            loaderQuery.addLookupListener(
-                new LookupListener() {
-                    public void resultChanged(LookupEvent ev) {
-                        ERR.fine("Loader cleared"); // NOI18N
-                        currentLoader = null;
-                    }
-                }
-            );
+    static ClassLoader getClassLoader() {
+        return classLoaderLoader.getLoader();
+    }
+
+    private static final class CachedLookupLoader<T> {
+        private final Class<T> clazz;
+        private final AtomicBoolean noLoaderWarned = new AtomicBoolean(false);
+        /**
+         * Cached result of {@link #getLoader()}. Null means the cache is cleared; absent means the
+         * result is cached but was null (no loader found). This field is marked volatile so that it
+         * can be retrieved without synchronization in the common case, like in prior versions.
+         */
+        private volatile Optional<T> currentLoader;
+        /**
+         * The thread which last started performing an uncached lookup, when said lookup is
+         * currently in progress. The result of an uncached lookup will only be cached if
+         * (1) LookupListener.resultChanged was _not_ called while the lookup was being performed
+         * and (2) no other uncached lookups were started more recently. This is slightly cleaned-up
+         * version of the fix for an old race condition bug (#62194 in BugZilla).
+         */
+        private Thread threadInProgress;
+        private Lookup.Result<T> loaderQuery;
+
+        public CachedLookupLoader(Class<T> clazz) {
+            Parameters.notNull("clazz", clazz);
+            this.clazz = clazz;
         }
 
-        Iterator it = loaderQuery.allInstances().iterator();
-        if (it.hasNext()) {
-            ClassLoader toReturn = (ClassLoader) it.next();
-            if (currentLoader == Thread.currentThread()) {
-                currentLoader = toReturn;
+        public T getLoader() {
+            Optional<T> toReturn = currentLoader;
+            if (toReturn != null) {
+                return toReturn.orElse(null);
             }
-            if (ERR.isLoggable(Level.FINE)) {
-                ERR.fine("Loader computed: " + currentLoader); // NOI18N
+            final Lookup.Result<T> useLoaderQuery;
+            synchronized (this) {
+                // Signal to other threads that their result is outdated.
+                threadInProgress = Thread.currentThread();
+                if (loaderQuery == null) {
+                    loaderQuery = Lookup.getDefault().lookupResult(clazz);
+                    loaderQuery.addLookupListener(
+                        new LookupListener() {
+                            @Override
+                            public void resultChanged(LookupEvent ev) {
+                                ERR.log(Level.FINE, "Loader for {0} cleared", clazz); // NOI18N
+                                /* Clear any existing cached result, and indicate to ongoing lookup
+                                operations in other threads that their results are outdated and
+                                should not be cahced. */
+                                synchronized (CachedLookupLoader.this) {
+                                    currentLoader = null;
+                                    threadInProgress = null;
+                                }
+                            }
+                        }
+                    );
+                }
+                useLoaderQuery = loaderQuery;
             }
-            return toReturn;
-        } else { if (!noLoaderWarned) {
-                noLoaderWarned = true;
-                ERR.warning(
-                    "No ClassLoader instance found in " + Lookup.getDefault() // NOI18N
-                );
+
+            Iterator<? extends T> it = useLoaderQuery.allInstances().iterator();
+            toReturn = Optional.ofNullable(it.hasNext() ? it.next() : null);
+            if (!toReturn.isPresent()) {
+                if (!noLoaderWarned.getAndSet(true)) {
+                    ERR.log(Level.WARNING, "No {0} instance found in {1}", // NOI18N
+                            new Object[]{ clazz, Lookup.getDefault() });
+                }
+            } else if (ERR.isLoggable(Level.FINE)) {
+                // Log message must start with "Loader computed", per ImageUtilitiesGetLoaderTest.
+                ERR.log(Level.FINE, "Loader computed for {0}: {1}", // NOI18N
+                        new Object[]{ clazz, toReturn.orElse(null) });
             }
-            return null;
+            synchronized (this) {
+                if (threadInProgress == Thread.currentThread()) {
+                    /* We're the last thread to have started performing a lookup, and the result has
+                    not been invalidated since after we started the operation, so we can safely
+                    cache the result. */
+                    threadInProgress = null;
+                    currentLoader = toReturn;
+                }
+            }
+            return toReturn.orElse(null);
         }
     }
 
-    static Image getIcon(String resource, boolean localized) {
+    static ToolTipImage getIcon(String resource, boolean localized) {
         if (localized) {
             if (resource == null) {
                 return null;
             }
             synchronized (localizedCache) {
                 ActiveRef<String> ref = localizedCache.get(resource);
-                Image img = null;
+                ToolTipImage img = null;
 
                 // no icon for this name (already tested)
                 if (ref == NO_ICON) {
@@ -426,7 +579,7 @@ public final class ImageUtilities {
                 }
 
                 // find localized or base image
-                ClassLoader loader = getLoader();
+                ClassLoader loader = getClassLoader();
 
                 // we'll keep the String probably for long time, optimize it
                 resource = new String(resource).intern(); // NOPMD
@@ -450,7 +603,7 @@ public final class ImageUtilities {
                 
                 while (it.hasNext()) {
                     String suffix = it.next();
-                    Image i;
+                    ToolTipImage i;
 
                     if (suffix.length() == 0) {
                         i = getIcon(resource, loader, false);
@@ -467,7 +620,7 @@ public final class ImageUtilities {
                 return null;
             }
         } else {
-            return getIcon(resource, getLoader(), false);
+            return getIcon(resource, getClassLoader(), false);
         }
     }
 
@@ -477,12 +630,12 @@ public final class ImageUtilities {
     * @param localizedQuery whether the name contains some localization suffix
     *  and is not optimized/interned
     */
-    private static Image getIcon(String name, ClassLoader loader, boolean localizedQuery) {
+    private static ToolTipImage getIcon(String name, ClassLoader loader, boolean localizedQuery) {
         if (name == null) {
             return null;
         }
         ActiveRef<String> ref = cache.get(name);
-        Image img = null;
+        ToolTipImage img = null;
 
         // no icon for this name (already tested)
         if (ref == NO_ICON) {
@@ -529,15 +682,39 @@ public final class ImageUtilities {
                 n = name;
             }
 
-            // we have to load it
-            java.net.URL url = (loader != null) ? loader.getResource(n)
-                                                : ImageUtilities.class.getClassLoader().getResource(n);
+            // Load the icon.
+            SVGLoader svgLoader = null; // If not null, url should be loaded as an SVG file.
+            ClassLoader useClassLoader =
+                    (loader != null) ? loader : ImageUtilities.class.getClassLoader();
+            java.net.URL url = null;
+            if (n.endsWith(".png") || n.endsWith(".gif") || n.endsWith(".svg")) {
+                /* If an SVG version of the image is available, always load that one. Only attempt
+                to load the SVGLoader implementation module if an actual SVG file exists. */
+                URL svgURL = useClassLoader.getResource(n.substring(0, n.length() - 4) + ".svg");
+                if (svgURL != null) {
+                    svgLoader = getSVGLoader();
+                    if (svgLoader != null) {
+                        url = svgURL;
+                    } else {
+                        ERR.log(Level.INFO, "No SVG loader available for loading {0}", svgURL);
+                    }
+                }
+            }
+            if (url == null && !n.endsWith(".svg")) { // The SVG case was handled before.
+                url = useClassLoader.getResource(n);
+            }
 
 //            img = (url == null) ? null : Toolkit.getDefaultToolkit().createImage(url);
             Image result = null;
             try {
                 if (url != null) {
-                    if (name.endsWith(".png")) {
+                    if (svgLoader != null) {
+                        try {
+                            result = icon2ToolTipImage(svgLoader.loadIcon(url), url);
+                        } catch (IOException e) {
+                            ERR.log(Level.INFO, "Failed to load SVG image " + url, e);
+                        }
+                    } else if (name.endsWith(".png")) {
                         ImageInputStream stream = ImageIO.createImageInputStream(url.openStream());
                         ImageReadParam param = PNG_READER.getDefaultReadParam();
                         try {
@@ -549,20 +726,6 @@ public final class ImageUtilities {
                         }
                         stream.close();
                     } 
-                    /*
-                    else if (name.endsWith(".gif")) {
-                        ImageInputStream stream = ImageIO.createImageInputStream(url.openStream());
-                        ImageReadParam param = GIF_READER.getDefaultReadParam();
-                        try {
-                            GIF_READER.setInput(stream, true, true);
-                            result = GIF_READER.read(0, param);
-                        }
-                        catch (IOException ioe1) {
-                            ERR.log(Level.INFO, "Image "+name+" is not GIF", ioe1);
-                        }
-                        stream.close();
-                    }
-                     */
 
                     if (result == null) {
                         result = ImageIO.read(url);
@@ -586,9 +749,11 @@ public final class ImageUtilities {
                     ERR.log(Level.FINE, "loading icon {0} = {1}", new Object[] {n, result});
                 }
                 name = new String(name).intern(); // NOPMD
-                result = ToolTipImage.createNew("", result, url);
-                cache.put(name, new ActiveRef<String>(result, cache, name));
-                return result;
+                ToolTipImage toolTipImage = (result instanceof ToolTipImage)
+                        ? (ToolTipImage) result
+                        : ToolTipImage.createNew("", result, url);
+                cache.put(name, new ActiveRef<String>(toolTipImage, cache, name));
+                return toolTipImage;
             } else { // no icon found
                 if (!localizedQuery) {
                     cache.put(name, NO_ICON);
@@ -598,10 +763,11 @@ public final class ImageUtilities {
         }
     }
 
+    // Note: No longer in use.
     /** The method creates a BufferedImage which represents the same Image as the
      * parameter but consumes less memory.
      */
-    static final Image toBufferedImage(Image img) {
+    private static final Image toBufferedImage(Image img) {
         // load the image
         new javax.swing.ImageIcon(img, "");
 
@@ -641,12 +807,12 @@ public final class ImageUtilities {
         }
     }
     
-    private static final Image doMergeImages(Image image1, Image image2, int x, int y) {
+    private static final ToolTipImage doMergeImages(Image image1, Image image2, int x, int y) {
         ensureLoaded(image1);
         ensureLoaded(image2);
 
-        int w = Math.max(image1.getWidth(null), x + image2.getWidth(null));
-        int h = Math.max(image1.getHeight(null), y + image2.getHeight(null));
+        int w = Math.max(1, Math.max(image1.getWidth(null), x + image2.getWidth(null)));
+        int h = Math.max(1, Math.max(image1.getHeight(null), y + image2.getHeight(null)));
         boolean bitmask = (image1 instanceof Transparency) && ((Transparency)image1).getTransparency() != Transparency.TRANSLUCENT
                 && (image2 instanceof Transparency) && ((Transparency)image2).getTransparency() != Transparency.TRANSLUCENT;
 
@@ -661,16 +827,55 @@ public final class ImageUtilities {
         Object firstUrl = image1.getProperty("url", null);
         
         ColorModel model = colorModel(bitmask? Transparency.BITMASK: Transparency.TRANSLUCENT);
-        ToolTipImage buffImage = new ToolTipImage(str.toString(), 
+        // Provide a delegate Icon for scalable rendering.
+        Icon delegateIcon = new MergedIcon(image2Icon(image1), image2Icon(image2), x, y);
+        ToolTipImage buffImage = new ToolTipImage(str.toString(), delegateIcon,
                 model, model.createCompatibleWritableRaster(w, h), model.isAlphaPremultiplied(), null, firstUrl instanceof URL ? (URL)firstUrl : null
             );
 
+        // Also provide an Image-based rendering for backwards-compatibility.
         java.awt.Graphics g = buffImage.createGraphics();
         g.drawImage(image1, 0, 0, null);
         g.drawImage(image2, x, y, null);
         g.dispose();
 
         return buffImage;
+    }
+
+    /**
+     * Alternative image merging implementation using the {@link Icon} API. This preserves
+     * scalability of the delegate {@code Icon}s on HiDPI displays.
+     */
+    private static final class MergedIcon extends CachedHiDPIIcon {
+        private final Icon icon1;
+        private final Icon icon2;
+        private final int x, y;
+
+        public MergedIcon(Icon icon1, Icon icon2, int x, int y) {
+            super(Math.max(icon1.getIconWidth(), x + icon2.getIconWidth()),
+                  Math.max(icon1.getIconHeight(), y + icon2.getIconHeight()));
+            this.icon1 = icon1;
+            this.icon2 = icon2;
+            this.x = x;
+            this.y = y;
+        }
+
+        @Override
+        protected Image createAndPaintImage(
+                Component c, ColorModel colorModel, int deviceWidth, int deviceHeight, double scale)
+        {
+            BufferedImage ret = createBufferedImage(colorModel, deviceWidth, deviceHeight);
+            Graphics2D g = ret.createGraphics();
+            try {
+                g.clip(new Rectangle(0, 0, deviceWidth, deviceHeight));
+                g.scale(scale, scale);
+                icon1.paintIcon(c, g, 0, 0);
+                icon2.paintIcon(c, g, x, y);
+            } finally {
+                g.dispose();
+            }
+            return ret;
+        }
     }
 
     /** Creates BufferedImage with Transparency.TRANSLUCENT */
@@ -733,7 +938,7 @@ public final class ImageUtilities {
         @Override
         public int hashCode() {
             int hash = ((x << 3) ^ y) << 4;
-            hash = hash ^ baseImage.hashCode() ^ overlayImage.hashCode();
+            hash = hash ^ System.identityHashCode(baseImage) ^ System.identityHashCode(overlayImage);
 
             return hash;
         }
@@ -767,8 +972,7 @@ public final class ImageUtilities {
 
         @Override
         public int hashCode() {
-            int hash = image.hashCode() ^ str.hashCode();
-            return hash;
+            return System.identityHashCode(image) ^ str.hashCode();
         }
 
         @Override
@@ -778,11 +982,11 @@ public final class ImageUtilities {
     }
 
     /** Cleaning reference. */
-    private static final class ActiveRef<T> extends SoftReference<Image> implements Runnable {
+    private static final class ActiveRef<T> extends SoftReference<ToolTipImage> implements Runnable {
         private final Map<T,ActiveRef<T>> holder;
         private final T key;
 
-        public ActiveRef(Image o, Map<T,ActiveRef<T>> holder, T key) {
+        public ActiveRef(ToolTipImage o, Map<T,ActiveRef<T>> holder, T key) {
             super(o, Utilities.activeReferenceQueue());
             this.holder = holder;
             this.key = key;
@@ -797,25 +1001,80 @@ public final class ImageUtilities {
      // end of ActiveRef
 
     /**
+     * Wraps an arbitrary {@link Icon} inside an {@link ImageIcon}. This allows us to provide
+     * scalable icons from {@link #loadImageIcon(String,boolean)} without changing the API.
+     */
+    private static final class IconImageIcon extends ImageIcon {
+        /* I'd love to make this final, but the custom serialization handling precludes this. Make
+        it volatile instead, to be completely sure that the class is still thread-safe. */
+        private volatile Icon delegate;
+
+        private IconImageIcon(Icon delegate) {
+            super(icon2Image(delegate));
+            Parameters.notNull("delegate", delegate);
+            this.delegate = delegate;
+        }
+
+        private static ImageIcon create(Icon delegate) {
+            return (delegate instanceof ImageIcon)
+                    ? (ImageIcon) delegate : new IconImageIcon(delegate);
+        }
+
+        @Override
+        public synchronized void paintIcon(Component c, Graphics g, int x, int y) {
+            delegate.paintIcon(c, g, x, y);
+        }
+
+        public Icon getDelegateIcon() {
+            return delegate;
+        }
+
+        /* NETBEANS-3769: Since ImageIcon implements Serializable, we must support serialization.
+        But there is no guarantee that the delegate implements Serializable, thus the default
+        serialization mechanism might throw a java.io.NotSerializableException when
+        ObjectOutputStream.writeObject gets recursively called on the delegate. Implement a custom
+        serialization mechanism based on ImageIcon instead. */
+
+        private void writeObject(ObjectOutputStream out) throws IOException {
+            out.writeObject(new ImageIcon(getImage()));
+        }
+
+        private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+            this.delegate = (ImageIcon) in.readObject();
+        }
+
+        private void readObjectNoData() throws ObjectStreamException {
+            this.delegate = new ImageIcon(new BufferedImage(1, 1, BufferedImage.TYPE_4BYTE_ABGR));
+        }
+    }
+
+    /**
      * Image with tool tip text (for icons with badges)
      */
     private static class ToolTipImage extends BufferedImage implements Icon {
         final String toolTipText;
-        ImageIcon imageIcon;
+        // May be null.
+        final Icon delegateIcon;
+        // May be null.
         final URL url;
+        // May be null.
+        ImageIcon imageIconVersion;
 
         public static ToolTipImage createNew(String toolTipText, Image image, URL url) {
             ImageUtilities.ensureLoaded(image);
             boolean bitmask = (image instanceof Transparency) && ((Transparency) image).getTransparency() != Transparency.TRANSLUCENT;
             ColorModel model = colorModel(bitmask ? Transparency.BITMASK : Transparency.TRANSLUCENT);
-            int w = image.getWidth(null);
-            int h = image.getHeight(null);
+            int w = Math.max(1, image.getWidth(null));
+            int h = Math.max(1, image.getHeight(null));
             if (url == null) {
                 Object value = image.getProperty("url", null);
                 url = (value instanceof URL) ? (URL) value : null;
             }            
+            Icon icon = (image instanceof ToolTipImage)
+                    ? ((ToolTipImage) image).getDelegateIcon() : null;
             ToolTipImage newImage = new ToolTipImage(
                 toolTipText,
+                icon,
                 model,
                 model.createCompatibleWritableRaster(w, h),
                 model.isAlphaPremultiplied(), null, url
@@ -826,27 +1085,42 @@ public final class ImageUtilities {
             g.dispose();
             return newImage;
         }
-        
+
         public ToolTipImage(
-            String toolTipText, ColorModel cm, WritableRaster raster,
+            String toolTipText, Icon delegateIcon, ColorModel cm, WritableRaster raster,
             boolean isRasterPremultiplied, Hashtable<?, ?> properties, URL url
         ) {
             super(cm, raster, isRasterPremultiplied, properties);
             this.toolTipText = toolTipText;
+            this.delegateIcon = delegateIcon;
             this.url = url;
         }
 
-        public ToolTipImage(String toolTipText, int width, int height, int imageType) {
-            super(width, height, imageType);
-            this.toolTipText = toolTipText;
-            this.url = null;
+        public synchronized ImageIcon asImageIcon() {
+          if (imageIconVersion == null)
+            imageIconVersion = IconImageIcon.create(this);
+          return imageIconVersion;
         }
-        
-        synchronized ImageIcon getIcon() {
-            if (imageIcon == null) {
-                imageIcon = new ImageIcon(this);
-            }
-            return imageIcon;
+
+        /**
+         * @param url may be null
+         */
+        public ToolTipImage(Icon delegateIcon, String toolTipText, URL url, int imageType) {
+            // BufferedImage must have width/height > 0.
+            super(Math.max(1, delegateIcon.getIconWidth()),
+                    Math.max(1, delegateIcon.getIconHeight()), imageType);
+            this.delegateIcon = delegateIcon;
+            this.toolTipText = toolTipText;
+            this.url = url;
+        }
+
+        /**
+         * Get an {@link Icon} instance representing a scalable version of this {@code Image}.
+         *
+         * @return may be null
+         */
+        public Icon getDelegateIcon() {
+            return delegateIcon;
         }
 
         public int getIconHeight() {
@@ -858,66 +1132,75 @@ public final class ImageUtilities {
         }
 
         public void paintIcon(Component c, Graphics g, int x, int y) {
-            g.drawImage(this, x, y, null);
+            if (delegateIcon != null) {
+                delegateIcon.paintIcon(c, g, x, y);
+            } else {
+                /* There is no scalable delegate icon available. On HiDPI displays, this means that
+                original low-resolution icons will need to be scaled up to a higher resolution. Do a
+                few tricks here to improve the quality of the scaling. See NETBEANS-2614 and the
+                before/after screenshots that are attached to said JIRA ticket. */
+                Graphics2D g2 = (Graphics2D) g.create();
+                try {
+                    final AffineTransform tx = g2.getTransform();
+                    final int txType = tx.getType();
+                    final double scale;
+                    if (txType == AffineTransform.TYPE_UNIFORM_SCALE ||
+                        txType == (AffineTransform.TYPE_UNIFORM_SCALE | AffineTransform.TYPE_TRANSLATION))
+                    {
+                      scale = tx.getScaleX();
+                    } else {
+                      scale = 1.0;
+                    }
+                    if (scale != 1.0) {
+                        /* The default interpolation mode is nearest neighbor. Use bicubic
+                        interpolation instead, which looks better, especially with non-integral
+                        HiDPI scaling factors (e.g. 150%). Even for an integral 2x scaling factor
+                        (used by all Retina displays on MacOS), the blurred appearance of bicubic
+                        scaling ends up looking better on HiDPI displays than the blocky appearance
+                        of nearest neighbor. */
+                        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+                        g2.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
+                        g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                        /* For non-integral scaling factors, we frequently encounter non-integral
+                        device pixel positions. For instance, with a 150% scaling factor, the
+                        logical pixel position (7,0) would map to device pixel position (10.5,0).
+                        On such scaling factors, icons look a lot better if we round the (x,y)
+                        translation to an integral number of device pixels before painting. */
+                        g2.setTransform(new AffineTransform(scale, 0, 0, scale,
+                                (int) tx.getTranslateX(), (int) tx.getTranslateY()));
+                    }
+                    g2.drawImage(this, x, y, null);
+                } finally {
+                    g2.dispose();
+                }
+            }
         }
 
         @Override
         public Object getProperty(String name, ImageObserver observer) {
             if ("url".equals(name)) { // NOI18N
+                /* In some cases it might strictly be more appropriate to return
+                Image.UndefinedProperty rather than null (see Javadoc spec for this method), but
+                retain the existing behavior and use null instead here. That way there won't be a
+                ClassCastException if someone tries to cast to URL. */
                 if (url != null) {
                     return url;
+                } else if (!(delegateIcon instanceof ImageIcon)) {
+                    return null;
                 } else {
-                    if (imageIcon == null) {
+                    Image image = ((ImageIcon) delegateIcon).getImage();
+                    if (image == this || image == null) {
                         return null;
                     }
-                    if (imageIcon.getImage() == this) {
-                        return null;
-                    }
-                    return imageIcon.getImage().getProperty("url", observer);
+                    return image.getProperty("url", observer);
                 }
             }
             return super.getProperty(name, observer);
         }
     }
 
-    private static class LazyDisabledIcon implements Icon {
-
-        /** Shared instance of filter for disabled icons */
-        private static final RGBImageFilter DISABLED_BUTTON_FILTER = new DisabledButtonFilter();
-        private Image img;
-        private Icon disabledIcon;
-
-        public LazyDisabledIcon(Image img) {
-            assert null != img;
-            this.img = img;
-        }
-
-        public void paintIcon(Component c, Graphics g, int x, int y) {
-            getDisabledIcon().paintIcon(c, g, x, y);
-        }
-
-        public int getIconWidth() {
-            return getDisabledIcon().getIconWidth();
-        }
-
-        public int getIconHeight() {
-            return getDisabledIcon().getIconHeight();
-        }
-
-        private synchronized Icon getDisabledIcon() {
-            if (null == disabledIcon) {
-                disabledIcon = new ImageIcon(createDisabledImage(img));
-            }
-            return disabledIcon;
-        }
-
-        static Image createDisabledImage(Image img) {
-            ImageProducer prod = new FilteredImageSource(img.getSource(), DISABLED_BUTTON_FILTER);
-            return Toolkit.getDefaultToolkit().createImage(prod);
-        }
-    }
-
     private static class DisabledButtonFilter extends RGBImageFilter {
+        public static final RGBImageFilter INSTANCE = new DisabledButtonFilter();
 
         DisabledButtonFilter() {
             canFilterIndexColorModel = true;

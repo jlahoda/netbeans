@@ -1,5 +1,27 @@
 #Signature file v4.1
-#Version 2.76.1
+#Version 2.84
+
+CLSS public abstract interface java.io.Serializable
+
+CLSS public abstract interface java.lang.Comparable<%0 extends java.lang.Object>
+meth public abstract int compareTo({java.lang.Comparable%0})
+
+CLSS public abstract java.lang.Enum<%0 extends java.lang.Enum<{java.lang.Enum%0}>>
+cons protected init(java.lang.String,int)
+intf java.io.Serializable
+intf java.lang.Comparable<{java.lang.Enum%0}>
+meth protected final java.lang.Object clone() throws java.lang.CloneNotSupportedException
+meth protected final void finalize()
+meth public final boolean equals(java.lang.Object)
+meth public final int compareTo({java.lang.Enum%0})
+meth public final int hashCode()
+meth public final int ordinal()
+meth public final java.lang.Class<{java.lang.Enum%0}> getDeclaringClass()
+meth public final java.lang.String name()
+meth public java.lang.String toString()
+meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
+supr java.lang.Object
+hfds name,ordinal
 
 CLSS public java.lang.Object
 cons public init()
@@ -27,8 +49,10 @@ supr java.lang.Object
 hfds MAX_TOOLTIP_LINES,name,testcases
 
 CLSS public org.netbeans.modules.gsf.testrunner.api.Testcase
+cons public init(java.lang.String,java.lang.String,java.lang.String,org.netbeans.modules.gsf.testrunner.api.TestSession)
 cons public init(java.lang.String,java.lang.String,org.netbeans.modules.gsf.testrunner.api.TestSession)
 meth public java.lang.String getClassName()
+meth public java.lang.String getDisplayName()
 meth public java.lang.String getLocation()
 meth public java.lang.String getName()
 meth public java.lang.String getType()
@@ -45,7 +69,7 @@ meth public void setStatus(org.netbeans.modules.gsf.testrunner.api.Status)
 meth public void setTimeMillis(long)
 meth public void setTrouble(org.netbeans.modules.gsf.testrunner.api.Trouble)
 supr java.lang.Object
-hfds className,location,name,output,session,status,timeMillis,trouble,type
+hfds className,displayName,location,name,output,session,status,timeMillis,trouble,type
 
 CLSS public abstract org.netbeans.modules.gsf.testrunner.plugin.CommonPlugin
 cons protected init()
@@ -186,6 +210,7 @@ meth public static java.lang.String getTestClassName(java.lang.String)
 meth public static java.util.List<java.lang.String> getJavaFileNames(org.openide.filesystems.FileObject,org.netbeans.api.java.source.ClasspathInfo)
 meth public static org.netbeans.modules.junit.plugin.JUnitPlugin getITPluginForProject(org.netbeans.api.project.Project)
 meth public static org.netbeans.modules.junit.plugin.JUnitPlugin getPluginForProject(org.netbeans.api.project.Project)
+meth public static org.netbeans.modules.junit.plugin.JUnitPlugin getPluginForProject(org.netbeans.api.project.Project,org.netbeans.modules.junit.api.JUnitVersion)
 meth public static org.openide.filesystems.FileObject[] createTests(org.netbeans.modules.junit.plugin.JUnitPlugin,org.openide.filesystems.FileObject[],org.openide.filesystems.FileObject,java.util.Map<org.netbeans.modules.gsf.testrunner.plugin.CommonPlugin$CreateTestParam,java.lang.Object>)
 meth public static void notifyUser(java.lang.String)
 meth public static void notifyUser(java.lang.String,int)
@@ -193,6 +218,7 @@ supr org.netbeans.modules.java.testrunner.CommonTestUtil
 hfds JAVA_MIME_TYPE,JAVA_SOURCES_SUFFIX
 
 CLSS public org.netbeans.modules.junit.api.JUnitTestcase
+cons public init(java.lang.String,java.lang.String,java.lang.String,org.netbeans.modules.gsf.testrunner.api.TestSession)
 cons public init(java.lang.String,java.lang.String,org.netbeans.modules.gsf.testrunner.api.TestSession)
 meth public java.lang.String getName()
 meth public org.openide.filesystems.FileObject getClassFileObject()
@@ -218,6 +244,14 @@ meth public static org.openide.loaders.DataObject createSuiteTest(org.openide.fi
 meth public static void logJUnitUsage(java.net.URI)
 supr java.lang.Object
 hfds foldersToSourceGroupsMap,javaSourceGroups,project,sourceGroupsOnly,sourcesToTestsMap
+
+CLSS public final !enum org.netbeans.modules.junit.api.JUnitVersion
+fld public final static org.netbeans.modules.junit.api.JUnitVersion JUNIT3
+fld public final static org.netbeans.modules.junit.api.JUnitVersion JUNIT4
+fld public final static org.netbeans.modules.junit.api.JUnitVersion JUNIT5
+meth public static org.netbeans.modules.junit.api.JUnitVersion valueOf(java.lang.String)
+meth public static org.netbeans.modules.junit.api.JUnitVersion[] values()
+supr java.lang.Enum<org.netbeans.modules.junit.api.JUnitVersion>
 
 CLSS public abstract org.netbeans.modules.junit.plugin.JUnitPlugin
 cons public init()

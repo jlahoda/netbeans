@@ -21,6 +21,7 @@ package org.netbeans.modules.java.hints.spiimpl;
 
 import com.sun.source.tree.BlockTree;
 import com.sun.source.tree.CompilationUnitTree;
+import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Scope;
 import com.sun.source.tree.Tree;
@@ -48,6 +49,7 @@ import javax.lang.model.type.TypeMirror;
 import javax.tools.JavaFileObject;
 
 import com.sun.tools.javac.parser.ParserFactory;
+import com.sun.tools.javac.tree.JCTree.JCLambda;
 import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.java.source.CompilationInfo;
@@ -75,7 +77,7 @@ public class Hacks {
             clazz.append("import ").append(i).append(";\n");
         }
 
-        clazz.append("public class $").append(inc++).append("{");
+        clazz.append("public class $$scopeclass$").append(inc++).append("{");
 
         clazz.append("private void test() {\n");
         clazz.append("}\n");
@@ -100,6 +102,10 @@ public class Hacks {
             return null;
         } finally {
         }
+    }
+
+    public static void copyLambdaKind(LambdaExpressionTree node, LambdaExpressionTree nue) {
+        ((JCLambda) nue).paramKind = ((JCLambda) node).paramKind;
     }
 
     private static final class ScannerImpl extends ErrorAwareTreePathScanner<Scope, CompilationInfo> {

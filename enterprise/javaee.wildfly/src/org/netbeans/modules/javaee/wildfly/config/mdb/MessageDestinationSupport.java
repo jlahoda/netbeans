@@ -31,5 +31,5 @@ public interface MessageDestinationSupport {
     MessageDestination createMessageDestination(String name, MessageDestination.Type type) throws UnsupportedOperationException, ConfigurationException;
 
     Set<MessageDestination> getMessageDestinations() throws ConfigurationException;
-    
+
 }

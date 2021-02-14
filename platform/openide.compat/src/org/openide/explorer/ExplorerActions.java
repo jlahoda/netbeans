@@ -61,6 +61,7 @@ import org.openide.util.Exceptions;
  *   for details
  * @author Jan Jancura, Petr Hamernik, Ian Formanek, Jaroslav Tulach
  */
+@Deprecated
 public class ExplorerActions {
     /** actions to work with */
     private static CopyAction copy = null;
@@ -151,9 +152,7 @@ public class ExplorerActions {
         if (c instanceof ExClipboard) {
             ExClipboard clip = (ExClipboard) c;
             clip.addClipboardListener(
-                (ClipboardListener) org.openide.util.WeakListeners.create(
-                    ClipboardListener.class, actionStateUpdater, clip
-                )
+                org.openide.util.WeakListeners.create(ClipboardListener.class, actionStateUpdater, clip)
             );
         }
 
@@ -178,6 +177,7 @@ public class ExplorerActions {
      * via reflection (!) from RegistryImpl in core.
      * @deprecated Kill me later; see #18137 for explanation.
      */
+    @Deprecated
     ExplorerManager getAttachedManager() {
         return manager;
     }
@@ -233,10 +233,10 @@ public class ExplorerActions {
         Node[] path = manager.getSelectedNodes();
 
         if (copy == null) {
-            copy = (CopyAction) CopyAction.findObject(CopyAction.class, true);
-            cut = (CutAction) CutAction.findObject(CutAction.class, true);
-            paste = (PasteAction) PasteAction.findObject(PasteAction.class, true);
-            delete = (DeleteAction) DeleteAction.findObject(DeleteAction.class, true);
+            copy   = CopyAction.findObject(CopyAction.class, true);
+            cut    = CutAction.findObject(CutAction.class, true);
+            paste  = PasteAction.findObject(PasteAction.class, true);
+            delete = DeleteAction.findObject(DeleteAction.class, true);
         }
 
         int i;
@@ -482,7 +482,7 @@ public class ExplorerActions {
 
     /** If our clipboard is not found return the default system clipboard. */
     private static Clipboard getClipboard() {
-        Clipboard c = (java.awt.datatransfer.Clipboard) org.openide.util.Lookup.getDefault().lookup(
+        Clipboard c = org.openide.util.Lookup.getDefault().lookup(
                 java.awt.datatransfer.Clipboard.class
             );
 

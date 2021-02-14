@@ -46,7 +46,7 @@ import org.openide.util.NbBundle;
 public class VarCompDeclaration implements ErrorRule<Void> {
 
     private static final Set<String> ERROR_CODES = new HashSet<String>(Arrays.asList(
-            "compiler.err.var.not.allowed.compound")); // NOI18N
+            "compiler.err.var.not.allowed.compound", "compiler.err.restricted.type.not.allowed.compound")); // NOI18N
 
     @Override
     public Set<String> getCodes() {
@@ -123,6 +123,10 @@ public class VarCompDeclaration implements ErrorRule<Void> {
             int pos = statements.indexOf(statementPath.getLeaf());
             List<StatementTree> newStatements = new ArrayList<>();
             if (pos > 0) {
+                if(info.getTreeUtilities().isPartOfCompoundVariableDeclaration(statements.get(pos - 1))
+                        && !info.getTreeUtilities().isEndOfCompoundVariableDeclaration(statements.get(pos - 1))){
+                    pos--;
+                }
                 newStatements.addAll(statements.subList(0, pos));
             }
 
