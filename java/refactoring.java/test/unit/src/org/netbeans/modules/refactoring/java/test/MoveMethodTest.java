@@ -408,7 +408,7 @@ public class MoveMethodTest extends MoveBase {
                 + "}\n"));
         performMove(src.getFileObject("t/A.java"), new int[]{1}, src.getFileObject("t/C.java"), Visibility.PUBLIC, false, new Problem(true, "ERR_MoveMethodPolymorphic"));
         performMove(src.getFileObject("t/A.java"), new int[]{2}, src.getFileObject("t/C.java"), Visibility.PUBLIC, false, new Problem(true, "ERR_MoveAbstractMember"));
-        performMove(src.getFileObject("t/C.java"), new int[]{0}, src.getFileObject("t/A.java"), Visibility.PUBLIC, false, new Problem(true, "ERR_MoveFromClass"));
+        performMove(src.getFileObject("t/C.java"), new int[]{0}, src.getFileObject("t/A.java"), Visibility.PUBLIC, false, new Problem(true, "ERR_MoveNonStaticInterface"));
     }
 
     public void test209620() throws Exception {
@@ -2035,4 +2035,159 @@ public class MoveMethodTest extends MoveBase {
                 + "public class SourceClass {\n"
                 + "}\n"));
     }
+
+    public void testInterfaceStaticMethod() throws Exception {
+        writeFilesAndWaitForScan(src,
+                new File("t/TargetClass.java", "package t;\n"
+                + "public class TargetClass {\n"
+                + "    public static void main(String[] args) { \n"
+                + "        // Referring static method  \n"
+                + "       Sayable sayable = SourceClass::saySomething;  \n"
+                + "        sayable.say();  \n"
+                + "    }\n"
+                + "    interface Sayable{\n"
+                + "    void say();  \n"
+                + "} \n"
+                + "}\n"),
+                new File("t/SourceClass.java", "package t;\n"
+                + "public interface SourceClass {\n"
+                + "  public  static void saySomething() {\n"
+                + "    }\n"
+                + "}\n"));
+        performMove(src.getFileObject("t/SourceClass.java"), new int[]{0}, "t.TargetClass", Visibility.PUBLIC);
+        verifyContent(src,
+                new File("t/TargetClass.java", "package t;\n"
+                + "public class TargetClass {\n"
+                + "    public static void main(String[] args) { \n"
+                + "        // Referring static method  \n"
+                + "       Sayable sayable = TargetClass::saySomething;  \n"
+                + "        sayable.say();  \n"
+                + "    }\n"
+                + "  public static void saySomething() {\n"
+                + "    }\n"
+                + "    interface Sayable{\n"
+                + "    void say();  \n"
+                + "} \n"
+                + "}\n"),
+                new File("t/SourceClass.java", "package t;\n"
+                + "public interface SourceClass {\n"
+                + "}\n"));
+    }
+
+    public void testInterfaceNonStaticMethod() throws Exception {
+        writeFilesAndWaitForScan(src,
+                new File("t/TargetClass.java", "package t;\n"
+                + "public class TargetClass {\n"
+                + "    public static void main(String[] args) { \n"
+                + "        // Referring static method  \n"
+                + "       Sayable sayable = SourceClass::saySomething;  \n"
+                + "        sayable.say();  \n"
+                + "    }\n"
+                + "    interface Sayable{\n"
+                + "    void say();  \n"
+                + "} \n"
+                + "}\n"),
+                new File("t/SourceClass.java", "package t;\n"
+                + "public interface SourceClass {\n"
+                + "  public  void saySomething();\n"
+                + "}\n"));
+        performMove(src.getFileObject("t/SourceClass.java"), new int[]{0}, "t.TargetClass", Visibility.PUBLIC, new Problem(true, "ERR_MoveNonStaticInterface"));
+        verifyContent(src,
+                new File("t/TargetClass.java", "package t;\n"
+                + "public class TargetClass {\n"
+                + "    public static void main(String[] args) { \n"
+                + "        // Referring static method  \n"
+                + "       Sayable sayable = SourceClass::saySomething;  \n"
+                + "        sayable.say();  \n"
+                + "    }\n"
+                + "    interface Sayable{\n"
+                + "    void say();  \n"
+                + "} \n"
+                + "}\n"),
+                new File("t/SourceClass.java", "package t;\n"
+                + "public interface SourceClass {\n"
+                + "  public  void saySomething();\n"
+                + "}\n"));
+    }
+
+    public void testEnumStaticMethod() throws Exception {
+        writeFilesAndWaitForScan(src,
+                new File("t/TargetClass.java", "package t;\n"
+                + "public class TargetClass {\n"
+                + "    public static void main(String[] args) { \n"
+                + "        // Referring static method  \n"
+                + "       Sayable sayable = SourceClass::saySomething;  \n"
+                + "        sayable.say();  \n"
+                + "    }\n"
+                + "    interface Sayable{\n"
+                + "    void say();  \n"
+                + "} \n"
+                + "}\n"),
+                new File("t/SourceClass.java", "package t;\n"
+                + "public enum SourceClass {\n"
+                + "  A;\n"
+                + "  public static void saySomething() {\n"
+                + "    }\n"
+                + "}\n"));
+        performMove(src.getFileObject("t/SourceClass.java"), new int[]{4}, "t.TargetClass", Visibility.PUBLIC);
+        verifyContent(src,
+                new File("t/TargetClass.java", "package t;\n"
+                + "public class TargetClass {\n"
+                + "    public static void main(String[] args) { \n"
+                + "        // Referring static method  \n"
+                + "       Sayable sayable = TargetClass::saySomething;  \n"
+                + "        sayable.say();  \n"
+                + "    }\n"
+                + "  public static void saySomething() {\n"
+                + "    }\n"
+                + "    interface Sayable{\n"
+                + "    void say();  \n"
+                + "} \n"
+                + "}\n"),
+                new File("t/SourceClass.java", "package t;\n"
+                + "public enum SourceClass {\n"
+                + "  A;\n"
+                + "}\n"));
+    }
+
+    public void testEnumNonStaticMethod() throws Exception {
+        writeFilesAndWaitForScan(src,
+                new File("t/TargetClass.java", "package t;\n"
+                + "public class TargetClass {\n"
+                + "    public static void main(String[] args) { \n"
+                + "        // Referring static method  \n"
+                + "       Sayable sayable = SourceClass::saySomething;  \n"
+                + "        sayable.say();  \n"
+                + "    }\n"
+                + "    interface Sayable{\n"
+                + "    void say();  \n"
+                + "} \n"
+                + "}\n"),
+                new File("t/SourceClass.java", "package t;\n"
+                + "public enum SourceClass {\n"
+                + "  A;\n"
+                + "  public void saySomething() {\n"
+                + "    }\n"
+                + "}\n"));
+        performMove(src.getFileObject("t/SourceClass.java"), new int[]{4}, "t.TargetClass", Visibility.PUBLIC, new Problem(true, "ERR_MoveNonStaticEnum"));
+        verifyContent(src,
+                new File("t/TargetClass.java", "package t;\n"
+                + "public class TargetClass {\n"
+                + "    public static void main(String[] args) { \n"
+                + "        // Referring static method  \n"
+                + "       Sayable sayable = SourceClass::saySomething;  \n"
+                + "        sayable.say();  \n"
+                + "    }\n"
+                + "    interface Sayable{\n"
+                + "    void say();  \n"
+                + "} \n"
+                + "}\n"),
+                new File("t/SourceClass.java", "package t;\n"
+                + "public enum SourceClass {\n"
+                + "  A;\n"
+                + "  public void saySomething() {\n"
+                + "    }\n"
+                + "}\n"));
+    }
+
 }

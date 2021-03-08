@@ -326,4 +326,123 @@ public class MoveFieldTest extends MoveBase {
                 + "}\n"));
         performMove(src.getFileObject("t/A.java"), new int[]{1}, src.getFileObject("v/B.java"), Visibility.ASIS, false, new Problem(true, "ERR_MoveGenericField"));
     }
+
+
+    public void testMoveStaticFieldFromInterface() throws Exception {
+        writeFilesAndWaitForScan(src,
+                new File("t/A.java", "package t;\n"
+                + "public interface A {\n"
+                + "    public static int I = 0;\n"
+                + "}\n"),
+                new File("v/B.java", "package v;\n"
+                + "public class B {\n"
+                + "}\n"),
+                new File("t/C.java", "package t;\n"
+                + "public class C {\n"
+                + "    private int i = A.I;\n"
+                + "}\n"));
+        performMove(src.getFileObject("t/A.java"), new int[]{0}, src.getFileObject("v/B.java"), Visibility.ASIS, false);
+        verifyContent(src,
+                new File("t/A.java", "package t;\n"
+                + "public interface A {\n"
+                + "}\n"),
+                new File("v/B.java", "package v;\n"
+                + "public class B {\n"
+                + "    public static int I = 0;\n"
+                + "}\n"),
+                new File("t/C.java", "package t;\n"
+                + "import v.B;\n"
+                + "public class C {\n"
+                + "    private int i = B.I;\n"
+                + "}\n"));
+    }
+
+    public void testMoveStaticFieldFromEnum() throws Exception {
+        writeFilesAndWaitForScan(src,
+                new File("t/A.java", "package t;\n"
+                + "public enum A {\n"
+                + "    A;\n"
+                + "    public static int I = 0;\n"
+                + "}\n"),
+                new File("v/B.java", "package v;\n"
+                + "public class B {\n"
+                + "}\n"),
+                new File("t/C.java", "package t;\n"
+                + "public class C {\n"
+                + "    private int i = A.I;\n"
+                + "}\n"));
+        performMove(src.getFileObject("t/A.java"), new int[]{4}, src.getFileObject("v/B.java"), Visibility.ASIS, false);
+        verifyContent(src,
+                new File("t/A.java", "package t;\n"
+                + "public enum A {\n"
+                + "    A;\n"
+                + "}\n"),
+                new File("v/B.java", "package v;\n"
+                + "public class B {\n"
+                + "    public static int I = 0;\n"
+                + "}\n"),
+                new File("t/C.java", "package t;\n"
+                + "import v.B;\n"
+                + "public class C {\n"
+                + "    private int i = B.I;\n"
+                + "}\n"));
+    }
+
+    public void testMoveNonStaticFieldFromEnum() throws Exception {
+        writeFilesAndWaitForScan(src,
+                new File("t/A.java", "package t;\n"
+                + "public enum A {\n"
+                + "    A;\n"
+                + "    public int I = 0;\n"
+                + "}\n"),
+                new File("v/B.java", "package v;\n"
+                + "public class B {\n"
+                + "}\n"),
+                new File("t/C.java", "package t;\n"
+                + "public class C {\n"
+                + "    private int i = A.A.I;\n"
+                + "}\n"));
+        performMove(src.getFileObject("t/A.java"), new int[]{4}, src.getFileObject("v/B.java"), Visibility.ASIS, false, new Problem(true, "ERR_MoveNonStaticEnum"));
+        verifyContent(src,
+                new File("t/A.java", "package t;\n"
+                + "public enum A {\n"
+                + "    A;\n"
+                + "    public int I = 0;\n"
+                + "}\n"),
+                new File("v/B.java", "package v;\n"
+                + "public class B {\n"
+                + "}\n"),
+                new File("t/C.java", "package t;\n"
+                + "public class C {\n"
+                + "    private int i = A.A.I;\n"
+                + "}\n"));
+    }
+
+    public void testMoveEnumConstantFromEnum() throws Exception {
+        writeFilesAndWaitForScan(src,
+                new File("t/A.java", "package t;\n"
+                + "public enum A {\n"
+                + "    A;\n"
+                + "}\n"),
+                new File("v/B.java", "package v;\n"
+                + "public class B {\n"
+                + "}\n"),
+                new File("t/C.java", "package t;\n"
+                + "public class C {\n"
+                + "    private int i = A.A.I;\n"
+                + "}\n"));
+        performMove(src.getFileObject("t/A.java"), new int[]{3}, src.getFileObject("v/B.java"), Visibility.ASIS, false, new Problem(true, "ERR_MoveNonStaticEnum"));
+        verifyContent(src,
+                new File("t/A.java", "package t;\n"
+                + "public enum A {\n"
+                + "    A;\n"
+                + "}\n"),
+                new File("v/B.java", "package v;\n"
+                + "public class B {\n"
+                + "}\n"),
+                new File("t/C.java", "package t;\n"
+                + "public class C {\n"
+                + "    private int i = A.A.I;\n"
+                + "}\n"));
+    }
 }

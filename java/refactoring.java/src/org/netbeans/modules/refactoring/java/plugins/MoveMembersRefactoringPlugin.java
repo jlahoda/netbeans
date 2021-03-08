@@ -57,7 +57,10 @@ import org.openide.util.NbBundle;
 @NbBundle.Messages({"ERR_NothingSelected=Nothing selected to move",
     "ERR_MoveToLibrary=Cannot move to a library",
     "ERR_MoveFromLibrary=Cannot move from a library",
-    "ERR_MoveFromClass=Can only move members of a class",
+    "ERR_MoveFromClass=Can only move members of a class and static members of interfaces and enums",
+    "ERR_MoveNonStaticInterface=Cannot move non-static interface member",
+    "ERR_MoveNonStaticEnum=Cannot move non-static enum member",
+    "ERR_MoveEnumConstants=Cannot move enum constants",
     "ERR_MoveToSameClass=Target can not be the same as the source class",
     "ERR_MoveToSuperClass=Cannot move to a superclass, maybe you need the Pull Up Refactoring?",
     "ERR_MoveToSubClass=Cannot move to a subclass, maybe you need the Push Down Refactoring?",
@@ -131,9 +134,19 @@ public class MoveMembersRefactoringPlugin extends JavaRefactoringPlugin {
             TreePath enclosingClassPath = JavaRefactoringUtils.findEnclosingClass(info, path, true, true, false, true, false);
             if (enclosingClassPath != null) {
                 Element typeElement = info.getTrees().getElement(enclosingClassPath);
-                if (typeElement == null || !typeElement.getKind().isClass() ||
-                        enclosingClassPath.getLeaf().getKind() == Tree.Kind.INTERFACE ||
-                        typeElement.getKind() == ElementKind.ENUM) {
+                if (typeElement == null) {
+                    return new Problem(true, NbBundle.getMessage(MoveMembersRefactoringPlugin.class, "ERR_MoveFromClass"));
+                } else if (typeElement.getKind() == ElementKind.INTERFACE || typeElement.getKind() == ElementKind.ANNOTATION_TYPE) {
+                    if (!element.getModifiers().contains(Modifier.STATIC)) {
+                        return new Problem(true, NbBundle.getMessage(MoveMembersRefactoringPlugin.class, "ERR_MoveNonStaticInterface"));
+                    }
+                } else if (typeElement.getKind() == ElementKind.ENUM) {
+                    if (!element.getModifiers().contains(Modifier.STATIC)) { //TODO: enum constants
+                        return new Problem(true, NbBundle.getMessage(MoveMembersRefactoringPlugin.class, "ERR_MoveNonStaticEnum"));
+                    } else if (element.getKind() == ElementKind.ENUM_CONSTANT) {
+                        return new Problem(true, NbBundle.getMessage(MoveMembersRefactoringPlugin.class, "ERR_MoveNonStaticEnum"));
+                    }
+                } else if (!typeElement.getKind().isClass()) {
                     return new Problem(true, NbBundle.getMessage(MoveMembersRefactoringPlugin.class, "ERR_MoveFromClass"));
                 }
             } else {
