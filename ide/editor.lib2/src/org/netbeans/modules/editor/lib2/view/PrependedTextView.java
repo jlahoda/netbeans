@@ -49,10 +49,10 @@ public final class PrependedTextView extends EditorView {
         this.delegate = delegate;
         Font font = ViewUtils.getFont(attributes, op.getDefaultHintFont());
         prependedTextLayout = op.createTextLayout((String) attributes.getAttribute(ViewUtils.KEY_VIRTUAL_TEXT_PREPEND), font);
-        Rectangle2D textBounds = prependedTextLayout.getBounds(); //TODO: allocation!
+        float textAdvance = prependedTextLayout.getAdvance();
         double em = op.getDefaultCharWidth();
         leftShift = em / 2;
-        prependedTextWidth = Math.ceil(textBounds.getWidth() + em);
+        prependedTextWidth = Math.ceil(textAdvance + em);
     }
 
     @Override

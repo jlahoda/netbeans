@@ -22,7 +22,6 @@ import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.ExportsTree;
 import com.sun.source.tree.ExpressionStatementTree;
-import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.IdentifierTree;
 import com.sun.source.tree.LiteralTree;
 import com.sun.source.tree.MemberReferenceTree;
@@ -224,9 +223,7 @@ public abstract class SemanticHighlighterBase extends JavaParserResultTask {
             return true;
         
         if (computeUnusedImports) {
-            Map<int[], String> preTextWithSpans = new HashMap<>();
-            v.preText.forEach((pos, text) -> preTextWithSpans.put(new int[] {pos, pos + 1}, text));
-            setter.setHighlights(doc, extraColoring, preTextWithSpans);
+            setter.setHighlights(doc, extraColoring, v.preText);
         }
 
         setter.setColorings(doc, newColoring);
@@ -289,7 +286,7 @@ public abstract class SemanticHighlighterBase extends JavaParserResultTask {
         private Map<Tree, List<Token>> tree2Tokens;
         private List<Token> contextKeywords;
         private List<Pair<int[], Coloring>> extraColoring;
-        private Map<Integer, String> preText;
+        private Map<int[], String> preText;
         private TokenList tl;
         private long memberSelectBypass = -1;        
         private SourcePositions sourcePositions;
@@ -754,53 +751,54 @@ public abstract class SemanticHighlighterBase extends JavaParserResultTask {
                 }
             }
             Collections.reverse(chain);
-            List<Pair<String, Integer>> typeToPosition = new ArrayList<>();
-            List<Pair<String, Integer>> forcedTypeToPosition = new ArrayList<>();
+            List<ChainedTypeDescription> typeToPosition = new ArrayList<>();
             for (TreePath tp : chain) {
                 long end = info.getTrees().getSourcePositions().getEndPosition(tp.getCompilationUnit(), tp.getLeaf());
                 tl.moveToOffset(end);
                 Token t = tl.currentToken();
+                int pos;
+                int preTextPos = -1;
+                boolean inParen = false;
                 if (t != null && (t.id() == JavaTokenId.COMMA || t.id() == JavaTokenId.SEMICOLON)) {
                     tl.moveNext();
                     t = tl.currentToken();
+                    if (t != null && t.id() == JavaTokenId.WHITESPACE && (pos = t.text().toString().indexOf("\n")) != -1) {
+                        preTextPos = tl.offset() + pos;
+                    }
+                } else if (t != null && t.id() == JavaTokenId.WHITESPACE && (pos = t.text().toString().indexOf("\n")) != -1) {
+                    preTextPos = tl.offset() + pos;
                 } else if (t != null && t.id() == JavaTokenId.RPAREN) {
-                    while (t != null && t.id() == JavaTokenId.RPAREN) {
-                        tl.moveNext();
-                        t = tl.currentToken();
-                    }
-                    if (t != null && (t.id() == JavaTokenId.COMMA || t.id() == JavaTokenId.SEMICOLON)) {
-                        tl.moveNext();
-                        t = tl.currentToken();
-                    }
+                    preTextPos = tl.offset();
+                    inParen = true;
                 }
-                int pos;
-                if (t != null && t.id() == JavaTokenId.WHITESPACE && (pos = t.text().toString().indexOf("\n")) != -1) {
+                if (preTextPos != (-1)) {
                     TypeMirror type = info.getTrees().getTypeMirror(tp);
                     String typeName;
                     if (type.getKind().isPrimitive() || type.getKind() == TypeKind.DECLARED) {
                         typeName = info.getTypeUtilities().getTypeName(type).toString();
-                    } else {
-                        typeName = "";
-                    }
-                    int preTextPos = tl.offset() + pos;
-                    if (typeToPosition.isEmpty() || !typeName.equals(typeToPosition.get(typeToPosition.size() - 1).first()) || preText.containsKey(preTextPos)) {
-                        typeToPosition.add(Pair.of(typeName, preTextPos));
-                    }
-                    if (preText.containsKey(preTextPos)) {
-                        forcedTypeToPosition.add(Pair.of(typeName, preTextPos));
+                        if (typeToPosition.isEmpty() || !typeName.equals(typeToPosition.get(typeToPosition.size() - 1).type)) {
+                            typeToPosition.add(new ChainedTypeDescription(typeName, preTextPos, inParen));
+                        }
                     }
                 }
             }
             if (typeToPosition.size() >= 2) {
-                for (Pair<String, Integer> typeAndPosition : typeToPosition) {
-                    preText.compute(typeAndPosition.second(),
-                                    (p, n) -> (n == null ? " " : ";" ) + " " + typeAndPosition.first());
+                for (ChainedTypeDescription typeAndPosition : typeToPosition) {
+                    preText.put(new int[] {typeAndPosition.pos, typeAndPosition.pos + 1},
+                                (typeAndPosition.inParen ? "" : "  ") + typeAndPosition.type);
                 }
-            } else {
-                for (Pair<String, Integer> typeAndPosition : forcedTypeToPosition) {
-                    preText.compute(typeAndPosition.second(),
-                                    (p, n) -> (n == null ? " " : n + ";" ) + " " + typeAndPosition.first());
-                }
+            }
+        }
+
+        class ChainedTypeDescription {
+            public final String type;
+            public final int pos;
+            public final boolean inParen;
+
+            public ChainedTypeDescription(String type, int pos, boolean inParen) {
+                this.type = type;
+                this.pos = pos;
+                this.inParen = inParen;
             }
         }
 
@@ -1117,6 +1115,7 @@ public abstract class SemanticHighlighterBase extends JavaParserResultTask {
                     Element invoked = info.getTrees().getElement(pp);
                     if (invoked != null && (invoked.getKind() == ElementKind.METHOD || invoked.getKind() == ElementKind.CONSTRUCTOR)) {
                         long start = sourcePositions.getStartPosition(info.getCompilationUnit(), tree);
+                        long end = start + 1;
                         ExecutableElement invokedMethod = (ExecutableElement) invoked;
                         pos = Math.min(pos, invokedMethod.getParameters().size() - 1);
                         if (pos != (-1)) {
@@ -1127,7 +1126,7 @@ public abstract class SemanticHighlighterBase extends JavaParserResultTask {
                                 shouldBeAdded = false;
                             }
                             if (shouldBeAdded) {
-                                preText.put((int) start,
+                                preText.put(new int[] {(int) start, (int) end},
                                             invokedMethod.getParameters().get(pos).getSimpleName() + ":");
                             }
                         }
