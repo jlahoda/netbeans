@@ -239,7 +239,7 @@ public final class ModeImpl implements Mode.Xml {
             // XXX if only closin (mode.close(tc)) there could happen,
             // there is the same TopComponent as closed in two modes. Revise.
             opened = tc.isOpened();
-            mode.removeTopComponent(tc);
+            mode.removeTopComponent(tc, true);
         }
         
         if( opened ) {
@@ -262,7 +262,7 @@ public final class ModeImpl implements Mode.Xml {
             if (Boolean.TRUE.equals(tc.getClientProperty(Constants.KEEP_NON_PERSISTENT_TC_IN_MODEL_WHEN_CLOSED))) {
                 addClosedTopComponent(tc);
             } else {
-                removeTopComponent(tc);
+                removeTopComponent(tc, false);
             }
         }
     }
@@ -453,14 +453,14 @@ public final class ModeImpl implements Mode.Xml {
     }
     
     /** Removes TopComponent from this mode. */
-    public void removeTopComponent(TopComponent tc) {
-        getCentral().removeModeTopComponent(this, tc);
+    public void removeTopComponent(TopComponent tc, boolean move) {
+        getCentral().removeModeTopComponent(this, tc, move);
     }
     
     public void removeTopComponents(Set topComponentSet) {
         for(Iterator it = topComponentSet.iterator(); it.hasNext(); ) {
             TopComponent tc = (TopComponent)it.next();
-            removeTopComponent(tc);
+            removeTopComponent(tc, false);
         }
     }
     

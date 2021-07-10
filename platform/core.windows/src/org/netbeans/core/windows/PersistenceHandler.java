@@ -895,7 +895,7 @@ final public class PersistenceHandler implements PersistenceObserver {
         if(mode != null) {
             TopComponent tc = getTopComponentForID(tc_id,true);
             if(tc != null) {
-                mode.removeTopComponent(tc);
+                mode.removeTopComponent(tc, false);
             }
         } else {
             mode = wm.findModeForClosedID(tc_id);

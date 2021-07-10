@@ -20,20 +20,26 @@ package org.netbeans.modules.java.hints.declarative.debugging;
 
 import java.awt.Component;
 import java.awt.event.ActionEvent;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
+import java.util.WeakHashMap;
 import javax.swing.Action;
 import javax.swing.Icon;
 import javax.swing.JEditorPane;
 import javax.swing.JToggleButton;
+import javax.swing.SwingUtilities;
 import javax.swing.text.Document;
 import javax.swing.text.JTextComponent;
 import org.netbeans.editor.BaseAction;
+import org.netbeans.modules.editor.NbEditorUtilities;
 import org.openide.util.ContextAwareAction;
 import org.openide.util.ImageUtilities;
 import org.openide.util.Lookup;
 import org.openide.util.WeakSet;
 import org.openide.util.actions.Presenter;
+import org.openide.windows.WindowManager;
 
 /**
  *
@@ -44,9 +50,9 @@ public class ToggleDebuggingAction extends BaseAction implements Presenter.Toolb
     public static final String toggleDebuggingAction = "toggle-debugging-action";
     static final long serialVersionUID = 0L;
 
-    static final Set<Document> debuggingEnabled = Collections.synchronizedSet(new WeakSet<Document>());
-    static final Set<ToggleDebuggingAction> actions = Collections.synchronizedSet(new WeakSet<ToggleDebuggingAction>());
-    
+    private static final Map<Document, DebuggingPreview> hintDocument2DebuggingPreview = new WeakHashMap<>();
+    static final Set<ToggleDebuggingAction> actions = Collections.synchronizedSet(new WeakSet<>());
+
     private JEditorPane pane;
 
     private JToggleButton toggleButton;
@@ -68,7 +74,10 @@ public class ToggleDebuggingAction extends BaseAction implements Presenter.Toolb
 
     private void updateState() {
         if (pane != null && toggleButton != null) {
-            boolean debugging = debuggingEnabled.contains(pane.getDocument());
+            boolean debugging;
+            synchronized (hintDocument2DebuggingPreview) {
+                debugging = hintDocument2DebuggingPreview.containsKey(pane.getDocument());
+            }
             toggleButton.setSelected(debugging);
             toggleButton.setContentAreaFilled(debugging);
             toggleButton.setBorderPainted(debugging);
@@ -79,11 +88,56 @@ public class ToggleDebuggingAction extends BaseAction implements Presenter.Toolb
     public void actionPerformed(ActionEvent evt, JTextComponent target) {
         if (target != null && !Boolean.TRUE.equals(target.getClientProperty("AsTextField"))) {
             Document doc = target.getDocument();
-            if (debuggingEnabled.contains(doc)) debuggingEnabled.remove(doc);
-            else debuggingEnabled.add(doc);
-            for (ToggleDebuggingAction a : actions) {
-                a.updateState();
+            synchronized (hintDocument2DebuggingPreview) {
+                if (hintDocument2DebuggingPreview.containsKey(doc)) {
+                    DebuggingPreview preview = hintDocument2DebuggingPreview.remove(doc);
+                    if (preview != null) {
+                        preview.getDiffComponent().close();
+                    }
+                } else {
+                    Document javaDoc = DocumentTracker.lastJavaDoc != null ? DocumentTracker.lastJavaDoc.get() : null;
+                    hintDocument2DebuggingPreview.put(doc, javaDoc != null ? new DebuggingPreview(javaDoc, NbEditorUtilities.getFileObject(doc).getNameExt()) : null);
+                    //TODO: refresh hints
+                }
             }
+
+            updateStateForAll();
+        }
+    }
+
+    public static void enableDebugging(Document hintDocument) {
+        assert SwingUtilities.isEventDispatchThread();
+
+        synchronized (hintDocument2DebuggingPreview) {
+            if (hintDocument2DebuggingPreview.containsKey(hintDocument)) {
+                return ;
+            }
+
+            Document javaDoc = DocumentTracker.lastJavaDoc != null ? DocumentTracker.lastJavaDoc.get() : null;
+
+            hintDocument2DebuggingPreview.put(hintDocument, javaDoc != null ? new DebuggingPreview(javaDoc, NbEditorUtilities.getFileObject(hintDocument).getNameExt()) : null);
+        }
+
+        updateStateForAll();
+    }
+
+    private static void updateStateForAll() {
+        assert SwingUtilities.isEventDispatchThread();
+
+        for (ToggleDebuggingAction a : actions) {
+            a.updateState();
+        }
+    }
+
+    public static DebuggingPreview getPreviewFor(Document hintDocument) {
+        synchronized (hintDocument2DebuggingPreview) {
+            return hintDocument2DebuggingPreview.get(hintDocument);
+        }
+    }
+
+    public static Iterable<Document> getHintDocumentsWithDebugging() {
+        synchronized (hintDocument2DebuggingPreview) {
+            return new ArrayList<>(hintDocument2DebuggingPreview.keySet());
         }
     }
 

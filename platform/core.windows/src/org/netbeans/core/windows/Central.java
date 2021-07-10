@@ -943,14 +943,14 @@ final class Central implements ControllerHandler {
     }
     
     /** Removed top component from model and requests view (if needed). */
-    public boolean removeModeTopComponent(ModeImpl mode, TopComponent tc) {
+    public boolean removeModeTopComponent(ModeImpl mode, TopComponent tc, boolean move) {
         if(!containsModeTopComponent(mode, tc)) {
             return false;
         }
         
         boolean viewChange = getModeOpenedTopComponents(mode).contains(tc);
         
-        if(viewChange && !tc.canClose()) {
+        if(viewChange && !move && !tc.canClose()) {
             return false;
         }
         
@@ -996,7 +996,7 @@ final class Central implements ControllerHandler {
         }
         
         // Notify closed.
-        if(viewChange) {
+        if(viewChange && !move) {
             WindowManagerImpl.getInstance().notifyTopComponentClosed(tc);
         }
         
@@ -2009,7 +2009,7 @@ final class Central implements ControllerHandler {
             if (Boolean.TRUE.equals(tc.getClientProperty(Constants.KEEP_NON_PERSISTENT_TC_IN_MODEL_WHEN_CLOSED))) {
                 wasTcClosed = addModeClosedTopComponent(mode, tc);
             } else {
-                wasTcClosed = removeModeTopComponent(mode, tc);
+                wasTcClosed = removeModeTopComponent(mode, tc, false);
             }
         }
         if( wasTcClosed 

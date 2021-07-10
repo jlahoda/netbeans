@@ -25,6 +25,7 @@ import java.awt.Color;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -34,6 +35,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.Document;
 import javax.swing.text.StyleConstants;
@@ -47,21 +50,31 @@ import org.netbeans.api.java.source.CompilationInfo;
 import org.netbeans.api.java.source.JavaParserResultTask;
 import org.netbeans.api.java.source.JavaSource;
 import org.netbeans.api.java.source.JavaSource.Phase;
+import org.netbeans.api.java.source.ModificationResult;
 import org.netbeans.api.java.source.Task;
+import org.netbeans.api.java.source.WorkingCopy;
 import org.netbeans.api.lexer.TokenSequence;
 import org.netbeans.lib.editor.util.swing.DocumentUtilities;
 import org.netbeans.modules.editor.NbEditorUtilities;
 import org.netbeans.modules.java.hints.declarative.Condition;
+import org.netbeans.modules.java.hints.declarative.DeclarativeHintRegistry;
+import org.netbeans.modules.java.hints.declarative.DeclarativeHintTokenId;
 import org.netbeans.modules.java.hints.declarative.DeclarativeHintsParser.FixTextDescription;
 import org.netbeans.modules.java.hints.declarative.conditionapi.Context;
 import org.netbeans.modules.java.hints.declarative.conditionapi.Matcher;
 import org.netbeans.modules.java.hints.declarative.test.TestTokenId;
+import org.netbeans.modules.java.hints.providers.spi.HintDescription;
+import org.netbeans.modules.java.hints.providers.spi.HintMetadata;
+import org.netbeans.modules.java.hints.spiimpl.JavaFixImpl;
 import org.netbeans.modules.java.hints.spiimpl.SPIAccessor;
+import org.netbeans.modules.java.hints.spiimpl.hints.HintsInvoker;
 import org.netbeans.modules.java.hints.spiimpl.options.HintsSettings;
 import org.netbeans.modules.parsing.api.Snapshot;
 import org.netbeans.modules.parsing.spi.*;
 import org.netbeans.modules.parsing.spi.Parser.Result;
 import org.netbeans.spi.editor.highlighting.support.OffsetsBag;
+import org.netbeans.spi.editor.hints.ErrorDescription;
+import org.netbeans.spi.editor.hints.Fix;
 import org.netbeans.spi.java.hints.HintContext;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
@@ -130,42 +143,44 @@ public class EvaluationSpanTask extends JavaParserResultTask<Result> {
             return ;//??
         }
 
-        Document[] documents = ToggleDebuggingAction.debuggingEnabled.toArray(new Document[0]);
-        
-        for (final Document doc : documents) {
+        for (final Document doc : ToggleDebuggingAction.getHintDocumentsWithDebugging()) {
             assert doc != null;
 
-            List<int[]> passed = new LinkedList<int[]>();
-            List<int[]> failed = new LinkedList<int[]>();
-            final String[] text = new String[1];
-
-            doc.render(new Runnable() {
-                @Override public void run() {
-                    text[0] = DocumentUtilities.getText(doc).toString();
-                }
-            });
-
-            Collection<? extends HintWrapper> hints = HintWrapper.parse(NbEditorUtilities.getFileObject(doc), text[0]);
-
-            computeHighlights(info[0],
-                              start,
-                              end,
-                              hints,
-                              passed,
-                              failed);
-
-            OffsetsBag bag = new OffsetsBag(doc);
-
-            for (int[] span : passed) {
-                bag.addHighlight(span[0], span[1], PASSED);
-            }
-
-            for (int[] span : failed) {
-                bag.addHighlight(span[0], span[1], FAILED);
-            }
-
-            DebuggingHighlightsLayerFactory.getBag(doc).setHighlights(bag);
+            doHighlightDocument(info[0], start, end, doc);
         }
+    }
+
+    static void doHighlightDocument(CompilationInfo info, int start, int end, Document doc) {
+        List<int[]> passed = new LinkedList<int[]>();
+        List<int[]> failed = new LinkedList<int[]>();
+        final String[] text = new String[1];
+
+        doc.render(new Runnable() {
+            @Override public void run() {
+                text[0] = DocumentUtilities.getText(doc).toString();
+            }
+        });
+
+        Collection<? extends HintWrapper> hints = HintWrapper.parse(NbEditorUtilities.getFileObject(doc), text[0]);
+
+        computeHighlights(info,
+                          start,
+                          end,
+                          hints,
+                          passed,
+                          failed);
+
+        OffsetsBag bag = new OffsetsBag(doc);
+
+        for (int[] span : passed) {
+            bag.addHighlight(span[0], span[1], PASSED);
+        }
+
+        for (int[] span : failed) {
+            bag.addHighlight(span[0], span[1], FAILED);
+        }
+
+        DebuggingHighlightsLayerFactory.getBag(doc).setHighlights(bag);
     }
 
     static void computeHighlights(CompilationInfo info,
@@ -311,4 +326,95 @@ public class EvaluationSpanTask extends JavaParserResultTask<Result> {
             return Collections.singleton(new EvaluationSpanTask());
         }
     }
+
+    @MimeRegistrations({
+        @MimeRegistration(mimeType=DeclarativeHintTokenId.MIME_TYPE, service=TaskFactory.class)
+    })
+    public static final class HintFactoryImpl extends TaskFactory {
+        @Override
+        public Collection<? extends SchedulerTask> create(Snapshot snapshot) {
+            return Collections.singleton(new ParserResultTask<Result>() {
+                @Override
+                public void run(Result result, SchedulerEvent event) {
+                    Document hintDoc = result.getSnapshot().getSource().getDocument(false);
+
+                    if (hintDoc == null) {
+                        return ;
+                    }
+
+                    DebuggingPreview preview = ToggleDebuggingAction.getPreviewFor(hintDoc);
+
+                    if (preview == null) {
+                        return ;
+                    }
+
+                    Document originalJavaDoc = preview.getOriginalJavaDoc();
+                    int[] span = (int[]) originalJavaDoc.getProperty(DocumentTracker.SELECTION_SPAN);
+                    if (span == null) {
+                        return ;
+                    }
+                    int start = Math.min(span[0], span[1]);
+                    int end = Math.max(span[0], span[1]);
+                    String[] text = new String[1];
+
+                    try {
+                        JavaSource js = JavaSource.forDocument(originalJavaDoc);
+                        ModificationResult mr = js.runModificationTask(new Task<WorkingCopy>() {
+                            public void run(WorkingCopy parameter) throws Exception {
+                                parameter.toPhase(JavaSource.Phase.RESOLVED);
+                                doHighlightDocument(parameter, start, end, result.getSnapshot().getSource().getDocument(false));
+
+                                Map<HintMetadata, Collection<? extends HintDescription>> hintFile = DeclarativeHintRegistry.parseHints(result.getSnapshot().getSource().getFileObject(), result.getSnapshot().getText().toString());
+
+                                int selectionStart = skipWhitespaces(parameter, start, true);
+                                int selectionEnd = skipWhitespaces(parameter, end, false);
+                                TreePath tp = validateSelection(parameter, selectionStart, selectionEnd);
+
+                                if (tp == null) {
+                                    return ;
+                                }
+
+                                Map<HintDescription, List<ErrorDescription>> errors = new HintsInvoker(HintsSettings.getGlobalSettings(), new AtomicBoolean()).computeHints(parameter, tp, false, hintFile.values().stream().flatMap(c -> c.stream()).collect(Collectors.toList()), new ArrayList<>());
+                                if (!errors.isEmpty()) {
+                                    ErrorDescription ed = errors.values().iterator().next().iterator().next();
+                                    if (!ed.getFixes().getFixes().isEmpty()) {
+                                        Fix f = ed.getFixes().getFixes().get(0);
+                                        if (f instanceof JavaFixImpl) {
+                                            JavaFixImpl.Accessor.INSTANCE.process(((JavaFixImpl) f).jf, parameter, false, new HashMap<>(), new ArrayList<>());
+                                        }
+                                    }
+                                }
+
+                                text[0] = parameter.getText();
+                            }
+                        });
+
+                        String newCode = mr.getModifiedFileObjects().contains(js.getFileObjects().iterator().next()) ? mr.getResultingSource(js.getFileObjects().iterator().next()) : text[0];
+                        preview.setNewCode(newCode);
+
+                    } catch (IOException ex) {
+                        Exceptions.printStackTrace(ex);
+                    }
+
+                }
+
+                @Override
+                public int getPriority() {
+                    return 1000;
+                }
+
+                @Override
+                public Class<? extends Scheduler> getSchedulerClass() {
+                    return Scheduler.EDITOR_SENSITIVE_TASK_SCHEDULER;
+                }
+
+                @Override
+                public void cancel() {
+                }
+                
+            });
+        }
+    }
+
+
 }

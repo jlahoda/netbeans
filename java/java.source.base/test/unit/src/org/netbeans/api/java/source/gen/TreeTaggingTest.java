@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.Collections;
 import com.sun.source.tree.*;
 import com.sun.source.util.SourcePositions;
+import com.sun.source.util.TreeScanner;
 import org.netbeans.api.java.source.Task;
 import org.netbeans.api.java.source.JavaSource;
 import org.netbeans.api.java.source.ModificationResult;
@@ -342,6 +343,56 @@ public class TreeTaggingTest extends GeneratorTestMDRCompat {
 
         assertNotNull(span);
         assertEquals("@D", newCode.substring(span[0], span[1]));
+    }
+
+    public void testRewriteTargetTagTest() throws Exception {
+        // the tag
+        final String tag = "tag"; //NOI18N
+
+        testFile = new File(getWorkDir(), "Test.java");
+        TestUtilities.copyStringToFile(testFile,
+            "package hierbas.del.litoral;\n\n" +
+            "public class Test {\n" +
+            "    public void test(String... args) {\n" +
+            "        boolean b = args[0].length() == 0;\n" +
+            "    }\n" +
+            "}\n"
+            );
+
+        FileObject testFileObject = FileUtil.toFileObject(testFile);
+        JavaSource testSource = JavaSource.forFileObject(testFileObject);
+        Task<WorkingCopy> task = new Task<WorkingCopy>() {
+            public void run(WorkingCopy workingCopy) throws java.io.IOException {
+                workingCopy.toPhase(Phase.RESOLVED);
+                TreeMaker make = workingCopy.getTreeMaker();
+
+                new TreeScanner<Void, Void>() {
+                    @Override
+                    public Void visitIdentifier(IdentifierTree node, Void p) {
+                        if (node.getName().contentEquals("args")) {
+                            workingCopy.rewrite(node, make.Identifier("$args"));
+                        }
+                        return super.visitIdentifier(node, p);
+                    }
+
+                    @Override
+                    public Void visitVariable(VariableTree node, Void p) {
+                        if (node.getName().contentEquals("b")) {
+                            workingCopy.tag(node.getInitializer(), tag);
+                        }
+                        return super.visitVariable(node, p);
+                    }
+                    
+                }.scan(workingCopy.getCompilationUnit(), null);
+            }
+
+        };
+        ModificationResult diff = testSource.runModificationTask(task);
+        int[] span = diff.getSpan(tag);
+        String newCode = diff.getResultingSource(testFileObject);
+
+        assertNotNull(span);
+        assertEquals("$args[0].length() == 0", newCode.substring(span[0], span[1]));
     }
 
     @Override

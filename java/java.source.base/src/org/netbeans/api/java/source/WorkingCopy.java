@@ -703,7 +703,7 @@ public class WorkingCopy extends CompilationController {
                             beginVariableDeclarator = vt.getModifiers() == tree || vt.getType() == tree;
                         }
                     }
-                    if (changes.containsKey(tree) || docChanges.containsKey(tree)) {
+                    if (changes.containsKey(tree) || docChanges.containsKey(tree) || tree2Tag.containsKey(tree)) {
                         if (currentParent == null) {
                             if (beginVariableDeclarator) {
                                 // use common variable group parent instead of computed parent,
