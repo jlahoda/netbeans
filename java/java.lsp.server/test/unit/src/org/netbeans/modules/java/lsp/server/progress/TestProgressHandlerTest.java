@@ -27,6 +27,8 @@ import org.eclipse.lsp4j.MessageActionItem;
 import org.eclipse.lsp4j.MessageParams;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.eclipse.lsp4j.ShowMessageRequestParams;
+import org.eclipse.lsp4j.debug.OutputEventArguments;
+import org.eclipse.lsp4j.debug.services.IDebugProtocolClient;
 import org.junit.Test;
 import org.netbeans.api.extexecution.print.LineConvertors;
 import org.netbeans.api.project.Project;
@@ -36,9 +38,11 @@ import org.netbeans.modules.gsf.testrunner.api.Status;
 import org.netbeans.modules.gsf.testrunner.api.TestSession;
 import org.netbeans.modules.gsf.testrunner.api.Testcase;
 import org.netbeans.modules.gsf.testrunner.api.Trouble;
+import org.netbeans.modules.java.lsp.server.protocol.DecorationRenderOptions;
 import org.netbeans.modules.java.lsp.server.protocol.NbCodeClientCapabilities;
 import org.netbeans.modules.java.lsp.server.protocol.NbCodeLanguageClient;
 import org.netbeans.modules.java.lsp.server.protocol.QuickPickItem;
+import org.netbeans.modules.java.lsp.server.protocol.SetTextEditorDecorationParams;
 import org.netbeans.modules.java.lsp.server.protocol.ShowInputBoxParams;
 import org.netbeans.modules.java.lsp.server.protocol.ShowQuickPickParams;
 import org.netbeans.modules.java.lsp.server.protocol.ShowStatusMessageParams;
@@ -71,7 +75,7 @@ public class TestProgressHandlerTest extends NbTestCase {
         assertNotNull(fo);
         List<TestProgressParams> msgs = new ArrayList<>();
         MockLanguageClient mlc = new MockLanguageClient(msgs);
-        TestProgressHandler progressHandler = new TestProgressHandler(mlc, fo.toURI().toString());
+        TestProgressHandler progressHandler = new TestProgressHandler(mlc, new IDebugProtocolClient() {}, fo.toURI().toString());
         progressHandler.displaySuiteRunning(progressHandler, "TestSuiteName");
         FileObject projectDir = fo;
         Project project = new Project() {
@@ -195,6 +199,22 @@ public class TestProgressHandlerTest extends NbTestCase {
         public NbCodeClientCapabilities getNbCodeCapabilities() {
             fail();
             return null;
+        }
+
+        @Override
+        public CompletableFuture<String> createTextEditorDecoration(DecorationRenderOptions params) {
+            fail();
+            return null;
+        }
+
+        @Override
+        public void setTextEditorDecoration(SetTextEditorDecorationParams params) {
+            fail();
+        }
+
+        @Override
+        public void disposeTextEditorDecoration(String params) {
+            fail();
         }
     }
 }

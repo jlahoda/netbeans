@@ -21,6 +21,7 @@ package org.netbeans.modules.maven.runjar;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -38,7 +39,6 @@ import org.netbeans.modules.maven.execute.BeanRunConfig;
 import org.netbeans.modules.maven.execute.ModelRunConfig;
 import org.netbeans.spi.project.ActionProvider;
 import org.netbeans.spi.project.ProjectServiceProvider;
-import org.openide.util.Lookup;
 import org.openide.util.lookup.AbstractLookup;
 import org.openide.util.lookup.InstanceContent;
 
@@ -107,7 +107,7 @@ public class RunJarStartupArgs implements LateBoundPrerequisitesChecker {
                 }
             }
             for (StartupExtender group : StartupExtender.getExtenders(new AbstractLookup(ic), mode)) {
-                fixedArgs.addAll(group.getArguments());
+                fixedArgs.addAll(group.getRawArguments());
             }
         }
         
@@ -136,7 +136,7 @@ public class RunJarStartupArgs implements LateBoundPrerequisitesChecker {
             if (mainClass.length == 0) {
                 // accept userargs, since we don't know where the division is, make it fixed in the processing.
                 joinedArgs.addAll(appArgsValue);
-                appArgsValue = null;
+                appArgsValue = Collections.emptyList();
             } else {
                 joinedArgs.addAll(Arrays.asList(mainClass));
             }
