@@ -5313,7 +5313,17 @@ public class CasualDiff {
     }
     
     private int getOldPos(DCTree oldT, DCDocComment doc) {
-        return (int) oldT.getSourcePosition(doc);
+        try {
+            return (int) oldT.getSourcePosition(doc);
+        } catch (NoSuchMethodError err) {
+            try {
+                Method convert = doc.getClass().getDeclaredMethod("getSourcePosition", int.class);
+                Method getStartPosition = DCTree.class.getDeclaredMethod("getStartPosition");
+                return (int) convert.invoke(doc, getStartPosition.invoke(oldT));
+            } catch (ReflectiveOperationException | SecurityException ex) {
+                throw TreeShims.throwAny(ex);
+            }
+        }
     }
     
     public int endPos(DCTree oldT, DCDocComment doc) {
