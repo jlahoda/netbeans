@@ -21,6 +21,7 @@ package org.netbeans.modules.java.hints.errors;
 import com.sun.source.tree.CaseTree;
 import com.sun.source.tree.SwitchTree;
 import com.sun.source.tree.Tree;
+import com.sun.source.tree.Tree.Kind;
 import com.sun.source.util.TreePath;
 import java.util.Arrays;
 import java.util.Collections;
@@ -58,6 +59,9 @@ public class DifferentCaseKindsFix implements ErrorRule<Void> {
     public List<Fix> run(CompilationInfo info, String diagnosticKey, int offset, TreePath treePath, Data<Void> data) {
         if (Utilities.isJDKVersionLower(SWITCH_RULE_PREVIEW_JDK_VERSION) && !CompilerOptionsQuery.getOptions(info.getFileObject()).getArguments().contains("--enable-preview")) {
             return null;
+        }
+        if (treePath.getParentPath().getLeaf().getKind() == Kind.CASE) {
+            treePath = treePath.getParentPath();
         }
         TreePath parentPath = treePath.getParentPath();
         List<? extends CaseTree> caseTrees = null;
