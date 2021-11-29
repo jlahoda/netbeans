@@ -19,8 +19,10 @@
 
 package org.netbeans.api.java.source;
 
+import com.sun.source.tree.Tree;
 import com.sun.tools.javac.api.JavacTaskImpl;
 import com.sun.tools.javac.code.Symbol.CompletionFailure;
+import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.util.Log;
 import java.io.IOException;
 import java.lang.ref.Reference;
@@ -845,5 +847,10 @@ public final class JavaSource {
         public ClassIndex createClassIndex(ClassPath bootPath, ClassPath classPath, ClassPath sourcePath, boolean supportsChanges) {
             return new ClassIndex(bootPath, classPath, sourcePath, supportsChanges);
         }
+    }
+
+    static {
+        System.err.println("Tree: " + Tree.class.getProtectionDomain().getCodeSource());
+        System.err.println("JCTree: " + JCTree.class.getProtectionDomain().getCodeSource());
     }
 }

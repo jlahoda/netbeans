@@ -465,10 +465,11 @@ public final class TypeMirrorHandle<T extends TypeMirror> {
 
         @Override
         public Void visitTypeVar(TypeVar t, Void s) {
-            if (t.bound instanceof PlaceholderType)
-                t.bound = ((PlaceholderType)t.bound).delegate;
-            else if (t.bound != null)
-                t.bound.accept(this, s);
+            Type bound = t.getUpperBound();
+            if (bound instanceof PlaceholderType)
+                t.setUpperBound(((PlaceholderType)bound).delegate);
+            else if (bound != null)
+                bound.accept(this, s);
             if (t.lower instanceof PlaceholderType)
                 t.lower = ((PlaceholderType)t.lower).delegate;
             else if (t.lower != null)

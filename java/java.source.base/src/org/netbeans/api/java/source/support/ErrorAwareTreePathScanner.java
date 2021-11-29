@@ -21,7 +21,6 @@ package org.netbeans.api.java.source.support;
 import com.sun.source.tree.ErroneousTree;
 import com.sun.source.tree.CaseTree;
 import com.sun.source.util.TreePathScanner;
-import org.netbeans.modules.java.source.TreeShims;
 
 /**
  *
@@ -36,7 +35,7 @@ public class ErrorAwareTreePathScanner<R,P> extends TreePathScanner<R,P> {
 
     @Override
     public R visitCase(CaseTree node, P p) {
-        scan(TreeShims.getLabels(node), p);
+        scan(node.getLabels(), p);
         return super.visitCase(node, p);
     }
 }
