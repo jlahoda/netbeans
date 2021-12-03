@@ -2802,10 +2802,9 @@ public class Reformatter implements ReformatTask {
         @Override
         public Boolean visitGuardedPattern(GuardedPatternTree node, Void p) {
             scan(node.getPattern(), p);
-
-            //XXX:
-            accept(IDENTIFIER);
-            removeWhiteSpace(IDENTIFIER);
+            space();
+            accept(AMPAMP);
+            space();
             scan(node.getExpression(), p);
 
             return true;
@@ -2813,7 +2812,9 @@ public class Reformatter implements ReformatTask {
 
         @Override
         public Boolean visitParenthesizedPattern(ParenthesizedPatternTree node, Void p) {
+            accept(LPAREN);
             scan(node.getPattern(), p);
+            accept(RPAREN);
             return true;
         }
 
@@ -3479,6 +3480,7 @@ public class Reformatter implements ReformatTask {
                         spaceWithinParens = cs.spaceWithinWhileParens();
                         break;
                     case SWITCH:
+                    case SWITCH_EXPRESSION:
                         spaceWithinParens = cs.spaceWithinSwitchParens();
                         break;
                     case SYNCHRONIZED:

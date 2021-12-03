@@ -1330,8 +1330,8 @@ public final class VeryPretty extends JCTree.Visitor implements DocTreeVisitor<V
     public void visitCase(JCCase tree) {
         int old = cs.indentCasesFromSwitch() ? indent() : out.leftMargin;
         toLeftMargin();
-        java.util.List<JCTree> labels = CasualDiff.getCaseLabelPatterns(tree);
-        if (labels.size() > 0) {
+        java.util.List<JCCaseLabel> labels = tree.labels;
+        if (labels.size() != 1 || labels.stream().noneMatch(l -> l.hasTag(Tag.DEFAULTCASELABEL))) {
             print("case ");
             String sep = "";
             for (JCTree lab : labels) {
