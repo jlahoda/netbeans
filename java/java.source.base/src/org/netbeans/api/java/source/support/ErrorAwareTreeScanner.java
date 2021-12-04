@@ -42,6 +42,6 @@ public class ErrorAwareTreeScanner<R,P> extends TreeScanner<R,P> {
         } else {
             r = reduce(scan(node.getBody(), p), r);
         }
-        return null;
+        return r;
     }
 }

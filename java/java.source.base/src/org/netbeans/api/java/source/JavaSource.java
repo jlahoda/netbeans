@@ -848,9 +848,4 @@ public final class JavaSource {
             return new ClassIndex(bootPath, classPath, sourcePath, supportsChanges);
         }
     }
-
-    static {
-        System.err.println("Tree: " + Tree.class.getProtectionDomain().getCodeSource());
-        System.err.println("JCTree: " + JCTree.class.getProtectionDomain().getCodeSource());
-    }
 }

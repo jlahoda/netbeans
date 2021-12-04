@@ -1794,8 +1794,7 @@ public class NPECheckTest extends NbTestCase {
                        "  }\n" +
                        "}")
                 .run(NPECheck.class)
-                .assertWarnings("8:7-8:15:verifier:Possibly Dereferencing null",
-                                "9:7-9:15:verifier:Possibly Dereferencing null");
+                .assertWarnings("8:7-8:15:verifier:Possibly Dereferencing null");
     }
 
     private void performAnalysisTest(String fileName, String code, String... golden) throws Exception {
