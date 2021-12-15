@@ -35,7 +35,12 @@ public class ErrorAwareTreePathScanner<R,P> extends TreePathScanner<R,P> {
 
     @Override
     public R visitCase(CaseTree node, P p) {
-        scan(node.getLabels(), p);
-        return super.visitCase(node, p);
+        R r = scan(node.getLabels(), p);
+        if (node.getCaseKind() == CaseKind.STATEMENT) {
+            r = reduce(scan(node.getStatements(), p), r);
+        } else {
+            r = reduce(scan(node.getBody(), p), r);
+        }
+        return r;
     }
 }
