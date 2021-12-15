@@ -20,6 +20,7 @@ package org.netbeans.api.java.source.support;
 
 import com.sun.source.tree.ErroneousTree;
 import com.sun.source.tree.CaseTree;
+import com.sun.source.tree.CaseTree.CaseKind;
 import com.sun.source.util.TreePathScanner;
 
 /**
