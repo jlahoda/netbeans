@@ -52,16 +52,6 @@ public class NoJavacHelper {
         return hasWorkingJavac.get();
     }
 
-    public static boolean hasNbJavac() {
-        try {
-            Class.forName("com.sun.tools.javac.comp.Repair");
-            return true;
-        } catch (ClassNotFoundException ex) {
-            //OK
-            return false;
-        }
-    }
-
     @OnStart
     public static class FixClasses implements Runnable {
 

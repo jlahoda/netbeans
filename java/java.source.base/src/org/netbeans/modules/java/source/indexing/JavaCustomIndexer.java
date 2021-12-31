@@ -116,6 +116,7 @@ import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.filesystems.URLMapper;
 import org.openide.modules.InstalledFileLocator;
+import org.openide.modules.ModuleInfo;
 import org.openide.util.Exceptions;
 //import org.openide.util.NbBundle;
 import org.openide.util.Pair;
@@ -1395,15 +1396,15 @@ public class JavaCustomIndexer extends CustomIndexer {
     private static Pair<Object,Method> heapDumper;
 
     private static String computeJavacVersion() {
-        if (NoJavacHelper.hasNbJavac()) {
-            File nbJavac = InstalledFileLocator.getDefault().locate("modules/ext/nb-javac-impl.jar", "org.netbeans.modules.nbjavac.impl", false);
-            if (nbJavac != null) {
-                return String.valueOf(nbJavac.lastModified());
+        String version = System.getProperty("java.vm.version", "unknown");
+
+        for (ModuleInfo mi : Lookup.getDefault().lookupAll(ModuleInfo.class)) {
+            if ("org.netbeans.libs.nbjavacapi".equals(mi.getCodeNameBase())) {
+                version = mi.getSpecificationVersion().toString();
             }
-            return "-1";
-        } else {
-            return System.getProperty("java.vm.version", "unknown");
         }
+
+        return version;
     }
 
     private static class FilterOutJDK7AndLaterWarnings implements Comparable<Diagnostic<? extends JavaFileObject>> {

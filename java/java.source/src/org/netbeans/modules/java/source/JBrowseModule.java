@@ -97,13 +97,6 @@ public class JBrowseModule extends ModuleInstall {
                     }
                     prefs.putBoolean(KEY_WARNING_SHOWN, true);
                 }
-
-                if (!NoJavacHelper.hasNbJavac()) {
-                    NotificationDisplayer.getDefault().notify("Install nb-javac Library", ImageUtilities.loadImageIcon(WARNING_ICON, false), Bundle.DESC_InstallNbJavac(), evt -> {
-                        PluginManager.installSingle("org.netbeans.modules.nbjavac", Bundle.DN_nbjavac());
-                    }, prefs.getBoolean(KEY_WARNING_SHOWN, false) ? Priority.SILENT : Priority.HIGH);
-                    prefs.putBoolean(KEY_WARNING_SHOWN, true);
-                }
             });
         });
         super.restored();

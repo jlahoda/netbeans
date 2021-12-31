@@ -1958,13 +1958,7 @@ public class VanillaCompileWorkerTest extends CompileWorkerTestBase {
     }
 
     public static Test suite() {
-        if (NoJavacHelper.hasNbJavac()) {
-            return new VanillaCompileWorkerTest("noop");
-        } else {
-//            return new VanillaCompileWorkerTest("testAnonymousClasses");
-//            return new VanillaCompileWorkerTest("testPreserveValidInitializers");
-            return new NbTestSuite(VanillaCompileWorkerTest.class);
-        }
+        return new NbTestSuite(VanillaCompileWorkerTest.class);
     }
 
     static {

@@ -1040,14 +1040,8 @@ public class TryTest extends GeneratorTestMDRCompat {
             "}\n"
             );
         String extraSemicolon;
-        //XXX: a difference between vanilla javac and nb-javac:
-        if (NoJavacHelper.hasNbJavac()) {
-            //with nb-javac wil preserve the semicolon:
-            extraSemicolon = ";";
-        } else {
-            //with vanilla javac, we don't:
-            extraSemicolon = "";
-        }
+        //XXX: should the semicolon be preserved or not?
+        extraSemicolon = "";
         String golden =
             "package hierbas.del.litoral;\n" +
             "\n" +
