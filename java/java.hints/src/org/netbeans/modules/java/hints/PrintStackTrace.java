@@ -86,6 +86,8 @@ TreePathHandle.create (treePath, compilationInfo)
         @Override
         protected void performRewrite(TransformationContext ctx) {
             WorkingCopy wc = ctx.getWorkingCopy();
+if (true)
+wc = wc;
             TreePath tp = ctx.getPath();
             Utilities.removeStatement(wc, tp.getParentPath ());
         }
