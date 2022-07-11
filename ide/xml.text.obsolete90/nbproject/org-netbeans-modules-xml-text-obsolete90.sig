@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.10.0
+#Version 1.16.0
 
 CLSS public abstract interface java.awt.event.ActionListener
 intf java.util.EventListener
@@ -115,7 +115,6 @@ meth public void putValue(java.lang.String,java.lang.Object)
 meth public void removePropertyChangeListener(java.beans.PropertyChangeListener)
 meth public void setEnabled(boolean)
 supr java.lang.Object
-hfds RECONFIGURE_ON_NULL,arrayTable
 
 CLSS public abstract interface javax.swing.Action
 fld public final static java.lang.String ACCELERATOR_KEY = "AcceleratorKey"
@@ -203,8 +202,6 @@ meth public void setAsynchronousLoadPriority(int)
 meth public void setDocumentFilter(javax.swing.text.DocumentFilter)
 meth public void setDocumentProperties(java.util.Dictionary<java.lang.Object,java.lang.Object>)
 supr java.lang.Object
-hfds AsyncLoadPriority,BAD_LOCK_STATE,I18NProperty,MultiByteProperty,bidiRoot,context,currWriter,data,defaultI18NProperty,documentFilter,documentProperties,filterBypass,notifyingListeners,numReaders,numWriters
-hcls BidiElement,BidiRootElement,DefaultFilterBypass,UndoRedoDocumentEvent
 
 CLSS public javax.swing.text.DefaultEditorKit
 cons public init()
@@ -275,8 +272,6 @@ meth public void read(java.io.Reader,javax.swing.text.Document,int) throws java.
 meth public void write(java.io.OutputStream,javax.swing.text.Document,int,int) throws java.io.IOException,javax.swing.text.BadLocationException
 meth public void write(java.io.Writer,javax.swing.text.Document,int,int) throws java.io.IOException,javax.swing.text.BadLocationException
 supr javax.swing.text.EditorKit
-hfds defaultActions,selectionPageDownAction,selectionPageLeftAction,selectionPageRightAction,selectionPageUpAction,toggleComponentOrientationAction,unselectAction
-hcls BeginAction,BeginLineAction,BeginParagraphAction,BeginWordAction,DeleteNextCharAction,DeletePrevCharAction,DeleteWordAction,DumpModelAction,EndAction,EndLineAction,EndParagraphAction,EndWordAction,NextVisualPositionAction,NextWordAction,PageAction,PreviousWordAction,ReadOnlyAction,SelectAllAction,SelectLineAction,SelectParagraphAction,SelectWordAction,ToggleComponentOrientationAction,UnselectAction,VerticalPageAction,WritableAction
 
 CLSS public abstract interface javax.swing.text.Document
 fld public final static java.lang.String StreamDescriptionProperty = "stream"
@@ -1034,6 +1029,7 @@ supr java.lang.Object
 hfds formatWriter
 
 CLSS public abstract org.netbeans.modules.editor.FormatterIndentEngine
+ anno 0 java.lang.Deprecated()
 cons public init()
 fld public final static java.lang.String EXPAND_TABS_PROP = "expandTabs"
 fld public final static java.lang.String SPACES_PER_TAB_PROP = "spacesPerTab"
@@ -1051,6 +1047,7 @@ meth public void setAcceptedMimeTypes(java.lang.String[])
 meth public void setExpandTabs(boolean)
 meth public void setSpacesPerTab(int)
 meth public void setValue(java.lang.String,java.lang.Object)
+ anno 0 java.lang.Deprecated()
 meth public void setValue(java.lang.String,java.lang.Object,java.lang.String)
 supr org.openide.text.IndentEngine
 hfds acceptedMimeTypes,formatter,serialPersistentFields,serialVersionUID

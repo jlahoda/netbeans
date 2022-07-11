@@ -24,6 +24,7 @@ import java.io.*;
 import java.lang.ref.*;
 import java.lang.reflect.*;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.logging.*;
 import javax.xml.parsers.DocumentBuilder;
@@ -525,7 +526,7 @@ public class XMLDataObject extends MultiDataObject {
     */
     final Document parsePrimaryFile () throws IOException, SAXException {
         if (ERR.isLoggable(Level.FINE)) ERR.fine("parsePrimaryFile" + " for " + this);
-        String loc = getPrimaryFile().getURL().toExternalForm();
+        String loc = getPrimaryFile().toURL().toExternalForm();
         try {
             return XMLUtil.parse(new InputSource(loc), false, /* #36295 */true, errorHandler, getSystemResolver());
         } catch (IOException e) {

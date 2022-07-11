@@ -161,6 +161,9 @@ public class DebuggingTruffleActionsProvider implements NodeActionsProviderFilte
     
     private static void goToSource(final TruffleStackFrame f) {
         final SourcePosition sourcePosition = f.getSourcePosition();
+        if (sourcePosition == null) {
+            return ;
+        }
         SwingUtilities.invokeLater (new Runnable () {
             @Override
             public void run () {
@@ -239,7 +242,7 @@ public class DebuggingTruffleActionsProvider implements NodeActionsProviderFilte
                         return false;
                     }
                     //return isGoToSourceSupported ((TruffleStackFrame) node);
-                    return true;
+                    return ((TruffleStackFrame) node).getSourcePosition() != null;
                 }
 
                 @Override
@@ -380,7 +383,7 @@ public class DebuggingTruffleActionsProvider implements NodeActionsProviderFilte
         );
     }
 
-    static abstract class LazyActionPerformer implements Models.ActionPerformer {
+    abstract static class LazyActionPerformer implements Models.ActionPerformer {
 
         private final RequestProcessor rp;
 

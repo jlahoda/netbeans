@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 2.65.0
+#Version 2.73.0
 
 CLSS public abstract interface java.awt.event.ActionListener
 intf java.util.EventListener
@@ -27,7 +27,6 @@ meth public final java.lang.String name()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
-hfds name,ordinal
 
 CLSS public abstract interface java.lang.Iterable<%0 extends java.lang.Object>
 meth public abstract java.util.Iterator<{java.lang.Iterable%0}> iterator()
@@ -118,7 +117,6 @@ meth public void putValue(java.lang.String,java.lang.Object)
 meth public void removePropertyChangeListener(java.beans.PropertyChangeListener)
 meth public void setEnabled(boolean)
 supr java.lang.Object
-hfds RECONFIGURE_ON_NULL,arrayTable
 
 CLSS public abstract interface javax.swing.Action
 fld public final static java.lang.String ACCELERATOR_KEY = "AcceleratorKey"
@@ -215,8 +213,6 @@ meth public void read(java.io.Reader,javax.swing.text.Document,int) throws java.
 meth public void write(java.io.OutputStream,javax.swing.text.Document,int,int) throws java.io.IOException,javax.swing.text.BadLocationException
 meth public void write(java.io.Writer,javax.swing.text.Document,int,int) throws java.io.IOException,javax.swing.text.BadLocationException
 supr javax.swing.text.EditorKit
-hfds defaultActions,selectionPageDownAction,selectionPageLeftAction,selectionPageRightAction,selectionPageUpAction,toggleComponentOrientationAction,unselectAction
-hcls BeginAction,BeginLineAction,BeginParagraphAction,BeginWordAction,DeleteNextCharAction,DeletePrevCharAction,DeleteWordAction,DumpModelAction,EndAction,EndLineAction,EndParagraphAction,EndWordAction,NextVisualPositionAction,NextWordAction,PageAction,PreviousWordAction,ReadOnlyAction,SelectAllAction,SelectLineAction,SelectParagraphAction,SelectWordAction,ToggleComponentOrientationAction,UnselectAction,VerticalPageAction,WritableAction
 
 CLSS public abstract javax.swing.text.EditorKit
 cons public init()
@@ -809,6 +805,7 @@ hcls Edit
 CLSS public org.netbeans.modules.csl.api.EditList
 cons public init(javax.swing.text.Document)
 cons public init(org.netbeans.editor.BaseDocument)
+innr public final static Edit
 meth public int firstEditLine(javax.swing.text.Document)
 meth public int firstLine(org.netbeans.editor.BaseDocument)
 meth public java.lang.String toString()
@@ -822,7 +819,18 @@ meth public void applyToDocument(org.netbeans.editor.BaseDocument)
 meth public void setFormatAll(boolean)
 supr java.lang.Object
 hfds LOG,doc,edits,formatAll,positions
-hcls DelegatedPosition,Edit
+hcls DelegatedPosition
+
+CLSS public final static org.netbeans.modules.csl.api.EditList$Edit
+ outer org.netbeans.modules.csl.api.EditList
+intf java.lang.Comparable<org.netbeans.modules.csl.api.EditList$Edit>
+meth public int compareTo(org.netbeans.modules.csl.api.EditList$Edit)
+meth public int getOffset()
+meth public int getRemoveLen()
+meth public java.lang.String getInsertText()
+meth public java.lang.String toString()
+supr java.lang.Object
+hfds format,insertText,offset,offsetOrdinal,removeLen
 
 CLSS public abstract org.netbeans.modules.csl.api.EditRegions
 cons public init()
@@ -1322,6 +1330,7 @@ supr java.lang.Enum<org.netbeans.modules.csl.api.Severity>
 
 CLSS public abstract interface org.netbeans.modules.csl.api.StructureItem
 innr public abstract interface static CollapsedDefault
+innr public abstract interface static InheritedItem
 meth public abstract boolean equals(java.lang.Object)
 meth public abstract boolean isLeaf()
 meth public abstract int hashCode()
@@ -1344,11 +1353,19 @@ meth public abstract org.netbeans.modules.csl.api.ElementHandle getElementHandle
  anno 0 org.netbeans.api.annotations.common.NonNull()
 meth public abstract org.netbeans.modules.csl.api.ElementKind getKind()
  anno 0 org.netbeans.api.annotations.common.NonNull()
+meth public static boolean isInherited(org.netbeans.modules.csl.api.StructureItem)
 
 CLSS public abstract interface static org.netbeans.modules.csl.api.StructureItem$CollapsedDefault
  outer org.netbeans.modules.csl.api.StructureItem
 intf org.netbeans.modules.csl.api.StructureItem
 meth public abstract boolean isCollapsedByDefault()
+
+CLSS public abstract interface static org.netbeans.modules.csl.api.StructureItem$InheritedItem
+ outer org.netbeans.modules.csl.api.StructureItem
+intf org.netbeans.modules.csl.api.StructureItem
+meth public abstract boolean isInherited()
+meth public abstract org.netbeans.modules.csl.api.ElementHandle getDeclaringElement()
+ anno 0 org.netbeans.api.annotations.common.NonNull()
 
 CLSS public abstract interface org.netbeans.modules.csl.api.StructureScanner
 innr public final static Configuration
@@ -1685,6 +1702,7 @@ CLSS public abstract static org.netbeans.modules.parsing.spi.Parser$Result
  outer org.netbeans.modules.parsing.spi.Parser
 cons protected init(org.netbeans.modules.parsing.api.Snapshot)
 meth protected abstract void invalidate()
+meth protected boolean processingFinished()
 meth public org.netbeans.modules.parsing.api.Snapshot getSnapshot()
 supr java.lang.Object
 hfds snapshot

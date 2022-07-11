@@ -148,7 +148,9 @@ public class JavaWhereUsedQueryPlugin extends JavaRefactoringPlugin implements F
                 final Set<String> packageSet = new HashSet<>(packages.size());
                 for (NonRecursiveFolder nonRecursiveFolder : packages) {
                     String resourceName = cpInfo.getClassPath(ClasspathInfo.PathKind.SOURCE).getResourceName(nonRecursiveFolder.getFolder());
-                    packageSet.add(resourceName.replace('/', '.'));
+                    if (resourceName != null) {
+                        packageSet.add(resourceName.replace('/', '.'));
+                    }
                 }
                 searchScopeType.add(new SearchScopeType() {
                     @Override
@@ -290,20 +292,9 @@ public class JavaWhereUsedQueryPlugin extends JavaRefactoringPlugin implements F
         @SuppressWarnings("unchecked")
         Collection<FileObject> set = SourceUtilsEx.getFiles((Collection<ElementHandle<? extends Element>>) implementorsAsHandles, cpInfo, cancel);
 
-        // filter out files that are not on source path
-        ClassPath source = cpInfo.getClassPath(ClasspathInfo.PathKind.SOURCE);
-        Collection<FileObject> set2 = new ArrayList<>(set.size());
-        for (FileObject fo : set) {
-            if (source.contains(fo)) {
-                set2.add(fo);
-            }
-            if(cancel != null && cancel.get()) {
-                return Collections.<FileObject>emptySet();
-            }
-        }
-        return set2;
+        return set;
     }
-    
+
     @Override
     public Problem prepare(final RefactoringElementsBag elements) {
         fireProgressListenerStart(ProgressEvent.START, -1);
@@ -379,8 +370,9 @@ public class JavaWhereUsedQueryPlugin extends JavaRefactoringPlugin implements F
                 }
                 packages.add(nonRecursiveFolder);
             }
-            for (FileObject sourceRoot1 : folders.keySet()) {
-                Set<NonRecursiveFolder> packages1 = folders.get(sourceRoot1);
+            for (Map.Entry<FileObject, Set<NonRecursiveFolder>> entry : folders.entrySet()) {
+                FileObject sourceRoot1 = entry.getKey();
+                Set<NonRecursiveFolder> packages1 = entry.getValue();
                 if (packages1 != null && !packages1.isEmpty()) {
                     ClasspathInfo cpath;
                     if (isSearchFromBaseClass() && fo != null) {

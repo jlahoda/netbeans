@@ -297,7 +297,7 @@ final class GUIRegistrationPanel extends BasicWizardIterator.Panel {
                         } else {
                             // create model
                             DefaultComboBoxModel model = new DefaultComboBoxModel();
-                            for (Iterator it = sorted.iterator(); it.hasNext(); ) {
+                            for (Iterator<LayerItemPresenter> it = sorted.iterator(); it.hasNext(); ) {
                                 model.addElement(it.next());
                             }
                             combo.setModel(model);
@@ -842,7 +842,7 @@ final class GUIRegistrationPanel extends BasicWizardIterator.Panel {
         KeyStroke[] keyStrokes = ShortcutEnterPanel.showDialog();
         if (keyStrokes != null && keyStrokes.length > 0) {
             String newShortcut = WizardUtils.keyStrokesToString(keyStrokes);
-            DefaultListModel lm = (DefaultListModel)shortcutsList.getModel();
+            DefaultListModel<String> lm = (DefaultListModel)shortcutsList.getModel();
             if (!lm.contains(newShortcut)) {
                 lm.addElement(newShortcut);
                 data.setKeyStroke(WizardUtils.keyStrokesToLogicalString(keyStrokes));

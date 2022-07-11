@@ -106,6 +106,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Handler;
 import java.util.logging.Level;
+import java.util.regex.Pattern;
 import javax.swing.JEditorPane;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentEvent.ElementChange;
@@ -114,7 +115,6 @@ import javax.swing.event.DocumentListener;
 import javax.swing.text.DefaultEditorKit;
 import javax.swing.text.Document;
 import javax.swing.text.Element;
-import junit.framework.Assert;
 import org.netbeans.api.annotations.common.NullAllowed;
 import org.netbeans.api.editor.mimelookup.MimeLookup;
 import org.netbeans.api.editor.mimelookup.MimePath;
@@ -189,6 +189,11 @@ import static org.openide.util.test.MockLookup.setLookup;
  */
 public abstract class CslTestBase extends NbTestCase {
 
+    static {
+        // testing performance: set scanner update delay to 0
+        System.setProperty(PathRegistry.class.getName()+".FIRER_EVT_COLLAPSE_WINDOW", "0");
+    }
+
     public CslTestBase(String testName) {
         super(testName);
     }
@@ -226,7 +231,7 @@ public abstract class CslTestBase extends NbTestCase {
                 layers.add(en.nextElement());
             }
 
-            Assert.assertTrue(additionalLayers[cntr], found);
+            assertTrue(additionalLayers[cntr], found);
         }
 
         XMLFileSystem xmlFS = new XMLFileSystem();
@@ -260,8 +265,9 @@ public abstract class CslTestBase extends NbTestCase {
             logger.addHandler(w);
 
             // initialize classpaths indexing
-            for(String cpId : classPathsForTest.keySet()) {
-                ClassPath cp = classPathsForTest.get(cpId);
+            for(Map.Entry<String, ClassPath> entry : classPathsForTest.entrySet()) {
+                String cpId = entry.getKey();
+                ClassPath cp = entry.getValue();
                 GlobalPathRegistry.getDefault().register(cpId, new ClassPath [] { cp });
             }
 
@@ -287,8 +293,9 @@ public abstract class CslTestBase extends NbTestCase {
             Waiter w = new Waiter(classPathContainsBinaries());
             logger.addHandler(w);
 
-            for(String cpId : classPathsForTest.keySet()) {
-                ClassPath cp = classPathsForTest.get(cpId);
+            for(Map.Entry<String, ClassPath> entry : classPathsForTest.entrySet()) {
+                String cpId = entry.getKey();
+                ClassPath cp = entry.getValue();
                 GlobalPathRegistry.getDefault().unregister(cpId, new ClassPath [] { cp });
             }
 
@@ -339,7 +346,7 @@ public abstract class CslTestBase extends NbTestCase {
     public static final FileObject copyStringToFileObject(FileObject fo, String content) throws IOException {
         OutputStream os = fo.getOutputStream();
         try {
-            InputStream is = new ByteArrayInputStream(content.getBytes("UTF-8"));
+            InputStream is = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
             try {
                 FileUtil.copy(is, os);
                 return fo;
@@ -608,6 +615,19 @@ public abstract class CslTestBase extends NbTestCase {
         return inputFile;
     }
 
+    private static List<String> computeVersionVariantsFor(String version) {
+        int dot = version.indexOf('.');
+        version = version.substring(dot + 1);
+        int versionNum = Integer.parseInt(version);
+        List<String> versions = new ArrayList<>();
+
+        for (int v = versionNum; v >= 9; v--) {
+            versions.add("." + v);
+        }
+
+        return versions;
+    }
+
     protected boolean failOnMissingGoldenFile() {
         return true;
     }
@@ -619,12 +639,47 @@ public abstract class CslTestBase extends NbTestCase {
 
     protected void assertDescriptionMatches(String relFilePath,
             String description, boolean includeTestName, String ext, boolean checkFileExistence) throws Exception {
+        assertDescriptionMatches(relFilePath, description, includeTestName, ext, checkFileExistence, false);
+    }
+
+    /**
+     * A variant that accepts markers in the actual output. Markers identify words in the golden
+     * file that should be ignored. Suitable for postprocessed output from partial implementations,
+     * so they can be still checked against full specification - otherwise a new set of goldens would have 
+     * to be created. Include "*-*" marker in the 'description' at a place where a single word (optional) should
+     * be skipped.
+     * @param relFilePath relative path to golden file
+     * @param description description string
+     * @param includeTestName true = append test name to relative path
+     * @param ext extension of the golden file
+     * @param checkFileExistence check the golden file exists; false means golden file will be created with 'description' as contents.
+     * @param skipMarkers true to skip text that matches *-* in the actual output.
+     * @throws Exception 
+     */
+    protected void assertDescriptionMatches(String relFilePath,
+            String description, boolean includeTestName, String ext, boolean checkFileExistence, boolean skipMarkers) throws Exception {
+        assertDescriptionMatches(relFilePath, description, includeTestName, false, ext, checkFileExistence, skipMarkers);
+    }
+
+    protected void assertDescriptionMatches(String relFilePath,
+            String description, boolean includeTestName, boolean includeJavaVersion, String ext, boolean checkFileExistence, boolean skipMarkers) throws Exception {
         File rubyFile = getDataFile(relFilePath);
         if (checkFileExistence && !rubyFile.exists()) {
             NbTestCase.fail("File " + rubyFile + " not found.");
         }
 
-        File goldenFile = getDataFile(relFilePath + (includeTestName ? ("." + getName()) : "") + ext);
+        File goldenFile = null;
+        if (includeJavaVersion) {
+            String version = System.getProperty("java.specification.version");
+            for (String variant : computeVersionVariantsFor(version)) {
+                goldenFile = getDataFile(relFilePath + (includeTestName ? ("." + getName()) : "") + variant + ext);
+                if (goldenFile.exists())
+                    break;
+            }
+        }
+        if (goldenFile == null || !goldenFile.exists()) {
+            goldenFile = getDataFile(relFilePath + (includeTestName ? ("." + getName()) : "") + ext);
+        }
         if (!goldenFile.exists()) {
             if (!goldenFile.createNewFile()) {
                 NbTestCase.fail("Cannot create file " + goldenFile);
@@ -664,31 +719,98 @@ public abstract class CslTestBase extends NbTestCase {
         } else {
             // We want to ignore different line separators (like \r\n against \n) because they
             // might be causing failing tests on a different operation systems like Windows :]
-            String expectedUnified = expectedTrimmed.replaceAll("\r", "");
-            String actualUnified = actualTrimmed.replaceAll("\r", "");
+            String expectedUnified = expectedTrimmed.replace("\r", "");
+            String actualUnified = actualTrimmed.replace("\r", "");
+            
+            // if there is '**' in the actualUnified, it may stand for whatever word of the expected
+            // content in that position.
+            if (skipMarkers) {
+                String[] linesExpected = expectedUnified.split("\n");
+                String[] linesActual = actualUnified.split("\n");
+                boolean allMatch = linesExpected.length == linesActual.length;
+                for (int i = 0; allMatch && i < linesExpected.length; i++) {
+                    String e = linesExpected[i];
+                    String a = linesActual[i];
+                    Pattern pattern = markerPattern(a);
+                    allMatch = pattern == null ? a.equals(e) : pattern.matcher(e).matches();
+                }
+                if (allMatch) {
+                    return;
+                }
+            }
 
             if (expectedUnified.equals(actualUnified)) {
                 return; // Only difference is in line separation --> Test passed
             }
 
             // There are some diffrerences between expected and actual content --> Test failed
-            fail(getContentDifferences(relFilePath, ext, includeTestName, expectedUnified, actualUnified));
+            fail(getContentDifferences(relFilePath, ext, includeTestName, expectedUnified, actualUnified, skipMarkers));
+        }
+    }
+    
+    private Pattern markerPattern(String line) {
+        StringBuilder pattern = new StringBuilder();
+        int start = 0;
+        for (int idx = line.indexOf("*-*"); idx >= 0; start = idx + 3, idx = line.indexOf("*-*", start)) {
+            pattern.append("\\s*");
+            pattern.append(Pattern.quote(line.substring(start, idx).trim()));
+            pattern.append("\\s*\\S*");
+        }
+        if (start > 0) {
+            pattern.append("\\s*");
+            pattern.append(Pattern.quote(line.substring(start).trim()));
+            return Pattern.compile(pattern.toString());
+        } else {
+            return null;
         }
     }
 
-    private String getContentDifferences(String relFilePath, String ext, boolean includeTestName, String expected, String actual) {
+    private String getContentDifferences(String relFilePath, String ext, boolean includeTestName, String expected, String actual, boolean skip) {
         StringBuilder sb = new StringBuilder();
         sb.append("Content does not match between '").append(relFilePath).append("' and '").append(relFilePath);
         if (includeTestName) {
             sb.append(getName());
         }
         sb.append(ext).append("'").append(lineSeparator(1));
-        sb.append(getContentDifferences(expected, actual));
+        sb.append(getContentDifferences(expected, actual, skip));
 
         return sb.toString();
     }
+    
+    private boolean containsLine(List<String> lines, String line, boolean skipMarkers, boolean inArray) {
+        if (lines.contains(line)) {
+            return true;
+        } else if (!skipMarkers) {
+            return false;
+        }
+        if (inArray) {
+            for (String l : lines) {
+                Pattern toFind = markerPattern(l);
+                if (toFind == null) {
+                    if (l.equals(line)) {
+                        return true;
+                    }
+                } else {
+                    if (toFind.matcher(line).matches()) {
+                        return true;
+                    }
+                }
+            }
+        } else {
+            Pattern toFind = markerPattern(line);
+            if (toFind == null) {
+                return false;
+            }
+            for (String l : lines) {
+                if (toFind.matcher(l).matches()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
-    private String getContentDifferences(String expected, String actual) {
+    private String getContentDifferences(String expected, String actual, boolean skipMarkers) {
         StringBuilder sb = new StringBuilder();
         sb.append("Expected content is:").
            append(lineSeparator(2)).
@@ -711,7 +833,7 @@ public abstract class CslTestBase extends NbTestCase {
         // Appending lines which are missing in expected content and are present in actual content
         boolean noErrorInActual = true;
         for (String actualLine : actualLines) {
-            if (expectedLines.contains(actualLine) == false) {
+            if (containsLine(expectedLines, actualLine, skipMarkers, false) == false) {
                 if (noErrorInActual) {
                     sb.append("Actual content contains following lines which are missing in expected content: ").append(lineSeparator(1));
                     noErrorInActual = false;
@@ -723,7 +845,7 @@ public abstract class CslTestBase extends NbTestCase {
         // Appending lines which are missing in actual content and are present in expected content
         boolean noErrorInExpected = true;
         for (String expectedLine : expectedLines) {
-            if (actualLines.contains(expectedLine) == false) {
+            if (containsLine(actualLines, expectedLine, skipMarkers, true) == false) {
                 // If at least one line missing in actual content we want to append header line
                 if (noErrorInExpected) {
                     sb.append("Expected content contains following lines which are missing in actual content: ").append(lineSeparator(1));
@@ -808,8 +930,8 @@ public abstract class CslTestBase extends NbTestCase {
         } else {
             // We want to ignore different line separators (like \r\n against \n) because they
             // might be causing failing tests on a different operation systems like Windows :]
-            final String expectedUnified = expectedTrimmed.replaceAll("\r", "");
-            final String actualUnified = actualTrimmed.replaceAll("\r", "");
+            final String expectedUnified = expectedTrimmed.replace("\r", "");
+            final String actualUnified = actualTrimmed.replace("\r", "");
 
             if (expectedUnified.equals(actualUnified)) {
                 return; // Only difference is in line separation --> Test passed
@@ -817,7 +939,7 @@ public abstract class CslTestBase extends NbTestCase {
 
             // There are some diffrerences between expected and actual content --> Test failed
 
-            fail("Not matching goldenfile: " + FileUtil.getFileDisplayName(fileObject) + lineSeparator(2) + getContentDifferences(expectedUnified, actualUnified));
+            fail("Not matching goldenfile: " + FileUtil.getFileDisplayName(fileObject) + lineSeparator(2) + getContentDifferences(expectedUnified, actualUnified, false));
         }
     }
 
@@ -870,8 +992,8 @@ public abstract class CslTestBase extends NbTestCase {
         } else {
             // We want to ignore different line separators (like \r\n against \n) because they
             // might be causing failing tests on a different operation systems like Windows :]
-            final String expectedUnified = expectedTrimmed.replaceAll("\r", "");
-            final String actualUnified = actualTrimmed.replaceAll("\r", "");
+            final String expectedUnified = expectedTrimmed.replace("\r", "");
+            final String actualUnified = actualTrimmed.replace("\r", "");
 
             if (expectedUnified.equals(actualUnified)) {
                 return; // Only difference is in line separation --> Test passed
@@ -879,7 +1001,7 @@ public abstract class CslTestBase extends NbTestCase {
 
             // There are some diffrerences between expected and actual content --> Test failed
 
-            fail("Not matching goldenfile: " + FileUtil.getFileDisplayName(FileUtil.toFileObject(goldenFile)) + lineSeparator(2) + getContentDifferences(expectedUnified, actualUnified));
+            fail("Not matching goldenfile: " + FileUtil.getFileDisplayName(FileUtil.toFileObject(goldenFile)) + lineSeparator(2) + getContentDifferences(expectedUnified, actualUnified, false));
         }
     }
 
@@ -1132,21 +1254,21 @@ public abstract class CslTestBase extends NbTestCase {
         Formatter formatter = getFormatter(null);
 
         int sourcePos = source.indexOf('^');
-        assertNotNull(sourcePos);
+        assertTrue("Source text must have a caret ^ marker", sourcePos != -1);
         source = source.substring(0, sourcePos) + source.substring(sourcePos+1);
 
         int reformattedPos = reformatted.indexOf('^');
-        assertNotNull(reformattedPos);
+        assertTrue("Reformatted text must have a caret ^ marker", reformattedPos != -1);
         reformatted = reformatted.substring(0, reformattedPos) + reformatted.substring(reformattedPos+1);
 
         JEditorPane ta = getPane(source);
         Caret caret = ta.getCaret();
         caret.setDot(sourcePos);
         if (selection != null) {
-            int start = original.indexOf(selection);
+            int start = source.indexOf(selection);
             assertTrue(start != -1);
             assertTrue("Ambiguous selection - multiple occurrences of selection string",
-                    original.indexOf(selection, start+1) == -1);
+                    source.indexOf(selection, start+1) == -1);
             ta.setSelectionStart(start);
             ta.setSelectionEnd(start+selection.length());
             assertEquals(selection, ta.getSelectedText());
@@ -1182,11 +1304,11 @@ public abstract class CslTestBase extends NbTestCase {
         Formatter formatter = getFormatter(null);
 
         int sourcePos = source.indexOf('^');
-        assertNotNull(sourcePos);
+        assertTrue("Source text must have a caret ^ marker", sourcePos != -1);
         source = source.substring(0, sourcePos) + source.substring(sourcePos+1);
 
         int reformattedPos = reformatted.indexOf('^');
-        assertNotNull(reformattedPos);
+        assertTrue("Reformatted text must have a caret ^ marker", reformattedPos != -1);
         reformatted = reformatted.substring(0, reformattedPos) + reformatted.substring(reformattedPos+1);
 
         JEditorPane ta = getPane(source);
@@ -1215,11 +1337,12 @@ public abstract class CslTestBase extends NbTestCase {
         Formatter formatter = getFormatter(null);
 
         int sourcePos = source.indexOf('^');
-        assertNotNull(sourcePos);
+        assertTrue("Source text must have a caret ^ marker", sourcePos != -1);
+
         source = source.substring(0, sourcePos) + source.substring(sourcePos+1);
 
         int reformattedPos = reformatted.indexOf('^');
-        assertNotNull(reformattedPos);
+        assertTrue("Reformatted text must have a caret ^ marker", reformattedPos != -1);
         reformatted = reformatted.substring(0, reformattedPos) + reformatted.substring(reformattedPos+1);
 
         JEditorPane ta = getPane(source);
@@ -1704,7 +1827,7 @@ public abstract class CslTestBase extends NbTestCase {
         );
 
         try {
-            ParserManager.parse(Collections.singleton(testSource), new UserTask() {
+            class UT extends UserTask implements IndexingTask {
                 public @Override void run(ResultIterator resultIterator) throws Exception {
                     Parser.Result r = resultIterator.getParserResult();
                     assertTrue(r instanceof ParserResult);
@@ -1714,7 +1837,8 @@ public abstract class CslTestBase extends NbTestCase {
 
                     SPIAccessor.getInstance().index(indexer, indexable, r, context);
                 }
-            });
+            }
+            ParserManager.parse(Collections.singleton(testSource), new UT());
         } finally {
             DocumentIndex index = SPIAccessor.getInstance().getIndexFactory(context).getIndex(context.getIndexFolder());
             if (index != null) {
@@ -1761,7 +1885,7 @@ public abstract class CslTestBase extends NbTestCase {
 
         final Boolean result [] = new Boolean [] { null };
         Source testSource = getTestSource(fo);
-        ParserManager.parse(Collections.singleton(testSource), new UserTask() {
+        class UT extends UserTask implements IndexingTask {
             public @Override void run(ResultIterator resultIterator) throws Exception {
                 Parser.Result r = resultIterator.getParserResult();
                 EmbeddingIndexer indexer = factory.createIndexer(
@@ -1769,7 +1893,8 @@ public abstract class CslTestBase extends NbTestCase {
                     r.getSnapshot());
                 result[0] = Boolean.valueOf(indexer != null);
             }
-        });
+        }
+        ParserManager.parse(Collections.singleton(testSource), new UT());
 
         assertNotNull(result[0]);
         assertEquals(isIndexable, result[0].booleanValue());
@@ -2410,12 +2535,12 @@ public abstract class CslTestBase extends NbTestCase {
 
     public void insertNewline(String source, String reformatted, IndentPrefs preferences) throws Exception {
         int sourcePos = source.indexOf('^');
-        assertNotNull(sourcePos);
+        assertTrue("Source text must have a caret ^ marker", sourcePos != -1);
         source = source.substring(0, sourcePos) + source.substring(sourcePos+1);
         Formatter formatter = getFormatter(null);
 
         int reformattedPos = reformatted.indexOf('^');
-        assertNotNull(reformattedPos);
+        assertTrue("Reformatted text must have a caret ^ marker", reformattedPos != -1);
         reformatted = reformatted.substring(0, reformattedPos) + reformatted.substring(reformattedPos+1);
 
         JEditorPane ta = getPane(source);
@@ -2808,13 +2933,13 @@ public abstract class CslTestBase extends NbTestCase {
         };
         if (classPathsForTest == null || classPathsForTest.isEmpty()) {
             ParserManager.parse(Collections.singleton(testSource), task);
-            assertDescriptionMatches(file, described[0], true, ".completion");
+            assertDescriptionMatches(file, described[0], true, true, ".completion", true, false);
         } else {
             Future<Void> future = ParserManager.parseWhenScanFinished(Collections.singleton(testSource), task);
             if (!future.isDone()) {
                 future.get();
             }
-            assertDescriptionMatches(file, described[0], true, ".completion");
+            assertDescriptionMatches(file, described[0], true, true, ".completion", true, false);
         }
     }
 
@@ -4673,7 +4798,7 @@ public abstract class CslTestBase extends NbTestCase {
 
         public void waitForScanToFinish() {
             try {
-                latch.await(60000, TimeUnit.MILLISECONDS);
+                latch.await(600000, TimeUnit.MILLISECONDS);
                 if (latch.getCount() > 0) {
                     fail("Waiting for classpath scanning to finish timed out");
                 }

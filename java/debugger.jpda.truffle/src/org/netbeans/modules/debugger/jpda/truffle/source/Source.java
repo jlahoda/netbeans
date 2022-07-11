@@ -20,6 +20,7 @@
 package org.netbeans.modules.debugger.jpda.truffle.source;
 
 import com.sun.jdi.StringReference;
+import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -64,7 +65,7 @@ public final class Source {
         this.codeRef = codeRef;
         URL url = null;
         if (hostMethodName == null) {
-            if (uri == null || !"file".equalsIgnoreCase(uri.getScheme())) {
+            if (uri == null || !"file".equalsIgnoreCase(uri.getScheme()) || !fileIsReadable(uri)) { // NOI18N
                 try {
                     url = SourceFilesCache.get(jpda).getSourceFile(name, hash, uri, getContent());
                 } catch (IOException ex) {
@@ -86,7 +87,15 @@ public final class Source {
         this.mimeType = mimeType;
         this.hash = hash;
     }
-    
+
+    private static boolean fileIsReadable(URI uri) {
+        try {
+            return new File(uri).canRead();
+        } catch (IllegalArgumentException | SecurityException ex) {
+            return false;
+        }
+    }
+
     public static Source getExistingSource(JPDADebugger debugger, long id) {
         synchronized (KNOWN_SOURCES) {
             Map<Long, Source> dbgSources = KNOWN_SOURCES.get(debugger);
@@ -146,6 +155,9 @@ public final class Source {
                                    URI uri,
                                    String mimeType,
                                    StringReference codeRef) {
+        if (uri == null && codeRef == null) {
+            return null;
+        }
         synchronized (KNOWN_SOURCES) {
             Map<Long, Source> dbgSources = KNOWN_SOURCES.get(debugger);
             if (dbgSources != null) {
@@ -209,6 +221,9 @@ public final class Source {
     }
 
     public String getContent() {
+        if (codeRef == null) {
+            return null;
+        }
         synchronized (this) {
             if (content == null) {
                 try {

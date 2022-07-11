@@ -231,7 +231,7 @@ public class ProxyLookup extends Lookup {
 
         class Notify implements Runnable {
             public void run() {
-                Iterator it = evAndListeners.iterator();
+                Iterator<?> it = evAndListeners.iterator();
                 while (it.hasNext()) {
                     LookupEvent ev = (LookupEvent)it.next();
                     LookupListener l = (LookupListener)it.next();
@@ -907,7 +907,7 @@ public class ProxyLookup extends Lookup {
         }
     } // end of WeakResult
 
-    static abstract class ImmutableInternalData extends Object {
+    abstract static class ImmutableInternalData extends Object {
         static final ImmutableInternalData EMPTY = new EmptyInternalData();
         static final Lookup[] EMPTY_ARR = new Lookup[0];
 
@@ -1371,7 +1371,7 @@ public class ProxyLookup extends Lookup {
         }
     } // end of LazyCollection
 
-    private final static class LazyList extends LazyCollection implements List {
+    private static final class LazyList extends LazyCollection implements List {
 
         public LazyList(R data, Object[] cc, int indexToCache, boolean callBeforeLookup, Lookup.Result[] arr) {
             super(data, cc, indexToCache, callBeforeLookup, arr);

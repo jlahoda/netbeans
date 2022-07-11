@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.3.0
+#Version 1.9.0
 
 CLSS public java.awt.Color
 cons public init(float,float,float)
@@ -65,7 +65,6 @@ meth public static java.awt.Color getColor(java.lang.String,int)
 meth public static java.awt.Color getColor(java.lang.String,java.awt.Color)
 meth public static java.awt.Color getHSBColor(float,float,float)
 supr java.lang.Object
-hfds FACTOR,cs,falpha,frgbvalue,fvalue,serialVersionUID,value
 
 CLSS public abstract java.awt.Component
 cons protected init()
@@ -338,8 +337,6 @@ meth public void transferFocusUpCycle()
 meth public void update(java.awt.Graphics)
 meth public void validate()
 supr java.lang.Object
-hfds FOCUS_TRAVERSABLE_DEFAULT,FOCUS_TRAVERSABLE_SET,FOCUS_TRAVERSABLE_UNKNOWN,LOCK,acc,actionListenerK,adjustmentListenerK,appContext,autoFocusTransferOnDisposal,background,backgroundEraseDisabled,boundsOp,bufferStrategy,changeSupport,coalesceEventsParams,coalesceMap,coalescingEnabled,componentListener,componentListenerK,componentOrientation,componentSerializedDataVersion,compoundShape,containerListenerK,cursor,dropTarget,enabled,eventCache,eventLog,eventMask,focusListener,focusListenerK,focusLog,focusTraversalKeyPropertyNames,focusTraversalKeys,focusTraversalKeysEnabled,focusable,font,foreground,graphicsConfig,height,hierarchyBoundsListener,hierarchyBoundsListenerK,hierarchyListener,hierarchyListenerK,ignoreRepaint,incRate,inputMethodListener,inputMethodListenerK,isAddNotifyComplete,isFocusTraversableOverridden,isInc,isPacked,itemListenerK,keyListener,keyListenerK,locale,log,maxSize,maxSizeSet,minSize,minSizeSet,mixingCutoutRegion,mixingLog,mouseListener,mouseListenerK,mouseMotionListener,mouseMotionListenerK,mouseWheelListener,mouseWheelListenerK,name,nameExplicitlySet,newEventsOnly,objectLock,ownedWindowK,parent,peer,peerFont,popups,prefSize,prefSizeSet,requestFocusController,serialVersionUID,textListenerK,valid,visible,width,windowClosingException,windowFocusListenerK,windowListenerK,windowStateListenerK,x,y
-hcls AWTTreeLock,BltSubRegionBufferStrategy,DummyRequestFocusController,FlipSubRegionBufferStrategy,ProxyCapabilities,SingleBufferStrategy
 
 CLSS public abstract interface java.awt.Composite
 meth public abstract java.awt.CompositeContext createContext(java.awt.image.ColorModel,java.awt.image.ColorModel,java.awt.RenderingHints)
@@ -431,8 +428,6 @@ meth public void transferFocusDownCycle()
 meth public void update(java.awt.Graphics)
 meth public void validate()
 supr java.awt.Component
-hfds EMPTY_ARRAY,INCLUDE_SELF,SEARCH_HEAVYWEIGHTS,component,containerListener,containerSerializedDataVersion,descendUnconditionallyWhenValidating,descendantsCount,dispatcher,eventLog,focusCycleRoot,focusTraversalPolicy,focusTraversalPolicyProvider,isJavaAwtSmartInvalidate,layoutMgr,listeningBoundsChildren,listeningChildren,log,mixingLog,modalAppContext,modalComp,numOfHWComponents,numOfLWComponents,preserveBackgroundColor,printing,printingThreads,serialPersistentFields,serialVersionUID
-hcls DropTargetEventTargetFilter,EventTargetFilter,MouseEventTargetFilter,WakingRunnable
 
 CLSS public java.awt.Dialog
 cons public init(java.awt.Dialog)
@@ -476,7 +471,6 @@ meth public void show()
  anno 0 java.lang.Deprecated()
 meth public void toBack()
 supr java.awt.Window
-hfds base,blockedWindows,initialized,isInDispose,isInHide,modal,modalDialogs,modalFilter,modalityType,nameCounter,resizable,secondaryLoop,serialVersionUID,title,undecorated
 
 CLSS public abstract java.awt.Graphics
 cons protected init()
@@ -594,8 +588,6 @@ meth public java.awt.image.VolatileImage createCompatibleVolatileImage(int,int,i
 meth public java.awt.image.VolatileImage createCompatibleVolatileImage(int,int,java.awt.ImageCapabilities) throws java.awt.AWTException
 meth public java.awt.image.VolatileImage createCompatibleVolatileImage(int,int,java.awt.ImageCapabilities,int) throws java.awt.AWTException
 supr java.lang.Object
-hfds defaultBufferCaps,defaultImageCaps
-hcls DefaultBufferCapabilities
 
 CLSS public abstract java.awt.GraphicsDevice
 cons protected init()
@@ -618,7 +610,6 @@ meth public java.awt.Window getFullScreenWindow()
 meth public void setDisplayMode(java.awt.DisplayMode)
 meth public void setFullScreenWindow(java.awt.Window)
 supr java.lang.Object
-hfds fsAppContextLock,fullScreenAppContext,fullScreenWindow,windowedModeBounds
 
 CLSS public abstract interface java.awt.MenuContainer
 meth public abstract boolean postEvent(java.awt.Event)
@@ -701,7 +692,6 @@ meth public void add(java.awt.RenderingHints)
 meth public void clear()
 meth public void putAll(java.util.Map<?,?>)
 supr java.lang.Object
-hfds hintmap
 
 CLSS public abstract static java.awt.RenderingHints$Key
  outer java.awt.RenderingHints
@@ -711,7 +701,6 @@ meth public abstract boolean isCompatibleValue(java.lang.Object)
 meth public final boolean equals(java.lang.Object)
 meth public final int hashCode()
 supr java.lang.Object
-hfds identitymap,privatekey
 
 CLSS public abstract interface java.awt.Shape
 meth public abstract boolean contains(double,double)
@@ -830,8 +819,6 @@ meth public void show()
 meth public void toBack()
 meth public void toFront()
 supr java.awt.Container
-hfds OPENED,allWindows,alwaysOnTop,anchor,autoRequestFocus,base,beforeFirstShow,beforeFirstWindowShown,disposerRecord,disposing,focusMgr,focusableWindowState,icons,inputContext,inputContextLock,isInShow,isTrayIconWindow,locationByPlatform,locationByPlatformProp,log,modalBlocker,modalExclusionType,nameCounter,opacity,ownedWindowList,securityWarningAlignmentX,securityWarningAlignmentY,securityWarningHeight,securityWarningPointX,securityWarningPointY,securityWarningWidth,serialVersionUID,shape,showWithParent,state,syncLWRequests,systemSyncLWRequests,temporaryLostComponent,type,warningString,weakThis,windowFocusListener,windowListener,windowSerializedDataVersion,windowStateListener
-hcls WindowDisposerRecord
 
 CLSS public abstract java.awt.color.ColorSpace
 cons protected init(int,int)
@@ -878,7 +865,6 @@ meth public int getType()
 meth public java.lang.String getName(int)
 meth public static java.awt.color.ColorSpace getInstance(int)
 supr java.lang.Object
-hfds GRAYspace,LINEAR_RGBspace,PYCCspace,XYZspace,compName,numComponents,sRGBspace,serialVersionUID,type
 
 CLSS public java.awt.color.ICC_ColorSpace
 cons public init(java.awt.color.ICC_Profile)
@@ -890,7 +876,6 @@ meth public float[] toCIEXYZ(float[])
 meth public float[] toRGB(float[])
 meth public java.awt.color.ICC_Profile getProfile()
 supr java.awt.color.ColorSpace
-hfds diffMinMax,invDiffMinMax,maxVal,minVal,needScaleInit,serialVersionUID,srgb2this,this2srgb,this2xyz,thisProfile,xyz2this
 
 CLSS public abstract interface java.awt.event.KeyListener
 intf java.util.EventListener
@@ -1018,7 +1003,6 @@ meth public void close() throws java.io.IOException
 meth public void mark(int)
 meth public void reset() throws java.io.IOException
 supr java.io.FilterInputStream
-hfds DEFAULT_BUFFER_SIZE,MAX_BUFFER_SIZE,bufUpdater
 
 CLSS public abstract interface java.io.Closeable
 intf java.lang.AutoCloseable
@@ -1074,7 +1058,6 @@ cons public init(java.lang.String)
 cons public init(java.lang.String,java.lang.Throwable)
 cons public init(java.lang.Throwable)
 supr java.lang.Exception
-hfds serialVersionUID
 
 CLSS public abstract java.io.InputStream
 cons public init()
@@ -1089,7 +1072,6 @@ meth public void close() throws java.io.IOException
 meth public void mark(int)
 meth public void reset() throws java.io.IOException
 supr java.lang.Object
-hfds MAX_SKIP_BUFFER_SIZE
 
 CLSS public abstract java.io.OutputStream
 cons public init()
@@ -1119,7 +1101,6 @@ meth public long skip(long) throws java.io.IOException
 meth public void mark(int) throws java.io.IOException
 meth public void reset() throws java.io.IOException
 supr java.lang.Object
-hfds maxSkipBufferSize,skipBuffer
 
 CLSS public abstract interface java.io.Serializable
 
@@ -1162,8 +1143,6 @@ meth public void setClassAssertionStatus(java.lang.String,boolean)
 meth public void setDefaultAssertionStatus(boolean)
 meth public void setPackageAssertionStatus(java.lang.String,boolean)
 supr java.lang.Object
-hfds assertionLock,classAssertionStatus,classes,defaultAssertionStatus,defaultDomain,loadedLibraryNames,nativeLibraries,nativeLibraryContext,nocerts,package2certs,packageAssertionStatus,packages,parallelLockMap,parent,scl,sclSet,sys_paths,systemNativeLibraries,usr_paths
-hcls NativeLibrary,ParallelLoaders
 
 CLSS public abstract interface java.lang.Cloneable
 
@@ -1185,7 +1164,6 @@ meth public final java.lang.String name()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
-hfds name,ordinal
 
 CLSS public java.lang.Exception
 cons protected init(java.lang.String,java.lang.Throwable,boolean,boolean)
@@ -1194,7 +1172,6 @@ cons public init(java.lang.String)
 cons public init(java.lang.String,java.lang.Throwable)
 cons public init(java.lang.Throwable)
 supr java.lang.Throwable
-hfds serialVersionUID
 
 CLSS public abstract interface !annotation java.lang.FunctionalInterface
  anno 0 java.lang.annotation.Documented()
@@ -1235,7 +1212,6 @@ cons public init(java.lang.String)
 cons public init(java.lang.String,java.lang.Throwable)
 cons public init(java.lang.Throwable)
 supr java.lang.Exception
-hfds serialVersionUID
 
 CLSS public java.lang.SecurityManager
 cons public init()
@@ -1295,7 +1271,6 @@ meth public void checkSystemClipboardAccess()
 meth public void checkWrite(java.io.FileDescriptor)
 meth public void checkWrite(java.lang.String)
 supr java.lang.Object
-hfds initialized,packageAccess,packageAccessLock,packageAccessValid,packageDefinition,packageDefinitionLock,packageDefinitionValid,rootGroup
 
 CLSS public java.lang.Thread
 cons public init()
@@ -1362,8 +1337,6 @@ meth public void setContextClassLoader(java.lang.ClassLoader)
 meth public void setUncaughtExceptionHandler(java.lang.Thread$UncaughtExceptionHandler)
 meth public void start()
 supr java.lang.Object
-hfds EMPTY_STACK_TRACE,SUBCLASS_IMPLEMENTATION_PERMISSION,blocker,blockerLock,contextClassLoader,daemon,defaultUncaughtExceptionHandler,eetop,group,inheritableThreadLocals,inheritedAccessControlContext,name,nativeParkEventPointer,parkBlocker,priority,single_step,stackSize,stillborn,target,threadInitNumber,threadLocalRandomProbe,threadLocalRandomSecondarySeed,threadLocalRandomSeed,threadLocals,threadQ,threadSeqNumber,threadStatus,tid,uncaughtExceptionHandler
-hcls Caches,WeakClassKey
 
 CLSS public java.lang.Throwable
 cons protected init(java.lang.String,java.lang.Throwable,boolean,boolean)
@@ -1386,8 +1359,6 @@ meth public void printStackTrace(java.io.PrintStream)
 meth public void printStackTrace(java.io.PrintWriter)
 meth public void setStackTrace(java.lang.StackTraceElement[])
 supr java.lang.Object
-hfds CAUSE_CAPTION,EMPTY_THROWABLE_ARRAY,NULL_CAUSE_MESSAGE,SELF_SUPPRESSION_MESSAGE,SUPPRESSED_CAPTION,SUPPRESSED_SENTINEL,UNASSIGNED_STACK,backtrace,cause,detailMessage,serialVersionUID,stackTrace,suppressedExceptions
-hcls PrintStreamOrWriter,SentinelHolder,WrappedPrintStream,WrappedPrintWriter
 
 CLSS public abstract interface java.lang.annotation.Annotation
 meth public abstract boolean equals(java.lang.Object)
@@ -1426,15 +1397,12 @@ meth public boolean isEnqueued()
 meth public void clear()
 meth public {java.lang.ref.Reference%0} get()
 supr java.lang.Object
-hfds discovered,lock,next,pending,queue,referent
-hcls Lock,ReferenceHandler
 
 CLSS public java.lang.ref.SoftReference<%0 extends java.lang.Object>
 cons public init({java.lang.ref.SoftReference%0})
 cons public init({java.lang.ref.SoftReference%0},java.lang.ref.ReferenceQueue<? super {java.lang.ref.SoftReference%0}>)
 meth public {java.lang.ref.SoftReference%0} get()
 supr java.lang.ref.Reference<{java.lang.ref.SoftReference%0}>
-hfds clock,timestamp
 
 CLSS public java.lang.ref.WeakReference<%0 extends java.lang.Object>
 cons public init({java.lang.ref.WeakReference%0})
@@ -1458,7 +1426,6 @@ meth public static java.net.URLClassLoader newInstance(java.net.URL[])
 meth public static java.net.URLClassLoader newInstance(java.net.URL[],java.lang.ClassLoader)
 meth public void close() throws java.io.IOException
 supr java.security.SecureClassLoader
-hfds acc,closeables,ucp
 
 CLSS public java.security.SecureClassLoader
 cons protected init()
@@ -1467,7 +1434,6 @@ meth protected final java.lang.Class<?> defineClass(java.lang.String,byte[],int,
 meth protected final java.lang.Class<?> defineClass(java.lang.String,java.nio.ByteBuffer,java.security.CodeSource)
 meth protected java.security.PermissionCollection getPermissions(java.security.CodeSource)
 supr java.lang.ClassLoader
-hfds debug,initialized,pdcache
 
 CLSS public abstract interface java.text.AttributedCharacterIterator
 innr public static Attribute
@@ -1495,7 +1461,6 @@ meth public final boolean equals(java.lang.Object)
 meth public final int hashCode()
 meth public java.lang.String toString()
 supr java.lang.Object
-hfds instanceMap,name,serialVersionUID
 
 CLSS public abstract interface java.text.CharacterIterator
 fld public final static char DONE = '\uffff'
@@ -1533,7 +1498,6 @@ meth public {java.util.AbstractMap%1} get(java.lang.Object)
 meth public {java.util.AbstractMap%1} put({java.util.AbstractMap%0},{java.util.AbstractMap%1})
 meth public {java.util.AbstractMap%1} remove(java.lang.Object)
 supr java.lang.Object
-hfds keySet,values
 
 CLSS public abstract interface java.util.Collection<%0 extends java.lang.Object>
 intf java.lang.Iterable<{java.util.Collection%0}>
@@ -1566,7 +1530,6 @@ intf java.io.Serializable
 meth public java.lang.Object getSource()
 meth public java.lang.String toString()
 supr java.lang.Object
-hfds serialVersionUID
 
 CLSS public java.util.HashMap<%0 extends java.lang.Object, %1 extends java.lang.Object>
 cons public init()
@@ -1601,8 +1564,6 @@ meth public {java.util.HashMap%1} putIfAbsent({java.util.HashMap%0},{java.util.H
 meth public {java.util.HashMap%1} remove(java.lang.Object)
 meth public {java.util.HashMap%1} replace({java.util.HashMap%0},{java.util.HashMap%1})
 supr java.util.AbstractMap<{java.util.HashMap%0},{java.util.HashMap%1}>
-hfds DEFAULT_INITIAL_CAPACITY,DEFAULT_LOAD_FACTOR,MAXIMUM_CAPACITY,MIN_TREEIFY_CAPACITY,TREEIFY_THRESHOLD,UNTREEIFY_THRESHOLD,entrySet,loadFactor,modCount,serialVersionUID,size,table,threshold
-hcls EntryIterator,EntrySet,EntrySpliterator,HashIterator,HashMapSpliterator,KeyIterator,KeySet,KeySpliterator,Node,TreeNode,ValueIterator,ValueSpliterator,Values
 
 CLSS public abstract interface java.util.Iterator<%0 extends java.lang.Object>
 meth public abstract boolean hasNext()
@@ -1676,7 +1637,6 @@ meth public abstract void run()
 meth public boolean cancel()
 meth public long scheduledExecutionTime()
 supr java.lang.Object
-hfds CANCELLED,EXECUTED,SCHEDULED,VIRGIN,lock,nextExecutionTime,period,state
 
 CLSS public java.util.zip.DeflaterOutputStream
 cons public init(java.io.OutputStream)
@@ -1694,7 +1654,6 @@ meth public void flush() throws java.io.IOException
 meth public void write(byte[],int,int) throws java.io.IOException
 meth public void write(int) throws java.io.IOException
 supr java.io.FilterOutputStream
-hfds closed,syncFlush,usesDefaultDeflater
 
 CLSS public abstract interface javax.accessibility.Accessible
 meth public abstract javax.accessibility.AccessibleContext getAccessibleContext()
@@ -1859,8 +1818,6 @@ meth public void unregisterKeyboardAction(javax.swing.KeyStroke)
 meth public void update(java.awt.Graphics)
 meth public void updateUI()
 supr java.awt.Container
-hfds ACTIONMAP_CREATED,ANCESTOR_INPUTMAP_CREATED,ANCESTOR_USING_BUFFER,AUTOSCROLLS_SET,COMPLETELY_OBSCURED,CREATED_DOUBLE_BUFFER,DEBUG_GRAPHICS_LOADED,FOCUS_INPUTMAP_CREATED,FOCUS_TRAVERSAL_KEYS_BACKWARD_SET,FOCUS_TRAVERSAL_KEYS_FORWARD_SET,INHERITS_POPUP_MENU,INPUT_VERIFIER_SOURCE_KEY,IS_DOUBLE_BUFFERED,IS_OPAQUE,IS_PAINTING_TILE,IS_PRINTING,IS_PRINTING_ALL,IS_REPAINTING,KEYBOARD_BINDINGS_KEY,KEY_EVENTS_ENABLED,NEXT_FOCUS,NOT_OBSCURED,OPAQUE_SET,PARTIALLY_OBSCURED,REQUEST_FOCUS_DISABLED,RESERVED_1,RESERVED_2,RESERVED_3,RESERVED_4,RESERVED_5,RESERVED_6,WHEN_IN_FOCUSED_WINDOW_BINDINGS,WIF_INPUTMAP_CREATED,WRITE_OBJ_COUNTER_FIRST,WRITE_OBJ_COUNTER_LAST,aaTextInfo,actionMap,alignmentX,alignmentY,ancestorInputMap,autoscrolls,border,clientProperties,componentObtainingGraphicsFrom,componentObtainingGraphicsFromLock,defaultLocale,flags,focusController,focusInputMap,inputVerifier,isAlignmentXSet,isAlignmentYSet,managingFocusBackwardTraversalKeys,managingFocusForwardTraversalKeys,paintingChild,popupMenu,readObjectCallbacks,revalidateRunnableScheduled,tempRectangles,uiClassID,verifyInputWhenFocusTarget,vetoableChangeSupport,windowInputMap
-hcls ActionStandin,IntVector,KeyboardState,ReadObjectCallback
 
 CLSS public javax.swing.JDialog
 cons public init()
@@ -1916,7 +1873,6 @@ meth public void setLayout(java.awt.LayoutManager)
 meth public void setTransferHandler(javax.swing.TransferHandler)
 meth public void update(java.awt.Graphics)
 supr java.awt.Dialog
-hfds defaultCloseOperation,defaultLookAndFeelDecoratedKey,transferHandler
 
 CLSS public javax.swing.JPanel
 cons public init()
@@ -1932,7 +1888,6 @@ meth public javax.swing.plaf.PanelUI getUI()
 meth public void setUI(javax.swing.plaf.PanelUI)
 meth public void updateUI()
 supr javax.swing.JComponent
-hfds uiClassID
 
 CLSS public abstract interface javax.swing.RootPaneContainer
 meth public abstract java.awt.Component getGlassPane()
@@ -1972,8 +1927,7 @@ meth public void exportToClipboard(javax.swing.JComponent,java.awt.datatransfer.
 meth public void setDragImage(java.awt.Image)
 meth public void setDragImageOffset(java.awt.Point)
 supr java.lang.Object
-hfds copyAction,cutAction,dragImage,dragImageOffset,pasteAction,propertyName,recognizer
-hcls DragHandler,DropHandler,HasGetTransferHandler,PropertyTransferable,SwingDragGestureRecognizer,SwingDropTarget,TransferAction
+hcls HasGetTransferHandler
 
 CLSS public abstract interface javax.swing.WindowConstants
 fld public final static int DISPOSE_ON_CLOSE = 2
@@ -2047,8 +2001,6 @@ meth public void setAsynchronousLoadPriority(int)
 meth public void setDocumentFilter(javax.swing.text.DocumentFilter)
 meth public void setDocumentProperties(java.util.Dictionary<java.lang.Object,java.lang.Object>)
 supr java.lang.Object
-hfds AsyncLoadPriority,BAD_LOCK_STATE,I18NProperty,MultiByteProperty,bidiRoot,context,currWriter,data,defaultI18NProperty,documentFilter,documentProperties,filterBypass,notifyingListeners,numReaders,numWriters
-hcls BidiElement,BidiRootElement,DefaultFilterBypass,UndoRedoDocumentEvent
 
 CLSS public abstract interface javax.swing.text.Document
 fld public final static java.lang.String StreamDescriptionProperty = "stream"
@@ -2083,7 +2035,6 @@ meth public javax.swing.text.Element getDefaultRootElement()
 meth public javax.swing.text.Element getParagraphElement(int)
 meth public void insertString(int,java.lang.String,javax.swing.text.AttributeSet) throws javax.swing.text.BadLocationException
 supr javax.swing.text.AbstractDocument
-hfds added,defaultRoot,removed,s
 
 CLSS public abstract interface javax.xml.transform.Source
 meth public abstract java.lang.String getSystemId()

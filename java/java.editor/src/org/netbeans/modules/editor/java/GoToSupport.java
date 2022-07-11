@@ -25,6 +25,7 @@ import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.IdentifierTree;
 import com.sun.source.tree.ImportTree;
 import com.sun.source.tree.InstanceOfTree;
+import com.sun.source.tree.LineMap;
 import com.sun.source.tree.MemberSelectTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
@@ -44,14 +45,18 @@ import com.sun.source.util.Trees;
 import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -62,6 +67,7 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.ModuleElement;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.PackageElement;
+import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
@@ -92,6 +98,7 @@ import org.netbeans.api.java.source.ui.ElementOpen;
 import org.netbeans.api.lexer.Token;
 import org.netbeans.api.lexer.TokenHierarchy;
 import org.netbeans.api.lexer.TokenSequence;
+import org.netbeans.api.lsp.HyperlinkLocation;
 import org.netbeans.api.progress.ProgressUtils;
 import org.netbeans.editor.ext.ToolTipSupport;
 import org.netbeans.lib.editor.hyperlink.spi.HyperlinkType;
@@ -103,15 +110,13 @@ import org.netbeans.modules.parsing.api.Source;
 import org.netbeans.modules.parsing.api.UserTask;
 import org.netbeans.modules.parsing.spi.ParseException;
 import org.netbeans.modules.parsing.spi.Parser.Result;
+import org.netbeans.spi.lsp.HyperlinkLocationProvider;
 import org.openide.awt.HtmlBrowser;
 import org.openide.awt.StatusDisplayer;
 import org.openide.filesystems.FileObject;
 import org.openide.loaders.DataObject;
 import org.openide.util.Exceptions;
 import org.openide.util.NbBundle;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Objects;
 
 /**
  *
@@ -157,6 +162,51 @@ public class GoToSupport {
             });
 
             return result[0];
+        } catch (ParseException ex) {
+            throw new IllegalStateException(ex);
+        }
+    }
+
+    public static CompletableFuture<HyperlinkLocation> getGoToLocation(final Document doc, final int offset, final boolean goToSource) {
+        try {
+            final FileObject fo = getFileObject(doc);
+            if (fo != null) {
+                final GoToTarget[] target = new GoToTarget[1];
+                final LineMap[] lineMap = new LineMap[1];
+
+                ParserManager.parse(Collections.singleton (Source.create(doc)), new UserTask() {
+                    @Override
+                    public void run(ResultIterator resultIterator) throws Exception {
+                        Result res = resultIterator.getParserResult (offset);
+                        CompilationController controller = res != null ? CompilationController.get(res) : null;
+                        if (controller == null || controller.toPhase(Phase.RESOLVED).compareTo(Phase.RESOLVED) < 0) {
+                            return;
+                        }
+
+                        Context resolved = resolveContext(controller, doc, offset, goToSource, false);
+
+                        if (resolved == null) {
+                            target[0] = new GoToTarget(-1, -1, null, null, null, null, null, false);
+                        } else {
+                            target[0] = computeGoToTarget(controller, resolved, offset);
+                        }
+
+                        lineMap[0] = controller.getCompilationUnit().getLineMap();
+                    }
+                });
+                if (target[0] != null && target[0].success) {
+                    if (target[0].offsetToOpen < 0) {
+                        CompletableFuture<ElementOpen.Location> future = ElementOpen.getLocation(target[0].cpInfo, target[0].elementToOpen, target[0].resourceName);
+                        return future.thenApply(location -> {
+                            return location != null ? HyperlinkLocationProvider.createHyperlinkLocation(location.getFileObject(), location.getStartOffset(), location.getEndOffset()) : null;
+                        });
+                    }
+                    int start = target[0].nameSpan != null ? target[0].nameSpan[0] : target[0].offsetToOpen;
+                    int end = target[0].nameSpan != null ? target[0].nameSpan[1] : target[0].endPos;
+                    return CompletableFuture.completedFuture(HyperlinkLocationProvider.createHyperlinkLocation(fo, start, end));
+                }
+            }
+            return CompletableFuture.completedFuture(null);
         } catch (ParseException ex) {
             throw new IllegalStateException(ex);
         }
@@ -736,8 +786,9 @@ public class GoToSupport {
         try {
             switch (t.getKind()) {
                 case INSTANCE_OF:
-                    Tree pattern = TreeShims.getPattern((InstanceOfTree) t);
-                    if (pattern == null || !"BINDING_PATTERN".equals(pattern.getKind().name())) {
+                    //XXX: why the following?
+                    Tree pattern = ((InstanceOfTree) t).getPattern();
+                    if (pattern == null || pattern.getKind() != Kind.BINDING_PATTERN) {
                         return false;
                     }
                 case ANNOTATION_TYPE:
@@ -991,7 +1042,7 @@ public class GoToSupport {
                 
                 if (e.getKind() != ElementKind.PARAMETER && e.getKind() != ElementKind.LOCAL_VARIABLE
                         && e.getKind() != ElementKind.RESOURCE_VARIABLE && e.getKind() != ElementKind.EXCEPTION_PARAMETER
-                        && !TreeShims.BINDING_VARIABLE.equals(e.getKind().name())) {
+                        && e.getKind() != ElementKind.BINDING_VARIABLE) {
                     result.append(" in ");
 
                     //short typename:
@@ -1052,13 +1103,10 @@ public class GoToSupport {
         public Void visitTypeParameter(TypeParameterElement e, Boolean highlightName) {
             return null;
         }
-        
+
         @Override
-        public Void visitUnknown(Element e, Boolean p) {
-            if (TreeShims.isRecordComponent(e)) {
-                return visitVariable((VariableElement) e, p);
-            }
-            return super.visitUnknown(e, p);
+        public Void visitRecordComponent(RecordComponentElement e, Boolean p) {
+            return visitVariable((VariableElement) e, p);
         }
         
         private void modifier(Set<Modifier> modifiers) {
@@ -1180,7 +1228,7 @@ public class GoToSupport {
     
     private static String translate(String input) {
         for (int cntr = 0; cntr < c.length; cntr++) {
-            input = input.replaceAll(c[cntr], tags[cntr]);
+            input = input.replace(c[cntr], tags[cntr]);
         }
         
         return input;

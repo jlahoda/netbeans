@@ -27,6 +27,7 @@ import static org.netbeans.modules.fish.payara.micro.plugin.Constants.PROFILE_SI
 import static org.netbeans.modules.fish.payara.micro.plugin.Constants.RUN_SINGLE_ACTION;
 import java.io.File;
 import static java.util.Arrays.asList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import org.netbeans.api.project.Project;
@@ -51,7 +52,7 @@ import org.netbeans.spi.project.ProjectServiceProvider;
         service = {
             ExecutionResultChecker.class,
             PrerequisitesChecker.class
-        }, 
+        },
         projectType = MAVEN_WAR_PROJECT_TYPE
 )
 public class MicroExecutionChecker extends ExecutionChecker {
@@ -87,13 +88,11 @@ public class MicroExecutionChecker extends ExecutionChecker {
         if (microApplication != null) {
             if (BUILD_ACTIONS.contains(config.getActionName())) {
                 microApplication.setBuilding(true, config.getActionName());
-            }else if (RUN_ACTIONS.contains(config.getActionName())) {
+            } else if (RUN_ACTIONS.contains(config.getActionName())) {
                 microApplication.setRunning(true, config.getActionName());
             }
-            return true;
-        } else {
-           return super.checkRunConfig(config);
         }
+        return true;
     }
 
     @Override
@@ -110,8 +109,6 @@ public class MicroExecutionChecker extends ExecutionChecker {
             } else if (RUN_ACTIONS.contains(config.getActionName())) {
                 microApplication.setRunning(false);
             }
-        } else {
-            super.executionResult(config, res, resultCode);
         }
     }
     
@@ -122,7 +119,7 @@ public class MicroExecutionChecker extends ExecutionChecker {
         String buildPath = application.getMavenProject().getBuild().getDirectory()
                 + File.separator
                 + application.getMavenProject().getBuild().getFinalName();
-        ReloadAction.reloadApplication(buildPath);
+        ReloadAction.reloadApplication(buildPath, null);
     }
     
 

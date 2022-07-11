@@ -158,17 +158,17 @@ public final class DebuggerManager implements ContextProvider {
     private static DebuggerManager            debuggerManager;
     private Session                           currentSession;
     private DebuggerEngine                    currentEngine;
-    private final List                        sessions = new ArrayList();
+    private final List<Session>               sessions = new ArrayList<>();
     private final Set                         engines = new HashSet ();
-    private final Vector                      breakpoints = new Vector ();
+    private final Vector<Breakpoint>          breakpoints = new Vector<>();
     private boolean                           breakpointsInitializing = false;
     private boolean                           breakpointsInitialized = false;
     private final Vector<Watch>               watches = new Vector<>();
     private boolean                           watchesInitialized = false;
     private ThreadLocal<Boolean>              watchesInitializing = new ThreadLocal<Boolean>();
     private SessionListener                   sessionListener = new SessionListener ();
-    private Vector                            listeners = new Vector ();
-    private final HashMap                     listenersMap = new HashMap ();
+    private Vector<DebuggerManagerListener>   listeners = new Vector<>();
+    private final Map<String, Vector<DebuggerManagerListener>>                     listenersMap = new HashMap<>();
     private ActionsManager                    actionsManager = null;
     
     private Lookup                            lookup = new Lookup.MetaInf (null);
@@ -265,8 +265,8 @@ public final class DebuggerManager implements ContextProvider {
         //S ystem.out.println("@StartDebugging info: " + info);
         
         // init sessions
-        List sessionProviders = new ArrayList();
-        List<DebuggerEngine> engines = new ArrayList<DebuggerEngine>();
+        List sessionProviders = new ArrayList<>();
+        List<DebuggerEngine> engines = new ArrayList<>();
         Lookup l = info.getLookup ();
         Lookup l2 = info.getLookup ();
         synchronized (l) {
@@ -315,7 +315,7 @@ public final class DebuggerManager implements ContextProvider {
             }
             
             // init DebuggerEngines
-            ArrayList engineProviders = new ArrayList ();
+            List<Object> engineProviders = new ArrayList<>();
             synchronized (l2) {
                 engineProviders.addAll (
                     l2.lookup (null, DebuggerEngineProvider.class)
@@ -507,13 +507,11 @@ public final class DebuggerManager implements ContextProvider {
      *
      * @param breakpoint a new breakpoint
      */
-    public void addBreakpoint (
-        Breakpoint breakpoint
-    ) {
+    public void addBreakpoint (Breakpoint breakpoint) {
         if (initBreakpoints (breakpoint)) {
             // do not add one breakpoint more than once.
             if (registerBreakpoint(breakpoint)) {
-                breakpoints.addElement (breakpoint);
+                breakpoints.addElement(breakpoint);
                 fireBreakpointCreated (breakpoint, null);
             }
         }
@@ -706,7 +704,7 @@ public final class DebuggerManager implements ContextProvider {
                 throw new IllegalArgumentException("Permutation of length "+permutation.length+", but have "+watches.size()+" watches.");
             }
             checkPermutation(permutation);
-            Vector<Watch> v = (Vector<Watch>)watches.clone();
+            Vector<Watch> v = new Vector<>(watches);
             for (int i = 0; i < v.size(); i++) {
                 watches.set(permutation[i], v.get(i));
             }
@@ -806,15 +804,12 @@ public final class DebuggerManager implements ContextProvider {
      * @param propertyName a name of property to listen on
      * @param l the debuggerManager listener to add
      */
-    public void addDebuggerListener (
-        String propertyName, 
-        DebuggerManagerListener l
-    ) {
+    public void addDebuggerListener(String propertyName, DebuggerManagerListener l) {
         synchronized (listenersMap) {
-            Vector listeners = (Vector) listenersMap.get (propertyName);
+            Vector<DebuggerManagerListener> listeners = (Vector<DebuggerManagerListener>)listenersMap.get(propertyName);
             if (listeners == null) {
-                listeners = new Vector ();
-                listenersMap.put (propertyName, listeners);
+                listeners = new Vector<>();
+                listenersMap.put(propertyName, listeners);
             }
             listeners.addElement (l);
         }
@@ -1704,52 +1699,5 @@ public final class DebuggerManager implements ContextProvider {
             }
         }
     }
-    
-    /*
-    private class ModuleUnloadListeners {
-        
-        private Map<ClassLoader, ModuleChangeListener> moduleChangeListeners
-                = new HashMap<ClassLoader, ModuleChangeListener>();
-        
-        public void listenOn(ClassLoader cl) {
-            /*
-            org.openide.util.Lookup.Result<ModuleInfo> moduleLookupResult =
-                    org.openide.util.Lookup.getDefault ().lookup(
-                        new org.openide.util.Lookup.Template<ModuleInfo>(ModuleInfo.class));
-            synchronized(moduleChangeListeners) {
-                if (!moduleChangeListeners.containsKey(cl)) {
-                    for (ModuleInfo mi : moduleLookupResult.allInstances()) {
-                        if (mi.isEnabled() && mi.getClassLoader() == cl) {
-                            ModuleChangeListener l = new ModuleChangeListener(cl);
-                            mi.addPropertyChangeListener(WeakListeners.propertyChange(l, mi));
-                            moduleChangeListeners.put(cl, l);
-                        }
-                    }
-                }
-            }
-             *//*
-        }
-        
-        private final class ModuleChangeListener implements PropertyChangeListener {
-            
-            private ClassLoader cl;
-
-            public ModuleChangeListener(ClassLoader cl) {
-                this.cl = cl;
-            }
-
-            public void propertyChange(PropertyChangeEvent evt) {
-                ModuleInfo mi = (ModuleInfo) evt.getSource();
-                if (!mi.isEnabled()) {
-                    synchronized (moduleChangeListeners) {
-                        moduleChangeListeners.remove(cl);
-                    }
-                    moduleUnloaded(cl);
-                }
-            }
-
-        }
-    }
-                */
 }
 

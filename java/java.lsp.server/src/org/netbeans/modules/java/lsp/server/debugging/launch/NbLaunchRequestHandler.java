@@ -27,9 +27,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -39,6 +36,7 @@ import org.eclipse.lsp4j.debug.OutputEventArguments;
 import org.eclipse.lsp4j.debug.Source;
 import org.eclipse.lsp4j.debug.TerminatedEventArguments;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
+import org.netbeans.api.java.classpath.ClassPath;
 import org.netbeans.modules.java.lsp.server.debugging.DebugAdapterContext;
 import org.netbeans.modules.java.lsp.server.debugging.NbSourceProvider;
 import org.netbeans.modules.java.lsp.server.debugging.utils.ErrorUtilities;
@@ -53,21 +51,29 @@ import org.openide.util.Utilities;
 public final class NbLaunchRequestHandler {
 
     private NbLaunchDelegate activeLaunchHandler;
-    private final CompletableFuture<Boolean> waitForDebuggeeConsole = new CompletableFuture<>();
 
     public CompletableFuture<Void> launch(Map<String, Object> launchArguments, DebugAdapterContext context) {
+        boolean isNative = "nativeimage".equals(launchArguments.get("type"));
         CompletableFuture<Void> resultFuture = new CompletableFuture<>();
         boolean noDebug = (Boolean) launchArguments.getOrDefault("noDebug", Boolean.FALSE);
-        activeLaunchHandler = noDebug ? new NbLaunchWithoutDebuggingDelegate((daContext) -> handleTerminatedEvent(daContext))
-                : new NbLaunchWithDebuggingDelegate();
+        Consumer<DebugAdapterContext> terminateHandle = (daContext) -> handleTerminatedEvent(daContext);
+        activeLaunchHandler = noDebug ? new NbLaunchWithoutDebuggingDelegate(terminateHandle)
+                : new NbLaunchWithDebuggingDelegate(terminateHandle);
         // validation
         List<String> modulePaths = (List<String>) launchArguments.getOrDefault("modulePaths", Collections.emptyList());
         List<String> classPaths = (List<String>) launchArguments.getOrDefault("classPaths", Collections.emptyList());
-        if (StringUtils.isBlank((String)launchArguments.get("mainClass"))
-                || modulePaths.isEmpty() && classPaths.isEmpty()) {
+
+        // "file" key is provided by DAP client infrastructure, sometimes in an unsuitable manner, e.g. some cryptic ID for Output window etc. 
+        // the "projectFile" allows to override the infrastructure from client logic.
+        String filePath = (String)launchArguments.get("file");
+        String projectFilePath = (String)launchArguments.get("projectFile");
+        String mainFilePath = (String)launchArguments.get("mainClass");
+
+        if (!isNative && (StringUtils.isBlank(mainFilePath) && StringUtils.isBlank(filePath) && StringUtils.isBlank(projectFilePath)
+                          || modulePaths.isEmpty() && classPaths.isEmpty())) {
             ErrorUtilities.completeExceptionally(resultFuture,
                 "Failed to launch debuggee VM. Missing mainClass or modulePaths/classPaths options in launch configuration.",
-                ResponseErrorCode.serverErrorStart);
+                ResponseErrorCode.ServerNotInitialized);
             return resultFuture;
         }
         if (StringUtils.isBlank((String)launchArguments.get("encoding"))) {
@@ -76,23 +82,79 @@ public final class NbLaunchRequestHandler {
             if (!Charset.isSupported((String)launchArguments.get("encoding"))) {
                 ErrorUtilities.completeExceptionally(resultFuture,
                     "Failed to launch debuggee VM. 'encoding' options in the launch configuration is not recognized.",
-                    ResponseErrorCode.serverErrorStart);
+                    ResponseErrorCode.ServerNotInitialized);
                 return resultFuture;
             }
             context.setDebuggeeEncoding(Charset.forName((String)launchArguments.get("encoding")));
         }
 
-        if (StringUtils.isBlank((String)launchArguments.get("vmArgs"))) {
-            launchArguments.put("vmArgs", String.format("-Dfile.encoding=%s", context.getDebuggeeEncoding().name()));
-        } else {
-            // if vmArgs already has the file.encoding settings, duplicate options for jvm will not cause an error, the right most value wins
-            launchArguments.put("vmArgs", String.format("%s -Dfile.encoding=%s", launchArguments.get("vmArgs"), context.getDebuggeeEncoding().name()));
+        if (!isNative) {
+            if (StringUtils.isBlank((String)launchArguments.get("vmArgs"))) {
+                launchArguments.put("vmArgs", String.format("-Dfile.encoding=%s", context.getDebuggeeEncoding().name()));
+            } else {
+                // if vmArgs already has the file.encoding settings, duplicate options for jvm will not cause an error, the right most value wins
+                launchArguments.put("vmArgs", String.format("%s -Dfile.encoding=%s", launchArguments.get("vmArgs"), context.getDebuggeeEncoding().name()));
+            }
         }
         context.setDebugMode(!noDebug);
 
         activeLaunchHandler.preLaunch(launchArguments, context);
 
-        String filePath = (String)launchArguments.get("mainClass");
+        if (projectFilePath != null) {
+            filePath = projectFilePath;
+        }
+        boolean preferProjActions = true; // True when we prefer project actions to the current (main) file actions.
+        if (filePath == null || mainFilePath != null) {
+            // main overides the current file
+            preferProjActions = false;
+            filePath = mainFilePath;
+        }
+        FileObject file = null;
+        File nativeImageFile = null;
+        if (!isNative) {
+            file = getFileObject(filePath);
+            if (file == null) {
+                ErrorUtilities.completeExceptionally(resultFuture,
+                        "Missing file: " + filePath,
+                        ResponseErrorCode.ServerNotInitialized);
+                return resultFuture;
+            }
+        } else {
+            String nativeImage = (String) launchArguments.get("nativeImagePath");
+            if (nativeImage == null) {
+                ErrorUtilities.completeExceptionally(resultFuture,
+                    "Failed to launch debuggee native image. No native image is specified.",
+                    ResponseErrorCode.ServerNotInitialized);
+                return resultFuture;
+            }
+            nativeImageFile = new File(nativeImage);
+        }
+        if (!isNative && !launchArguments.containsKey("sourcePaths")) {
+            ClassPath sourceCP = ClassPath.getClassPath(file, ClassPath.SOURCE);
+            if (sourceCP != null) {
+                FileObject[] roots = sourceCP.getRoots();
+                String[] sourcePaths = new String[roots.length];
+                for (int i = 0; i < roots.length; i++) {
+                    sourcePaths[i] = roots[i].getPath();
+                }
+                context.setSourcePaths(sourcePaths);
+            }
+        } else {
+            context.setSourcePaths((String[]) launchArguments.get("sourcePaths"));
+        }
+        String singleMethod = (String)launchArguments.get("methodName");
+        boolean testRun = (Boolean) launchArguments.getOrDefault("testRun", Boolean.FALSE);
+        activeLaunchHandler.nbLaunch(file, preferProjActions, nativeImageFile, singleMethod, launchArguments, context, !noDebug, testRun, new OutputListener(context)).thenRun(() -> {
+            activeLaunchHandler.postLaunch(launchArguments, context);
+            resultFuture.complete(null);
+        }).exceptionally(e -> {
+            resultFuture.completeExceptionally(e);
+            return null;
+        });
+        return resultFuture;
+    }
+
+    private static FileObject getFileObject(String filePath) {
         File ioFile = null;
         if (filePath != null) {
             ioFile = new File(filePath);
@@ -105,22 +167,7 @@ public final class NbLaunchRequestHandler {
                 }
             }
         }
-        FileObject file = ioFile != null ? FileUtil.toFileObject(ioFile) : null;
-        if (file == null) {
-            ErrorUtilities.completeExceptionally(resultFuture,
-                    "Missing file: " + filePath,
-                    ResponseErrorCode.serverErrorStart);
-            return resultFuture;
-        }
-        String singleMethod = (String)launchArguments.get("singleMethod");
-        activeLaunchHandler.nbLaunch(file, singleMethod, context, !noDebug, new OutputListener(context)).thenRun(() -> {
-            activeLaunchHandler.postLaunch(launchArguments, context);
-            resultFuture.complete(null);
-        }).exceptionally(e -> {
-            resultFuture.completeExceptionally(e);
-            return null;
-        });
-        return resultFuture;
+        return ioFile != null ? FileUtil.toFileObject(ioFile) : null;
     }
 
     private static final Pattern STACKTRACE_PATTERN = Pattern.compile("\\s+at\\s+(([\\w$]+\\.)*[\\w$]+)\\(([\\w-$]+\\.java:\\d+)\\)");
@@ -159,14 +206,9 @@ public final class NbLaunchRequestHandler {
     }
 
     protected void handleTerminatedEvent(DebugAdapterContext context) {
-        CompletableFuture.runAsync(() -> {
-            try {
-                waitForDebuggeeConsole.get(5, TimeUnit.SECONDS);
-            } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                // do nothing.
-            }
-            context.getClient().terminated(new TerminatedEventArguments());
-        });
+        // Project Action has already closed the I/O streams, and even in NetBeans IDE, the output area
+        // is already inactive at this point.
+        context.getClient().terminated(new TerminatedEventArguments());
     }
 
     private final class OutputListener implements Consumer<NbProcessConsole.ConsoleMessage> {
@@ -179,10 +221,7 @@ public final class NbLaunchRequestHandler {
 
         @Override
         public void accept(NbProcessConsole.ConsoleMessage message) {
-            if (message == null) {
-                // EOF
-                waitForDebuggeeConsole.complete(true);
-            } else {
+            if (message != null) {
                 OutputEventArguments outputEvent = convertToOutputEventArguments(message.output, message.category, context);
                 context.getClient().output(outputEvent);
             }

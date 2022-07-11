@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.41.0
+#Version 1.48.0
 
 CLSS public abstract interface java.io.Serializable
 
@@ -21,7 +21,6 @@ meth public final java.lang.String name()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
-hfds name,ordinal
 
 CLSS public java.lang.Object
 cons public init()
@@ -217,6 +216,7 @@ meth public static boolean isPrimary(com.sun.source.tree.Tree)
 meth public static boolean requiresParenthesis(com.sun.source.tree.Tree,com.sun.source.tree.Tree,com.sun.source.tree.Tree)
 meth public static org.netbeans.spi.editor.hints.Fix removeFromParent(org.netbeans.spi.java.hints.HintContext,java.lang.String,com.sun.source.util.TreePath)
 meth public static org.netbeans.spi.editor.hints.Fix rewriteFix(org.netbeans.spi.java.hints.HintContext,java.lang.String,com.sun.source.util.TreePath,java.lang.String)
+meth public static org.netbeans.spi.editor.hints.Fix safelyRemoveFromParent(org.netbeans.spi.java.hints.HintContext,java.lang.String,com.sun.source.util.TreePath)
 supr java.lang.Object
 hfds NUMBER_LITERAL_KINDS,OPERATOR_PRIORITIES,SPEC_VERSION
 hcls IK,JavaFixRealImpl,MoveFile,RemoveFromParent,ReplaceParameters

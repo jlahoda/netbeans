@@ -83,6 +83,15 @@ public class GradleFilesTest {
     }
 
     @Test
+    public void testGetBuildScript5() throws IOException {
+        File settings = root.newFile("settings.gradle");
+        GradleFiles gf = new GradleFiles(settings.getParentFile());
+        assertEquals("It is project", true, gf.isProject());
+        assertEquals("It has settings", settings, gf.getSettingsScript());
+        assertNull("No build script", gf.getBuildScript());
+    }
+
+    @Test
     public void testGetBuildScriptKotlin() throws IOException {
         File build = root.newFile("build.gradle.kts");
         GradleFiles gf = new GradleFiles(root.getRoot());
@@ -422,6 +431,17 @@ public class GradleFilesTest {
         GradleFiles gf = new GradleFiles(buildSrc);
         assertTrue(gf.isBuildSrcProject());
         assertEquals(null, gf.getFile(GradleFiles.Kind.BUILD_SRC));
+    }
+
+    @Test
+    public void testGetBuildSrcProperties() throws IOException {
+        root.newFile("settings.gradle");
+
+        File buildSrc = root.newFolder("buildSrc");
+        GradleFiles gf = new GradleFiles(buildSrc);
+        assertTrue(gf.isBuildSrcProject());
+        int expectedSize = gf.getFile(GradleFiles.Kind.USER_PROPERTIES).exists() ? 1 : 0;
+        assertEquals(expectedSize, gf.getPropertyFiles().size());
     }
 
     /**

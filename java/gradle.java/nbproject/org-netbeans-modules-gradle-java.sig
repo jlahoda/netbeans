@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.9
+#Version 1.17
 
 CLSS public abstract interface java.io.Serializable
 
@@ -21,7 +21,6 @@ meth public final java.lang.String name()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
-hfds name,ordinal
 
 CLSS public java.lang.Object
 cons public init()
@@ -74,6 +73,7 @@ meth public final java.util.Collection<java.io.File> getAvailableDirs()
 meth public final java.util.Collection<java.io.File> getAvailableDirs(boolean)
 meth public final java.util.Set<java.io.File> getGroovyDirs()
 meth public final java.util.Set<java.io.File> getJavaDirs()
+meth public final java.util.Set<java.io.File> getKotlinDirs()
 meth public final java.util.Set<java.io.File> getResourcesDirs()
 meth public final java.util.Set<java.io.File> getScalaDirs()
 meth public int hashCode()
@@ -83,10 +83,12 @@ meth public java.lang.String getAnnotationProcessorConfigurationName()
 meth public java.lang.String getBuildTaskName(org.netbeans.modules.gradle.java.api.GradleJavaSourceSet$SourceType)
 meth public java.lang.String getClassesTaskName()
 meth public java.lang.String getCompileConfigurationName()
+ anno 0 java.lang.Deprecated()
 meth public java.lang.String getCompileTaskName(java.lang.String)
 meth public java.lang.String getName()
 meth public java.lang.String getProcessResourcesTaskName()
 meth public java.lang.String getRuntimeConfigurationName()
+ anno 0 java.lang.Deprecated()
 meth public java.lang.String getSourcesCompatibility()
  anno 0 java.lang.Deprecated()
 meth public java.lang.String getSourcesCompatibility(org.netbeans.modules.gradle.java.api.GradleJavaSourceSet$SourceType)
@@ -122,6 +124,7 @@ CLSS public final static !enum org.netbeans.modules.gradle.java.api.GradleJavaSo
 fld public final static org.netbeans.modules.gradle.java.api.GradleJavaSourceSet$SourceType GENERATED
 fld public final static org.netbeans.modules.gradle.java.api.GradleJavaSourceSet$SourceType GROOVY
 fld public final static org.netbeans.modules.gradle.java.api.GradleJavaSourceSet$SourceType JAVA
+fld public final static org.netbeans.modules.gradle.java.api.GradleJavaSourceSet$SourceType KOTLIN
 fld public final static org.netbeans.modules.gradle.java.api.GradleJavaSourceSet$SourceType RESOURCES
 fld public final static org.netbeans.modules.gradle.java.api.GradleJavaSourceSet$SourceType SCALA
 meth public java.lang.String toString()
@@ -129,13 +132,22 @@ meth public static org.netbeans.modules.gradle.java.api.GradleJavaSourceSet$Sour
 meth public static org.netbeans.modules.gradle.java.api.GradleJavaSourceSet$SourceType[] values()
 supr java.lang.Enum<org.netbeans.modules.gradle.java.api.GradleJavaSourceSet$SourceType>
 
+CLSS public final org.netbeans.modules.gradle.java.api.ProjectActions
+fld public static java.lang.String TOKEN_JAVAEXEC_ARGS
+fld public static java.lang.String TOKEN_JAVAEXEC_CWD
+fld public static java.lang.String TOKEN_JAVAEXEC_ENV
+fld public static java.lang.String TOKEN_JAVAEXEC_JVMARGS
+supr java.lang.Object
+
 CLSS public abstract interface org.netbeans.modules.gradle.java.api.ProjectSourcesClassPathProvider
 meth public abstract org.netbeans.api.java.classpath.ClassPath getProjectSourcesClassPath(java.lang.String)
 meth public abstract org.netbeans.api.java.classpath.ClassPath[] getProjectClassPath(java.lang.String)
 
 CLSS public final org.netbeans.modules.gradle.java.api.output.Location
 cons public init(java.lang.String)
+ anno 0 java.lang.Deprecated()
 cons public init(java.lang.String,java.lang.String)
+ anno 0 java.lang.Deprecated()
 innr public abstract interface static Finder
 meth public boolean isLine()
 meth public boolean isMethod()
@@ -144,8 +156,10 @@ meth public java.lang.Integer getLineNum()
 meth public java.lang.String getFileName()
 meth public java.lang.String getTarget()
 meth public java.lang.String toString()
+meth public org.netbeans.modules.gradle.java.api.output.Location withNoTarget()
+meth public static org.netbeans.modules.gradle.java.api.output.Location parseLocation(java.lang.String)
 supr java.lang.Object
-hfds CALLSTACK_ITEM_PARSER,fileName,lineNum,target
+hfds CALLSTACK_ITEM_PARSER,classNames,fileName,lineNum,target
 
 CLSS public abstract interface static org.netbeans.modules.gradle.java.api.output.Location$Finder
  outer org.netbeans.modules.gradle.java.api.output.Location

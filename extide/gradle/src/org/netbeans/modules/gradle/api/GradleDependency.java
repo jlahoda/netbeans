@@ -24,6 +24,7 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
+import org.netbeans.modules.gradle.GradleModuleFileCache21;
 
 /**
  * This object represents a Gradle dependency element in a {@link GradleConfiguration}.
@@ -63,24 +64,11 @@ public abstract class GradleDependency implements Serializable, Comparable<Gradl
 
     public abstract Type getType();
 
-    static final String[] gavSplit(String gav) {
-        int firstColon = gav.indexOf(':');
-        int lastColon = gav.lastIndexOf(':');
-        if (firstColon == -1 || firstColon == lastColon) {
-            throw new IllegalArgumentException("Invalig GAV format: " + gav);
-        }
-        return new String[] {
-            gav.substring(0, firstColon),
-            gav.substring(firstColon + 1, lastColon),
-            gav.substring(lastColon + 1)
-        };
-    }
-
     /**
      * Dependency for modules usually downloaded from a remote repository.
      * @since 1.0
      */
-    public final static class ModuleDependency extends GradleDependency {
+    public static final class ModuleDependency extends GradleDependency {
 
         final Set<File> artifacts;
         Set<File> sources;
@@ -92,7 +80,7 @@ public abstract class GradleDependency implements Serializable, Comparable<Gradl
         ModuleDependency(String id, Set<File> artifacts) {
             super(id);
             this.artifacts = artifacts;
-            String[] parts = gavSplit(id);
+            String[] parts = GradleModuleFileCache21.gavSplit(id);
             group = parts[0];
             name = parts[1];
             version = parts[2];
@@ -175,7 +163,7 @@ public abstract class GradleDependency implements Serializable, Comparable<Gradl
      * Dependency for sub-project in the current multi-project setup.
      * @since 1.0
      */
-    public final static class ProjectDependency extends GradleDependency {
+    public static final class ProjectDependency extends GradleDependency {
 
         final File path;
         String description;
@@ -232,7 +220,7 @@ public abstract class GradleDependency implements Serializable, Comparable<Gradl
      * Dependency for files available on local filesystem.
      * @since 1.0
      */
-    public final static class FileCollectionDependency extends GradleDependency {
+    public static final class FileCollectionDependency extends GradleDependency {
 
         final Set<File> files;
 
@@ -254,7 +242,7 @@ public abstract class GradleDependency implements Serializable, Comparable<Gradl
     /**
      * Dependency for modules which was not able to be resolved by Gradle.
      */
-    public final static class UnresolvedDependency extends GradleDependency {
+    public static final class UnresolvedDependency extends GradleDependency {
 
         String problem;
 

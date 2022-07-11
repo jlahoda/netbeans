@@ -71,8 +71,8 @@ import org.openide.util.NbBundle;
 public class WebProjectJAXWSSupport extends ProjectJAXWSSupport /*implements JAXWSSupportImpl*/ {
     private WebProject project;
     //servlet name and servlet listener for non-JSR 109 web services
-    private final static String servletClassName = "com.sun.xml.ws.transport.http.servlet.WSServlet"; //NOI18N
-    private final static String servletListener = "com.sun.xml.ws.transport.http.servlet.WSServletContextListener"; //NOI18N
+    private static final String servletClassName = "com.sun.xml.ws.transport.http.servlet.WSServlet"; //NOI18N
+    private static final String servletListener = "com.sun.xml.ws.transport.http.servlet.WSServletContextListener"; //NOI18N
 
     /** Creates a new instance of JAXWSSupport */
     public WebProjectJAXWSSupport(WebProject project, AntProjectHelper antProjectHelper) {
@@ -412,7 +412,7 @@ public class WebProjectJAXWSSupport extends ProjectJAXWSSupport /*implements JAX
     public void serviceFromJavaRemoved(String serviceName) {
         JaxWsModel jaxWsModel = (JaxWsModel)project.getLookup().lookup(JaxWsModel.class);
         Boolean isJsr109 = jaxWsModel.getJsr109();
-        if(isJsr109!=null && !isJsr109.booleanValue()){
+        if(isJsr109!=null && !isJsr109){
             try{
                 removeNonJsr109Entries(serviceName);
             }catch(IOException e){
@@ -611,8 +611,12 @@ public class WebProjectJAXWSSupport extends ProjectJAXWSSupport /*implements JAX
                 return JAKARTA_EE_VERSION_8;
             } else if (Profile.JAKARTA_EE_8_FULL.equals(webModule.getJ2eeProfile())) {
                 return JAKARTA_EE_VERSION_8;
+            } else if (Profile.JAKARTA_EE_9_WEB.equals(webModule.getJ2eeProfile())) {
+                return JAKARTA_EE_VERSION_9;
+            } else if (Profile.JAKARTA_EE_9_FULL.equals(webModule.getJ2eeProfile())) {
+                return JAKARTA_EE_VERSION_9;
             } else if (Profile.JAVA_EE_5.equals(webModule.getJ2eeProfile())) {
-                return JAVA_EE_VERSION_15;
+              return JAVA_EE_VERSION_15;
             }
         }
         return JAVA_EE_VERSION_NONE;

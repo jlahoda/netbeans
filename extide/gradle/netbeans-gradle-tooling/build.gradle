@@ -17,7 +17,6 @@
  * under the License.
  */
 
-apply plugin: 'groovy'
 apply plugin: 'application'
 
 mainClassName = 'org.netbeans.modules.gradle.DebugTooling'
@@ -26,7 +25,7 @@ sourceCompatibility = '1.8'
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
 repositories {
-    jcenter()
+    mavenCentral()
 }
 
 dependencies {

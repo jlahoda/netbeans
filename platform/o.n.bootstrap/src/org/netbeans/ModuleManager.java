@@ -1302,7 +1302,11 @@ public final class ModuleManager extends Modules {
             if (! testing.containsAll(modules)) {
                 Set<Module> bogus = new HashSet<Module>(modules);
                 bogus.removeAll(testing);
-                throw new IllegalModuleException(IllegalModuleException.Reason.ENABLE_MISSING, bogus);
+                Map<Module, Set<Union2<Dependency,InvalidException>>> errors = new HashMap<>();
+                for (Module b : bogus) {
+                    errors.put(b, missingDependencies(b));
+                }
+                throw new IllegalModuleException(IllegalModuleException.Reason.ENABLE_MISSING, errors);
             }
             for (Module m : testing) {
                 if (!modules.contains(m) && !m.isAutoload() && !m.isEager()) {
@@ -1725,7 +1729,8 @@ public final class ModuleManager extends Modules {
     private void maybeAddToEnableList(Set<Module> willEnable, Set<Module> mightEnable, Module m, boolean okToFail) {
         if (! missingDependencies(m).isEmpty()) {
             if (!okToFail) {
-                Util.err.warning("Module " + m + " had unexpected problems: " + missingDependencies(m) + " (willEnable: " + willEnable + " mightEnable: " + mightEnable + ")");
+                Util.err.warning("Module " + m + " had unexpected problems: " + missingDependencies(m));
+                Util.err.fine(" (willEnable: " + willEnable + " mightEnable: " + mightEnable + ")");
             }
             // Cannot satisfy its dependencies, exclude it.
             return;
@@ -2004,6 +2009,15 @@ public final class ModuleManager extends Modules {
     FIND_AUTOLOADS:
         while (it.hasNext()) {
             Module m = it.next();
+            String host = m.getFragmentHostCodeName();
+            if (host != null) {
+                Module theHost = modulesByName.get(host);
+                if (theHost != null && theHost.isEnabled()) {
+                    // will not disable fragment module, as it is merged to an
+                    // enabled host.
+                    continue;
+                }
+            }
             if (m.isAutoload()) {
                 for (Module other: stillEnabled) {
                     Dependency[] dependencies = other.getDependenciesArray();
@@ -2482,7 +2496,7 @@ public final class ModuleManager extends Modules {
             willEnable = null;
         }
 
-        synchronized final void registerEnable(Set<Module> modules, List<Module> l) {
+        final synchronized void registerEnable(Set<Module> modules, List<Module> l) {
             toEnable = new HashSet<String>();
             for (Module m : modules) {
                 toEnable.add(m.getCodeNameBase());
@@ -2495,7 +2509,7 @@ public final class ModuleManager extends Modules {
             Stamps.getModulesJARs().scheduleSave(this, CACHE, false);
         }
 
-        synchronized final List<String> simulateEnable(Set<Module> modules) {
+        final synchronized List<String> simulateEnable(Set<Module> modules) {
             if (
                 toEnable != null &&
                 modules.size() == toEnable.size() &&

@@ -793,11 +793,11 @@ public class XmlMultiViewEditorSupport extends DataEditorSupport implements Seri
                 Set closed = ((Set) evt.getOldValue());
                 if (closed != null) {
                     closed.removeAll((Set) evt.getNewValue());
-                    for (Iterator iterator = closed.iterator(); iterator.hasNext();) {
+                    for (Iterator<?> iterator = closed.iterator(); iterator.hasNext();) {
                         Object o = iterator.next();
                         if (o instanceof CloneableTopComponent) {
                             final CloneableTopComponent topComponent = (CloneableTopComponent) o;
-                            Enumeration en = topComponent.getReference().getComponents();
+                            Enumeration<CloneableTopComponent> en = topComponent.getReference().getComponents();
                             if (mvtc == topComponent) {
                                 if (en.hasMoreElements()) {
                                     // Remember next cloned top component

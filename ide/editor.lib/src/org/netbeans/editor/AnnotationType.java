@@ -419,7 +419,7 @@ public class AnnotationType {
     /** Setter for the CombinationOrder property
      * @param order order of the annotation type combination */    
     public void setCombinationOrder(int order) {
-        putProp(PROP_COMBINATION_ORDER, new Integer(order));
+        putProp(PROP_COMBINATION_ORDER, Integer.valueOf(order));
     }
     
     /** Setter for the CombinationOrder property
@@ -432,7 +432,7 @@ public class AnnotationType {
             Utilities.annotateLoggable(ex);
             return;
         }
-        putProp(PROP_COMBINATION_ORDER, new Integer(order));
+        putProp(PROP_COMBINATION_ORDER, Integer.valueOf(order));
     }
 
     /** Getter for MinimumOptionals property
@@ -445,7 +445,7 @@ public class AnnotationType {
     }
 
     public void setMinimumOptionals(int min) {
-        putProp(PROP_COMBINATION_MINIMUM_OPTIONALS, new Integer(min));
+        putProp(PROP_COMBINATION_MINIMUM_OPTIONALS, Integer.valueOf(min));
     }
     
     public void setMinimumOptionals(String m) {
@@ -456,7 +456,7 @@ public class AnnotationType {
             Utilities.annotateLoggable(ex);
             return;
         }
-        putProp(PROP_COMBINATION_MINIMUM_OPTIONALS, new Integer(min));
+        putProp(PROP_COMBINATION_MINIMUM_OPTIONALS, Integer.valueOf(min));
     }
     
     /** Getter for Visible property
@@ -542,7 +542,7 @@ public class AnnotationType {
     }
 
     public void setPriority(int priority) {
-        putProp(PROP_PRIORITY, new Integer(priority));
+        putProp(PROP_PRIORITY, Integer.valueOf(priority));
     }
 
     public boolean isBrowseable() {
@@ -579,18 +579,18 @@ public class AnnotationType {
 
     /** Add listeners on changes of annotation type properties
      * @param l  change listener*/
-    final public void addPropertyChangeListener(java.beans.PropertyChangeListener l) {
+    public final void addPropertyChangeListener(java.beans.PropertyChangeListener l) {
         support.addPropertyChangeListener (l);
     }
     
     /** Remove listeners on changes of annotation type properties
      * @param l  change listener*/
-    final public void removePropertyChangeListener(java.beans.PropertyChangeListener l) {
+    public final void removePropertyChangeListener(java.beans.PropertyChangeListener l) {
         support.removePropertyChangeListener (l);
     }
 
     /** Fire property change to registered listeners. */
-    final protected void firePropertyChange(String propertyName, Object oldValue, Object newValue) {
+    protected final void firePropertyChange(String propertyName, Object oldValue, Object newValue) {
         support.firePropertyChange(propertyName, oldValue, newValue);
     }
 

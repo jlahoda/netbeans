@@ -331,7 +331,7 @@ public class JarClassLoader extends ProxyClassLoader {
         }
     }
 
-    static abstract class Source {
+    abstract static class Source {
         private URL url;
         private ProtectionDomain pd;
         protected JarClassLoader jcl;
@@ -673,7 +673,9 @@ public class JarClassLoader extends ProxyClassLoader {
         @Override
         protected void destroy() throws IOException {
             super.destroy();
-            assert dead == false : "Already had dead JAR: " + file;
+            if (dead) {
+                return;
+            }
             
             File orig = file;
 

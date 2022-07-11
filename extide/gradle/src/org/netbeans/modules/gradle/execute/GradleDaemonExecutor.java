@@ -19,7 +19,7 @@
 
 package org.netbeans.modules.gradle.execute;
 
-import org.netbeans.modules.gradle.GradleDaemon;
+import org.netbeans.modules.gradle.loaders.GradleDaemon;
 import org.netbeans.modules.gradle.api.GradleBaseProject;
 import org.netbeans.modules.gradle.api.execute.GradleCommandLine;
 import org.netbeans.modules.gradle.api.execute.RunConfig;
@@ -50,12 +50,12 @@ import org.gradle.tooling.GradleConnectionException;
 import org.gradle.tooling.GradleConnector;
 import org.gradle.tooling.ProgressEvent;
 import org.gradle.tooling.ProjectConnection;
+import org.gradle.tooling.events.ProgressListener;
 import org.netbeans.api.progress.ProgressHandle;
 import org.netbeans.api.project.ProjectInformation;
 import org.netbeans.api.project.ProjectUtils;
-import org.netbeans.modules.gradle.NbGradleProjectImpl;
-import org.netbeans.modules.gradle.api.NbGradleProject;
 import org.netbeans.modules.gradle.api.execute.GradleDistributionManager.GradleDistribution;
+import org.netbeans.modules.gradle.api.execute.GradleExecConfiguration;
 import org.netbeans.modules.gradle.spi.GradleFiles;
 import org.netbeans.modules.gradle.spi.execute.GradleDistributionProvider;
 import org.netbeans.modules.gradle.spi.execute.GradleJavaPlatformProvider;
@@ -63,10 +63,13 @@ import org.netbeans.spi.project.ui.support.BuildExecutionSupport;
 import org.openide.awt.StatusDisplayer;
 import org.openide.execution.ExecutorTask;
 import org.openide.filesystems.FileUtil;
+import org.openide.util.BaseUtilities;
+import org.openide.util.Lookup;
 import org.openide.util.NbBundle;
 import org.openide.util.NbBundle.Messages;
 import org.openide.util.Utilities;
 import org.openide.util.io.ReaderInputStream;
+import org.openide.util.lookup.Lookups;
 import org.openide.windows.IOColorPrint;
 import org.openide.windows.IOColors;
 import org.openide.windows.InputOutput;
@@ -79,6 +82,7 @@ public final class GradleDaemonExecutor extends AbstractGradleExecutor {
 
     private CancellationTokenSource cancelTokenSource;
     private static final Logger LOGGER = Logger.getLogger(GradleDaemonExecutor.class.getName());
+    private static final String JAVA_HOME = "JAVA_HOME";    // NOI18N
 
     private final ProgressHandle handle;
     private InputStream inStream;
@@ -86,7 +90,7 @@ public final class GradleDaemonExecutor extends AbstractGradleExecutor {
     private OutputStream errStream;
     private boolean cancelling;
     private GradleTask gradleTask;
-
+    
     @SuppressWarnings("LeakingThisInConstructor")
     public GradleDaemonExecutor(RunConfig config) {
         super(config);
@@ -98,7 +102,7 @@ public final class GradleDaemonExecutor extends AbstractGradleExecutor {
             }
         });
     }
-
+    
     @NbBundle.Messages({
         "# {0} - Project name",
         "BUILD_SUCCESS=Building {0} was success.",
@@ -128,6 +132,23 @@ public final class GradleDaemonExecutor extends AbstractGradleExecutor {
         final InputOutput ioput = getInputOutput();
         actionStatesAtStart();
         handle.start();
+
+        // BuildLauncher creates its own threads, need to note the effective Lookup and re-establish it in the listeners
+        final Lookup execLookup = Lookup.getDefault();
+
+        class ProgressLookupListener implements org.gradle.tooling.events.ProgressListener {
+            private final org.gradle.tooling.events.ProgressListener delegate;
+
+            public ProgressLookupListener(ProgressListener delegate) {
+                this.delegate = delegate;
+            }
+
+            @Override
+            public void statusChanged(org.gradle.tooling.events.ProgressEvent event) {
+                Lookups.executeWith(execLookup, () -> delegate.statusChanged(event));
+            }
+        }
+
         try {
 
             BuildExecutionSupport.registerRunningItem(item);
@@ -154,26 +175,46 @@ public final class GradleDaemonExecutor extends AbstractGradleExecutor {
             BuildLauncher buildLauncher = pconn.newBuild();
 
             GradleCommandLine cmd = config.getCommandLine();
+
+            GradleExecConfiguration cfg = config.getExecConfig();
+            if (cfg == null) {
+                cfg = ProjectConfigurationSupport.getEffectiveConfiguration(config.getProject(), Lookup.EMPTY);
+            }
+            if (cfg != null) {
+                GradleCommandLine addConfigParts = null;
+                
+                if (cfg.getCommandLineArgs() != null && !cfg.getCommandLineArgs().isEmpty()) {
+                    addConfigParts = new GradleCommandLine(cfg.getCommandLineArgs());
+                }
+                for (Map.Entry<String, String> pe : cfg.getProjectProperties().entrySet()) {
+                    if (addConfigParts == null) {
+                        addConfigParts = new GradleCommandLine();
+                    }
+                    addConfigParts.addProjectProperty(pe.getKey(), pe.getValue());
+                }
+                if (addConfigParts != null) {
+                    cmd = GradleCommandLine.combine(addConfigParts, cmd);
+                }
+            }
+
+            cmd = new GradleCommandLine(dist, cmd);
+            
+            // will not show augmented in the output
+            GradleCommandLine augmented = cmd;
+
             if (RunUtils.isAugmentedBuildEnabled(config.getProject())) {
-                cmd = new GradleCommandLine(cmd);
-                cmd.addParameter(GradleCommandLine.Parameter.INIT_SCRIPT, GradleDaemon.INIT_SCRIPT);
-                cmd.addSystemProperty(GradleDaemon.PROP_TOOLING_JAR, GradleDaemon.TOOLING_JAR);
+                augmented = new GradleCommandLine(cmd);
+                augmented.addParameter(GradleCommandLine.Parameter.INIT_SCRIPT, GradleDaemon.initScript());
             }
             GradleBaseProject gbp = GradleBaseProject.get(config.getProject());
-            cmd.configure(buildLauncher, gbp != null ? gbp.getRootDir() : null);
+            augmented.configure(buildLauncher, gbp != null ? gbp.getRootDir() : null);
 
-            printCommandLine();
+            printCommandLine(cmd);
             GradleJavaPlatformProvider platformProvider = config.getProject().getLookup().lookup(GradleJavaPlatformProvider.class);
-            if (platformProvider != null) {
-                try {
-                    buildLauncher.setJavaHome(platformProvider.getJavaHome());
-                    Map<String, String> envs = new HashMap<>(System.getenv());
-                    envs.put("JAVA_HOME", platformProvider.getJavaHome().getCanonicalPath());
-                    buildLauncher.setEnvironmentVariables(envs);
-                } catch (IOException ex) {
-                    io.getErr().println(Bundle.NO_PLATFORM(ex.getMessage()));
-                    return;
-                }
+            String runEnvironment = cmd.getProperty(GradleCommandLine.Property.PROJECT, "runEnvironment");
+            boolean success = setPlatformAndEnv(buildLauncher, platformProvider, runEnvironment);
+            if (!success) {
+                return;
             }
 
             outStream = new EscapeProcessingOutputStream(new GradlePlainEscapeProcessor(io, config, false));
@@ -187,16 +228,17 @@ public final class GradleDaemonExecutor extends AbstractGradleExecutor {
             buildLauncher.setStandardOutput(outStream);
             buildLauncher.setStandardError(errStream);
             buildLauncher.addProgressListener((ProgressEvent pe) -> {
-                handle.progress(pe.getDescription());
+                Lookups.executeWith(execLookup, () -> handle.progress(pe.getDescription()));
             });
 
             buildLauncher.withCancellationToken(cancelTokenSource.token());
             if (config.getProject() != null) {
                 Collection<? extends GradleProgressListenerProvider> providers = config.getProject().getLookup().lookupAll(GradleProgressListenerProvider.class);
                 for (GradleProgressListenerProvider provider : providers) {
-                    buildLauncher.addProgressListener(provider.getProgressListener(), provider.getSupportedOperationTypes());
+                    buildLauncher.addProgressListener(new ProgressLookupListener(provider.getProgressListener()), provider.getSupportedOperationTypes());
                 }
             }
+            GradleExecAccessor.instance().configureGradleHome(buildLauncher);
             buildLauncher.run();
             StatusDisplayer.getDefault().setStatusText(Bundle.BUILD_SUCCESS(getProjectName()));
             gradleTask.finish(0);
@@ -205,6 +247,7 @@ public final class GradleDaemonExecutor extends AbstractGradleExecutor {
         } catch (UncheckedException | BuildException ex) {
             if (!cancelling) {
                 StatusDisplayer.getDefault().setStatusText(Bundle.BUILD_FAILED(getProjectName()));
+                gradleTask.finish(1);
             } else {
                 // This can happen if cancelling a Gradle build which is running
                 // an external aplication
@@ -235,12 +278,56 @@ public final class GradleDaemonExecutor extends AbstractGradleExecutor {
         }
     }
 
+    @NbBundle.Messages({"# {0} - JAVA_HOME", "# {1} - Java platform path", "MSG_JAVA_HOME_EnvWarning=Warning: {0} environment variable is replaced with the current Java platform path {1}."})
+    private boolean setPlatformAndEnv(BuildLauncher buildLauncher, GradleJavaPlatformProvider platformProvider, String runEnvironment) {
+        String javaHome = null;
+        if (platformProvider != null) {
+            try {
+                buildLauncher.setJavaHome(platformProvider.getJavaHome());
+                javaHome = platformProvider.getJavaHome().getCanonicalPath();
+            } catch (IOException ex) {
+                io.getErr().println(Bundle.NO_PLATFORM(ex.getMessage()));
+                gradleTask.finish(1);
+                return false;
+            }
+        }
+        if (javaHome != null || runEnvironment != null) {
+            Map<String, String> envs = new HashMap<>(System.getenv());
+            if (runEnvironment != null) {
+                // Quoted space-separated expressions of <ENV_VAR>=<ENV_VALUE>
+                // to set environment variables,
+                // or !<ENV_VAR> to remove environment variables
+                for (String env : BaseUtilities.parseParameters(runEnvironment)) {
+                    String name = null;
+                    if (env.startsWith("!")) {  // NOI18N
+                        name = env.substring(1);
+                        envs.remove(name);
+                    } else {
+                        int i = env.indexOf('=');   // NOI18N
+                        if (i > 0) {
+                            name = env.substring(0, i);
+                            envs.put(name, env.substring(i + 1));
+                        }
+                    }
+                    if (javaHome != null && JAVA_HOME.equals(name)) {
+                        io.getErr().println(Bundle.MSG_JAVA_HOME_EnvWarning(JAVA_HOME, javaHome));
+                    }
+                }
+            }
+            if (javaHome != null) {
+                envs.put(JAVA_HOME, javaHome);    // NOI18N
+            }
+            buildLauncher.setEnvironmentVariables(envs);
+        }
+        return true;
+    }
+
     private String getProjectName() {
         ProjectInformation info = ProjectUtils.getInformation(config.getProject());
         return info.getDisplayName();
     }
 
-    private void printCommandLine() {
+    private void printCommandLine(GradleCommandLine cmd) {
         StringBuilder commandLine = new StringBuilder(1024);
 
         String userHome = GradleSettings.getDefault().getPreferences().get(GradleSettings.PROP_GRADLE_USER_HOME, null);
@@ -279,7 +366,7 @@ public final class GradleDaemonExecutor extends AbstractGradleExecutor {
                 }
             }
 
-        for (String arg : config.getCommandLine().getSupportedCommandLine()) {
+        for (String arg : cmd.getSupportedCommandLine()) {
             commandLine.append(' ');
             if (arg.contains(" ") || arg.contains("*")) { //NOI18N
                 commandLine.append('\'').append(arg).append('\'');

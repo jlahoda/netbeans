@@ -456,7 +456,7 @@ public final class JavaNode extends DataNode implements ChangeListener {
         return result;
     }
 
-    private static abstract class IconTask implements Runnable {
+    private abstract static class IconTask implements Runnable {
         protected final JavaNode node;
 
         IconTask(@NonNull final JavaNode node) {
@@ -679,11 +679,7 @@ public final class JavaNode extends DataNode implements ChangeListener {
                     }
                 };
                 
-                try {
-                    ExecutableFilesIndex.DEFAULT.addChangeListener(file.getURL(), _executableListener);
-                } catch (FileStateInvalidException ex) {
-                    Exceptions.printStackTrace(ex);
-                }
+                ExecutableFilesIndex.DEFAULT.addChangeListener(file.toURL(), _executableListener);
                 
                 synchronized (node) {
                     if (node.executableListener == null) {

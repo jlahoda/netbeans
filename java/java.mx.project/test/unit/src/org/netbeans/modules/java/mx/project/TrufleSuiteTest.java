@@ -18,23 +18,16 @@
  */
 package org.netbeans.modules.java.mx.project;
 
-import org.netbeans.junit.NbModuleSuite;
-
 public class TrufleSuiteTest extends SuiteCheck {
     public TrufleSuiteTest(String n) {
         super(n);
     }
 
     public static junit.framework.Test suite() {
-        DumpStack.start();
-        return NbModuleSuite.emptyConfiguration().
-            gui(false).
-            addTest(TrufleSuiteTest.class).
-            suite();
+        return SuiteCheck.suite(TrufleSuiteTest.class);
     }
 
     public void testParseTruffleSourcesWithoutError() throws Exception {
-// XXX: disable as it yields OutOfMemoryErrors
-//        verifyNoErrorsInSuite("truffle");
+        verifyNoErrorsInSuite("truffle");
     }
 }

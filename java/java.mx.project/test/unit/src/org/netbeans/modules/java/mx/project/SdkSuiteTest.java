@@ -28,7 +28,6 @@ import static junit.framework.TestCase.assertTrue;
 import org.netbeans.api.java.queries.SourceForBinaryQuery;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectManager;
-import org.netbeans.junit.NbModuleSuite;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 
@@ -38,11 +37,7 @@ public class SdkSuiteTest extends SuiteCheck {
     }
 
     public static junit.framework.Test suite() {
-        DumpStack.start();
-        return NbModuleSuite.emptyConfiguration().
-            gui(false).
-            addTest(SdkSuiteTest.class).
-            suite();
+        return suite(SdkSuiteTest.class);
     }
 
     public void testParseSdkSourcesWithoutError() throws Exception {
@@ -65,6 +60,8 @@ public class SdkSuiteTest extends SuiteCheck {
         final URL archiveURL = new URL("jar:" + graalSdkJar.toURL() + "!/");
 
         SourceForBinaryQuery.Result2 result2 = SourceForBinaryQuery.findSourceRoots2(archiveURL);
+        final FileObject[] resultRoots = result2.getRoots();
+        assertTrue("There should be some roots", resultRoots.length > 0);
 
         Set<FileObject> expected = new HashSet<>();
         for (FileObject ch : fo.getFileObject("src").getChildren()) {
@@ -76,14 +73,14 @@ public class SdkSuiteTest extends SuiteCheck {
                 // TCK is not in graal-sdk.jar
                 continue;
             }
-            if (ch.getNameExt().endsWith("org.graalvm.launcher")) {
+            if (ch.getNameExt().contains("org.graalvm.launcher")) {
                 // launcher is not in graal-sdk.jar
                 continue;
             }
             expected.add(ch);
         }
 
-        for (FileObject r : result2.getRoots()) {
+        for (FileObject r : resultRoots) {
             if ("src_gen".equals(r.getName())) {
                 continue;
             }

@@ -21,14 +21,23 @@ package org.netbeans.swing.laf.flatlaf;
 
 import com.formdev.flatlaf.util.UIScale;
 import java.awt.Color;
+import java.awt.Font;
+import java.awt.Insets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import javax.swing.BorderFactory;
 import javax.swing.InputMap;
 import javax.swing.KeyStroke;
 import javax.swing.UIDefaults;
 import javax.swing.UIDefaults.LazyValue;
 import javax.swing.UIManager;
+import javax.swing.border.CompoundBorder;
+import javax.swing.plaf.InsetsUIResource;
 import org.netbeans.swing.laf.flatlaf.ui.FlatTabControlIcon;
 import org.netbeans.swing.plaf.LFCustoms;
 import org.netbeans.swing.tabcontrol.plaf.TabControlButton;
+import org.openide.util.Utilities;
 
 /**
  * LFCustoms for FlatLaf based LAFs (light, dark, etc).
@@ -40,8 +49,13 @@ import org.netbeans.swing.tabcontrol.plaf.TabControlButton;
  */
 public class FlatLFCustoms extends LFCustoms {
 
+    private static final ModifiableColor unifiedBackground = new ModifiableColor();
+    private static final ModifiableColor quicksearchBackground = new ModifiableColor();
+
     @Override
     public Object[] createApplicationSpecificKeysAndValues() {
+        updateUnifiedBackground();
+
         Color editorContentBorderColor = UIManager.getColor("TabbedContainer.editor.contentBorderColor"); // NOI18N
 
         Object[] removeCtrlPageUpDownKeyBindings = {
@@ -49,7 +63,18 @@ public class FlatLFCustoms extends LFCustoms {
             "ctrl PAGE_DOWN", null // NOI18N
         };
 
-        return new Object[] {
+        Object[] constants = new Object[] {
+            // unified background
+            "nb.options.categories.tabPanelBackground", unifiedBackground,
+            "nb.quicksearch.background", quicksearchBackground,
+
+            // options
+            "TitlePane.useWindowDecorations", FlatLafPrefs.isUseWindowDecorations(),
+            "TitlePane.unifiedBackground", FlatLafPrefs.isUnifiedTitleBar(),
+            "TitlePane.menuBarEmbedded", FlatLafPrefs.isMenuBarEmbedded(),
+            "MenuItem.selectionType", FlatLafPrefs.isUnderlineMenuSelection() ? "underline" : null,
+            "Component.hideMnemonics", !FlatLafPrefs.isAlwaysShowMnemonics(),
+
             // necessary for org.openide.explorer.propertysheet.PropertySheet and others
             CONTROLFONT, UIManager.getFont("Label.font"), // NOI18N
 
@@ -57,7 +82,7 @@ public class FlatLFCustoms extends LFCustoms {
             VIEW_TAB_DISPLAYER_UI, "org.netbeans.swing.laf.flatlaf.ui.FlatViewTabDisplayerUI", // NOI18N
             SLIDING_BUTTON_UI, "org.netbeans.swing.laf.flatlaf.ui.FlatSlidingButtonUI", // NOI18N
 
-            EDITOR_TABSCOMPONENT_BORDER, DPISafeBorder.matte(1, 1, 1, 1, editorContentBorderColor),
+            EDITOR_TABSCOMPONENT_BORDER, DPISafeBorder.matte(0, 1, 1, 1, editorContentBorderColor),
             EDITOR_TOOLBAR_BORDER, DPISafeBorder.matte(0, 0, 1, 0, editorContentBorderColor),
             EDITOR_TAB_CONTENT_BORDER, DPISafeBorder.matte(0, 1, 1, 1, editorContentBorderColor),
             VIEW_TAB_CONTENT_BORDER, DPISafeBorder.matte(0, 1, 1, 1, UIManager.getColor("TabbedContainer.view.contentBorderColor")), // NOI18N
@@ -104,6 +129,57 @@ public class FlatLFCustoms extends LFCustoms {
             "Table.ancestorInputMap.RightToLeft", new LazyModifyInputMap( "Table.ancestorInputMap.RightToLeft", removeCtrlPageUpDownKeyBindings ), // NOI18N
             "Tree.focusInputMap", new LazyModifyInputMap( "Tree.focusInputMap", removeCtrlPageUpDownKeyBindings ), // NOI18N
         };
+        List<Object> result = new ArrayList<>();
+        result.addAll(Arrays.asList(constants));
+        if (Utilities.isWindows()) {
+            /* Make sure button labels appear vertically centered on Windows. On the standard
+            Windows LAF, WindowsButtonUI/WindowsRadioButtonUI/WindowsToggleButtonUI.getPreferredSize
+            add one pixel to the button's height to ensure that it is odd-numbered. This makes the
+            text centered with either Tahoma 11 (the default Swing Windows LAF font) or Segoe UI 12
+            (the default font on modern Windows versions, and on FlatLAF on Windows). */
+            for (String key : new String[] { "Button", "RadioButton", "ToggleButton" }) {
+                UIDefaults defaults = UIManager.getDefaults();
+                Font font = defaults.getFont(key + ".font");
+                Insets bm = defaults.getInsets(key + ".margin");
+                if (font != null && bm instanceof InsetsUIResource &&
+                        font.getFamily().equals("Segoe UI") && font.getSize() == 12 &&
+                        bm.top == bm.bottom) {
+                    result.add(key + ".margin");
+                    /* Create an InsetsUIResource rather than an Insets, as FlatLAF treats them
+                    differently. Not doing this caused buttons in the main toolbar to become very wide. */
+                    result.add(new InsetsUIResource(bm.top, bm.left, bm.bottom + 1, bm.right));
+                }
+            }
+        }
+        return result.toArray();
+    }
+
+    static void updateUnifiedBackground() {
+        boolean unified = FlatLafPrefs.isUnifiedTitleBar() && FlatLafPrefs.isUseWindowDecorations();
+        unifiedBackground.setRGB(UIManager.getColor(unified ? "Panel.background" : "Tree.background").getRGB()); // NOI18N
+        quicksearchBackground.setRGB(UIManager.getColor(unified ? "Panel.background" : "MenuBar.background").getRGB()); // NOI18N
+    }
+
+    //---- class ModifiableColor ----------------------------------------------
+
+    private static class ModifiableColor
+        extends Color
+    {
+        private int rgb;
+
+        public ModifiableColor() {
+            super(Color.red.getRGB());
+            rgb = super.getRGB();
+        }
+
+        @Override
+        public int getRGB() {
+            return rgb;
+        }
+
+        public void setRGB(int rgb) {
+            this.rgb = rgb;
+        }
     }
 
     //---- class LazyModifyInputMap -------------------------------------------

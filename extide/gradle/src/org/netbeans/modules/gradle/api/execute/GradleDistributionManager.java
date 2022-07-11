@@ -31,8 +31,15 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitOption;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -59,6 +66,7 @@ import org.json.simple.parser.ParseException;
 import org.netbeans.api.progress.ProgressHandle;
 import org.netbeans.modules.gradle.api.NbGradleProject;
 import org.netbeans.modules.gradle.spi.GradleFiles;
+import org.netbeans.modules.gradle.spi.GradleSettings;
 import org.openide.awt.Notification;
 import org.openide.awt.NotificationDisplayer;
 import org.openide.util.Exceptions;
@@ -76,7 +84,7 @@ public final class GradleDistributionManager {
     private static final RequestProcessor RP = new RequestProcessor("Gradle Installer", 1); //NOI18N
 
     private static final String DOWNLOAD_URI = "https://services.gradle.org/distributions/gradle-%s-%s.zip"; //NOI18N
-    private static final Pattern DIST_VERSION_PATTERN = Pattern.compile(".*gradle-(\\d+\\.\\d+.*)-(bin|all)\\.zip"); //NOI18N
+    private static final Pattern DIST_VERSION_PATTERN = Pattern.compile(".*(gradle-(\\d+\\.\\d+.*))-(bin|all)\\.zip"); //NOI18N
     private static final Set<String> VERSION_BLACKLIST = new HashSet<>(Arrays.asList("2.3", "2.13")); //NOI18N
     private static final Map<File, GradleDistributionManager> CACHE = new WeakHashMap<>();
     private static final GradleVersion MINIMUM_SUPPORTED_VERSION = GradleVersion.version("2.0"); //NOI18N
@@ -88,6 +96,8 @@ public final class GradleDistributionManager {
         GradleVersion.version("6.0"), // JDK-13
         GradleVersion.version("6.3"), // JDK-14
         GradleVersion.version("6.7"), // JDK-15
+        GradleVersion.version("7.0"), // JDK-16
+        GradleVersion.version("7.3"), // JDK-17
     };
     private static final int JAVA_VERSION;
 
@@ -122,12 +132,24 @@ public final class GradleDistributionManager {
      * @return
      */
     public static GradleDistributionManager get(File gradleUserHome) {
-        GradleDistributionManager ret = CACHE.get(gradleUserHome);
+        File home = gradleUserHome != null ? gradleUserHome : GradleSettings.getDefault().getGradleUserHome();
+        GradleDistributionManager ret = CACHE.get(home);
         if (ret == null) {
-            ret = new GradleDistributionManager(gradleUserHome);
-            CACHE.put(gradleUserHome, ret);
+            ret = new GradleDistributionManager(home);
+            CACHE.put(home, ret);
         }
         return ret;
+    }
+
+    /**
+     * Return a {@link GradleDistributionManager} for the Gradle user
+     * home, set in the IDE.
+     * 
+     * @return the GradleDistributionManager for the default Gradle user home.
+     * @since 2.23
+     */
+    public static GradleDistributionManager get() {
+        return GradleDistributionManager.get(null);
     }
 
     /**
@@ -144,7 +166,7 @@ public final class GradleDistributionManager {
         File[] gradleLauncher = lib.listFiles((dir, name) -> {
             return name.startsWith("gradle-launcher-") && name.endsWith(".jar"); //NOI18N
         });
-        if (gradleLauncher.length != 1) {
+        if ((gradleLauncher == null) || (gradleLauncher.length != 1)) {
             throw new FileNotFoundException(lib.getAbsolutePath() + "lib/gradle-launcher-xxxx.jar not found or ambigous!"); //NOI18N
         }
         JarFile launcherJar = new JarFile(gradleLauncher[0]);
@@ -206,7 +228,7 @@ public final class GradleDistributionManager {
         URI uri = getWrapperDistributionURI(gradleProjectRoot);
         Matcher m = DIST_VERSION_PATTERN.matcher(uri.getPath());
         if (m.matches()) {
-            String version = m.group(1);
+            String version = m.group(2);
             return new GradleDistribution(distributionBaseDir(uri, version), uri, version);
         } else {
             throw new URISyntaxException(uri.getPath(), "Cannot get the Gradle distribution version from the URI"); //NOI18N
@@ -308,12 +330,108 @@ public final class GradleDistributionManager {
         return ret;
     }
 
+    /**
+     * Lists all the {@link GradleDistribution}s available on the Gradle Home
+     * of this distribution manager. It looks for the <code>$GRADLE_HOME/wrapper/dists</code>
+     * directory for already downloaded distributions.
+     * @return the list of available Gradle distributions from the Gradle Home.
+     * @since 2.10
+     */
+    public List<GradleDistribution> availableLocalDistributions() {
+        List<GradleDistribution> ret = new ArrayList<>();
+        Path dists = gradleUserHome.toPath().resolve("wrapper").resolve("dists"); //NOI18N
+        if (Files.isDirectory(dists)) {
+            try {
+                Files.walkFileTree(dists, EnumSet.noneOf(FileVisitOption.class), 2, new SimpleFileVisitor<Path>() {
+                    @Override
+                    public FileVisitResult visitFile(Path f, BasicFileAttributes attrs) throws IOException {
+                        String fname = f.getFileName().toString();
+                        Matcher m = DIST_VERSION_PATTERN.matcher(fname);
+                        if (m.matches()) {
+                            Path dist = f.resolveSibling(m.group(1));
+                            if (Files.isDirectory(dist)) {
+                                try {
+                                    GradleDistribution d = distributionFromDir(dist.toFile());
+                                    if (GradleVersion.version(d.getVersion()).compareTo(MINIMUM_SUPPORTED_VERSION) >= 0) {
+                                        ret.add(d);
+                                    }
+                                } catch (IOException ex) {
+                                    // This might be a broken distribution
+                                }
+                            }
+                        }
+                        return FileVisitResult.CONTINUE;
+                    }
+                });
+            } catch (IOException ex) {
+                //Do nothing if we fail to scan the files
+            }
+        }
+        return ret;
+    }
+    
     File distributionBaseDir(URI downloadLocation, String version) {
         WrapperConfiguration conf = new WrapperConfiguration();
         conf.setDistribution(downloadLocation);
-        PathAssembler pa = new PathAssembler(gradleUserHome);
+        PathAssembler pa = new PathAssembler(gradleUserHome, null);
         PathAssembler.LocalDistribution dist = pa.getDistribution(conf);
         return new File(dist.getDistributionDir(), "gradle-" + version);
+    }
+
+    
+    static final class GradleVersionRange {
+
+        public final GradleVersion lowerBound;
+        public final GradleVersion upperBound;
+        public static final GradleVersionRange UNBOUNDED = new GradleVersionRange(null, null);
+
+        GradleVersionRange(GradleVersion lowerBound, GradleVersion upperBound) {
+            if ((lowerBound != null) && (upperBound != null) && (lowerBound.compareTo(upperBound) >= 0)) {
+                throw new IllegalArgumentException("Invalid version range: [" + lowerBound + ", " + upperBound + ")");
+            }
+            this.lowerBound = lowerBound;
+            this.upperBound = upperBound;
+        }
+
+        public boolean contains(GradleVersion ver) {
+            return ((lowerBound == null) || (lowerBound.compareTo(ver) <= 0)) && ((upperBound == null) || (upperBound.compareTo(ver) > 0));
+        }
+
+        public boolean contains(String ver) {
+            return contains(GradleVersion.version(ver));
+        }
+
+        public static GradleVersionRange from(GradleVersion lowerBound) {
+            return new GradleVersionRange(lowerBound, null);
+        }
+
+        public static GradleVersionRange from(String lowerBound) {
+            return from(GradleVersion.version(lowerBound));
+        }
+
+        public static GradleVersionRange until(GradleVersion upperBound) {
+            return new GradleVersionRange(null, upperBound);
+        }
+
+        public static GradleVersionRange until(String upperBound) {
+            return until(GradleVersion.version(upperBound));
+        }
+
+        public static GradleVersionRange range(GradleVersion lowerRange, GradleVersion upperRange) {
+            return new GradleVersionRange(lowerRange, upperRange);
+        }
+
+        public static GradleVersionRange range(GradleVersion lowerRange, String upperRange) {
+            return range(lowerRange, GradleVersion.version(upperRange));
+        }
+
+        public static GradleVersionRange range(String lowerRange, GradleVersion upperRange) {
+            return new GradleVersionRange(GradleVersion.version(lowerRange), upperRange);
+        }
+
+        public static GradleVersionRange range(String lowerRange, String upperRange) {
+            return new GradleVersionRange(GradleVersion.version(lowerRange), GradleVersion.version(upperRange));
+        }
     }
 
     /**
@@ -387,14 +505,24 @@ public final class GradleDistributionManager {
          * @return <code>true</code> if this version is supported with that JDK.
          */
         public boolean isCompatibleWithJava(int jdkMajorVersion) {
+            return jdkMajorVersion <= lastSupportedJava();
+        }
+
+        /**
+         * Returns the newest major JDK version that is supported with this
+         * distribution.
+         * @return the newest major JDK version that is supported with this
+         *    distribution.
+         * @since 2.22
+         */
+        public int lastSupportedJava() {
             int i = JDK_COMPAT.length - 1;
             while ((i >= 0) && version.compareTo(JDK_COMPAT[i]) < 0) {
                 i--;
             }
-            int maxSupportedJDK = i + 9;
-            return jdkMajorVersion <= maxSupportedJDK;
+            return i + 9;
         }
-
+        
         /**
          * Checks if this Gradle distribution is compatible the NetBeans
          * runtime JDK.
@@ -517,7 +645,7 @@ public final class GradleDistributionManager {
             try {
                 WrapperConfiguration conf = new WrapperConfiguration();
                 conf.setDistribution(dist.getDistributionURI());
-                PathAssembler pa = new PathAssembler(gradleUserHome);
+                PathAssembler pa = new PathAssembler(gradleUserHome, null);
                 Install install = new Install(new Logger(true), this, pa);
                 install.createDist(conf);
             } catch (Exception ex) {

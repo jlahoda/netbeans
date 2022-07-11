@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 7.52
+#Version 7.61
 
 CLSS public abstract interface java.io.Serializable
 
@@ -16,7 +16,6 @@ cons public init(java.lang.String)
 cons public init(java.lang.String,java.lang.Throwable)
 cons public init(java.lang.Throwable)
 supr java.lang.Throwable
-hfds serialVersionUID
 
 CLSS public java.lang.Object
 cons public init()
@@ -53,8 +52,6 @@ meth public void printStackTrace(java.io.PrintStream)
 meth public void printStackTrace(java.io.PrintWriter)
 meth public void setStackTrace(java.lang.StackTraceElement[])
 supr java.lang.Object
-hfds CAUSE_CAPTION,EMPTY_THROWABLE_ARRAY,NULL_CAUSE_MESSAGE,SELF_SUPPRESSION_MESSAGE,SUPPRESSED_CAPTION,SUPPRESSED_SENTINEL,UNASSIGNED_STACK,backtrace,cause,detailMessage,serialVersionUID,stackTrace,suppressedExceptions
-hcls PrintStreamOrWriter,SentinelHolder,WrappedPrintStream,WrappedPrintWriter
 
 CLSS public abstract interface java.lang.annotation.Annotation
 meth public abstract boolean equals(java.lang.Object)
@@ -116,6 +113,7 @@ hfds DEFAULT_CLOSING_OPTIONS,buttonListener,closingOptions,helpCtx,leaf,modal,op
 
 CLSS public abstract org.openide.DialogDisplayer
 cons protected init()
+meth public <%0 extends org.openide.NotifyDescriptor> java.util.concurrent.CompletableFuture<{%%0}> notifyFuture({%%0})
 meth public abstract java.awt.Dialog createDialog(org.openide.DialogDescriptor)
 meth public abstract java.lang.Object notify(org.openide.NotifyDescriptor)
 meth public java.awt.Dialog createDialog(org.openide.DialogDescriptor,java.awt.Frame)
@@ -210,6 +208,8 @@ fld public final static java.lang.String PROP_VALID = "valid"
 fld public final static java.lang.String PROP_VALUE = "value"
 fld public final static java.lang.String PROP_WARNING_NOTIFICATION = "warningNotification"
 innr public final static Exception
+innr public final static PasswordLine
+innr public final static QuickPick
 innr public static Confirmation
 innr public static InputLine
 innr public static Message
@@ -275,6 +275,31 @@ CLSS public static org.openide.NotifyDescriptor$Message
 cons public init(java.lang.Object)
 cons public init(java.lang.Object,int)
 supr org.openide.NotifyDescriptor
+
+CLSS public final static org.openide.NotifyDescriptor$PasswordLine
+ outer org.openide.NotifyDescriptor
+cons public init(java.lang.String,java.lang.String)
+supr org.openide.NotifyDescriptor$InputLine
+
+CLSS public final static org.openide.NotifyDescriptor$QuickPick
+ outer org.openide.NotifyDescriptor
+cons public init(java.lang.String,java.lang.String,java.util.List<org.openide.NotifyDescriptor$QuickPick$Item>,boolean)
+innr public final static Item
+meth public boolean isMultipleSelection()
+meth public java.lang.Object getMessage()
+meth public java.util.List<org.openide.NotifyDescriptor$QuickPick$Item> getItems()
+supr org.openide.NotifyDescriptor
+hfds items,multipleSelection,text
+
+CLSS public final static org.openide.NotifyDescriptor$QuickPick$Item
+ outer org.openide.NotifyDescriptor$QuickPick
+cons public init(java.lang.String,java.lang.String)
+meth public boolean isSelected()
+meth public java.lang.String getDescription()
+meth public java.lang.String getLabel()
+meth public void setSelected(boolean)
+supr java.lang.Object
+hfds description,label,selected
 
 CLSS public abstract org.openide.ServiceType
  anno 0 java.lang.Deprecated()

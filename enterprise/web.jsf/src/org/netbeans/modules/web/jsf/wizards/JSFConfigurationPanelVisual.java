@@ -1544,10 +1544,10 @@ private void serverLibrariesActionPerformed(java.awt.event.ActionEvent evt) {//G
     public final class JSFComponentsTableModel extends AbstractTableModel {
 
         private final Class<?>[] COLUMN_TYPES = new Class<?>[] {Boolean.class, JsfComponentImplementation.class, JButton.class};
-        private DefaultListModel model;
+        private DefaultListModel<JSFComponentModelItem> model;
 
         public JSFComponentsTableModel() {
-            model = new DefaultListModel();
+            model = new DefaultListModel<>();
         }
 
         public int getColumnCount() {
@@ -1599,7 +1599,7 @@ private void serverLibrariesActionPerformed(java.awt.event.ActionEvent evt) {//G
         }
 
         private JSFComponentModelItem getItem(int index) {
-            return (JSFComponentModelItem) model.get(index);
+            return model.get(index);
         }
 
         public void addItem(JSFComponentModelItem item){

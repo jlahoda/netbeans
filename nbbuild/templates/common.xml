@@ -66,7 +66,8 @@
             <isset property="has.javahelp"/>
         </condition>
         <property name="javac.source" value="1.7"/>
-        <property name="javac.target" value="${javac.source}"/>
+        <property name="javac.default.target" value="${javac.source}"/>
+        <property name="javac.target" value="${javac.default.target}"/>
         <property name="javac.compilerargs" value=""/>
         <property name="module.auto.deps.xml" location="module-auto-deps.xml"/>
         <condition property="has.module.auto.deps">
@@ -78,10 +79,10 @@
         <tstamp>
             <format property="module.build.started.time" pattern="yyyy-MM-dd'T'HH:mm:ss.SSSZ"/>
         </tstamp>
-        <condition property="asm.jar" value="${nbplatform.active.dir}/platform/core/asm-8.0.1.jar">
-            <available file="${nbplatform.active.dir}/platform/core/asm-8.0.1.jar"/>
+        <condition property="asm.jar" value="${nbplatform.active.dir}/platform/core/asm-9.3.jar">
+            <available file="${nbplatform.active.dir}/platform/core/asm-9.3.jar"/>
         </condition>
-        <property name="asm.jar" location="${platform/libs.asm.dir}/core/asm-8.0.1.jar"/>
+        <property name="asm.jar" location="${platform/libs.asm.dir}/core/asm-9.3.jar"/>
         <property name="tsaurl" value=""/>
         <property name="tsacert" value=""/>
     </target>
@@ -524,6 +525,14 @@
             <isset property="run.bootclasspath.prepend"/>
         </condition>
         <property name="test.bootclasspath.prepend.args" value="-Dno.netbeans.bootclasspath.prepend.needed=true"/>
+        <condition property="test.insane.prepend.args"
+                   value="--patch-module=java.base=${netbeans.dest.dir}/${nb.cluster.harness.dir}/modules/ext/org-netbeans-insane-hook.jar --add-exports=java.base/org.netbeans.insane.hook=ALL-UNNAMED"
+                   else="-Xbootclasspath/p:${netbeans.dest.dir}/${nb.cluster.harness.dir}/modules/ext/org-netbeans-insane-hook.jar">
+            <or>
+                <isset property="have-jdk-1.9"/>
+                <isset property="test-have-jdk-1.9"/>
+            </or>
+        </condition>
         <macrodef name="test-init">
             <attribute name="test.type"/>
             <sequential>
@@ -534,7 +543,7 @@
                 <property name="build.test.@{test.type}.classes.dir" location="${build.test.@{test.type}.dir}/classes"/>
                 <property name="build.test.@{test.type}.results.dir" location="${build.test.@{test.type}.dir}/results"/>
                 <property name="build.test.@{test.type}.work.dir" location="${build.test.@{test.type}.dir}/work"/>
-                <property name="test-@{test.type}-sys-prop.cluster.path.final" value="${cluster.path.final}:${cluster}"/> <!-- #153178, 176019 -->
+                <property name="test-@{test.type}-sys-prop.cluster.path.final" value="${cluster.path.final}${path.separator}${cluster}"/> <!-- #153178, 176019 -->
                 <property name="test.@{test.type}.cp.extra" value=""/>
                 <path id="test.@{test.type}.cp">
                     <!-- Cannot use <path refid="cp"/> since that uses ${module.classpath} and we want ${module.run.classpath}: -->
@@ -739,7 +748,9 @@
                     <classpath refid="test.@{test.type}.run.cp"/>
                     <syspropertyset refid="test.@{test.type}.properties"/>
                     <jvmarg value="${test.bootclasspath.prepend.args}"/>
+                    <jvmarg line="${test.insane.prepend.args}"/>
                     <jvmarg line="${test.run.args}"/>
+                    <jvmarg line="${nbjdk.enable_security_manager}" />
                     <!--needed to have tests NOT to steal focus when running, works in latest apple jdk update only.-->
                     <sysproperty key="apple.awt.UIElement" value="@{disable.apple.ui}"/>
                     <formatter type="brief" usefile="false"/>
@@ -769,7 +780,9 @@
                     <propertyset refid="test.@{test.type}.properties"/>
                     <classpath refid="test.@{test.type}.run.cp"/>
                     <jvmarg value="${test.bootclasspath.prepend.args}"/>
+                    <jvmarg line="${test.insane.prepend.args}"/>
                     <jvmarg line="${test.run.args}"/>
+                    <jvmarg line="${nbjdk.enable_security_manager}" />
                     <!-- needed to have tests NOT to steal focus when running, works in latest apple jdk update only.-->
                     <sysproperty key="apple.awt.UIElement" value="@{disable.apple.ui}"/>
                 </testng>
@@ -840,8 +853,10 @@
                     <syspropertyset refid="test.@{test.type}.properties"/>
                     <jvmarg line="${test.run.args}"/>
                     <jvmarg value="${test.bootclasspath.prepend.args}"/>
+                    <jvmarg line="${test.insane.prepend.args}"/>
                     <jvmarg line="${run.args.ide}"/>
                     <jvmarg line="${run.jvmargs.ide}"/>
+                    <jvmarg line="${nbjdk.enable_security_manager}" />
                     <formatter type="brief" usefile="false"/>
                     <formatter type="xml"/>
                 </junit>
@@ -869,7 +884,9 @@
                     <propertyset refid="test.@{test.type}.properties"/>
                     <classpath refid="test.@{test.type}.run.cp"/>
                     <jvmarg value="${test.bootclasspath.prepend.args}"/>
+                    <jvmarg line="${test.insane.prepend.args}"/>
                     <jvmarg line="${test.run.args}"/>
+                    <jvmarg line="${nbjdk.enable_security_manager}" />
                     <!-- needed to have tests NOT to steal focus when running, works in latest apple jdk update only.-->
                     <sysproperty key="apple.awt.UIElement" value="@{disable.apple.ui}"/>
                 </testng>
@@ -897,7 +914,9 @@
                     <propertyset refid="test.@{test.type}.properties"/>
                     <classpath refid="test.@{test.type}.run.cp"/>
                     <jvmarg value="${test.bootclasspath.prepend.args}"/>
+                    <jvmarg line="${test.insane.prepend.args}"/>
                     <jvmarg line="${test.run.args}"/>
+                    <jvmarg line="${nbjdk.enable_security_manager}" />
                     <!-- needed to have tests NOT to steal focus when running, works in latest apple jdk update only.-->
                     <sysproperty key="apple.awt.UIElement" value="@{disable.apple.ui}"/>
                 </testng>
@@ -941,6 +960,7 @@
                 <java fork="true" classname="org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner" jvm="${test.nbjdk.java}">
                     <jvmarg value="-agentlib:jdwp=transport=dt_socket,address=${jpda.address}"/>
                     <jvmarg line="${test.run.args}"/>
+                    <jvmarg line="${nbjdk.enable_security_manager}" />
                     <classpath>
                         <path refid="test.@{test.type}.run.cp"/>
                         <fileset dir="${ant.home}" includes="patches/*.jar"/>
@@ -949,6 +969,7 @@
                         <pathelement location="${ant.home}/lib/ant-junit4.jar"/>
                     </classpath>
                     <jvmarg value="${test.bootclasspath.prepend.args}"/>
+                    <jvmarg line="${test.insane.prepend.args}"/>
                     <syspropertyset refid="test.@{test.type}.properties"/>
                     <arg value="${test.class}"/>
                     <arg value="showoutput=true"/>
@@ -975,7 +996,9 @@
                 <java classname="org.testng.TestNG" fork="true" jvm="${test.nbjdk.java}">
                     <jvmarg value="-agentlib:jdwp=transport=dt_socket,address=${jpda.address}"/>
                     <jvmarg line="${test.run.args}"/>
+                    <jvmarg line="${nbjdk.enable_security_manager}" />
                     <jvmarg value="${test.bootclasspath.prepend.args}"/>
+                    <jvmarg line="${test.insane.prepend.args}"/>
                     <classpath refid="test.@{test.type}.run.cp"/>
                     <syspropertyset refid="test.@{test.type}.properties"/>
                     <jvmarg value="-ea"/>
@@ -986,17 +1009,6 @@
                     <arg line="-testname ${test.class}"/>
                     <arg line="${testng.args.line}"/>
                 </java>
-                <!--
-                <taskdef name="testng" classname="org.testng.TestNGAntTask" classpathref="test.@{test.type}.run.cp"/>
-                <testng mode="mixed" methods="${testng.methods}" failureProperty="tests.failed" outputdir="${build.test.@{test.type}.results.dir}" workingDir="${build.test.@{test.type}.results.dir}">
-                    <classfileset dir="${build.test.@{test.type}.classes.dir}" excludes="${test.excludes}" includes="**/*Test.class"/>
-                    <propertyset refid="test.@{test.type}.properties"/>
-                    <classpath refid="test.@{test.type}.run.cp"/>
-                    <jvmarg value="${test.bootclasspath.prepend.args}"/>
-                    <jvmarg line="${test.run.args}"/>
-                    <jvmarg value="-agentlib:jdwp=transport=dt_socket,address=${jpda.address}"/>
-                </testng>
-                -->
             </sequential>
         </macrodef>
         <testng-impl test.type="${test.type}"/>
@@ -1020,7 +1032,9 @@
                     <propertyset refid="test.@{test.type}.properties"/>
                     <classpath refid="test.@{test.type}.run.cp"/>
                     <jvmarg value="${test.bootclasspath.prepend.args}"/>
+                    <jvmarg line="${test.insane.prepend.args}"/>
                     <jvmarg line="${test.run.args}"/>
+                    <jvmarg line="${nbjdk.enable_security_manager}" />
                     <jvmarg value="-agentlib:jdwp=transport=dt_socket,address=${jpda.address}"/>
                     <!-- needed to have tests NOT to steal focus when running, works in latest apple jdk update only.-->
                     <sysproperty key="apple.awt.UIElement" value="@{disable.apple.ui}"/>
@@ -1082,7 +1096,9 @@
                     <classpath refid="test.@{test.type}.run.cp"/>
                     <syspropertyset refid="test.@{test.type}.properties"/>
                     <jvmarg line="${test.run.args}"/>
+                    <jvmarg line="${nbjdk.enable_security_manager}" />
                     <jvmarg value="${test.bootclasspath.prepend.args}"/>
+                    <jvmarg line="${test.insane.prepend.args}"/>
                     <jvmarg line="${run.jvmargs.ide}"/>
                     <formatter type="brief" usefile="false"/>
                     <formatter type="xml"/>
@@ -1110,7 +1126,9 @@
                     <propertyset refid="test.@{test.type}.properties"/>
                     <classpath refid="test.@{test.type}.run.cp"/>
                     <jvmarg value="${test.bootclasspath.prepend.args}"/>
+                    <jvmarg line="${test.insane.prepend.args}"/>
                     <jvmarg line="${test.run.args}"/>
+                    <jvmarg line="${nbjdk.enable_security_manager}" />
                     <!-- needed to have tests NOT to steal focus when running, works in latest apple jdk update only.-->
                     <sysproperty key="apple.awt.UIElement" value="@{disable.apple.ui}"/>
                 </testng>
@@ -1132,6 +1150,7 @@
                     <classpath refid="test.@{test.type}.run.cp"/>
                     <syspropertyset refid="test.@{test.type}.properties"/>
                     <jvmarg line="${test.run.args}"/>
+                    <jvmarg line="${nbjdk.enable_security_manager}" />
                     <jvmarg line="${run.args.ide}"/>
                     <jvmarg line="${run.jvmargs.ide}"/>
                     <customize/>
@@ -1153,6 +1172,7 @@
                 <java fork="true" classname="${main.class}">
                     <jvmarg value="-agentlib:jdwp=transport=dt_socket,address=${jpda.address}"/>
                     <jvmarg line="${test.run.args}"/>
+                    <jvmarg line="${nbjdk.enable_security_manager}" />
                     <classpath refid="test.@{test.type}.run.cp"/>
                     <syspropertyset refid="test.@{test.type}.properties"/>
                     <customize/>
@@ -1232,8 +1252,10 @@
                     <test name="${profile.class}" todir="${build.test.@{test.type}.results.dir}"/>
                     <classpath refid="test.@{test.type}.run.cp"/>
                     <jvmarg value="${test.bootclasspath.prepend.args}"/>
+                    <jvmarg line="${test.insane.prepend.args}"/>
                     <syspropertyset refid="test.@{test.type}.properties"/>
                     <jvmarg line="${test.run.args}"/>
+                    <jvmarg line="${nbjdk.enable_security_manager}" />
                     <formatter type="brief" usefile="false"/>
                     <formatter type="xml"/>
                 </junit>
@@ -1341,7 +1363,6 @@
             <replace codenamebase="org.openide" addcompiletime="true" >
                 <module codenamebase="org.openide.filesystems" spec="6.2"/>
                 <module codenamebase="org.openide.util" spec="6.2"/>
-                <module codenamebase="org.openide.util.enumerations" spec="6.2"/>
                 <module codenamebase="org.openide.modules" spec="6.2"/>
                 <module codenamebase="org.openide.nodes" spec="6.2"/>
                 <module codenamebase="org.openide.explorer" spec="6.2"/>

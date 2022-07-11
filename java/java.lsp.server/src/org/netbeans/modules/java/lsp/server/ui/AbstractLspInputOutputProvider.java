@@ -20,6 +20,8 @@ package org.netbeans.modules.java.lsp.server.ui;
 
 import java.io.CharArrayReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.Writer;
@@ -56,12 +58,12 @@ public abstract class AbstractLspInputOutputProvider implements InputOutputProvi
 
     @Override
     public final PrintWriter getOut(LspIO io) {
-        return io.out;
+        return new PrintWriter(io.out);
     }
 
     @Override
     public final PrintWriter getErr(LspIO io) {
-        return io.err;
+        return new PrintWriter(io.err);
     }
 
     @Override
@@ -92,7 +94,7 @@ public abstract class AbstractLspInputOutputProvider implements InputOutputProvi
 
     @Override
     public final boolean isIOClosed(LspIO io) {
-        return false;
+        return io.isClosed();
     }
 
     @Override
@@ -131,24 +133,46 @@ public abstract class AbstractLspInputOutputProvider implements InputOutputProvi
         private final IOContext ctx;
         final Lookup lookup;
         final Reader in;
-        final PrintWriter out;
-        final PrintWriter err;
+        final LspWriter out;
+        final LspWriter err;
 
         LspIO(String name, IOContext ioCtx, Lookup lookup) {
             this.name = name;
             this.ctx = ioCtx;
             this.lookup = lookup;
-            this.out = new PrintWriter(new LspWriter(true));
-            this.err = new PrintWriter(new LspWriter(false));
-            this.in = new CharArrayReader(new char[0]) {
-                @Override
-                public void close() {
-                }
-            };
+            this.out = new LspWriter(true);
+            this.err = new LspWriter(false);
+            Reader in;
+            try {
+                InputStream is = ioCtx.getStdIn();
+                in = new InputStreamReader(is, "UTF-8") {
+                    @Override
+                    public void close() throws IOException {
+                        // the underlying StreamDecoder would just block on synchronized read(); close the underlying stream.
+                        is.close();
+                        super.close();
+                    }
+                };
+            } catch (IOException ex) {
+                try {
+                    err.write(ex.getLocalizedMessage());
+                } catch (IOException ioex) {}
+                in = new CharArrayReader(new char[0]) {
+                    @Override
+                    public void close() {
+                    }
+                };
+            }
+            this.in = in;
+        }
+
+        boolean isClosed() {
+            return out.closed && err.closed;
         }
 
         private final class LspWriter extends Writer {
             private final boolean stdIO;
+            volatile boolean closed;
 
             LspWriter(boolean stdIO) {
                 this.stdIO = stdIO;
@@ -170,6 +194,7 @@ public abstract class AbstractLspInputOutputProvider implements InputOutputProvi
 
             @Override
             public void close() throws IOException {
+                closed = true;
             }
         }
     }

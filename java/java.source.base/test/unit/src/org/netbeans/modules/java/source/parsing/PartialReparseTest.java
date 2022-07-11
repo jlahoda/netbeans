@@ -55,6 +55,7 @@ import org.netbeans.api.editor.mimelookup.test.MockMimeLookup;
 import org.netbeans.api.java.source.CompilationInfo;
 import org.netbeans.api.java.source.ElementHandle;
 import org.netbeans.api.java.source.SourceUtils;
+import org.netbeans.junit.RandomlyFails;
 import org.netbeans.modules.java.source.NoJavacHelper;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
@@ -100,6 +101,7 @@ public class PartialReparseTest extends NbTestCase {
                   "\n        System.err.println(2);");
     }
 
+    @RandomlyFails
     public void testIntroduceParseError1() throws Exception {
         doRunTest("package test;\n" +
                   "public class Test {\n" +
@@ -262,10 +264,6 @@ public class PartialReparseTest extends NbTestCase {
     }
 
     public void testDocComments() throws Exception {
-        if (NoJavacHelper.hasNbJavac()) {
-            //this test fails with nb-javac on coupling abort, skip
-            return ;
-        }
         doRunTest("package test;\n" +
                   "public class Test {\n" +
                   "        /**javadoc1*/" +
@@ -327,6 +325,19 @@ public class PartialReparseTest extends NbTestCase {
                   "    }" +
                   "}",
                   "System.err.println(2);");
+    }
+
+    public void testConstructorEnum3() throws Exception {
+        doRunTest("package test;\n" +
+                  "public enum E {\n" +
+                  "    A;\n" +
+                  "    E() {\n" +
+                  "        super();\n" +
+                  "        System.err.println(\"^^\");\n" +
+                  "    }" +
+                  "}",
+                  "a",
+                  info -> {});
     }
 
     private void doRunTest(String code, String inject) throws Exception {

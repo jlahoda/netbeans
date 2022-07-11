@@ -28,6 +28,8 @@ import com.sun.tools.javac.util.JCDiagnostic;
 import com.sun.tools.javac.util.Log;
 
 import java.io.IOException;
+import java.lang.ref.Reference;
+import java.lang.ref.SoftReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -42,6 +44,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.swing.text.Document;
 import javax.tools.Diagnostic;
@@ -84,13 +88,17 @@ public final class CompilationInfoImpl {
     final AbstractSourceFileObject jfo;
     //@NotThreadSafe    //accessed under parser lock
     private Snapshot snapshot;
+    private Reference<Snapshot> partialReparseLastGoodSnapshot;
     private final JavacParser parser;
     private final boolean isClassFile;
     private final boolean isDetached;
     JavaSource.Phase parserCrashed = JavaSource.Phase.UP_TO_DATE;      //When javac throws an error, the moveToPhase sets this to the last safe phase
     private final Map<CacheClearPolicy, Map<Object, Object>> userCache = new EnumMap<CacheClearPolicy, Map<Object, Object>>(CacheClearPolicy.class);
     //cache of already parsed files
-    private Map<String, CompilationUnitTree> parsedTrees;
+    private Map<JavaFileObject, CompilationUnitTree> parsedTrees;
+    private Map<FileObject, AbstractSourceFileObject> ide2javacFileObject;
+    private Map<FileObject, Snapshot> fileObject2Snapshot;
+    private boolean incomplete;
     
     /**
      * Creates a new CompilationInfoImpl for given source file
@@ -102,13 +110,15 @@ public final class CompilationInfoImpl {
      * @param detached true if the CompilationInfoImpl is detached from parsing infrastructure.
      * @throws java.io.IOException
      */
-    CompilationInfoImpl (final JavacParser parser,
+    public CompilationInfoImpl (final JavacParser parser,
                          final FileObject file,
                          final FileObject root,
                          final JavacTaskImpl javacTask,
                          final DiagnosticListener<JavaFileObject> diagnosticListener,
                          final Snapshot snapshot,
-                         final boolean detached) throws IOException {
+                         final boolean detached,
+                         final Map<FileObject, AbstractSourceFileObject> ide2javacFileObject,
+                         final Map<FileObject, Snapshot> fileObject2Snapshot) throws IOException {
         assert parser != null;
         this.parser = parser;
         this.cpInfo = parser.getClasspathInfo();
@@ -116,14 +126,35 @@ public final class CompilationInfoImpl {
         this.file = file;
         this.root = root;
         this.snapshot = snapshot;
+        this.partialReparseLastGoodSnapshot = new SoftReference<>(snapshot);
         assert file == null || snapshot != null;
-        this.jfo = file != null ?
-            FileObjects.sourceFileObject(file, root, JavaFileFilterQuery.getFilter(file), snapshot.getText()) :
-            null;
         this.javacTask = javacTask;
         this.diagnosticListener = diagnosticListener;
         this.isClassFile = false;
         this.isDetached = detached;
+        this.ide2javacFileObject = ide2javacFileObject;
+        this.fileObject2Snapshot = fileObject2Snapshot;
+        this.jfo = file != null ?
+            getSourceFileObject(file) :
+            null;
+    }
+
+    private AbstractSourceFileObject getSourceFileObject(FileObject file) throws IOException {
+        AbstractSourceFileObject result = ide2javacFileObject.get(file);
+
+        if (result == null) {
+            Snapshot snapshot = fileObject2Snapshot.get(file);
+
+            if (snapshot != null) {
+                result = FileObjects.sourceFileObject(file, root, JavaFileFilterQuery.getFilter(file), snapshot.getText());
+            } else {
+                result = FileObjects.sourceFileObject(file, root); //TODO: filter?
+            }
+
+            ide2javacFileObject.put(file, result);
+        }
+
+        return result;
     }
 
     /**
@@ -175,7 +206,16 @@ public final class CompilationInfoImpl {
     public Snapshot getSnapshot () {
         return this.snapshot;
     }
-    
+
+    public Snapshot getPartialReparseLastGoodSnapshot() {
+        return partialReparseLastGoodSnapshot != null ? partialReparseLastGoodSnapshot.get()
+                                                      : null;
+    }
+
+    public void setPartialReparseLastGoodSnapshot(Snapshot snapshot) {
+        this.partialReparseLastGoodSnapshot = new SoftReference<>(snapshot);
+    }
+
     /**
      * Returns the current phase of the {@link JavaSource}.
      * @return {@link JavaSource.Phase} the state which was reached by the {@link JavaSource}.
@@ -333,7 +373,7 @@ public final class CompilationInfoImpl {
         return null;
     }
 
-    public Map<String, CompilationUnitTree> getParsedTrees() {
+    public Map<JavaFileObject, CompilationUnitTree> getParsedTrees() {
         return this.parsedTrees;
     }
 
@@ -394,7 +434,12 @@ public final class CompilationInfoImpl {
      * @return JavacTaskImpl
      */
     public synchronized JavacTaskImpl getJavacTask() {
-        return getJavacTask(Collections.emptyList());
+        try {
+            return getJavacTask(Collections.emptyList());
+        } catch (IOException ex) {
+            //should not happen
+            throw new IllegalStateException(ex);
+        }
     }
 
     /**
@@ -402,13 +447,13 @@ public final class CompilationInfoImpl {
      * it's created.
      * @return JavacTaskImpl
      */
-    public synchronized JavacTaskImpl getJavacTask(List<FileObject> forcedSources) {
+    public synchronized JavacTaskImpl getJavacTask(List<FileObject> forcedSources) throws IOException {
         if (javacTask == null) {
             List<JavaFileObject> jfos = new ArrayList<>();
             if (jfo != null) {
                 jfos.add(jfo);
                 forcedSources.stream()
-                             .map(fo -> FileObjects.sourceFileObject(fo, root)) //TODO: filter?
+                             .map(fo -> runAndThrow(this::getSourceFileObject, fo))
                              .forEach(jfos::add);
             }
             diagnosticListener = new DiagnosticListenerImpl(this.root, this.jfo, this.cpInfo);
@@ -490,7 +535,7 @@ public final class CompilationInfoImpl {
         this.compilationUnit = compilationUnit;
     }
 
-    public void setParsedTrees(Map<String, CompilationUnitTree> parsedTrees) {
+    public void setParsedTrees(Map<JavaFileObject, CompilationUnitTree> parsedTrees) {
         this.parsedTrees = parsedTrees;
     }
 
@@ -498,15 +543,44 @@ public final class CompilationInfoImpl {
         return this.jfo != null && !isClassFile;
     }
 
-    List<JavaFileObject> parsedFiles;
-    void setParsedFiles(List<JavaFileObject> parsedFiles) {
-        this.parsedFiles = parsedFiles;
+    List<AbstractSourceFileObject> getFiles(List<FileObject> sourceFiles) throws IOException {
+        return sourceFiles.stream()
+                          .map(fo -> runAndThrow(this::getSourceFileObject, fo))
+                          .collect(Collectors.toList());
     }
 
-    List<JavaFileObject> getParsedFiles() {
-        return parsedFiles;
+    private <P, R> R runAndThrow(Convert<P, R> run, P p) {
+        try {
+            return run.run(p);
+        } catch (Exception ex) {
+            throw this.<RuntimeException>thrw(ex);
+        }
     }
-    
+
+    private <T extends Exception> RuntimeException thrw(Exception e) throws T {
+        throw (T) e;
+    }
+
+    interface Convert<P, R> {
+        public R run(P p) throws Exception;
+    }
+
+    public Map<FileObject, AbstractSourceFileObject> getIde2javacFileObject() {
+        return ide2javacFileObject;
+    }
+
+    public Map<FileObject, Snapshot> getFileObject2Snapshot() {
+        return fileObject2Snapshot;
+    }
+
+    public boolean isIncomplete() {
+        return incomplete;
+    }
+
+    public void markIncomplete() {
+        this.incomplete = true;
+    }
+
     // Innerclasses ------------------------------------------------------------
     @Trusted
     public static class DiagnosticListenerImpl implements DiagnosticListener<JavaFileObject> {

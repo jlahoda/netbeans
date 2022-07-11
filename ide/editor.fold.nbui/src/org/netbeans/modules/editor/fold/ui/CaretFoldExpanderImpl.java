@@ -54,12 +54,12 @@ public final class CaretFoldExpanderImpl extends CaretFoldExpander {
                     } else {
                         endOffset = offset;
                     }
-                    Iterator collapsedFoldIterator = FoldUtilities.collapsedFoldIterator(foldHierarchy, offset, endOffset);
+                    Iterator<Fold> collapsedFoldIterator = FoldUtilities.collapsedFoldIterator(foldHierarchy, offset, endOffset);
                     List<Fold> foldsToExpand;
                     Fold lastFold;
                     boolean lastFoldExpandAdded = false;
                     if (collapsedFoldIterator.hasNext()) {
-                        lastFold = (Fold) collapsedFoldIterator.next();
+                        lastFold = collapsedFoldIterator.next();
                         foldsToExpand = new ArrayList<>(2);
                     } else {
                         lastFold = null;
@@ -71,7 +71,7 @@ public final class CaretFoldExpanderImpl extends CaretFoldExpander {
                             if (offset >= lastFold.getEndOffset()) {
                                 // Fetch next fold
                                 if (collapsedFoldIterator.hasNext()) {
-                                    lastFold = (Fold) collapsedFoldIterator.next();
+                                    lastFold = collapsedFoldIterator.next();
                                     lastFoldExpandAdded = false;
                                 } else {
                                     break;
@@ -106,9 +106,9 @@ public final class CaretFoldExpanderImpl extends CaretFoldExpander {
         foldHierarchy.lock();
         try {
             int offset = c.viewToModel(p);
-            Iterator collapsedFoldIterator = FoldUtilities.collapsedFoldIterator(foldHierarchy, offset, offset);
+            Iterator<Fold> collapsedFoldIterator = FoldUtilities.collapsedFoldIterator(foldHierarchy, offset, offset);
             if (collapsedFoldIterator.hasNext()) {
-                Fold fold = (Fold) collapsedFoldIterator.next();
+                Fold fold = collapsedFoldIterator.next();
                 // Expand even if the offset is at fold's begining/end because that's what viewToModel() will return
                 if (offset >= fold.getStartOffset() && offset <= fold.getEndOffset()) {
                     foldHierarchy.expand(fold);

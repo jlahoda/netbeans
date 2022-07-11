@@ -28,7 +28,8 @@ import org.eclipse.lsp4j.InitializeParams;
  * an object:
  * <code><pre>
  * "nbcodeCapabilities" : {
- *      "statusBarMessageSupport"? : boolean
+ *      "statusBarMessageSupport"? : boolean,
+ *      "showHtmlPageSupport"? : boolean
  *      ...
  * }
  * </pre></code>
@@ -39,7 +40,7 @@ public final class NbCodeClientCapabilities {
      * The LSP client official capabilities.
      */
     private ClientCapabilities clientCaps;
-    
+
     /**
      * Supports status bar messages:
      * <ul>
@@ -47,7 +48,28 @@ public final class NbCodeClientCapabilities {
      * </ul>
      */
     private Boolean statusBarMessageSupport;
-    
+
+    /**
+     * Supports test results display:
+     * <ul>
+     * <li>window/notifyTestProgress
+     * </ul>
+     */
+    private Boolean testResultsSupport;
+
+    /**
+     * Support displaying HTML pages:
+     * <ul>
+     * <li>window/showHtmlPage
+     * </ul>
+     */
+    private Boolean showHtmlPageSupport;
+
+    /**
+     * Asks for groovy support. Temporary option, will be removed.
+     */
+    private Boolean wantsGroovySupport = Boolean.TRUE;
+
     public ClientCapabilities getClientCapabilities() {
         return clientCaps;
     }
@@ -63,7 +85,43 @@ public final class NbCodeClientCapabilities {
     public void setStatusBarMessageSupport(Boolean statusBarMessageSupport) {
         this.statusBarMessageSupport = statusBarMessageSupport;
     }
-    
+
+    public Boolean getTestResultsSupport() {
+        return testResultsSupport;
+    }
+
+    public boolean hasTestResultsSupport() {
+        return testResultsSupport != null && testResultsSupport.booleanValue();
+    }
+
+    public void setTestResultsSupport(Boolean testResultsSupport) {
+        this.testResultsSupport = testResultsSupport;
+    }
+
+    public Boolean getShowHtmlPageSupport() {
+        return showHtmlPageSupport;
+    }
+
+    public boolean hasShowHtmlPageSupport() {
+        return showHtmlPageSupport != null && showHtmlPageSupport.booleanValue();
+    }
+
+    public void setShowHtmlPageSupport(Boolean showHtmlPageSupport) {
+        this.showHtmlPageSupport = showHtmlPageSupport;
+    }
+
+    public Boolean getWantsGroovySupport() {
+        return wantsGroovySupport;
+    }
+
+    public void setWantGroovySupport(Boolean enableGroovy) {
+        this.wantsGroovySupport = enableGroovy == null ? Boolean.TRUE : enableGroovy;
+    }
+
+    public boolean wantsGroovySupport() {
+        return wantsGroovySupport.booleanValue();
+    }
+
     private NbCodeClientCapabilities withCapabilities(ClientCapabilities caps) {
         if (caps == null) {
             caps = new ClientCapabilities();
@@ -71,7 +129,7 @@ public final class NbCodeClientCapabilities {
         this.clientCaps = caps;
         return this;
     }
-    
+
     public static NbCodeClientCapabilities get(InitializeParams initParams) {
         if (initParams == null) {
             return null;
@@ -88,9 +146,16 @@ public final class NbCodeClientCapabilities {
                 create().
                 fromJson((JsonElement)ext, InitializationExtendedCapabilities.class);
         return root == null ? null : root.getNbcodeCapabilities().withCapabilities(initParams.getCapabilities());
-                
+
     }
-    
+
+    public static NbCodeClientCapabilities find(UIContext ui) {
+        if (ui instanceof WorkspaceUIContext) {
+            return ((WorkspaceUIContext) ui).getNbCodeCapabilities();
+        }
+        return null;
+    }
+
     static final class InitializationExtendedCapabilities {
         private NbCodeClientCapabilities nbcodeCapabilities;
 

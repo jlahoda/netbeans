@@ -843,6 +843,75 @@ public class RenameTest extends RefactoringTestBase {
 
     }
     
+    public void testRenameLocalVariable_1() throws Exception { // see NETBEANS-4274 
+        writeFilesAndWaitForScan(src,
+                new File("t/X.java", "package t;\n"
+                + "public class X {\n"
+                + "    private static int i;\n"
+                + "    public static void main(String[] args) {\n"
+                + "        X x = new X();\n"
+                + "        String newName = Integer.toString(x.i);\n"
+                + "    }\n"
+                + "}"));
+        JavaRenameProperties props = new JavaRenameProperties();
+        performRename(src.getFileObject("t/X.java"), 1, -1, "newName", props, true);
+        verifyContent(src,
+                new File("t/X.java", "package t;\n"
+                + "public class X {\n"
+                + "    private static int newName;\n"
+                + "    public static void main(String[] args) {\n"
+                + "        X x = new X();\n"
+                + "        String newName = Integer.toString(x.newName);\n"
+                + "    }\n"
+                + "}"));
+    }       
+    
+    public void testRenameLocalVariable_2() throws Exception { // see NETBEANS-4274 
+        writeFilesAndWaitForScan(src,
+                new File("t/X.java", "package t;\n"
+                + "public class X {\n"
+                + "    private int i;\n"
+                + "    public static void main(String[] args) {\n"
+                + "        X x = new X();\n"
+                + "        String newName = Integer.toString(x.i);\n"
+                + "    }\n"
+                + "}"));
+        JavaRenameProperties props = new JavaRenameProperties();
+        performRename(src.getFileObject("t/X.java"), 1, -1, "newName", props, true);
+        verifyContent(src,
+                new File("t/X.java", "package t;\n"
+                + "public class X {\n"
+                + "    private int newName;\n"
+                + "    public static void main(String[] args) {\n"
+                + "        X x = new X();\n"
+                + "        String newName = Integer.toString(x.newName);\n"
+                + "    }\n"
+                + "}"));
+    }      
+    
+    public void testRenameLocalVariable_3() throws Exception { // see NETBEANS-4274 
+        writeFilesAndWaitForScan(src,
+                new File("t/X.java", "package t;\n"
+                + "public class X {\n"
+                + "    private static int i;\n"
+                + "    public static void main(String[] args) {\n"
+                + "        X x = new X();\n"
+                + "        String newName = Integer.toString(i);\n"
+                + "    }\n"
+                + "}"));
+        JavaRenameProperties props = new JavaRenameProperties();
+        performRename(src.getFileObject("t/X.java"), 1, -1, "newName", props, true);
+        verifyContent(src,
+                new File("t/X.java", "package t;\n"
+                + "public class X {\n"
+                + "    private static int newName;\n"
+                + "    public static void main(String[] args) {\n"
+                + "        X x = new X();\n"
+                + "        String newName = Integer.toString(X.newName);\n"
+                + "    }\n"
+                + "}"));
+    }      
+    
     public void test253063() throws Exception {
         writeFilesAndWaitForScan(src,
                 new File("t/A.java", "package t;\n"
@@ -1483,6 +1552,27 @@ public class RenameTest extends RefactoringTestBase {
 
     }
 
+    public void testRenameBindingVariableType() throws Exception {
+        if (!typeTestPatternAvailable()) return; //only run the test when javac supports it
+        writeFilesAndWaitForScan(src,
+                new File("t/A.java", "package t;\n"
+                + "public class A {\n"
+                + "    public boolean taragui(Object o) {\n"
+                + "        return o instanceof A a && a.toString() != null;\n"
+                + "    }\n"
+                + "}"));
+        JavaRenameProperties props = new JavaRenameProperties();
+        performRename(src.getFileObject("t/A.java"), 25, "B", props, true);
+        verifyContent(src,
+                new File("t/A.java", "package t;\n"
+                + "public class B {\n"
+                + "    public boolean taragui(Object o) {\n"
+                + "        return o instanceof B a && a.toString() != null;\n"
+                + "    }\n"
+                + "}"));
+
+    }
+
     private void performRename(FileObject source, final int position, final int position2, final String newname, final JavaRenameProperties props, final boolean searchInComments, Problem... expectedProblems) throws Exception {
         final RenameRefactoring[] r = new RenameRefactoring[1];
         JavaSource.forFileObject(source).runUserActionTask(new Task<CompilationController>() {
@@ -1556,5 +1646,15 @@ public class RenameTest extends RefactoringTestBase {
         }
 
         assertProblems(Arrays.asList(expectedProblems), problems);
+    }
+
+    private boolean typeTestPatternAvailable() {
+        try {
+            Class.forName("com.sun.source.tree.BindingPatternTree", false, Tree.class.getClassLoader()).getDeclaredMethod("getVariable");
+            return true;
+        } catch (ClassNotFoundException | NoSuchMethodException | SecurityException ex) {
+            //OK
+            return false;
+        }
     }
 }

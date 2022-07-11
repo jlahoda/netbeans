@@ -86,7 +86,7 @@ public class MavenAssemblyGrammar extends AbstractSchemaBasedGrammar {
                     scope = "runtime"; //NOI18N
                 }
                 scope = scope.trim();
-                Iterator it;
+                Iterator<Dependency> it;
                 if ("runtime".equals(scope)) { //NOI18N
                     it = project.getRuntimeDependencies().iterator();
                 } else if ("test".equals(scope)) { //NOI18N
@@ -98,7 +98,7 @@ public class MavenAssemblyGrammar extends AbstractSchemaBasedGrammar {
                     it = project.getRuntimeDependencies().iterator();
                 }
                 while (it.hasNext()) {
-                    Dependency elem = (Dependency) it.next();
+                    Dependency elem = it.next();
                     String str = elem.getGroupId() + ":" + elem.getArtifactId(); //NOI18N
                     if (str.startsWith(virtualTextCtx.getCurrentPrefix())) {
                         toRet.add(new MyTextElement(str, virtualTextCtx.getCurrentPrefix()));

@@ -217,6 +217,62 @@ public class ImplementAbstractMethodsHintErrorTest extends PHPHintsTestBase {
         applyHint(new ImplementAbstractMethodsHintError(), "testMixedTypeImplementMethod01.php", "class Chil^d implements MixedType {", "Implement");
     }
 
+    public void testNetbeans5370() throws Exception {
+        checkHints(new ImplementAbstractMethodsHintError(), "testNetbeans5370.php");
+    }
+
+    public void testNetbeans5370Fix_01() throws Exception {
+        applyHint(new ImplementAbstractMethodsHintError(), "testNetbeans5370.php", "class Test^Class1 extends TestAbstractClass", "Implement");
+    }
+
+    public void testNetbeans5370Fix_02() throws Exception {
+        applyHint(new ImplementAbstractMethodsHintError(), "testNetbeans5370.php", "class TestCl^ass2 implements TestInterface", "Implement");
+    }
+
+    public void testIntersectionTypes_01() throws Exception {
+        checkHints(new ImplementAbstractMethodsHintError(), "testIntersectionTypesImplementMethod01.php");
+    }
+
+    public void testIntersectionTypes_02() throws Exception {
+        checkHints(new ImplementAbstractMethodsHintError(), "testIntersectionTypesImplementMethod02.php");
+    }
+
+    public void testIntersectionTypes_03() throws Exception {
+        checkHints(new ImplementAbstractMethodsHintError(), "testIntersectionTypesImplementMethod03.php");
+    }
+
+    public void testIntersectionTypes_04() throws Exception {
+        checkHints(new ImplementAbstractMethodsHintError(), "testIntersectionTypesImplementMethod04.php");
+    }
+
+    public void testIntersectionTypesFix_01() throws Exception {
+        applyHint(new ImplementAbstractMethodsHintError(), "testIntersectionTypesImplementMethod01.php", "class Impleme^nt", "Implement");
+    }
+
+    public void testIntersectionTypesFix_02() throws Exception {
+        applyHint(new ImplementAbstractMethodsHintError(), "testIntersectionTypesImplementMethod02.php", "class Impleme^nt", "Implement");
+    }
+
+    public void testIntersectionTypesFix_03() throws Exception {
+        applyHint(new ImplementAbstractMethodsHintError(), "testIntersectionTypesImplementMethod03.php", "class Impleme^nt", "Implement");
+    }
+
+    public void testIntersectionTypesFix_04() throws Exception {
+        applyHint(new ImplementAbstractMethodsHintError(), "testIntersectionTypesImplementMethod04.php", "class Impleme^nt extends ImplementMethodTest {", "Implement");
+    }
+
+    public void testEnumerations_01() throws Exception {
+        checkHints(new ImplementAbstractMethodsHintError(), "testEnumerations_01.php");
+    }
+
+    public void testEnumerationssFix_01() throws Exception {
+        applyHint(new ImplementAbstractMethodsHintError(), "testEnumerations_01.php", "enum Test^Enum implements TestEnumInterface {", "Implement");
+    }
+
+    public void testEnumerationssFix_02() throws Exception {
+        applyHint(new ImplementAbstractMethodsHintError(), "testEnumerations_01.php", "enum TestEnumWith^Trait {", "Implement");
+    }
+
     //~ Inner classes
     private static final class ImplementAbstractMethodsHintErrorStub extends ImplementAbstractMethodsHintError {
 

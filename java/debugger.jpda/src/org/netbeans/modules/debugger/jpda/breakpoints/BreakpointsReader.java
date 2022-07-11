@@ -105,10 +105,9 @@ public class BreakpointsReader implements Properties.Reader, PropertyChangeListe
         // Read both LineBreakpoint and LineBreakpoint$LineBreakpointImpl
         if (typeID.equals (LineBreakpoint.class.getName ()) ||
                 typeID.equals (LineBreakpoint.class.getName ()+"$LineBreakpointImpl")) {
-            LineBreakpoint lb = LineBreakpoint.create (
-                properties.getString (LineBreakpoint.PROP_URL, null),
-                properties.getInt (LineBreakpoint.PROP_LINE_NUMBER, 1)
-            );
+            LineBreakpoint lb = LineBreakpoint.create ("", 0);
+            lb.setURL(properties.getString (LineBreakpoint.PROP_URL, null));
+            lb.setLineNumber(properties.getInt (LineBreakpoint.PROP_LINE_NUMBER, 1));
             lb.setCondition (
                 properties.getString (LineBreakpoint.PROP_CONDITION, "")
             );
@@ -325,20 +324,14 @@ public class BreakpointsReader implements Properties.Reader, PropertyChangeListe
             if (tgp != null) {
                 FileObject fo = tgp.getFileObject();
                 if (fo != null) {
-                    try {
-                        URL url = fo.getURL();
-                        fileURL = url.toExternalForm();
-                    } catch (FileStateInvalidException ex) {
-                    }
+                    URL url = fo.toURL();
+                    fileURL = url.toExternalForm();
                 }
                 Project project = tgp.getProject();
                 if (project != null) {
                     fo = project.getProjectDirectory();
-                    try {
-                        URL url = fo.getURL();
+                        URL url = fo.toURL();
                         projectURL = url.toExternalForm();
-                    } catch (FileStateInvalidException ex) {
-                    }
                 }
                 type = tgp.getType();
             }

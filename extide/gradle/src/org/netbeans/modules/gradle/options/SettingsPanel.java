@@ -28,6 +28,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ItemEvent;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import javax.swing.ButtonModel;
@@ -44,10 +45,10 @@ import org.netbeans.modules.gradle.api.execute.GradleDistributionManager;
 import org.netbeans.modules.gradle.api.execute.GradleDistributionManager.GradleDistribution;
 import org.openide.LifecycleManager;
 import org.openide.awt.NotificationDisplayer;
-import org.openide.util.Exceptions;
 import org.openide.util.ImageUtilities;
 import org.openide.util.NbBundle;
 import org.openide.util.NbBundle.Messages;
+
 
 /**
  *
@@ -59,9 +60,9 @@ public class SettingsPanel extends javax.swing.JPanel {
     @StaticResource
     private static final String RESTART_ICON = "org/netbeans/modules/gradle/resources/restart.png"; //NOI18
 
-    private final static String[] CARDS = {"Execution", "Appearance", "Dependencies", "Experimental"}; //NOI18N
+    private static final String[] CARDS = {"Execution", "Appearance", "Dependencies", "Experimental"}; //NOI18N
 
-    private GradleDistributionManager gdm = GradleDistributionManager.get(GradleSettings.getDefault().getGradleUserHome());
+    private GradleDistributionManager gdm = GradleDistributionManager.get();
 
     /**
      * Creates new form SettingsPanel
@@ -112,8 +113,9 @@ public class SettingsPanel extends javax.swing.JPanel {
         cbOffline = new javax.swing.JCheckBox();
         cbSkipTest = new javax.swing.JCheckBox();
         cbSkipCheck = new javax.swing.JCheckBox();
-        cbNoRebuild = new javax.swing.JCheckBox();
+        cbUseConfigCache = new javax.swing.JCheckBox();
         cbConfigureOnDemand = new javax.swing.JCheckBox();
+        cbNoRebuild = new javax.swing.JCheckBox();
         lbAllowExecution = new javax.swing.JLabel();
         cbAllowExecution = new javax.swing.JComboBox<>();
         cbPreferMaven = new javax.swing.JCheckBox();
@@ -136,6 +138,7 @@ public class SettingsPanel extends javax.swing.JPanel {
         jLabel1 = new javax.swing.JLabel();
         cbEnableCache = new javax.swing.JCheckBox();
         cbOpenLazy = new javax.swing.JCheckBox();
+        cbBundledLoading = new javax.swing.JCheckBox();
 
         setPreferredSize(new java.awt.Dimension(723, 417));
         setLayout(new java.awt.BorderLayout());
@@ -275,10 +278,10 @@ public class SettingsPanel extends javax.swing.JPanel {
                                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                             .addGroup(jPanel1Layout.createSequentialGroup()
                                                 .addGap(231, 231, 231)
-                                                .addComponent(lbVersionInfo, javax.swing.GroupLayout.DEFAULT_SIZE, 59, Short.MAX_VALUE))
+                                                .addComponent(lbVersionInfo, javax.swing.GroupLayout.DEFAULT_SIZE, 109, Short.MAX_VALUE))
                                             .addComponent(rbUseStandardGradle, javax.swing.GroupLayout.PREFERRED_SIZE, 235, javax.swing.GroupLayout.PREFERRED_SIZE))
                                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                        .addComponent(cbGradleVersion, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                        .addComponent(cbGradleVersion, 0, 122, Short.MAX_VALUE))
                                     .addGroup(jPanel1Layout.createSequentialGroup()
                                         .addComponent(rbUseCustomGradle)
                                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -343,9 +346,13 @@ public class SettingsPanel extends javax.swing.JPanel {
 
         org.openide.awt.Mnemonics.setLocalizedText(cbSkipCheck, org.openide.util.NbBundle.getMessage(SettingsPanel.class, "SettingsPanel.cbSkipCheck.text")); // NOI18N
 
-        org.openide.awt.Mnemonics.setLocalizedText(cbNoRebuild, org.openide.util.NbBundle.getMessage(SettingsPanel.class, "SettingsPanel.cbNoRebuild.text")); // NOI18N
+        org.openide.awt.Mnemonics.setLocalizedText(cbUseConfigCache, org.openide.util.NbBundle.getMessage(SettingsPanel.class, "SettingsPanel.cbUseConfigCache.text")); // NOI18N
+        cbUseConfigCache.setToolTipText(org.openide.util.NbBundle.getMessage(SettingsPanel.class, "SettingsPanel.cbUseConfigCache.toolTipText")); // NOI18N
 
         org.openide.awt.Mnemonics.setLocalizedText(cbConfigureOnDemand, org.openide.util.NbBundle.getMessage(SettingsPanel.class, "SettingsPanel.cbConfigureOnDemand.text")); // NOI18N
+
+        org.openide.awt.Mnemonics.setLocalizedText(cbNoRebuild, org.openide.util.NbBundle.getMessage(SettingsPanel.class, "SettingsPanel.cbNoRebuild.text")); // NOI18N
+        cbNoRebuild.setToolTipText(org.openide.util.NbBundle.getMessage(SettingsPanel.class, "SettingsPanel.cbNoRebuild.toolTipText")); // NOI18N
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -354,17 +361,15 @@ public class SettingsPanel extends javax.swing.JPanel {
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addComponent(cbConfigureOnDemand)
-                        .addGap(0, 0, Short.MAX_VALUE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(cbOffline)
-                            .addComponent(cbNoRebuild))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 82, Short.MAX_VALUE)
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(cbSkipCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(cbSkipTest, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                    .addComponent(cbOffline)
+                    .addComponent(cbConfigureOnDemand)
+                    .addComponent(cbNoRebuild))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(cbUseConfigCache)
+                    .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                        .addComponent(cbSkipCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(cbSkipTest, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         jPanel2Layout.setVerticalGroup(
@@ -379,7 +384,9 @@ public class SettingsPanel extends javax.swing.JPanel {
                     .addComponent(cbSkipTest)
                     .addComponent(cbNoRebuild))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(cbConfigureOnDemand)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(cbConfigureOnDemand)
+                    .addComponent(cbUseConfigCache))
                 .addGap(72, 72, 72))
         );
 
@@ -576,6 +583,9 @@ public class SettingsPanel extends javax.swing.JPanel {
         org.openide.awt.Mnemonics.setLocalizedText(cbOpenLazy, org.openide.util.NbBundle.getMessage(SettingsPanel.class, "SettingsPanel.cbOpenLazy.text")); // NOI18N
         cbOpenLazy.setToolTipText(org.openide.util.NbBundle.getMessage(SettingsPanel.class, "SettingsPanel.cbOpenLazy.toolTipText")); // NOI18N
 
+        org.openide.awt.Mnemonics.setLocalizedText(cbBundledLoading, org.openide.util.NbBundle.getMessage(SettingsPanel.class, "SettingsPanel.cbBundledLoading.text")); // NOI18N
+        cbBundledLoading.setToolTipText(org.openide.util.NbBundle.getMessage(SettingsPanel.class, "SettingsPanel.cbBundledLoading.toolTipText")); // NOI18N
+
         javax.swing.GroupLayout pnlExperimentalLayout = new javax.swing.GroupLayout(pnlExperimental);
         pnlExperimental.setLayout(pnlExperimentalLayout);
         pnlExperimentalLayout.setHorizontalGroup(
@@ -588,7 +598,8 @@ public class SettingsPanel extends javax.swing.JPanel {
                         .addGap(6, 6, 6)
                         .addGroup(pnlExperimentalLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(cbOpenLazy)
-                            .addComponent(cbEnableCache))))
+                            .addComponent(cbEnableCache)
+                            .addComponent(cbBundledLoading))))
                 .addContainerGap(423, Short.MAX_VALUE))
         );
         pnlExperimentalLayout.setVerticalGroup(
@@ -600,7 +611,9 @@ public class SettingsPanel extends javax.swing.JPanel {
                 .addComponent(cbEnableCache)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(cbOpenLazy)
-                .addContainerGap(362, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(cbBundledLoading)
+                .addContainerGap(334, Short.MAX_VALUE))
         );
 
         pnlCards.add(pnlExperimental, "Experimental");
@@ -709,8 +722,9 @@ public class SettingsPanel extends javax.swing.JPanel {
         cbSilentInstall.setSelected(settings.isSilentInstall());
 
         cbOffline.setSelected(settings.isOffline());
-        cbConfigureOnDemand.setSelected(settings.isConfigureOnDemand());
         cbNoRebuild.setSelected(settings.getNoRebuild());
+        cbConfigureOnDemand.setSelected(settings.isConfigureOnDemand());
+        cbUseConfigCache.setSelected(settings.getUseConfigCache());
 
         cbSkipCheck.setSelected(settings.skipCheck());
         cbSkipTest.setSelected(settings.skipTest());
@@ -723,6 +737,7 @@ public class SettingsPanel extends javax.swing.JPanel {
 
         cbEnableCache.setSelected(!experimental.isCacheDisabled());
         cbOpenLazy.setSelected(experimental.isOpenLazy());
+        cbBundledLoading.setSelected(experimental.isBundledLoading());
 
         cbPreferMaven.setSelected(settings.isPreferMaven());
 
@@ -736,19 +751,24 @@ public class SettingsPanel extends javax.swing.JPanel {
 
             @Override
             protected List<GradleDistribution> doInBackground() throws Exception {
-                return gdm.availableDistributions(true);
+                try {
+                    return gdm.availableDistributions(true);
+                } catch (IOException ex) {
+                    return gdm.availableLocalDistributions();
+                }
             }
 
             @Override
             protected void done() {
+                GradleDistribution[] items = new GradleDistribution[0];
                 try {
-                    GradleDistribution[] items = get().toArray(new GradleDistribution[0]);
-                    ComboBoxModel<GradleDistribution> model = new DefaultComboBoxModel<>(items);
-                    cbGradleVersion.setModel(model);
-                    model.setSelectedItem(gdm.distributionFromVersion(settings.getGradleVersion()));
+                    items = get().toArray(new GradleDistribution[0]);
                 } catch (InterruptedException | ExecutionException ex) {
-                    Exceptions.printStackTrace(ex);
+                    // Something happened, let's have the combo list box empty;
                 }
+                ComboBoxModel<GradleDistribution> model = new DefaultComboBoxModel<>(items);
+                cbGradleVersion.setModel(model);
+                model.setSelectedItem(gdm.distributionFromVersion(settings.getGradleVersion()));
             }
 
         }.execute();
@@ -767,7 +787,10 @@ public class SettingsPanel extends javax.swing.JPanel {
         } else {
             settings.setGradleUserHome(new File(tfGradleUserHome.getText()));
         }
-        settings.setGradleVersion(((GradleDistribution) cbGradleVersion.getSelectedItem()).getVersion());
+        GradleDistribution distVersion = (GradleDistribution) cbGradleVersion.getSelectedItem();
+        if (distVersion != null) {
+            settings.setGradleVersion(distVersion.getVersion());
+        }
         settings.setDistributionHome(tfUseCustomGradle.getText());
         settings.setWrapperPreferred(cbPreferWrapper.isSelected());
         boolean useCustomGradle = bgUsedDistribution.getSelection() == rbUseCustomGradle.getModel();
@@ -777,8 +800,9 @@ public class SettingsPanel extends javax.swing.JPanel {
         settings.setSilentInstall(cbSilentInstall.isSelected());
 
         settings.setOffline(cbOffline.isSelected());
-        settings.setConfigureOnDemand(cbConfigureOnDemand.isSelected());
         settings.setNoRebuild(cbNoRebuild.isSelected());
+        settings.setConfigureOnDemand(cbConfigureOnDemand.isSelected());
+        settings.setUseConfigCache(cbUseConfigCache.isSelected());
         settings.setSkipCheck(cbSkipCheck.isSelected());
         settings.setSkipTest(cbSkipTest.isSelected());
         settings.setHideEmptyConfigurations(cbHideEmptyConfig.isSelected());
@@ -789,6 +813,7 @@ public class SettingsPanel extends javax.swing.JPanel {
 
         experimental.setCacheDisabled(!cbEnableCache.isSelected());
         experimental.setOpenLazy(cbOpenLazy.isSelected());
+        experimental.setBundledLoading(cbBundledLoading.isSelected());
 
         settings.setDownloadLibs((GradleSettings.DownloadLibsRule) cbDownloadLibs.getSelectedItem());
         settings.setDownloadSources((GradleSettings.DownloadMiscRule) cbDownloadSources.getSelectedItem());
@@ -822,7 +847,7 @@ public class SettingsPanel extends javax.swing.JPanel {
 
         isChanged |= settings.isOffline() != cbOffline.isSelected();
         isChanged |= settings.isConfigureOnDemand() != cbConfigureOnDemand.isSelected();
-        isChanged |= settings.getNoRebuild() != cbNoRebuild.isSelected();
+        isChanged |= settings.getUseConfigCache() != cbUseConfigCache.isSelected();
         isChanged |= settings.skipCheck() != cbSkipCheck.isSelected();
         isChanged |= settings.skipTest() != cbSkipTest.isSelected();
 
@@ -835,6 +860,7 @@ public class SettingsPanel extends javax.swing.JPanel {
 
         isChanged |= experimental.isCacheDisabled() == cbEnableCache.isSelected();
         isChanged |= experimental.isOpenLazy() != cbOpenLazy.isSelected();
+        isChanged |= experimental.isBundledLoading() != cbBundledLoading.isSelected();
 
         isChanged |= settings.isPreferMaven() != cbPreferMaven.isSelected();
 
@@ -886,10 +912,6 @@ public class SettingsPanel extends javax.swing.JPanel {
 
     }
 
-    private static String getRawGradleUserHome() {
-        return GradleSettings.getDefault().getPreferences().get(GradleSettings.PROP_GRADLE_USER_HOME, null);
-    }
-
     private static String getDefaultGradleUserHome() {
         String dir = System.getenv("GRADLE_USER_HOME"); //NOI18N
         return dir != null ? dir : new File(System.getProperty("user.home"), ".gradle").getAbsolutePath(); //NOI18N
@@ -902,6 +924,7 @@ public class SettingsPanel extends javax.swing.JPanel {
     private javax.swing.JButton btUseCustomGradle;
     private javax.swing.JComboBox<GradleSettings.GradleExecutionRule> cbAllowExecution;
     private javax.swing.JCheckBox cbAlwaysShowOutput;
+    private javax.swing.JCheckBox cbBundledLoading;
     private javax.swing.JCheckBox cbConfigureOnDemand;
     private javax.swing.JCheckBox cbDisplayDescription;
     private javax.swing.JComboBox<GradleSettings.DownloadMiscRule> cbDownloadJavadoc;
@@ -921,6 +944,7 @@ public class SettingsPanel extends javax.swing.JPanel {
     private javax.swing.JCheckBox cbSkipCheck;
     private javax.swing.JCheckBox cbSkipTest;
     private javax.swing.JCheckBox cbStartDaemonOnStart;
+    private javax.swing.JCheckBox cbUseConfigCache;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;

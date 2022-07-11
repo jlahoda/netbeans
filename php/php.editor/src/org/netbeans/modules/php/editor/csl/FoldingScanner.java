@@ -33,6 +33,7 @@ import org.netbeans.api.lexer.TokenSequence;
 import org.netbeans.editor.BaseDocument;
 import org.netbeans.modules.csl.api.OffsetRange;
 import org.netbeans.modules.csl.spi.ParserResult;
+import org.netbeans.modules.csl.spi.support.CancelSupport;
 import org.netbeans.modules.parsing.api.Source;
 import org.netbeans.modules.php.editor.lexer.LexUtilities;
 import org.netbeans.modules.php.editor.lexer.PHPTokenId;
@@ -50,6 +51,7 @@ import org.netbeans.modules.php.editor.parser.api.Utils;
 import org.netbeans.modules.php.editor.parser.astnodes.ASTError;
 import org.netbeans.modules.php.editor.parser.astnodes.ASTNode;
 import org.netbeans.modules.php.editor.parser.astnodes.ArrayCreation;
+import org.netbeans.modules.php.editor.parser.astnodes.Attribute;
 import org.netbeans.modules.php.editor.parser.astnodes.CatchClause;
 import org.netbeans.modules.php.editor.parser.astnodes.Comment;
 import org.netbeans.modules.php.editor.parser.astnodes.DoStatement;
@@ -130,7 +132,15 @@ public final class FoldingScanner {
             new FoldTemplate(0, 0, "...") // NOI18N
     );
 
+    @NbBundle.Messages("FT_Attributes=Attributes")
+    public static final FoldType TYPE_ATTRIBUTES = FoldType.MEMBER.derive(
+            "attribute", // NOI18N
+            Bundle.FT_Attributes(),
+            new FoldTemplate(0, 0, "#[...]") // NOI18N
+    );
+
     private static final String LAST_CORRECT_FOLDING_PROPERTY = "LAST_CORRECT_FOLDING_PROPERY"; //NOI18N
+    private static final boolean FOLD_PHPTAG = !Boolean.getBoolean("nb.php.editor.doNotFoldPhptag"); // NOI18N NETBEANS-5480
 
     public static FoldingScanner create() {
         return new FoldingScanner();
@@ -170,7 +180,9 @@ public final class FoldingScanner {
             Source source = phpParseResult.getSnapshot().getSource();
             assert source != null : "source was null";
             Document doc = source.getDocument(false);
-            processPHPTags(folds, doc);
+            if (FOLD_PHPTAG) {
+                processPHPTags(folds, doc);
+            }
             setFoldingProperty(doc, folds);
             return folds;
         }
@@ -349,6 +361,7 @@ public final class FoldingScanner {
     }
 
     private class FoldingVisitor extends DefaultVisitor {
+
         private final Map<String, List<OffsetRange>> folds;
 
         public FoldingVisitor(final Map<String, List<OffsetRange>> folds) {
@@ -357,6 +370,9 @@ public final class FoldingScanner {
 
         @Override
         public void visit(IfStatement node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
             super.visit(node);
             if (node.getTrueStatement() != null) {
                 addFold(node.getTrueStatement());
@@ -368,6 +384,9 @@ public final class FoldingScanner {
 
         @Override
         public void visit(UseTraitStatement node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
             super.visit(node);
             if (node.getBody() != null) {
                 addFold(node.getBody());
@@ -376,6 +395,9 @@ public final class FoldingScanner {
 
         @Override
         public void visit(ForEachStatement node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
             super.visit(node);
             if (node.getStatement() != null) {
                 addFold(node.getStatement());
@@ -384,6 +406,9 @@ public final class FoldingScanner {
 
         @Override
         public void visit(ForStatement node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
             super.visit(node);
             if (node.getBody() != null) {
                 addFold(node.getBody());
@@ -392,6 +417,9 @@ public final class FoldingScanner {
 
         @Override
         public void visit(WhileStatement node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
             super.visit(node);
             if (node.getBody() != null) {
                 addFold(node.getBody());
@@ -400,6 +428,9 @@ public final class FoldingScanner {
 
         @Override
         public void visit(DoStatement node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
             super.visit(node);
             if (node.getBody() != null) {
                 addFold(node.getBody());
@@ -408,6 +439,9 @@ public final class FoldingScanner {
 
         @Override
         public void visit(SwitchStatement node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
             super.visit(node);
             if (node.getBody() != null) {
                 addFold(node.getBody());
@@ -416,6 +450,9 @@ public final class FoldingScanner {
 
         @Override
         public void visit(SwitchCase node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
             super.visit(node);
             List<Statement> actions = node.getActions();
             if (!actions.isEmpty()) {
@@ -434,6 +471,9 @@ public final class FoldingScanner {
 
         @Override
         public void visit(MatchExpression node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
             // NETBEANS-4443 PHP 8.0
             super.visit(node);
             addFold(node.getBlockRange());
@@ -441,6 +481,9 @@ public final class FoldingScanner {
 
         @Override
         public void visit(TryStatement node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
             super.visit(node);
             if (node.getBody() != null) {
                 addFold(node.getBody());
@@ -449,6 +492,9 @@ public final class FoldingScanner {
 
         @Override
         public void visit(CatchClause node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
             super.visit(node);
             if (node.getBody() != null) {
                 addFold(node.getBody());
@@ -457,6 +503,9 @@ public final class FoldingScanner {
 
         @Override
         public void visit(FinallyClause node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
             super.visit(node);
             if (node.getBody() != null) {
                 addFold(node.getBody());
@@ -465,6 +514,9 @@ public final class FoldingScanner {
 
         @Override
         public void visit(ArrayCreation node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
             super.visit(node);
             ArrayCreation.Type type = node.getType();
             if (type == ArrayCreation.Type.NEW) {
@@ -472,6 +524,17 @@ public final class FoldingScanner {
             } else {
                 addFold(new OffsetRange(node.getStartOffset() + "array".length(), node.getEndOffset()), TYPE_ARRAY); // NOI18N
             }
+        }
+
+        @Override
+        public void visit(Attribute node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
+            if (node != null) {
+                addFold(node, TYPE_ATTRIBUTES);
+            }
+            super.visit(node);
         }
 
         private void addFold(final ASTNode node) {
