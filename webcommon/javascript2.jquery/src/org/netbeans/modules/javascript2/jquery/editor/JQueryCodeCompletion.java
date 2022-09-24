@@ -68,7 +68,8 @@ public class JQueryCodeCompletion implements CompletionProvider {
     private static Collection<HtmlTagAttribute> allAttributes;
 
     private int lastTsOffset = 0;
-    
+
+    @SuppressWarnings("fallthrough")
     public List<CompletionProposal> complete(CodeCompletionContext ccContext, CompletionContext jsCompletionContext, String prefix) {
         long start = System.currentTimeMillis();
         List<CompletionProposal> result = new ArrayList<CompletionProposal>();
@@ -250,7 +251,7 @@ public class JQueryCodeCompletion implements CompletionProvider {
         }
     }
 
-    private synchronized static Map<String, Collection<PropertyNameDataItem>> getPropertyNameData() {
+    private static synchronized Map<String, Collection<PropertyNameDataItem>> getPropertyNameData() {
         return PropertyNameDataLoader.getData(getPropertyNameDataFile());
     }
     

@@ -40,8 +40,6 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
-import javax.lang.model.type.MirroredTypeException;
-import javax.lang.model.type.MirroredTypesException;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
@@ -54,7 +52,6 @@ import org.netbeans.spi.debugger.DebuggerServiceRegistration;
 import org.netbeans.spi.debugger.DebuggerServiceRegistrations;
 import org.netbeans.spi.debugger.SessionProvider;
 import org.openide.filesystems.annotations.LayerBuilder;
-import org.openide.filesystems.annotations.LayerBuilder.File;
 import org.openide.filesystems.annotations.LayerGeneratingProcessor;
 import org.openide.filesystems.annotations.LayerGenerationException;
 import org.openide.util.lookup.ServiceProvider;
@@ -64,12 +61,12 @@ import org.openide.util.lookup.ServiceProvider;
  * @author Martin Entlicher
  */
 @ServiceProvider(service=Processor.class)
-@SupportedSourceVersion(SourceVersion.RELEASE_7)
 public class DebuggerProcessor extends LayerGeneratingProcessor {
 
     public @Override Set<String> getSupportedAnnotationTypes() {
         return new HashSet<String>(Arrays.asList(
             ActionsProvider.Registration.class.getCanonicalName(),
+            ActionsProvider.Registrations.class.getCanonicalName(),
             DebuggerEngineProvider.Registration.class.getCanonicalName(),
             SessionProvider.Registration.class.getCanonicalName(),
             LazyActionsManagerListener.Registration.class.getCanonicalName(),
@@ -351,7 +348,7 @@ public class DebuggerProcessor extends LayerGeneratingProcessor {
     }
 
     private boolean implementsInterfaces(Element e, String classNames) {
-        Set<String> interfaces = new HashSet(Arrays.asList(classNames.split("[, ]+")));
+        Set<String> interfaces = new HashSet<>(Arrays.asList(classNames.split("[, ]+")));
         return implementsInterfaces(e, interfaces);
     }
 

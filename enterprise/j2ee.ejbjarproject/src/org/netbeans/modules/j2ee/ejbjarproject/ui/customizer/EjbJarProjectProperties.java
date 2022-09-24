@@ -58,7 +58,6 @@ import org.netbeans.spi.project.support.ant.PropertyEvaluator;
 import org.openide.util.MutexException;
 import org.openide.util.Mutex;
 import org.netbeans.api.project.ProjectManager;
-import org.netbeans.modules.j2ee.common.SharabilityUtility;
 import org.netbeans.modules.java.api.common.classpath.ClassPathSupport;
 import org.netbeans.modules.java.api.common.project.ui.ClassPathUiSupport;
 import org.netbeans.modules.javaee.project.api.ant.DeployOnSaveUtils;
@@ -98,7 +97,7 @@ import org.openide.util.Parameters;
  * @author Chris Webster
  * @author Andrei Badea
  */
-final public class EjbJarProjectProperties {
+public final class EjbJarProjectProperties {
     
     // Special properties of the project
     public static final String EJB_PROJECT_NAME = "j2ee.ejbjarproject.name"; // NOI18N
@@ -323,12 +322,17 @@ final public class EjbJarProjectProperties {
         PLATFORM_LIST_RENDERER = PlatformUiSupport.createPlatformListCellRenderer();
         SpecificationVersion minimalSourceLevel = null;
         Profile profile = Profile.fromPropertiesString(evaluator.getProperty(J2EE_PLATFORM));
-        if (Profile.JAVA_EE_6_FULL.equals(profile)) {
+
+        if (Profile.JAKARTA_EE_9_1_FULL.equals(profile)) {
+            minimalSourceLevel = new SpecificationVersion("11");
+        } else if (Profile.JAKARTA_EE_9_FULL.equals(profile) || Profile.JAKARTA_EE_8_FULL.equals(profile) || Profile.JAVA_EE_8_FULL.equals(profile)) {
+            minimalSourceLevel = new SpecificationVersion("1.8");
+        } else if (Profile.JAVA_EE_7_FULL.equals(profile)) {
+            minimalSourceLevel = new SpecificationVersion("1.7");
+        } else if (Profile.JAVA_EE_6_FULL.equals(profile)) {
             minimalSourceLevel = new SpecificationVersion("1.6");
         } else if (Profile.JAVA_EE_5.equals(profile)) {
             minimalSourceLevel = new SpecificationVersion("1.5");
-        } else if (Profile.JAVA_EE_7_FULL.equals(profile)) {
-            minimalSourceLevel = new SpecificationVersion("1.7");
         }
         JAVAC_SOURCE_MODEL = PlatformUiSupport.createSourceLevelComboBoxModel (PLATFORM_MODEL, evaluator.getProperty(JAVAC_SOURCE), evaluator.getProperty(JAVAC_TARGET), minimalSourceLevel);
         JAVAC_SOURCE_RENDERER = PlatformUiSupport.createSourceLevelListCellRenderer ();
@@ -564,7 +568,7 @@ final public class EjbJarProjectProperties {
             Deployment.getDefault().disableCompileOnSaveSupport(project.getEjbModule());
         }
         
-        String value = (String)additionalProperties.get(SOURCE_ENCODING);
+        String value = additionalProperties.get(SOURCE_ENCODING);
         if (value != null) {
             try {
                 FileEncodingQuery.setDefaultEncoding(Charset.forName(value));
@@ -574,8 +578,9 @@ final public class EjbJarProjectProperties {
         }
     }
     
-    /** Finds out what are new and removed project dependencies and 
-     * applyes the info to the project
+    /** 
+     * Finds out what are new and removed project dependencies and 
+     * applies the info to the project
      */   
     private void resolveProjectDependenciesNew() {
             
@@ -603,8 +608,8 @@ final public class EjbJarProjectProperties {
         
         // 1. first remove all project references. The method will modify
         // project property files, so it must be done separately
-        for( Iterator it = removed.iterator(); it.hasNext(); ) {
-            ClassPathSupport.Item item = (ClassPathSupport.Item)it.next();
+        for (Iterator<ClassPathSupport.Item> it = removed.iterator(); it.hasNext(); ) {
+            ClassPathSupport.Item item = it.next();
             if ( item.getType() == ClassPathSupport.Item.TYPE_ARTIFACT ||
                     item.getType() == ClassPathSupport.Item.TYPE_JAR ) {
                 refHelper.destroyReference(item.getReference());
@@ -618,8 +623,8 @@ final public class EjbJarProjectProperties {
         EditableProperties ep = updateHelper.getProperties( AntProjectHelper.PROJECT_PROPERTIES_PATH );
         boolean changed = false;
         
-        for( Iterator it = removed.iterator(); it.hasNext(); ) {
-            ClassPathSupport.Item item = (ClassPathSupport.Item)it.next();
+        for (Iterator<ClassPathSupport.Item> it = removed.iterator(); it.hasNext(); ) {
+            ClassPathSupport.Item item = it.next();
             if (item.getType() == ClassPathSupport.Item.TYPE_LIBRARY) {
                 // remove helper property pointing to library jar if there is any
                 String prop = item.getReference();

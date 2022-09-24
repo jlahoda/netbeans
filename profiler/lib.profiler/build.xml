@@ -24,13 +24,35 @@
     <import file="../../nbbuild/templates/projectized.xml"/>
 
     <property name="profiler.cluster" value="./release"/>
+    <property name="header.dir" value="${basedir}/native/build"/>
     <target name="-process.release.files">
-        <unzip src="external/profiler-external-binaries-8.2.zip" dest="${profiler.cluster}"/>
+        <!-- CDDL licensed binaries, from the Oracle days -->
+        <unzip src="external/profiler-external-binaries-8.2.zip" 
+               overwrite="false"
+               dest="${profiler.cluster}"/>
+        <!-- AL2 licensed binaries, build from ASF code (overwrites CDDL binaries) -->
+        <unzip src="external/profiler-external-binaries-ASF-5273a10f9471d5cf60ed894dc26ec0e59e71cc24.zip"
+               overwrite="true"
+               dest="${profiler.cluster}"/>
     </target>
 
   <!-- Compile the JFluid engine system library, that depends on JDK version - so there are two libraries -->
   <!-- Compile the engine system library -->
     <target name="compile-system" depends="init">
+        <mkdir dir="${jvmstat.classes.dir}"/>
+        <copy todir="${jvmstat.classes.dir}">
+            <resources>
+                <javaresource name="sun/jvmstat/monitor/HostIdentifier.class"/>
+                <javaresource name="sun/jvmstat/monitor/MonitorException.class"/>
+                <javaresource name="sun/jvmstat/monitor/MonitoredHost.class"/>
+                <javaresource name="sun/jvmstat/monitor/MonitoredVm.class"/>
+                <javaresource name="sun/jvmstat/monitor/MonitoredVmUtil.class"/>
+                <javaresource name="sun/jvmstat/monitor/VmIdentifier.class"/>
+
+                <javaresource name="sun/management/ThreadInfoCompositeData.class"/>
+                <javaresource name="sun/management/LazyCompositeData.class"/>
+            </resources>
+        </copy>
         <mkdir dir="${build15.classes.dir}"/>
         <fail message="javac.source of lib.profiler classes should be as low as possible!">
             <condition>
@@ -46,6 +68,7 @@
                 deprecation="${build.compiler.deprecation}" optimize="${build.compiler.optimize}" source="${javac.source}" target="${javac.target}" includeantruntime="false">
             <include name="org/netbeans/lib/profiler/server/system/**"/>
             <compilerarg line="${javac.compilerargs}"/>
+            <compilerarg line="-h &quot;${header.dir}&quot;"/>
         </javac>
         <mkdir dir="${buildcvm.classes.dir}"/>
         <javac  srcdir="${srccvm.dir}" destdir="${buildcvm.classes.dir}" deprecation="${build.compiler.deprecation}"
@@ -60,6 +83,7 @@
             <include name="org/netbeans/lib/profiler/global/**"/>
             <include name="org/netbeans/lib/profiler/wireprotocol/**"/>
             <compilerarg line="${javac.compilerargs}"/>
+            <compilerarg line="-h &quot;${header.dir}&quot;"/>
         </javac>
     </target>
 

@@ -134,7 +134,7 @@ public class ExeLauncher extends CommonLauncher {
                     testJVMClass);
             
             // add java compatibility properties number
-            addNumber(fos, new Long("" + compatibleJava.size()).longValue());
+            addNumber(fos, Long.parseLong("" + compatibleJava.size()));
             addJavaCompatibleProperties(fos);
             
             //add overall bundled number and size
@@ -325,7 +325,7 @@ public class ExeLauncher extends CommonLauncher {
     private void addData(FileOutputStream fos, String [] strings, boolean isUnicode) throws IOException {
         
         if(strings!=null) {
-            addNumber(fos, new Integer(strings.length).longValue()); // number of array elements
+            addNumber(fos, Integer.valueOf(strings.length).longValue()); // number of array elements
             for(String s: strings) {
                 addData(fos, s, isUnicode);
             }

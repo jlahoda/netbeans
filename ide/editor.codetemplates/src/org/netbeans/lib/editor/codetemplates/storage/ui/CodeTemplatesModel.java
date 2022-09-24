@@ -67,9 +67,7 @@ final class CodeTemplatesModel {
         columns.add(loc("Expanded_Text_Title")); //NOI18N
         columns.add(loc("Description_Title")); //NOI18N
 
-        Set mimeTypes = EditorSettings.getDefault().getAllMimeTypes();
-        for(Iterator i = mimeTypes.iterator(); i.hasNext(); ) {
-            String mimeType = (String) i.next();
+        for (String mimeType : EditorSettings.getDefault().getAllMimeTypes()) {
             
             // Load the code templates
             MimePath mimePath = MimePath.parse(mimeType);
@@ -94,8 +92,9 @@ final class CodeTemplatesModel {
             
             // Load the table
             List<Vector<String>> table = new ArrayList<Vector<String>>();
-            for(String abbreviation : abbreviationsMap.keySet()) {
-                CodeTemplateDescription ctd = abbreviationsMap.get(abbreviation);
+            for(Map.Entry<String, CodeTemplateDescription> entry : abbreviationsMap.entrySet()) {
+                String abbreviation = entry.getKey();
+                CodeTemplateDescription ctd = entry.getValue();
                 Vector<String> line =  new Vector<String>(3);
                 line.add(abbreviation);
                 if (LOG.isLoggable(Level.FINER)) {
@@ -135,8 +134,9 @@ final class CodeTemplatesModel {
     }
     
     String findLanguage(String mimeType) {
-        for(String lang : languageToMimeType.keySet()) {
-            String mt = languageToMimeType.get(lang);
+        for(Map.Entry<String, String> entry : languageToMimeType.entrySet()) {
+            String lang = entry.getKey();
+            String mt = entry.getValue();
             if (mt.equals(mimeType)) {
                 return lang;
             }
@@ -154,8 +154,9 @@ final class CodeTemplatesModel {
     
     void saveChanges () {
         // Save modified code templates
-        for(String language : languageToModel.keySet()) {
-            TM tableModel = languageToModel.get(language);
+        for(Map.Entry<String, TM> entry : languageToModel.entrySet()) {
+            String language = entry.getKey();
+            TM tableModel = entry.getValue();
             
             if (!tableModel.isModified()) {
                 continue;
@@ -170,7 +171,7 @@ final class CodeTemplatesModel {
                     abbreviation,
                     tableModel.getDescription(idx),
                     tableModel.getText(idx),
-                    new ArrayList(tableModel.getContexts(idx)),
+                    new ArrayList<String>(tableModel.getContexts(idx)),
                     tableModel.getUniqueId(idx),
                     mimeType
                 );
@@ -203,8 +204,7 @@ final class CodeTemplatesModel {
             return true;
         }
 
-        for(String l : languageToModel.keySet()) {
-            TM tableModel = languageToModel.get(l);
+        for(TM tableModel : languageToModel.values()) {
             if (tableModel.isModified()) {
                 return true;
             }
@@ -308,9 +308,9 @@ final class CodeTemplatesModel {
             if (ret == null) {
                 CodeTemplateDescription ctd = codeTemplatesMap.get(abbreviation);
                 final boolean[] afterInit = {false};
-                ret = new LinkedHashSet() {
+                ret = new LinkedHashSet<String>() {
                     @Override
-                    public boolean add(Object e) {
+                    public boolean add(String e) {
                         boolean b = super.add(e);
                         if (b && afterInit[0]) {
                             TM.this.fireChanged();
@@ -367,7 +367,7 @@ final class CodeTemplatesModel {
                         abbreviation,
                         getDescription(idx),
                         getText(idx),
-                        new ArrayList(getContexts(idx)),
+                        new ArrayList<String>(getContexts(idx)),
                         getUniqueId(idx),
                         mimeType
                 );

@@ -39,24 +39,24 @@ import org.netbeans.modules.xml.spi.dom.*;
 class DTDGrammar implements ExtendedGrammarQuery {
     
     // element name keyed
-    private Map elementDecls, attrDecls;
+    private Map<String, Set>  elementDecls, attrDecls;
     
     // Map<elementName:String, model:String || model:ContentModel || null>
     // this map is filled asynchronously as it takes some time
     private Map contentModels;
     
     // Map<elementname + " " + attributename, List<String>>
-    private Map attrEnumerations;
+    private Map<String, List> attrEnumerations;
     
     // Map<elementname + " " + attributename, String>
-    private Map defaultAttributeValues;
+    private Map<String, String> defaultAttributeValues;
     
-    private Set entities, notations;
+    private Set<String> entities, notations;
 
     /** Set&lt;elementName:String> holding all emenets with <code>EMPTY</code> content model.*/
     private Set emptyElements;
 
-    private List/*<String>*/ resolvedEntities;
+    private List<String> resolvedEntities;
     
     /** Creates new DTDGrammar */
     DTDGrammar(Map elementDecls, Map contentModels, Map attrDecls, Map attrDefs, Map enums, Set entities, Set notations, Set emptyElements) {
@@ -85,10 +85,10 @@ class DTDGrammar implements ExtendedGrammarQuery {
     public Enumeration queryEntities(String prefix) {
         if (entities == null) return org.openide.util.Enumerations.empty();
         
-        LinkedList list = new LinkedList();
-        Iterator it = entities.iterator();
+        List<MyEntityReference> list = new LinkedList<>();
+        Iterator<String> it = entities.iterator();
         while ( it.hasNext()) {
-            String next = (String) it.next();
+            String next = it.next();
             if (next.startsWith(prefix)) {
                 list.add (new MyEntityReference(next));
             }
@@ -138,15 +138,15 @@ class DTDGrammar implements ExtendedGrammarQuery {
         
         NamedNodeMap existingAttributes = el.getAttributes();        
         
-        Set possibleAttributes = (Set) attrDecls.get(el.getTagName());
+        Set<String> possibleAttributes = (Set<String>) attrDecls.get(el.getTagName());
         if (possibleAttributes == null) return org.openide.util.Enumerations.empty();
         
         String prefix = ctx.getCurrentPrefix();
         
-        LinkedList list = new LinkedList ();
-        Iterator it = possibleAttributes.iterator();
+        List<MyAttr> list = new LinkedList<>();
+        Iterator<String> it = possibleAttributes.iterator();
         while ( it.hasNext()) {
-            String next = (String) it.next();
+            String next = it.next();
             if (next.startsWith(prefix)) {
                 if (existingAttributes.getNamedItem(next) == null ||
                         next.equals(currentAttrName)) {
@@ -171,7 +171,7 @@ class DTDGrammar implements ExtendedGrammarQuery {
         if (elementDecls == null) return org.openide.util.Enumerations.empty();;
         
         Node node = ((Node)ctx).getParentNode();        
-        Set elements = null;
+        Set<String> elements = null;
         
         if (node instanceof Element) {
             Element el = (Element) node;
@@ -192,10 +192,10 @@ class DTDGrammar implements ExtendedGrammarQuery {
                 contentModels.put(el.getTagName(), model);
             }
             if (model instanceof ContentModel) {
-                Enumeration en = ((ContentModel)model).whatCanFollow(new PreviousEnumeration(el, ctx));
+                Enumeration<String> en = ((ContentModel)model).whatCanFollow(new PreviousEnumeration(el, ctx));
                 if (en == null) return org.openide.util.Enumerations.empty();
                 String prefix = ctx.getCurrentPrefix();
-                elements = new TreeSet();
+                elements = new TreeSet<>();
                 while (en.hasMoreElements()) {
                     String next = (String) en.nextElement();
                     if (next.startsWith(prefix)) {
@@ -205,7 +205,7 @@ class DTDGrammar implements ExtendedGrammarQuery {
             }
             // simple fallback
             if (elements == null) {
-                elements = (Set) elementDecls.get(el.getTagName());
+                elements = elementDecls.get(el.getTagName());
             }
         } else if (node instanceof Document) {
             elements = elementDecls.keySet();  //??? should be one from DOCTYPE if exist
@@ -216,10 +216,10 @@ class DTDGrammar implements ExtendedGrammarQuery {
         if (elements == null) return org.openide.util.Enumerations.empty();;
         String prefix = ctx.getCurrentPrefix();
         
-        LinkedList list = new LinkedList ();
-        Iterator it = elements.iterator();
+        List<MyElement> list = new LinkedList<>();
+        Iterator<String> it = elements.iterator();
         while ( it.hasNext()) {
-            String next = (String) it.next();
+            String next = it.next();
             if (next.startsWith(prefix)) {
                 boolean empty = emptyElements.contains(next);
                 list.add(new MyElement(next, empty));
@@ -236,10 +236,10 @@ class DTDGrammar implements ExtendedGrammarQuery {
     public Enumeration queryNotations(String prefix) {
         if (notations == null) return org.openide.util.Enumerations.empty();;
         
-        LinkedList list = new LinkedList ();
-        Iterator it = notations.iterator();
+        List<MyNotation> list = new LinkedList<>();
+        Iterator<String> it = notations.iterator();
         while ( it.hasNext()) {
-            String next = (String) it.next();
+            String next = it.next();
             if (next.startsWith(prefix)) {
                 list.add (new MyNotation(next));
             }
@@ -267,14 +267,14 @@ class DTDGrammar implements ExtendedGrammarQuery {
             
             String elementName = element.getNodeName();
             String key = elementName + " " + attributeName;
-            List values = (List) attrEnumerations.get(key);
+            List values = attrEnumerations.get(key);
             if (values == null) return org.openide.util.Enumerations.empty();
             
             String prefix = ctx.getCurrentPrefix();
-            LinkedList en = new LinkedList ();
-            Iterator it = values.iterator();
+            List<MyText> en = new LinkedList<>();
+            Iterator<String> it = values.iterator();
             while (it.hasNext()) {
-                String next = (String) it.next();
+                String next = it.next();
                 if (next.startsWith(prefix)) {
                     en.add(new MyText(next, next));
                 }
@@ -302,7 +302,7 @@ class DTDGrammar implements ExtendedGrammarQuery {
             String elementName = element.getNodeName();
             String attributeName = attr.getNodeName();
             String key = elementName + " " + attributeName;                 // NOI18N
-            String def = (String) defaultAttributeValues.get(key);
+            String def = defaultAttributeValues.get(key);
             if (def == null) return null;
             return new MyText(def, def);
         }
@@ -401,7 +401,7 @@ class DTDGrammar implements ExtendedGrammarQuery {
     // Result classes ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     
     
-    private static abstract class AbstractResultNode extends AbstractNode implements GrammarResult {
+    private abstract static class AbstractResultNode extends AbstractNode implements GrammarResult {
         
         public Icon getIcon(int kind) {
             return null;

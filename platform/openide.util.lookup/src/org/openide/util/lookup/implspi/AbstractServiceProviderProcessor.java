@@ -27,6 +27,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.lang.annotation.Annotation;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,6 +40,8 @@ import java.util.WeakHashMap;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Filer;
 import javax.annotation.processing.RoundEnvironment;
+import javax.annotation.processing.SupportedSourceVersion;
+import javax.lang.model.SourceVersion;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
@@ -54,7 +57,12 @@ import javax.tools.StandardLocation;
 
 /**
  * Infrastructure for generating {@code META-INF/services/*} and
- * {@code META-INF/namedservices/*} registrations from annotations.
+ * {@code META-INF/namedservices/*} registrations from annotations. From version
+ * 8.40, it is not necessary (and is not recommended) to declare
+ * @{@link SupportedSourceVersion} on subclasses: the default implementation
+ * declares support for {@link SourceVersion#latest()}. Declare specific
+ * {@link SourceVersion} limits only when necessary.
+ *
  * @since 8.1
  */
 public abstract class AbstractServiceProviderProcessor extends AbstractProcessor {
@@ -207,7 +215,7 @@ public abstract class AbstractServiceProviderProcessor extends AbstractProcessor
                     FileObject in = filer.getResource(StandardLocation.CLASS_OUTPUT, "", rsrc);
                     InputStream is = in.openInputStream();
                     try {
-                        ServiceLoaderLine.parse(new InputStreamReader(is, "UTF-8"), lines); // NOI18N
+                        ServiceLoaderLine.parse(new InputStreamReader(is, StandardCharsets.UTF_8), lines);
                     } finally {
                         is.close();
                     }
@@ -293,7 +301,7 @@ public abstract class AbstractServiceProviderProcessor extends AbstractProcessor
                             originatingElementsByProcessor.get(filer).get(entry.getKey()).toArray(new Element[0]));
                     OutputStream os = out.openOutputStream();
                     try {
-                        PrintWriter w = new PrintWriter(new OutputStreamWriter(os, "UTF-8"));
+                        PrintWriter w = new PrintWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8));
                         for (ServiceLoaderLine line : entry.getValue()) {
                             line.write(w);
                         }
@@ -315,4 +323,20 @@ public abstract class AbstractServiceProviderProcessor extends AbstractProcessor
         register((Element) el, annotation, type, path, position, supersedes);
     }
 
+    /**
+     * If the subclass itself does not define SupportedSourceVersion, assume latest(). If it does
+     * (was recommended prior to 8.40), returns the subclass' value.
+     * @return max supported source version.
+     * @since 8.40
+     */
+    @Override
+    public SourceVersion getSupportedSourceVersion() {
+        SupportedSourceVersion ssv = this.getClass().getAnnotation(SupportedSourceVersion.class);
+        SourceVersion sv;
+        if (ssv == null) {
+            sv = SourceVersion.latest();
+        } else
+            sv = ssv.value();
+        return sv;
+    }
 }

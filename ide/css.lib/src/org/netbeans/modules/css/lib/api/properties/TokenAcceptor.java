@@ -59,7 +59,9 @@ public abstract class TokenAcceptor {
         ACCEPTORS.add(new Decibel("decibel"));
         ACCEPTORS.add(new RelativeLength("relative-length"));
         ACCEPTORS.add(new Uri("uri"));
-        ACCEPTORS.add(new Anything("anything")); 
+        ACCEPTORS.add(new Anything("anything"));
+        ACCEPTORS.add(new Urange("urange"));
+        ACCEPTORS.add(new Flex("flex"));
         
         ACCEPTORS.add(new GenericFunctionContent("function-content")); 
         
@@ -310,7 +312,7 @@ public abstract class TokenAcceptor {
             Float f = super.getNumberValue(image);
             if(f == null) {
                 if(image.length() > 0 && image.charAt(0) == '0') {
-                    f = new Float(0);
+                    f = 0F;
                 }
             } 
             return f;
@@ -449,6 +451,20 @@ public abstract class TokenAcceptor {
         }
     }
 
+    public static class Flex extends NumberPostfixAcceptor {
+
+        private static final List<String> POSTFIXES = Collections.singletonList("fr"); //NOI18N
+
+        public Flex(String id) {
+            super(id);
+        }
+
+        @Override
+        protected List<String> postfixes() {
+            return POSTFIXES;
+        }
+    }
+
     public static class StringAcceptor extends TokenImageAcceptor {
 
         public StringAcceptor(String id) {
@@ -490,7 +506,7 @@ public abstract class TokenAcceptor {
         
     }
 
-    public static abstract class TokenImageAcceptor extends TokenAcceptor {
+    public abstract static class TokenImageAcceptor extends TokenAcceptor {
 
         public TokenImageAcceptor(String id) {
             super(id);
@@ -525,7 +541,27 @@ public abstract class TokenAcceptor {
         }
         
     }
-    
+
+    public static class Urange extends TokenAcceptor {
+
+        private static final String URANGE_TOKEN_IMAGE = "U+";
+
+        public Urange(String id) {
+            super(id);
+        }
+
+        @Override
+        public boolean accepts(Token token) {
+            return token.tokenId() == CssTokenId.URANGE;
+        }
+
+        @Override
+        Collection<String> getFixedImageTokens() {
+            return Collections.singleton(URANGE_TOKEN_IMAGE);
+        }
+
+    }
+
     private static class GenericFunctionContent extends TokenAcceptor {
 
         public GenericFunctionContent(String id) {

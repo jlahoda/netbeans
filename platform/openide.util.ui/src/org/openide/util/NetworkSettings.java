@@ -109,6 +109,7 @@ public final class NetworkSettings {
      * @return the key for reading password for Proxy Authentication from the ring or <code>null</code>
      * @deprecated use {@link #getAuthenticationPassword(java.net.URI)} instead
      */
+    @Deprecated
     public static String getKeyForAuthenticationPassword(URI u) {
         ProxyCredentialsProvider provider = Lookup.getDefault().lookup(ProxyCredentialsProvider.class);
         if (provider == null) {
@@ -159,7 +160,7 @@ public final class NetworkSettings {
      * @author Jiri Rechtacek, Ondrej Vrabec
      * @since 8.17
      */
-    public static abstract class ProxyCredentialsProvider {
+    public abstract static class ProxyCredentialsProvider {
 
         /** Returns the <code>username</code> for Proxy Authentication.
          * Returns <code>null</code> if no authentication required.

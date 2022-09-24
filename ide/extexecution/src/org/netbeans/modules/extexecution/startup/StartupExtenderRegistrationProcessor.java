@@ -22,8 +22,6 @@ import java.util.Set;
 import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
-import javax.annotation.processing.SupportedSourceVersion;
-import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import org.netbeans.api.extexecution.startup.StartupExtender.StartMode;
@@ -39,7 +37,6 @@ import org.openide.util.lookup.ServiceProvider;
  */
 @SupportedAnnotationTypes("org.netbeans.spi.extexecution.startup.StartupExtenderImplementation.Registration")
 @ServiceProvider(service = Processor.class)
-@SupportedSourceVersion(SourceVersion.RELEASE_7)
 public class StartupExtenderRegistrationProcessor extends LayerGeneratingProcessor {
 
     public static final String PATH = "StartupExtender"; // NOI18N
@@ -47,6 +44,8 @@ public class StartupExtenderRegistrationProcessor extends LayerGeneratingProcess
     public static final String DELEGATE_ATTRIBUTE = "delegate"; // NOI18N
 
     public static final String START_MODE_ATTRIBUTE = "startMode"; // NOI18N
+    
+    public static final String QUOTED_ATTRIBUTE = "argumentsQuoted"; // NOI18N
 
     @Override
     protected boolean handleProcess(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) throws LayerGenerationException {
@@ -71,8 +70,9 @@ public class StartupExtenderRegistrationProcessor extends LayerGeneratingProcess
             File f = layer(element).instanceFile(PATH, null)
                     .instanceAttribute(DELEGATE_ATTRIBUTE, StartupExtenderImplementation.class, annotation, null)
                     .stringvalue(START_MODE_ATTRIBUTE, builder.toString())
+                    .boolvalue(QUOTED_ATTRIBUTE, annotation.argumentsQuoted())
                     .bundlevalue("displayName", element.getAnnotation(StartupExtenderImplementation.Registration.class).displayName()) // NOI18N
-                    .methodvalue("instanceCreate", "org.netbeans.spi.extexecution.startup.StartupExtender", "createProxy") // NOI18N
+                    .methodvalue("instanceCreate", "org.netbeans.spi.extexecution.startup.StartupExtender", "createProxy2") // NOI18N
                     .position(element.getAnnotation(StartupExtenderImplementation.Registration.class).position()); // NOI18N
             f.write();
         }

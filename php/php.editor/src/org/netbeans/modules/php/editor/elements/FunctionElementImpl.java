@@ -47,6 +47,7 @@ import org.openide.util.Parameters;
  * @author Radek Matous
  */
 public final class FunctionElementImpl extends FullyQualifiedElementImpl implements FunctionElement {
+
     public static final String IDX_FIELD = PHPIndexer.FIELD_BASE;
     private final BaseFunctionElementSupport functionSupport;
 
@@ -70,7 +71,7 @@ public final class FunctionElementImpl extends FullyQualifiedElementImpl impleme
     public static Set<FunctionElement> fromSignature(
             final NameKind query, final IndexQueryImpl indexQuery, final IndexResult indexResult) {
         String[] values = indexResult.getValues(IDX_FIELD);
-        Set<FunctionElement> retval = values.length > 0 ? new HashSet<FunctionElement>() : Collections.<FunctionElement>emptySet();
+        Set<FunctionElement> retval = values.length > 0 ? new HashSet<>() : Collections.<FunctionElement>emptySet();
         for (String val : values) {
             final FunctionElement fnc = fromSignature(query, indexQuery, Signature.get(val));
             if (fnc != null) {
@@ -101,7 +102,7 @@ public final class FunctionElementImpl extends FullyQualifiedElementImpl impleme
         return new FunctionElementImpl(
                 fullyQualifiedName.append(info.getName()), info.getRange().getStart(),
                 fileQuery.getURL().toExternalForm(), fileQuery, BaseFunctionElementSupport.ParametersImpl.create(info.getParameters()),
-                BaseFunctionElementSupport.ReturnTypesImpl.create(TypeResolverImpl.parseTypes(VariousUtils.getReturnType(fileQuery.getResult().getProgram(), node))),
+                BaseFunctionElementSupport.ReturnTypesImpl.create(TypeResolverImpl.parseTypes(VariousUtils.getReturnType(fileQuery.getResult().getProgram(), node)), node.getReturnType()),
                 VariousUtils.isDeprecatedFromPHPDoc(fileQuery.getResult().getProgram(), node));
     }
 
@@ -128,24 +129,26 @@ public final class FunctionElementImpl extends FullyQualifiedElementImpl impleme
 
     private String getSignatureLastPart() {
         StringBuilder sb = new StringBuilder();
-        sb.append(getOffset()).append(Separator.SEMICOLON); //NOI18N
+        sb.append(getOffset()).append(Separator.SEMICOLON);
         List<ParameterElement> parameterList = getParameters();
         for (int idx = 0; idx < parameterList.size(); idx++) {
             ParameterElementImpl parameter = (ParameterElementImpl) parameterList.get(idx);
             if (idx > 0) {
-                sb.append(Separator.COMMA); //NOI18N
+                sb.append(Separator.COMMA);
             }
             sb.append(parameter.getSignature());
         }
-        sb.append(Separator.SEMICOLON); //NOI18N
+        sb.append(Separator.SEMICOLON);
         for (TypeResolver typeResolver : getReturnTypes()) {
             TypeResolverImpl resolverImpl = (TypeResolverImpl) typeResolver;
             sb.append(resolverImpl.getSignature());
         }
-        sb.append(Separator.SEMICOLON); //NOI18N
+        sb.append(Separator.SEMICOLON);
         sb.append(getPhpModifiers().toFlags()).append(Separator.SEMICOLON);
         sb.append(isDeprecated() ? 1 : 0).append(Separator.SEMICOLON);
         sb.append(getFilenameUrl()).append(Separator.SEMICOLON);
+        sb.append(isReturnUnionType() ? 1 : 0).append(Separator.SEMICOLON);
+        sb.append(isReturnIntersectionType() ? 1 : 0).append(Separator.SEMICOLON);
         return sb.toString();
     }
 
@@ -171,6 +174,16 @@ public final class FunctionElementImpl extends FullyQualifiedElementImpl impleme
     @Override
     public Collection<TypeResolver> getReturnTypes() {
         return this.functionSupport.getReturnTypes();
+    }
+
+    @Override
+    public boolean isReturnUnionType() {
+        return this.functionSupport.isReturnUnionType();
+    }
+
+    @Override
+    public boolean isReturnIntersectionType() {
+        return this.functionSupport.isReturnIntersectionType();
     }
 
     @Override
@@ -226,6 +239,14 @@ public final class FunctionElementImpl extends FullyQualifiedElementImpl impleme
         String getFileUrl() {
             return signature.string(7);
         }
+
+        boolean isReturnUnionType() {
+            return signature.integer(8) == 1;
+        }
+
+        boolean isReturnIntersectionType() {
+            return signature.integer(9) == 1;
+        }
     }
 
     private static final class ParametersFromSignature implements BaseFunctionElementSupport.Parameters {
@@ -250,9 +271,13 @@ public final class FunctionElementImpl extends FullyQualifiedElementImpl impleme
         private final FunctionSignatureParser functionSignatureParser;
         //@GuardedBy("this")
         private Set<TypeResolver> retrievedReturnTypes = null;
+        private final boolean isUnionType;
+        private final boolean isIntersectionType;
 
         public ReturnTypesFromSignature(FunctionSignatureParser functionSignatureParser) {
             this.functionSignatureParser = functionSignatureParser;
+            this.isUnionType = functionSignatureParser.isReturnUnionType();
+            this.isIntersectionType = functionSignatureParser.isReturnIntersectionType();
         }
 
         @Override
@@ -261,6 +286,16 @@ public final class FunctionElementImpl extends FullyQualifiedElementImpl impleme
                 retrievedReturnTypes = functionSignatureParser.getReturnTypes();
             }
             return retrievedReturnTypes;
+        }
+
+        @Override
+        public boolean isUnionType() {
+            return isUnionType;
+        }
+
+        @Override
+        public boolean isIntersectionType() {
+            return isIntersectionType;
         }
 
     }

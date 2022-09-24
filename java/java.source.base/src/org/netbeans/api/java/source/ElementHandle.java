@@ -114,9 +114,20 @@ public final class ElementHandle<T extends Element> {
     @SuppressWarnings ("unchecked")     // NOI18N
     public @CheckForNull T resolve (@NonNull final CompilationInfo compilationInfo) {
         Parameters.notNull("compilationInfo", compilationInfo); // NOI18N
-        ModuleElement module = compilationInfo.getFileObject() != null
-                ? ((JCTree.JCCompilationUnit)compilationInfo.getCompilationUnit()).modle
-                : null;
+        ModuleElement module;
+
+        if (compilationInfo.getFileObject() != null) {
+            JCTree.JCCompilationUnit cut = (JCTree.JCCompilationUnit)compilationInfo.getCompilationUnit();
+            if (cut != null) {
+                module = cut.modle;
+            } else if (compilationInfo.getTopLevelElements().iterator().hasNext()) {
+                module = ((Symbol) compilationInfo.getTopLevelElements().iterator().next()).packge().modle;
+            } else {
+                module = null;
+            }
+        } else {
+            module = null;
+        }
         T result = resolveImpl (module, compilationInfo.impl.getJavacTask());
         if (result == null) {
             if (log.isLoggable(Level.INFO))
@@ -132,7 +143,14 @@ public final class ElementHandle<T extends Element> {
     private T resolveImpl (final ModuleElement module, final JavacTaskImpl jt) {
         if (log.isLoggable(Level.FINE))
             log.log(Level.FINE, "Resolving element kind: {0}", this.kind); // NOI18N       
-        switch (this.kind) {
+        ElementKind simplifiedKind = this.kind;
+        if (simplifiedKind.name().equals("RECORD")) {
+            simplifiedKind = ElementKind.CLASS; //TODO: test
+        }
+        if (simplifiedKind.name().equals("RECORD_COMPONENT")) {
+            simplifiedKind = ElementKind.FIELD; //TODO: test
+        }
+        switch (simplifiedKind) {
             case PACKAGE:
                 assert signatures.length == 1;
                 return (T) jt.getElements().getPackageElement(signatures[0]);
@@ -450,8 +468,9 @@ public final class ElementHandle<T extends Element> {
     private static @NonNull <T extends Element> ElementHandle<T> createImpl (@NonNull final T element) throws IllegalArgumentException {
         Parameters.notNull("element", element);
         ElementKind kind = element.getKind();
+        ElementKind simplifiedKind = kind;
         String[] signatures;
-        switch (kind) {
+        switch (simplifiedKind) {
             case PACKAGE:
                 assert element instanceof PackageElement;
                 signatures = new String[]{((PackageElement)element).getQualifiedName().toString()};
@@ -460,6 +479,7 @@ public final class ElementHandle<T extends Element> {
             case INTERFACE:
             case ENUM:
             case ANNOTATION_TYPE:
+            case RECORD:
                 assert element instanceof TypeElement;
                 signatures = new String[] {ClassFileUtil.encodeClassNameOrArray((TypeElement)element)};
                 break;
@@ -472,6 +492,7 @@ public final class ElementHandle<T extends Element> {
                 break;
             case FIELD:
             case ENUM_CONSTANT:
+            case RECORD_COMPONENT:
                 assert element instanceof VariableElement;
                 signatures = ClassFileUtil.createFieldDescriptor((VariableElement)element);
                 break;
@@ -584,6 +605,7 @@ public final class ElementHandle<T extends Element> {
                 case INTERFACE:
                 case ENUM:
                 case ANNOTATION_TYPE:
+                case RECORD:
                 case OTHER:
                     if (descriptors.length != 1) {
                         throw new IllegalArgumentException ();
@@ -608,7 +630,8 @@ public final class ElementHandle<T extends Element> {
                     }
                     return new ElementHandle<VariableElement> (kind, descriptors);
                 default:
-                    throw new IllegalArgumentException ();
+                    throw new IllegalArgumentException();
+                    
             }            
         }
 

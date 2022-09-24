@@ -40,23 +40,21 @@ import org.openide.filesystems.FileObject;
  * @author pfiala
  */
 public class DDUtils {
+    
     public static EjbJarProxy createEjbJarProxy(InputStream inputStream) throws IOException {
         return createEjbJarProxy(new InputSource(inputStream));
     }
 
     public static EjbJarProxy createEjbJarProxy(FileObject fo) throws IOException {
-        InputStream inputStream = fo.getInputStream();
-        try {
+        try (InputStream inputStream = fo.getInputStream()) {
             return createEjbJarProxy(new InputSource(inputStream));
-        } finally {
-            inputStream.close();
         }
     }
-    
+
     public static EjbJarProxy createEjbJarProxy(Reader reader) throws IOException {
         return createEjbJarProxy(new InputSource(reader));
     }
-    
+
     public static EjbJarProxy createEjbJarProxy(InputSource inputSource) throws IOException {
         try {
             return (EjbJarProxy) DDProvider.getDefault().getDDRoot(inputSource);
@@ -73,8 +71,8 @@ public class DDUtils {
             return ejbJarProxy;
         }
     }
-    
-    
+
+
     public static void merge(EjbJarProxy ejbJarProxy, Reader reader) {
         try {
             EjbJarProxy newEjbJarProxy = createEjbJarProxy(reader);
@@ -95,10 +93,10 @@ public class DDUtils {
             // so lets not set the original to null here but wait
             // until the file becomes parsable again to do a merge
             //ejbJarProxy.setOriginal(null);
-        } catch (Schema2BeansRuntimeException s2bre){ // see #70286    
+        } catch (Schema2BeansRuntimeException s2bre){ // see #70286
             ejbJarProxy.setStatus(EjbJar.STATE_INVALID_UNPARSABLE);
             ejbJarProxy.setError(new SAXParseException(null, null, s2bre));
-        } catch (RuntimeException re){ // see #99047    
+        } catch (RuntimeException re){ // see #99047
             if (re.getCause() instanceof Schema2BeansException){
                 ejbJarProxy.setStatus(EjbJar.STATE_INVALID_UNPARSABLE);
                 ejbJarProxy.setError(new SAXParseException(null, null, (Schema2BeansException) re.getCause()));
@@ -121,6 +119,10 @@ public class DDUtils {
                 return org.netbeans.modules.j2ee.dd.impl.web.model_3_0.WebApp.createGraph(is);
             } else if (WebApp.VERSION_3_1.equals(version)) {
                 return org.netbeans.modules.j2ee.dd.impl.web.model_3_1.WebApp.createGraph(is);
+            } else if (WebApp.VERSION_4_0.equals(version)) {
+                return org.netbeans.modules.j2ee.dd.impl.web.model_4_0.WebApp.createGraph(is);
+            } else if (WebApp.VERSION_5_0.equals(version)) {
+                return org.netbeans.modules.j2ee.dd.impl.web.model_5_0.WebApp.createGraph(is);
             } else {
                 return null;
             }
@@ -130,14 +132,11 @@ public class DDUtils {
     }
 
     public static WebApp createWebApp(FileObject fo, String version) throws IOException, SAXException {
-        InputStream inputStream = fo.getInputStream();
-        try {
+        try (InputStream inputStream = fo.getInputStream()) {
             return createWebApp(inputStream, version);
-        } finally {
-            inputStream.close();
         }
     }
-    
+
     public static AppClient createAppClient(InputStream is, String version) throws IOException, SAXException {
         try {
             if (AppClient.VERSION_1_4.equals(version)) {
@@ -148,6 +147,10 @@ public class DDUtils {
                 return org.netbeans.modules.j2ee.dd.impl.client.model_6_0.ApplicationClient.createGraph(is);
             } else if (AppClient.VERSION_7_0.equals(version)) {
                 return org.netbeans.modules.j2ee.dd.impl.client.model_7_0.ApplicationClient.createGraph(is);
+            } else if (AppClient.VERSION_8_0.equals(version)) {
+                return org.netbeans.modules.j2ee.dd.impl.client.model_8_0.ApplicationClient.createGraph(is);
+            } else if (AppClient.VERSION_9_0.equals(version)) {
+                return org.netbeans.modules.j2ee.dd.impl.client.model_9_0.ApplicationClient.createGraph(is);
             }
         } catch (RuntimeException ex) {
             throw new SAXException(ex);
@@ -156,11 +159,8 @@ public class DDUtils {
     }
 
     public static AppClient createAppClient(FileObject fo, String version) throws IOException, SAXException {
-        InputStream inputStream = fo.getInputStream();
-        try {
+        try (InputStream inputStream = fo.getInputStream()) {
             return createAppClient(inputStream, version);
-        } finally {
-            inputStream.close();
         }
     }
 }

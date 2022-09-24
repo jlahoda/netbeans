@@ -63,7 +63,7 @@ public class CssRuleCreateActionDialog extends javax.swing.JPanel {
         String[] htmlTags = HtmlTags.getTags();
 
         // Optional prefix
-        DefaultComboBoxModel htmlTagsModel1 = new DefaultComboBoxModel();
+        DefaultComboBoxModel<String> htmlTagsModel1 = new DefaultComboBoxModel<>();
         htmlTagsModel1.addElement(NONE);
         htmlTagsModel1.addElement("a:link");
         htmlTagsModel1.addElement("a:visited");
@@ -73,8 +73,7 @@ public class CssRuleCreateActionDialog extends javax.swing.JPanel {
             htmlTagsModel1.addElement(htmlTags[i]);
         }
 
-        DefaultComboBoxModel htmlTagsModel = new DefaultComboBoxModel();
-        //htmlTagsModel.addElement(NONE);
+        DefaultComboBoxModel<String> htmlTagsModel = new DefaultComboBoxModel<>();
         for( int i=0; i< htmlTags.length; i++){
             htmlTagsModel.addElement(htmlTags[i]);
         }

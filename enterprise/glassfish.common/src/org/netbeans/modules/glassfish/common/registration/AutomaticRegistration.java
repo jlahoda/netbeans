@@ -64,7 +64,7 @@ public class AutomaticRegistration {
             System.out.println("Parameters: <ide clusterDir> <GlassFishHome> <Java 7 or later home>");
             System.exit(-1);
         }
-        
+
         String javaExe = args.length == 3 ? args[2] : "";
         int status = autoregisterGlassFishInstance(args[0], args[1], javaExe);
         System.exit(status);
@@ -84,7 +84,22 @@ public class AutomaticRegistration {
         String deployer = "deployer:gfv3ee6";
         String defaultDisplayNamePrefix = "GlassFish Server ";
         GlassFishVersion version = ServerUtils.getServerVersion(glassfishRoot);
-        if (GlassFishVersion.ge(version, GlassFishVersion.GF_3_1)) {
+        if (GlassFishVersion.ge(version, GlassFishVersion.GF_6_1_0)) {
+            deployer = "deployer:gfv610ee9";
+            config = "GlassFishJakartaEE91/Instances";
+        } else if (GlassFishVersion.ge(version, GlassFishVersion.GF_6)) {
+            deployer = "deployer:gfv6ee9";
+            config = "GlassFishJakartaEE9/Instances";
+        } else if (GlassFishVersion.ge(version, GlassFishVersion.GF_5_1_0)) {
+            deployer = "deployer:gfv510ee8";
+            config = "GlassFishJakartaEE8/Instances";
+        } else if (GlassFishVersion.ge(version, GlassFishVersion.GF_5)) {
+            deployer = "deployer:gfv5ee8";
+            config = "GlassFishEE8/Instances";
+        } else if (GlassFishVersion.ge(version, GlassFishVersion.GF_4)) {
+            deployer = "deployer:gfv4ee7";
+            config = "GlassFishEE7/Instances";
+        } else if (GlassFishVersion.ge(version, GlassFishVersion.GF_3_1)) {
             deployer = "deployer:gfv3ee6wc";
         }
         StringBuilder sb = new StringBuilder(
@@ -108,12 +123,12 @@ public class AutomaticRegistration {
                 return 2;
             }
         }
-        
+
         // beware of trailling File.separator
         //
         glassfishRoot = new File(glassfishRoot).getAbsolutePath();
 
-        final String url = "[" + glassfishRoot + File.pathSeparator + 
+        final String url = "[" + glassfishRoot + File.pathSeparator +
                 glassfishRoot + File.separator + "domains" + File.separator
                 + "domain1]" + deployer + ":localhost:4848"; // NOI18N
 
@@ -176,7 +191,7 @@ public class AutomaticRegistration {
      * @param displayName display name
      */
     private static boolean registerServerInstanceFO(FileObject serverInstanceDir, String url, String displayName, File glassfishRoot, File java7orLaterExecutable) {
-        String name = FileUtil.findFreeFileName(serverInstanceDir, 
+        String name = FileUtil.findFreeFileName(serverInstanceDir,
                 GlassfishInstanceProvider.GLASSFISH_AUTOREGISTERED_INSTANCE, null);
         FileObject instanceFO;
         try {
@@ -203,7 +218,7 @@ public class AutomaticRegistration {
             instanceFO.setAttribute(GlassfishModule.START_DERBY_FLAG, true);
             instanceFO.setAttribute(GlassfishModule.USE_IDE_PROXY_FLAG, true);
             instanceFO.setAttribute(GlassfishModule.USE_SHARED_MEM_ATTR, false);
-            
+
             return true;
         } catch (IOException e) {
             LOGGER.log(Level.INFO, "Cannot register the default GlassFish server."); // NOI18N

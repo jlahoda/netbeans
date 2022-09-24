@@ -48,7 +48,7 @@ public class EncodingHelper extends Object {
      * @return
      */
     public static String getIANA2JavaMapping(String ianaEncoding) {
-        String java = (String) encodingIANA2JavaMap.get (ianaEncoding.toUpperCase ());
+        String java = encodingIANA2JavaMap.get (ianaEncoding.toUpperCase ());
         return java == null ? ianaEncoding : java;
     }
     
@@ -59,7 +59,7 @@ public class EncodingHelper extends Object {
      * @return
      */
     public static String getJava2IANAMapping(String javaEncoding) {
-        String iana = (String) encodingJava2IANAMap.get (javaEncoding);
+        String iana = encodingJava2IANAMap.get (javaEncoding);
         return iana == null ? javaEncoding : iana;
     }
         
@@ -304,10 +304,10 @@ public class EncodingHelper extends Object {
     /**
      * IANA to Java encoding mappings
      */
-    final static Map<String, String> encodingIANA2JavaMap = new TreeMap<String, String>();
-    final static Map<String, String> encodingIANADescriptionMap = new TreeMap<String, String>();
-    final static Map<String, String> encodingIANAAliasesMap = new TreeMap<String, String>();
-    final static Map<String, String> encodingJava2IANAMap = new TreeMap<String, String>();
+    static final Map<String, String> encodingIANA2JavaMap = new TreeMap<String, String>();
+    static final Map<String, String> encodingIANADescriptionMap = new TreeMap<String, String>();
+    static final Map<String, String> encodingIANAAliasesMap = new TreeMap<String, String>();
+    static final Map<String, String> encodingJava2IANAMap = new TreeMap<String, String>();
 
     /**
      * Static initialization

@@ -27,7 +27,12 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.text.BadLocationException;
 import org.netbeans.api.annotations.common.NonNull;
+import org.netbeans.editor.BaseDocument;
+import org.netbeans.modules.csl.spi.GsfUtilities;
 import org.netbeans.modules.parsing.spi.indexing.support.IndexDocument;
 import org.netbeans.modules.php.api.util.StringUtils;
 import org.netbeans.modules.php.editor.CodeUtils;
@@ -51,41 +56,69 @@ import org.netbeans.modules.php.editor.model.Scope;
 import org.netbeans.modules.php.editor.model.TraitScope;
 import org.netbeans.modules.php.editor.model.TypeScope;
 import org.netbeans.modules.php.editor.model.VariableName;
+import org.netbeans.modules.php.editor.model.nodes.ArrowFunctionDeclarationInfo;
 import org.netbeans.modules.php.editor.model.nodes.FunctionDeclarationInfo;
 import org.netbeans.modules.php.editor.model.nodes.LambdaFunctionDeclarationInfo;
 import org.netbeans.modules.php.editor.model.nodes.MagicMethodDeclarationInfo;
 import org.netbeans.modules.php.editor.model.nodes.MethodDeclarationInfo;
+import org.netbeans.modules.php.editor.parser.astnodes.ASTErrorExpression;
+import org.netbeans.modules.php.editor.parser.astnodes.ArrowFunctionDeclaration;
+import org.netbeans.modules.php.editor.parser.astnodes.Block;
+import org.netbeans.modules.php.editor.parser.astnodes.Expression;
+import org.netbeans.modules.php.editor.parser.astnodes.IntersectionType;
 import org.netbeans.modules.php.editor.parser.astnodes.LambdaFunctionDeclaration;
+import org.netbeans.modules.php.editor.parser.astnodes.UnionType;
 import org.netbeans.modules.php.editor.parser.astnodes.Variable;
+import org.openide.filesystems.FileObject;
 
 /**
  *
  * @author Radek Matous
  */
 class FunctionScopeImpl extends ScopeImpl implements FunctionScope, VariableNameFactory {
-    private static final String TYPE_SEPARATOR = "|"; //NOI18N
+
+    private static final Logger LOGGER = Logger.getLogger(FunctionScopeImpl.class.getName());
     private static final String TYPE_SEPARATOR_REGEXP = "\\|"; //NOI18N
+    private static final String TYPE_SEPARATOR_INTERSECTION_REGEXP = "\\&"; //NOI18N
     private List<? extends ParameterElement> paremeters;
     private final boolean declaredReturnType;
     //@GuardedBy("this")
     private String returnType;
+    private final boolean isReturnUnionType;
+    private final boolean isReturnIntersectionType;
 
     //new contructors
     FunctionScopeImpl(Scope inScope, FunctionDeclarationInfo info, String returnType, boolean isDeprecated) {
         super(inScope, info, PhpModifiers.fromBitMask(PhpModifiers.PUBLIC), info.getOriginalNode().getBody(), isDeprecated);
         this.paremeters = info.getParameters();
         this.returnType = returnType;
-        declaredReturnType = info.getReturnType() != null;
+        declaredReturnType = !info.getReturnTypes().isEmpty();
+        isReturnUnionType = info.getOriginalNode().getReturnType() instanceof UnionType;
+        isReturnIntersectionType = info.getOriginalNode().getReturnType() instanceof IntersectionType;
     }
 
     FunctionScopeImpl(Scope inScope, LambdaFunctionDeclarationInfo info) {
         super(inScope, info, PhpModifiers.fromBitMask(PhpModifiers.PUBLIC), info.getOriginalNode().getBody(), inScope.isDeprecated());
         this.paremeters = info.getParameters();
-        QualifiedName retType = info.getReturnType();
-        if (retType != null) {
-            this.returnType = retType.getName();
+        isReturnUnionType = info.getOriginalNode().getReturnType() instanceof UnionType;
+        isReturnIntersectionType = info.getOriginalNode().getReturnType() instanceof IntersectionType;
+        List<QualifiedName> retTypes = info.getReturnTypes();
+        if (!retTypes.isEmpty()) {
+           this.returnType = isReturnIntersectionType ? asIntersectionType(retTypes) : asUnionType(retTypes);
+         }
+        declaredReturnType = !retTypes.isEmpty();
+    }
+
+    FunctionScopeImpl(Scope inScope, ArrowFunctionDeclarationInfo info, Block block) {
+        super(inScope, info, PhpModifiers.fromBitMask(PhpModifiers.PUBLIC), block, inScope.isDeprecated());
+        this.paremeters = info.getParameters();
+        isReturnUnionType = info.getOriginalNode().getReturnType() instanceof UnionType;
+        isReturnIntersectionType = info.getOriginalNode().getReturnType() instanceof IntersectionType;
+        List<QualifiedName> retTypes = info.getReturnTypes();
+        if (!retTypes.isEmpty()) {
+            this.returnType = isReturnIntersectionType ? asIntersectionType(retTypes) : asUnionType(retTypes);
         }
-        declaredReturnType = retType != null;
+        declaredReturnType = !retTypes.isEmpty();
     }
 
     protected FunctionScopeImpl(Scope inScope, MethodDeclarationInfo info, String returnType, boolean isDeprecated) {
@@ -93,6 +126,8 @@ class FunctionScopeImpl extends ScopeImpl implements FunctionScope, VariableName
         this.paremeters = info.getParameters();
         this.returnType = returnType;
         declaredReturnType = info.getOriginalNode().getFunction().getReturnType() != null;
+        isReturnUnionType = info.getOriginalNode().getFunction().getReturnType() instanceof UnionType;
+        isReturnIntersectionType = info.getOriginalNode().getFunction().getReturnType() instanceof IntersectionType;
     }
 
     protected FunctionScopeImpl(Scope inScope, MagicMethodDeclarationInfo info, String returnType, boolean isDeprecated) {
@@ -100,6 +135,8 @@ class FunctionScopeImpl extends ScopeImpl implements FunctionScope, VariableName
         this.paremeters = info.getParameters();
         this.returnType = returnType;
         declaredReturnType = false;
+        isReturnUnionType = false;
+        isReturnIntersectionType = false;
     }
 
     FunctionScopeImpl(Scope inScope, BaseFunctionElement indexedFunction) {
@@ -112,6 +149,8 @@ class FunctionScopeImpl extends ScopeImpl implements FunctionScope, VariableName
         this.returnType =  element.asString(PrintAs.ReturnSemiTypes);
         // XXX ???
         declaredReturnType = false;
+        isReturnUnionType = element.isReturnUnionType();
+        isReturnIntersectionType = element.isReturnIntersectionType();
     }
 
     public static FunctionScopeImpl createElement(Scope scope, LambdaFunctionDeclaration node) {
@@ -121,6 +160,46 @@ class FunctionScopeImpl extends ScopeImpl implements FunctionScope, VariableName
                 return true;
             }
         };
+    }
+
+    public static FunctionScopeImpl createElement(Scope scope, ArrowFunctionDeclaration node) {
+        Expression expression = node.getExpression();
+        int startOffset = expression.getStartOffset();
+        int endOffset = expression.getEndOffset();
+        if (expression instanceof ASTErrorExpression) {
+            // increase the end offset if there are white spaces behind it
+            // e.g. fn($x) => ;
+            endOffset += getWhitespacesBehindASTErrorExpression(scope, endOffset);
+        }
+        Block block = new Block(startOffset, endOffset, Collections.emptyList(), false);
+        return new ArrowFunctionScopeImpl(scope, ArrowFunctionDeclarationInfo.create(node), block);
+    }
+
+    private static int getWhitespacesBehindASTErrorExpression(Scope scope, int endOffset) {
+        FileObject fileObject = scope.getFileObject();
+        int wsCount = 0;
+        if (fileObject != null) {
+            BaseDocument document = GsfUtilities.getDocument(fileObject, true);
+            Scope inScope = scope.getInScope();
+            if (document != null && inScope != null) {
+                int length = inScope.getBlockRange().getEnd() - endOffset;
+                if (length > 0) {
+                    try {
+                        char[] chars = document.getChars(endOffset, length);
+                        for (char c : chars) {
+                            if (c == ' ' || c == '\t') {
+                                wsCount++;
+                            } else {
+                                break;
+                            }
+                        }
+                    } catch (BadLocationException ex) {
+                        LOGGER.log(Level.WARNING, "Invalid offset: " + ex.offsetRequested(), ex); // NOI18N
+                    }
+                }
+            }
+        }
+        return wsCount;
     }
 
     //old contructors
@@ -142,7 +221,7 @@ class FunctionScopeImpl extends ScopeImpl implements FunctionScope, VariableName
                 Set<String> distinctTypes = new HashSet<>();
                 distinctTypes.addAll(Arrays.asList(returnType.split(TYPE_SEPARATOR_REGEXP)));
                 distinctTypes.add(type);
-                returnType = StringUtils.implode(distinctTypes, TYPE_SEPARATOR);
+                returnType = Type.asUnionType(distinctTypes);
             }
         }
     }
@@ -162,7 +241,8 @@ class FunctionScopeImpl extends ScopeImpl implements FunctionScope, VariableName
         String type = getReturnType();
         if (type != null && type.length() > 0) {
             retval = new ArrayList<>();
-            for (String typeName : type.split(TYPE_SEPARATOR_REGEXP)) {
+            String[] typeNames = isReturnIntersectionType ? type.split(TYPE_SEPARATOR_INTERSECTION_REGEXP) : type.split(TYPE_SEPARATOR_REGEXP);
+            for (String typeName : typeNames) {
                 if (!VariousUtils.isSemiType(typeName)) {
                     retval.add(typeName);
                 }
@@ -175,11 +255,38 @@ class FunctionScopeImpl extends ScopeImpl implements FunctionScope, VariableName
     public Collection<? extends TypeScope> getReturnTypes(boolean resolveSemiTypes, Collection<? extends TypeScope> callerTypes) {
         assert callerTypes != null;
         String types = getReturnType();
-        Collection<? extends TypeScope> result = getReturnTypesDescriptor(types, resolveSemiTypes, callerTypes).getModifiedResult(callerTypes);
+        // NETBEANS-5062
+        Scope inScope = getInScope();
+        Set<TypeScope> cTypes = new HashSet<>();
+        List<String> typeNames = StringUtils.explode(types, Type.getTypeSeparator(isReturnIntersectionType));
+        if (typeNames.contains(Type.STATIC)
+                && inScope instanceof TypeScope) {
+            TypeScope typeScope = (TypeScope) inScope;
+            for (TypeScope callerType : callerTypes) {
+                if (callerType.isSubTypeOf(typeScope)) {
+                    cTypes.add(callerType);
+                } else {
+                    cTypes.add(typeScope);
+                }
+            }
+        } else {
+            cTypes.addAll(callerTypes);
+        }
+        Collection<? extends TypeScope> result = getReturnTypesDescriptor(types, resolveSemiTypes, cTypes).getModifiedResult(cTypes);
         if (!declaredReturnType) {
             updateReturnTypes(types, result);
         }
         return result;
+    }
+
+    @Override
+    public boolean isReturnUnionType() {
+        return isReturnUnionType;
+    }
+
+    @Override
+    public boolean isReturnIntersectionType() {
+        return isReturnIntersectionType;
     }
 
     private static Set<String> recursionDetection = new HashSet<>(); //#168868
@@ -191,14 +298,18 @@ class FunctionScopeImpl extends ScopeImpl implements FunctionScope, VariableName
     private ReturnTypesDescriptor getReturnTypesDescriptor(String types, boolean resolveSemiTypes, Collection<? extends TypeScope> callerTypes) {
         ReturnTypesDescriptor result = ReturnTypesDescriptor.NONE;
         if (StringUtils.hasText(types)) {
-            final String[] typeNames = types.split(TYPE_SEPARATOR_REGEXP);
+            final String[] typeNames = types.split(isReturnIntersectionType ? TYPE_SEPARATOR_INTERSECTION_REGEXP : TYPE_SEPARATOR_REGEXP);
             Collection<TypeScope> retval = new HashSet<>();
-            for (String t : typeNames) {
-                String typeName = t;
+            for (int i = 0; i < typeNames.length; i++) {
+                String typeName = typeNames[i];
                 if (CodeUtils.isNullableType(typeName)) {
-                    typeName = t.substring(1);
+                    typeName = typeName.substring(1);
+                }
+                if (Type.STATIC.equals(typeName)) {
+                    typeName = "\\" + typeName; // NOI18N
                 }
                 if (isSpecialTypeName(typeName)) {
+                    typeNames[i] = typeName;
                     continue;
                 }
                 if (typeName.trim().length() > 0) {
@@ -229,6 +340,22 @@ class FunctionScopeImpl extends ScopeImpl implements FunctionScope, VariableName
                 retval.add(((TypeScope) inScope));
             }
 
+            if (canBeParentDependent(inScope, typeNames)) {
+                if (inScope instanceof ClassScope) {
+                    ClassScope classScope = (ClassScope) inScope;
+                    classScope.getSuperClasses().forEach(superClass -> retval.add(superClass));
+                } else if (inScope instanceof TraitScope) {
+                    for (TypeScope callerType : callerTypes) {
+                        if (callerType instanceof ClassScope) {
+                            ClassScope classScope = (ClassScope) callerType;
+                            if (classScope.getTraits().contains((TraitScope) inScope)) {
+                                classScope.getSuperClasses().forEach(superClass -> retval.add(superClass));
+                            }
+                        }
+                    }
+                }
+            }
+
             if (canBeCallerDependent(inScope, typeNames)) {
                 result = new CallerDependentTypesDescriptor(retval);
             } else {
@@ -241,6 +368,13 @@ class FunctionScopeImpl extends ScopeImpl implements FunctionScope, VariableName
     private static boolean canBeSelfDependent(Scope scope, String[] types) {
         if (scope instanceof ClassScope || scope instanceof InterfaceScope) { // not trait
             return containsSelfDependentType(types);
+        }
+        return false;
+    }
+
+    private static boolean canBeParentDependent(Scope scope, String[] types) {
+        if (scope instanceof ClassScope || scope instanceof TraitScope) {
+            return containsParentDependentType(types);
         }
         return false;
     }
@@ -260,6 +394,18 @@ class FunctionScopeImpl extends ScopeImpl implements FunctionScope, VariableName
             result = elements.get(0).getNameRange().getEnd();
         }
         return result;
+    }
+
+    private String asUnionType(List<QualifiedName> qualifiedNames) {
+        List<String> types = new ArrayList<>();
+        qualifiedNames.forEach(type -> types.add(type.toString()));
+        return Type.asUnionType(types);
+    }
+
+    private String asIntersectionType(List<QualifiedName> qualifiedNames) {
+        List<String> types = new ArrayList<>();
+        qualifiedNames.forEach(type -> types.add(type.toString()));
+        return Type.asIntersectionType(types);
     }
 
     @org.netbeans.api.annotations.common.SuppressWarnings("SE_COMPARATOR_SHOULD_BE_SERIALIZABLE")
@@ -288,10 +434,15 @@ class FunctionScopeImpl extends ScopeImpl implements FunctionScope, VariableName
         return (Arrays.binarySearch(typeNames, "\\self") >= 0) || (Arrays.binarySearch(typeNames, Type.OBJECT) >= 0); //NOI18N
     }
 
+    private static boolean containsParentDependentType(String[] typeNames) {
+        return (Arrays.binarySearch(typeNames, "\\parent") >= 0); // NOI18N
+    }
+
     private static boolean isSpecialTypeName(String typeName) {
         return typeName.equals("\\this") //NOI18N
                 || typeName.equals("\\static") //NOI18N
                 || typeName.equals("\\self") //NOI18N
+                || typeName.equals("\\parent") //NOI18N
                 || typeName.equals(Type.OBJECT);
     }
 
@@ -305,7 +456,7 @@ class FunctionScopeImpl extends ScopeImpl implements FunctionScope, VariableName
         StringBuilder sb = new StringBuilder();
         for (TypeScope typeScope : resolvedReturnTypes) {
             if (sb.length() != 0) {
-                sb.append(TYPE_SEPARATOR);
+                sb.append(Type.SEPARATOR);
             }
             sb.append(typeScope.getNamespaceName().append(typeScope.getName()).toString());
         }
@@ -356,7 +507,7 @@ class FunctionScopeImpl extends ScopeImpl implements FunctionScope, VariableName
                 first = false;
                 sb.append(' '); // NOI18N
             } else {
-                sb.append(TYPE_SEPARATOR);
+                sb.append(Type.getTypeSeparator(isReturnIntersectionType));
             }
             sb.append(typeScope.getName());
         }
@@ -402,7 +553,7 @@ class FunctionScopeImpl extends ScopeImpl implements FunctionScope, VariableName
         }
         sb.append(Signature.ITEM_DELIMITER);
         String type = getReturnType();
-        if (type != null && !Type.MIXED.equalsIgnoreCase(type)) {
+        if (type != null) {
             sb.append(type);
         }
         sb.append(Signature.ITEM_DELIMITER);
@@ -412,6 +563,8 @@ class FunctionScopeImpl extends ScopeImpl implements FunctionScope, VariableName
         sb.append(qualifiedName.toString()).append(Signature.ITEM_DELIMITER);
         sb.append(isDeprecated() ? 1 : 0).append(Signature.ITEM_DELIMITER);
         sb.append(getFilenameUrl()).append(Signature.ITEM_DELIMITER);
+        sb.append(isReturnUnionType() ? 1 : 0).append(Signature.ITEM_DELIMITER);
+        sb.append(isReturnIntersectionType()? 1 : 0).append(Signature.ITEM_DELIMITER);
         return sb.toString();
     }
 

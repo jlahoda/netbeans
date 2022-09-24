@@ -59,7 +59,7 @@ public class HelpManager {
         lastURL = null;
     }
     
-    static public HelpManager getDefault(){
+    public static HelpManager getDefault(){
         if (manager == null){
             manager = new HelpManager();
         }
@@ -109,7 +109,7 @@ public class HelpManager {
                 File f = InstalledFileLocator.getDefault().locate(help, null, false); //NoI18N
                 if (f != null){
                     try {
-                        URL urll = f.toURL();
+                        URL urll = f.toURI().toURL();
                         urll = FileUtil.getArchiveRoot(urll);
                         helpZipURL = new URI(urll.getProtocol(), urll.getFile(), urll.getRef()).toString();
                     } catch (java.net.MalformedURLException e){

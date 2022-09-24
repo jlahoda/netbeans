@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Licensed to the Apache Software Foundation (ASF) under one
+    or more contributor license agreements.  See the NOTICE file
+    distributed with this work for additional information
+    regarding copyright ownership.  The ASF licenses this file
+    to you under the Apache License, Version 2.0 (the
+    "License"); you may not use this file except in compliance
+    with the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+    KIND, either express or implied.  See the License for the
+    specific language governing permissions and limitations
+    under the License.
+
+-->
+
+<?xml-stylesheet href="../../nbbuild/javadoctools/apichanges.xsl" type="text/xsl"?>
+<!DOCTYPE apichanges PUBLIC "-//NetBeans//DTD API changes list 1.0//EN" "../../nbbuild/javadoctools/apichanges.dtd">
+
+<!-- INFO FOR PEOPLE ADDING CHANGES:
+[most of contents snipped - see openide's apichanges for how-to instructions]
+<change>
+    <api name="compiler"/>
+    <summary>Some brief description here, can use <b>XHTML</b></summary>
+    <version major="1" minor="99"/>
+    <date day="13" month="6" year="2001"/>
+    <author login="jrhacker"/>
+    <compatibility addition="yes"/>
+    <description>
+        The main description of the change here.
+        Again can use full <b>XHTML</b> as needed.
+    </description>
+    <class package="org.openide.compiler" name="DoWhatIWantCompiler"/>
+    <issue number="14309"/>
+</change>
+-->
+
+<apichanges>
+
+<!-- First, a list of API names you may use: -->
+<apidefs>
+        <apidef name="LSP_API">LSP APIs</apidef>
+</apidefs>
+
+<!-- ACTUAL CHANGES BEGIN HERE: -->
+
+<changes>
+    <change id="DiagnosticURL">
+        <api name="LSP_API"/>
+        <summary>Added URL to diagnostic code description</summary>
+        <version major="1" minor="12"/>
+        <date day="3" month="8" year="2022"/>
+        <author login="sdedic"/>
+        <compatibility binary="compatible" source="compatible" addition="yes" deletion="no"/>
+        <description>
+            <a href="@TOP@/org/netbeans/api/lsp/Diagnostic.html">Diagnostic</a> can link to the details of the error code using URL.
+        </description>
+        <class package="org.netbeans.api.lsp" name="Diagnostic"/>
+    </change>
+    <change id="CodeLensProvider">
+        <api name="LSP_API"/>
+        <summary>Added CodeLensProvider and relevant elements</summary>
+        <version major="1" minor="12"/>
+        <date day="2" month="7" year="2022"/>
+        <author login="jlahoda"/>
+        <compatibility binary="compatible" source="compatible" addition="yes" deletion="no"/>
+        <description>
+            <a href="@TOP@/org/netbeans/spi/lsp/CodeLensProvider.html">CodeLensProvider</a> SPI allows to provide code lens for a given document.
+        </description>
+        <class package="org.netbeans.api.lsp" name="CodeLens"/>
+        <class package="org.netbeans.spi.lsp" name="CodeLensProvider"/>
+    </change>
+    <change id="diagnosticReporter">
+        <api name="LSP_API"/>
+        <summary>Added DiagnosticReporter to trigger diagnostic collection</summary>
+        <version major="1" minor="11"/>
+        <date day="30" month="5" year="2022"/>
+        <author login="sdedic"/>
+        <compatibility binary="compatible" source="compatible" addition="yes" deletion="no"/>
+        <description>
+            <a href="@TOP@/org/netbeans/spi/lsp/DiagnosticReporter.html">DiagnosticReporter</a> SPI should be implemented to allow
+            alerting the LSP server core that diagnostics for certain file(s) may have changed. The core implementation should then poll 
+            <a href="@TOP@/org/netbeans/spi/lsp/ErrorProvider.html">ErrorProviders</a> to collect the diagnostics.
+            API clients should call <a href="@TOP@/org/netbeans/api/lsp/Diagnostic.html#findReporterControl-org.openide.util.Lookup-org.openide.filesystems.FileObject-">Diagnostic.findReporterControl</a>
+            to obtain an accessor which can fire the alert.
+        </description>
+        <class package="org.netbeans.api.lsp" name="Diagnostic"/>
+        <class package="org.netbeans.spi.lsp" name="DiagnosticReporter"/>
+    </change>
+    <change id="CallHierarchyProvider">
+        <api name="LSP_API"/>
+        <summary>Added CallHierarchyProvider and relevant elements</summary>
+        <version major="1" minor="9"/>
+        <date day="9" month="3" year="2022"/>
+        <author login="sdedic"/>
+        <compatibility binary="compatible" source="compatible" addition="yes" deletion="no"/>
+        <description>
+            <a href="@TOP@/org/netbeans/spi/lsp/CallHiearchyProvider.html">CallHierarchyProvider</a> SPI allows to trace incoming and
+            outgoing calls. <a href="@TOP@/org/netbeans/api/lsp/CallHierarchyEntry.html">CallHierarchyEntry</a> describes a specific call site 
+            or target.
+        </description>
+        <class package="org.netbeans.api.lsp" name="CallHierarchyEntry"/>
+        <class package="org.netbeans.spi.lsp" name="CallHierarchyProvider"/>
+    </change>
+    <change id="StructureProvider">
+        <api name="LSP_API"/>
+        <summary>Adding StructeProvider and StructureElement</summary>
+        <version major="1" minor="8"/>
+        <date day="24" month="1" year="2022"/>
+        <author login="ppisl"/>
+        <compatibility binary="compatible" source="compatible" addition="yes" deletion="no"/>
+        <description>
+            A <code>StructureProvider</code> interface allows to compute structure (tree of <code>SourceElement</code>s)
+            of the given file. 
+        </description>
+        <class package="org.netbeans.api.lsp" name="StructureElement"/>
+        <class package="org.netbeans.spi.lsp" name="StructureProvider"/>
+    </change>
+    <change id="ErrorProvider.Context.getOffset">
+        <api name="LSP_API"/>
+        <summary>Adding ErrorProvider.Context.getOffset() method</summary>
+        <version major="1" minor="4"/>
+        <date day="21" month="6" year="2021"/>
+        <author login="balek"/>
+        <compatibility binary="compatible" source="compatible" addition="yes" deletion="no"/>
+        <description>
+            An <code>ErrorProvider.Context.getOffset()</code> method introduced that allows to
+            compute hint for a given file offset.
+        </description>
+        <class package="org.netbeans.api.lsp" name="ErrorProvider"/>
+    </change>
+    <change id="ErrorProvider">
+        <api name="LSP_API"/>
+        <summary>Adding ErrorProvider</summary>
+        <version major="1" minor="3"/>
+        <date day="10" month="6" year="2021"/>
+        <author login="jlahoda"/>
+        <compatibility binary="compatible" source="compatible" addition="yes" deletion="no"/>
+        <description>
+            An <code>ErrorProvider</code> interface introduced that allows to
+            compute errors/warnings for a given file.
+        </description>
+        <class package="org.netbeans.api.lsp" name="ErrorProvider"/>
+    </change>
+    <change id="HoverProvider">
+        <api name="LSP_API"/>
+        <summary>Adding Hover and HoverProvider</summary>
+        <version major="1" minor="2"/>
+        <date day="13" month="5" year="2021"/>
+        <author login="dbalek"/>
+        <compatibility binary="compatible" source="compatible" addition="yes" deletion="no"/>
+        <description>
+            A <code>Hover</code> class and <code>HoverProvider</code> interface introduced
+            that allows to resolve a hover information at a given document offset and
+            return its content.
+        </description>
+        <class package="org.netbeans.api.lsp" name="Hover"/>
+        <class package="org.netbeans.spi.lsp" name="HoverProvider"/>
+    </change>
+    <change id="HyperlinkTypeDefLocationProvider">
+        <api name="LSP_API"/>
+        <summary>Adding HyperlinkTypeDefLocationProvider</summary>
+        <version major="1" minor="1"/>
+        <date day="5" month="5" year="2021"/>
+        <author login="dbalek"/>
+        <compatibility binary="compatible" source="compatible" addition="yes" deletion="no"/>
+        <description>
+            A <code>HyperlinkTypeDefLocationProvider</code> interface introduced that allows to
+            compute hyperlinks to type definition locations.
+        </description>
+        <class package="org.netbeans.spi.lsp" name="HyperlinkTypeDefLocationProvider"/>
+    </change>
+</changes>
+
+  <!-- Now the surrounding HTML text and document structure: -->
+
+  <htmlcontents>
+<!--
+                            NO NO NO NO NO!
+         ==============>    DO NOT EDIT ME!  <======================
+          AUTOMATICALLY GENERATED FROM APICHANGES.XML, DO NOT EDIT
+                SEE xml/api/doc/changes/apichanges.xml
+-->
+    <head>
+      <title>LSP API changes by date</title>
+      <link rel="stylesheet" href="prose.css" type="text/css"/>
+    </head>
+    <body>
+
+<p class="overviewlink"><a href="overview-summary.html">Overview</a></p>
+
+<h1>Introduction</h1>
+
+<p>This document lists changes made to the LSP APIs. Please ask on the
+    <code>dev@netbeans.apache.org</code>
+    mailing list if you have any questions about the details of a
+    change, or are wondering how to convert existing code to be compatible.
+</p>
+
+      <hr/><standard-changelists module-code-name="org.netbeans.api.lsp/1"/>
+
+      <hr/><p>@FOOTER@</p>
+
+    </body>
+  </htmlcontents>
+</apichanges>

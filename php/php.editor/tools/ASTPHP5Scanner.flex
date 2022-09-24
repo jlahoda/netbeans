@@ -329,11 +329,11 @@ import org.netbeans.modules.web.common.api.ByteStack;
 
 %}
 
-LNUM=[0-9]+
-DNUM=([0-9]*[\.][0-9]+)|([0-9]+[\.][0-9]*)
+LNUM=[0-9]+(_[0-9]+)*
+DNUM=({LNUM}?[\.]{LNUM})|({LNUM}[\.]{LNUM}?)
 EXPONENT_DNUM=(({LNUM}|{DNUM})[eE][+-]?{LNUM})
-HNUM="0x"[0-9a-fA-F]+
-BNUM="0b"[01]+
+HNUM="0x"[0-9a-fA-F]+(_[0-9a-fA-F]+)*
+BNUM="0b"[01]+(_[01]+)*
 //LABEL=[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*
 LABEL=([[:letter:]_]|[\u007f-\u00ff])([[:letter:][:digit:]_]|[\u007f-\u00ff])*
 NAMESPACE_SEPARATOR=[\\]
@@ -368,6 +368,12 @@ NOWDOC_CHARS=({NEWLINE}*(([^a-zA-Z_\x7f-\xff\n\r][^\n\r]*)|({LABEL}[^a-zA-Z0-9_\
     return createFullSymbol(ASTPHP5Symbols.T_EXIT);
 }
 
+<ST_IN_SCRIPTING>"fn" {
+    // PHP 7.4 Arrow Functions 2.0
+    // https://wiki.php.net/rfc/arrow_functions_v2
+    return createFullSymbol(ASTPHP5Symbols.T_FN);
+}
+
 <ST_IN_SCRIPTING>"function" {
     return createFullSymbol(ASTPHP5Symbols.T_FUNCTION);
 }
@@ -378,6 +384,14 @@ NOWDOC_CHARS=({NEWLINE}*(([^a-zA-Z_\x7f-\xff\n\r][^\n\r]*)|({LABEL}[^a-zA-Z0-9_\
 
 <ST_IN_SCRIPTING>"return" {
     return createFullSymbol(ASTPHP5Symbols.T_RETURN);
+}
+
+// NETBEANS-4443 PHP 8.0: Attribute Syntax
+// https://wiki.php.net/rfc/attributes_v2
+// https://wiki.php.net/rfc/shorter_attribute_syntax
+// https://wiki.php.net/rfc/shorter_attribute_syntax_change
+<ST_IN_SCRIPTING>"#[" {
+    return createSymbol(ASTPHP5Symbols.T_ATTRIBUTE);
 }
 
 <ST_IN_SCRIPTING>"yield"{WHITESPACE}+"from" {
@@ -476,6 +490,10 @@ NOWDOC_CHARS=({NEWLINE}*(([^a-zA-Z_\x7f-\xff\n\r][^\n\r]*)|({LABEL}[^a-zA-Z0-9_\
     return createFullSymbol(ASTPHP5Symbols.T_ENDSWITCH);
 }
 
+<ST_IN_SCRIPTING>"match" {
+    return createFullSymbol(ASTPHP5Symbols.T_MATCH);
+}
+
 <ST_IN_SCRIPTING>"case" {
     return createFullSymbol(ASTPHP5Symbols.T_CASE);
 }
@@ -516,6 +534,16 @@ NOWDOC_CHARS=({NEWLINE}*(([^a-zA-Z_\x7f-\xff\n\r][^\n\r]*)|({LABEL}[^a-zA-Z0-9_\
     return createFullSymbol(ASTPHP5Symbols.T_INTERFACE);
 }
 
+<ST_IN_SCRIPTING>"enum"{WHITESPACE}("extends"|"implements") {
+    yypushback(yylength() - 4); // 4: enum length
+    return createFullSymbol(ASTPHP5Symbols.T_STRING);
+}
+
+<ST_IN_SCRIPTING>"enum"{WHITESPACE}[a-zA-Z_\x80-\xff] {
+    yypushback(yylength() - 4); // 4: enum length
+    return createFullSymbol(ASTPHP5Symbols.T_ENUM);
+}
+
 <ST_IN_SCRIPTING>"extends" {
     return createFullSymbol(ASTPHP5Symbols.T_EXTENDS);
 }
@@ -529,12 +557,25 @@ NOWDOC_CHARS=({NEWLINE}*(([^a-zA-Z_\x7f-\xff\n\r][^\n\r]*)|({LABEL}[^a-zA-Z0-9_\
     return createSymbol(ASTPHP5Symbols.T_OBJECT_OPERATOR);
 }
 
+// NETBEANS-4443 PHP 8.0: Nullsafe operator
+// https://wiki.php.net/rfc/nullsafe_operator
+<ST_IN_SCRIPTING>"?->" {
+    pushState(ST_LOOKING_FOR_PROPERTY);
+    return createSymbol(ASTPHP5Symbols.T_NULLSAFE_OBJECT_OPERATOR);
+}
+
 <ST_IN_SCRIPTING,ST_LOOKING_FOR_PROPERTY>{WHITESPACE}+ {
     whitespaceEndPosition = getTokenStartPosition() + yylength();
 }
 
 <ST_LOOKING_FOR_PROPERTY>"->" {
     return createSymbol(ASTPHP5Symbols.T_OBJECT_OPERATOR);
+}
+
+// NETBEANS-4443 PHP 8.0: Nullsafe operator
+// https://wiki.php.net/rfc/nullsafe_operator
+<ST_LOOKING_FOR_PROPERTY>"?->" {
+    return createSymbol(ASTPHP5Symbols.T_NULLSAFE_OBJECT_OPERATOR);
 }
 
 <ST_LOOKING_FOR_PROPERTY>{LABEL} {
@@ -549,6 +590,18 @@ NOWDOC_CHARS=({NEWLINE}*(([^a-zA-Z_\x7f-\xff\n\r][^\n\r]*)|({LABEL}[^a-zA-Z0-9_\
 
 <ST_IN_SCRIPTING>"::" {
     return createSymbol(ASTPHP5Symbols.T_PAAMAYIM_NEKUDOTAYIM);
+}
+
+<ST_IN_SCRIPTING>"namespace"("\\"{LABEL})+ {
+    return createFullSymbol(ASTPHP5Symbols.T_NAME_RELATIVE);
+}
+
+<ST_IN_SCRIPTING>{LABEL}("\\"{LABEL})+ {
+    return createFullSymbol(ASTPHP5Symbols.T_NAME_QUALIFIED);
+}
+
+<ST_IN_SCRIPTING>"\\"{LABEL}("\\"{LABEL})* {
+    return createFullSymbol(ASTPHP5Symbols.T_NAME_FULLY_QUALIFIED);
 }
 
 <ST_IN_SCRIPTING>"\\" {
@@ -670,6 +723,10 @@ NOWDOC_CHARS=({NEWLINE}*(([^a-zA-Z_\x7f-\xff\n\r][^\n\r]*)|({LABEL}[^a-zA-Z0-9_\
 
 <ST_IN_SCRIPTING>"public" {
     return createFullSymbol(ASTPHP5Symbols.T_PUBLIC);
+}
+
+<ST_IN_SCRIPTING>"readonly" {
+    return createFullSymbol(ASTPHP5Symbols.T_READONLY);
 }
 
 <ST_IN_SCRIPTING>"unset" {
@@ -820,6 +877,11 @@ NOWDOC_CHARS=({NEWLINE}*(([^a-zA-Z_\x7f-\xff\n\r][^\n\r]*)|({LABEL}[^a-zA-Z0-9_\
     return createSymbol(ASTPHP5Symbols.T_COALESCE_EQUAL);
 }
 
+<ST_IN_SCRIPTING>"&"{TABS_AND_SPACES}("$"|"...") {
+    yypushback(yylength() - 1);
+    return createSymbol(ASTPHP5Symbols.T_REFERENCE);
+}
+
 // TOKENS
 <ST_IN_SCRIPTING> {
     ";"                     {return createSymbol(ASTPHP5Symbols.T_SEMICOLON);}
@@ -832,7 +894,7 @@ NOWDOC_CHARS=({NEWLINE}*(([^a-zA-Z_\x7f-\xff\n\r][^\n\r]*)|({LABEL}[^a-zA-Z0-9_\
     ")"                     {return createSymbol(ASTPHP5Symbols.T_CLOSE_PARENTHESE);}
     "|"                     {return createSymbol(ASTPHP5Symbols.T_OR);}
     "^"                     {return createSymbol(ASTPHP5Symbols.T_KOVA);}
-    "&"                     {return createSymbol(ASTPHP5Symbols.T_REFERENCE);}
+    "&"                     {return createSymbol(ASTPHP5Symbols.T_AMPERSAND_NOT_FOLLOWED_BY_VAR_OR_VARARG);}
     "+"                     {return createSymbol(ASTPHP5Symbols.T_PLUS);}
     "-"                     {return createSymbol(ASTPHP5Symbols.T_MINUS);}
     "/"                     {return createSymbol(ASTPHP5Symbols.T_DIV);}

@@ -27,18 +27,23 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.text.Document;
 import org.netbeans.api.annotations.common.CheckForNull;
+import org.netbeans.api.annotations.common.NonNull;
+import org.netbeans.modules.csl.api.OffsetRange;
 import org.netbeans.modules.php.api.PhpVersion;
 import org.netbeans.modules.php.editor.model.UseScope;
 import org.netbeans.modules.php.editor.model.impl.Type;
 import org.netbeans.modules.php.editor.model.nodes.NamespaceDeclarationInfo;
+import org.netbeans.modules.php.editor.parser.astnodes.ASTNode;
 import org.netbeans.modules.php.editor.parser.astnodes.ArrayAccess;
 import org.netbeans.modules.php.editor.parser.astnodes.ArrayCreation;
+import org.netbeans.modules.php.editor.parser.astnodes.ArrayElement;
 import org.netbeans.modules.php.editor.parser.astnodes.Assignment;
 import org.netbeans.modules.php.editor.parser.astnodes.CatchClause;
 import org.netbeans.modules.php.editor.parser.astnodes.ClassDeclaration;
 import org.netbeans.modules.php.editor.parser.astnodes.ClassInstanceCreation;
 import org.netbeans.modules.php.editor.parser.astnodes.ClassName;
 import org.netbeans.modules.php.editor.parser.astnodes.Expression;
+import org.netbeans.modules.php.editor.parser.astnodes.ExpressionArrayAccess;
 import org.netbeans.modules.php.editor.parser.astnodes.FieldAccess;
 import org.netbeans.modules.php.editor.parser.astnodes.FormalParameter;
 import org.netbeans.modules.php.editor.parser.astnodes.FunctionDeclaration;
@@ -47,6 +52,7 @@ import org.netbeans.modules.php.editor.parser.astnodes.FunctionName;
 import org.netbeans.modules.php.editor.parser.astnodes.GroupUseStatementPart;
 import org.netbeans.modules.php.editor.parser.astnodes.Identifier;
 import org.netbeans.modules.php.editor.parser.astnodes.InfixExpression;
+import org.netbeans.modules.php.editor.parser.astnodes.IntersectionType;
 import org.netbeans.modules.php.editor.parser.astnodes.MethodDeclaration;
 import org.netbeans.modules.php.editor.parser.astnodes.MethodInvocation;
 import org.netbeans.modules.php.editor.parser.astnodes.NamespaceName;
@@ -60,6 +66,7 @@ import org.netbeans.modules.php.editor.parser.astnodes.StaticMethodInvocation;
 import org.netbeans.modules.php.editor.parser.astnodes.TypeDeclaration;
 import org.netbeans.modules.php.editor.parser.astnodes.UnaryOperation;
 import org.netbeans.modules.php.editor.parser.astnodes.UnaryOperation.Operator;
+import org.netbeans.modules.php.editor.parser.astnodes.UnionType;
 import org.netbeans.modules.php.editor.parser.astnodes.UseStatement;
 import org.netbeans.modules.php.editor.parser.astnodes.Variable;
 import org.netbeans.modules.php.editor.parser.astnodes.Variadic;
@@ -74,10 +81,12 @@ import org.openide.util.Parameters;
  * @author tomslot
  */
 public final class CodeUtils {
-    public static final String FUNCTION_TYPE_PREFIX = "@fn:";
-    public static final String METHOD_TYPE_PREFIX = "@mtd:";
-    public static final String STATIC_METHOD_TYPE_PREFIX = "@static.mtd:";
+
+    public static final String FUNCTION_TYPE_PREFIX = "@fn:"; // NOI18N
+    public static final String METHOD_TYPE_PREFIX = "@mtd:"; // NOI18N
+    public static final String STATIC_METHOD_TYPE_PREFIX = "@static.mtd:"; // NOI18N
     public static final String NULLABLE_TYPE_PREFIX = "?"; // NOI18N
+    public static final String ELLIPSIS = "..."; // NOI18N
     private static final Logger LOGGER = Logger.getLogger(CodeUtils.class.getName());
 
     private CodeUtils() {
@@ -228,10 +237,12 @@ public final class CodeUtils {
     }
 
     /**
-     * Extract unqualified name for Identifier, NamespaceName, and NullableType.
+     * Extract unqualified name for Identifier, NamespaceName, NullableType, and
+     * UnionType.
      *
      * @param typeName The type name
-     * @return The type name. If it is a nullable type, the name is returned with "?"
+     * @return The type name. If it is a nullable type, the name is returned
+     * with "?" If it's union type, type names separated by "|" are returned
      */
     @CheckForNull
     public static String extractUnqualifiedName(Expression typeName) {
@@ -242,6 +253,16 @@ public final class CodeUtils {
             return extractUnqualifiedName((NamespaceName) typeName);
         } else if (typeName instanceof NullableType) {
             return NULLABLE_TYPE_PREFIX + extractUnqualifiedName(((NullableType) typeName).getType());
+        } else if (typeName instanceof UnionType) {
+            UnionType unionType = (UnionType) typeName;
+            StringBuilder sb = new StringBuilder();
+            for (Expression type : unionType.getTypes()) {
+                if (sb.length() > 0) {
+                    sb.append(Type.SEPARATOR);
+                }
+                sb.append(extractUnqualifiedName(type));
+            }
+            return sb.toString();
         }
 
         //TODO: php5.3 !!!
@@ -250,10 +271,13 @@ public final class CodeUtils {
     }
 
     /**
-     * Extract qualified name for Identifier, NamespaceName, and NullableType.
+     * Extract qualified name for Identifier, NamespaceName, NullableType, and
+     * UnionType.
      *
      * @param typeName The type name
-     * @return The type name. If it is a nullable type, the name is returned with "?"
+     * @return The type name. If it is a nullable type, the name is returned
+     * with "?". If it's a union type, type names separated by "|" are returned.
+     * If it's an intersection type, type names separated by "&" are returned.
      */
     @CheckForNull
     public static String extractQualifiedName(Expression typeName) {
@@ -265,6 +289,28 @@ public final class CodeUtils {
         } else if (typeName instanceof NullableType) {
             NullableType nullableType = (NullableType) typeName;
             return NULLABLE_TYPE_PREFIX + extractQualifiedName(nullableType.getType());
+        } else if (typeName instanceof ExpressionArrayAccess) {
+            return extractQualifiedName(((ExpressionArrayAccess) typeName).getExpression());
+        } else if (typeName instanceof UnionType) {
+            UnionType unionType = (UnionType) typeName;
+            StringBuilder sb = new StringBuilder();
+            for (Expression type : unionType.getTypes()) {
+                if (sb.length() > 0) {
+                    sb.append(Type.SEPARATOR);
+                }
+                sb.append(extractQualifiedName(type));
+            }
+            return sb.toString();
+        } else if (typeName instanceof IntersectionType) {
+            IntersectionType intersectionType = (IntersectionType) typeName;
+            StringBuilder sb = new StringBuilder();
+            for (Expression type : intersectionType.getTypes()) {
+                if (sb.length() > 0) {
+                    sb.append(Type.SEPARATOR_INTERSECTION);
+                }
+                sb.append(extractQualifiedName(type));
+            }
+            return sb.toString();
         }
         assert false : typeName.getClass();
         return null;
@@ -437,6 +483,21 @@ public final class CodeUtils {
         return variableName;
     }
 
+    @CheckForNull
+    public static String extractFormalParameterName(FormalParameter param) {
+        Expression expression = param.getParameterName();
+        if (expression instanceof Reference) {
+            expression = ((Reference) expression).getExpression();
+        }
+        if (expression instanceof Variadic) {
+            expression = ((Variadic) expression).getExpression();
+        }
+        if (expression instanceof Variable) {
+            Variable variable = (Variable) expression;
+            return extractVariableName(variable);
+        }
+        return null;
+    }
 
     public static String extractVariableType(Assignment assignment) {
         Expression rightSideExpression = assignment.getRightHandSide();
@@ -528,6 +589,11 @@ public final class CodeUtils {
     @CheckForNull
     public static String getParamDefaultValue(FormalParameter param) {
         Expression expr = param.getDefaultValue();
+        return getParamDefaultValue(expr);
+    }
+
+    @CheckForNull
+    private static String getParamDefaultValue(Expression expr) {
         //TODO: can be improved
         Operator operator = null;
         if (expr instanceof UnaryOperation) {
@@ -542,7 +608,7 @@ public final class CodeUtils {
         } else if (expr instanceof NamespaceName) {
             return extractQualifiedName((NamespaceName) expr);
         } else if (expr instanceof ArrayCreation) {
-            return "array()"; //NOI18N
+            return getParamDefaultValue((ArrayCreation) expr);
         } else if (expr instanceof StaticConstantAccess) {
             StaticConstantAccess staticConstantAccess = (StaticConstantAccess) expr;
             Expression dispatcher = staticConstantAccess.getDispatcher();
@@ -556,6 +622,25 @@ public final class CodeUtils {
             }
         }
         return expr == null ? null : " "; //NOI18N
+    }
+    
+    private static String getParamDefaultValue(ArrayCreation param) {
+        StringBuilder sb = new StringBuilder("["); //NOI18N
+        List<ArrayElement> arrayElements = param.getElements();
+        if (arrayElements.size() > 0) {
+            ArrayElement firstElement = arrayElements.get(0);
+            Expression key = firstElement.getKey();
+            if (key != null) {
+                sb.append(getParamDefaultValue(key));
+                sb.append(" => "); //NOI18N
+            }
+            sb.append(getParamDefaultValue(firstElement.getValue()));
+        }
+        if (arrayElements.size() > 1) {
+            sb.append(",..."); //NOI18N
+        }
+        sb.append("]"); //NOI18N
+        return sb.toString();
     }
 
     public static String getParamDisplayName(FormalParameter param) {
@@ -732,4 +817,13 @@ public final class CodeUtils {
         return typeName;
     }
 
+    /**
+     * Get an OffsetRange of an ASTNode.
+     *
+     * @param node the ASTNode
+     * @return the OffsetRange
+     */
+    public static OffsetRange getOffsetRagne(@NonNull ASTNode node) {
+        return new OffsetRange(node.getStartOffset(), node.getEndOffset());
+    }
 }

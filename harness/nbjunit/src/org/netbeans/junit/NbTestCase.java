@@ -34,7 +34,6 @@ import java.io.PrintStream;
 import java.lang.management.LockInfo;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MonitorInfo;
-import java.lang.management.PlatformLoggingMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
@@ -62,6 +61,7 @@ import java.util.regex.Pattern;
 import junit.framework.AssertionFailedError;
 import junit.framework.TestCase;
 import junit.framework.TestResult;
+import org.junit.Ignore;
 import org.netbeans.insane.live.LiveReferences;
 import org.netbeans.insane.live.Path;
 import org.netbeans.insane.scanner.CountingVisitor;
@@ -129,6 +129,22 @@ public abstract class NbTestCase extends TestCase implements NbTest {
      * @return true if the test can run
      */
     public @Override boolean canRun() {
+        if (getClass().isAnnotationPresent(Ignore.class)) {
+            String message = getClass().getAnnotation(Ignore.class).value();
+            System.err.println("Skipping " + getClass().getName() + (message.isEmpty() ? "" : ": " + message));
+            return false;
+        }
+        
+        try {
+            if (getClass().getMethod(getName()).isAnnotationPresent(Ignore.class)) {
+                String message = getClass().getMethod(getName()).getAnnotation(Ignore.class).value();
+                System.err.println("Skipping " + getClass().getName() + "." + getName() + (message.isEmpty() ? "" : ": " + message));
+                return false;
+            }
+        } catch (NoSuchMethodException x) {
+            // Specially named methods; let it pass.
+        }
+        
         if (NbTestSuite.ignoreRandomFailures()) {
             if (getClass().isAnnotationPresent(RandomlyFails.class)) {
                 System.err.println("Skipping " + getClass().getName());
@@ -615,7 +631,7 @@ public abstract class NbTestCase extends TestCase implements NbTest {
      * @param externalDiff instance of class implementing the {@link org.netbeans.junit.diff.Diff} interface, it has to be
      * already initialized, when passed in this assertFile function.
      */
-    static public void assertFile(String message, String test, String pass, String diff, Diff externalDiff) {
+    public static void assertFile(String message, String test, String pass, String diff, Diff externalDiff) {
         Diff diffImpl = null == externalDiff ? Manager.getSystemDiff() : externalDiff;
         File    diffFile = getDiffName(pass, null == diff ? null : new File(diff));
         
@@ -650,7 +666,7 @@ public abstract class NbTestCase extends TestCase implements NbTest {
      * @param externalDiff instance of class implementing the {@link org.netbeans.junit.diff.Diff} interface, it has to be
      * already initialized, when passed in this assertFile function.
      */
-    static public void assertFile(String test, String pass, String diff, Diff externalDiff) {
+    public static void assertFile(String test, String pass, String diff, Diff externalDiff) {
         assertFile(null, test, pass, diff, externalDiff);
     }
     /**
@@ -665,7 +681,7 @@ public abstract class NbTestCase extends TestCase implements NbTest {
      * directory. Constructed file name consists from the name of pass file (without extension and path) appended
      * by the '.diff'.
      */
-    static public void assertFile(String message, String test, String pass, String diff) {
+    public static void assertFile(String message, String test, String pass, String diff) {
         assertFile(message, test, pass, diff, null);
     }
     /**
@@ -679,7 +695,7 @@ public abstract class NbTestCase extends TestCase implements NbTest {
      * directory. Constructed file name consists from the name of pass file (without extension and path) appended
      * by the '.diff'.
      */
-    static public void assertFile(String test, String pass, String diff) {
+    public static void assertFile(String test, String pass, String diff) {
         assertFile(null, test, pass, diff, null);
     }
     /**
@@ -688,7 +704,7 @@ public abstract class NbTestCase extends TestCase implements NbTest {
      * @param pass second file to be compared, it should be so called 'golden' file, which defines the
      * correct content for the test-generated file.
      */
-    static public void assertFile(String test, String pass) {
+    public static void assertFile(String test, String pass) {
         assertFile(null, test, pass, null, null);
     }
     
@@ -708,7 +724,7 @@ public abstract class NbTestCase extends TestCase implements NbTest {
      * @param externalDiff instance of class implementing the {@link org.netbeans.junit.diff.Diff} interface, it has to be
      * already initialized, when passed in this assertFile function.
      */
-    static public void assertFile(String message, File test, File pass, File diff, Diff externalDiff) {
+    public static void assertFile(String message, File test, File pass, File diff, Diff externalDiff) {
         Diff diffImpl = null == externalDiff ? Manager.getSystemDiff() : externalDiff;
         File    diffFile = getDiffName(pass.getAbsolutePath(), diff);
         
@@ -723,7 +739,7 @@ public abstract class NbTestCase extends TestCase implements NbTest {
         } else {
             try {
                 if (diffImpl.diff(test, pass, diffFile)) {
-                    throw new AssertionFileFailedError(message, null == diffFile ? "" : diffFile.getAbsolutePath());
+                    throw new AssertionFileFailedError(message+"\n diff: "+diffFile, null == diffFile ? "" : diffFile.getAbsolutePath());
                 }
             } catch (IOException e) {
                 fail("exception in assertFile : " + e.getMessage());
@@ -743,8 +759,8 @@ public abstract class NbTestCase extends TestCase implements NbTest {
      * @param externalDiff instance of class implementing the {@link org.netbeans.junit.diff.Diff} interface, it has to be
      * already initialized, when passed in this assertFile function.
      */
-    static public void assertFile(File test, File pass, File diff, Diff externalDiff) {
-        assertFile(null, test, pass, diff, externalDiff);
+    public static void assertFile(File test, File pass, File diff, Diff externalDiff) {
+        assertFile("Difference between " + test + " and " + pass, test, pass, diff, externalDiff);
     }
     /**
      * Asserts that two files are the same, it compares two files and stores possible differences
@@ -758,7 +774,7 @@ public abstract class NbTestCase extends TestCase implements NbTest {
      * directory. Constructed file name consists from the name of pass file (without extension and path) appended
      * by the '.diff'.
      */
-    static public void assertFile(String message, File test, File pass, File diff) {
+    public static void assertFile(String message, File test, File pass, File diff) {
         assertFile(message, test, pass, diff, null);
     }
     /**
@@ -772,8 +788,8 @@ public abstract class NbTestCase extends TestCase implements NbTest {
      * directory. Constructed file name consists from the name of pass file (without extension and path) appended
      * by the '.diff'.
      */
-    static public void assertFile(File test, File pass, File diff) {
-        assertFile(null, test, pass, diff, null);
+    public static void assertFile(File test, File pass, File diff) {
+        assertFile("Difference between " + test + " and " + pass, test, pass, diff, null);
     }
     /**
      * Asserts that two files are the same, it just compares two files and doesn't produce any additional output.
@@ -781,13 +797,13 @@ public abstract class NbTestCase extends TestCase implements NbTest {
      * @param pass second file to be compared, it should be so called 'golden' file, which defines the
      * correct content for the test-generated file.
      */
-    static public void assertFile(File test, File pass) {
+    public static void assertFile(File test, File pass) {
         assertFile("Difference between " + test + " and " + pass, test, pass, null, null);
     }
     
     /**
      */
-    static private File getDiffName(String pass, File diff) {
+    private static File getDiffName(String pass, File diff) {
         if (null == diff) {
             return null;
         }
@@ -1298,7 +1314,7 @@ public abstract class NbTestCase extends TestCase implements NbTest {
     }
     
     // radix for new nbfsurl
-    private final static int radix = 16;
+    private static final int radix = 16;
     // new nbfsurl decoder - assumes the external form
     // begins with nbfs://
     private static String convertNewNBFSURL(URL url) {

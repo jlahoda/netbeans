@@ -49,7 +49,7 @@ import org.openide.util.NbBundle;
  */
 public class ChangeMethodReturnType implements ErrorRule<Void> {
 
-    private final static Set<String> CODES = new HashSet<String>(Arrays.asList(
+    private static final Set<String> CODES = new HashSet<String>(Arrays.asList(
             "compiler.err.cant.ret.val.from.meth.decl.void",
             "compiler.err.prob.found.req"
     ));
@@ -82,16 +82,16 @@ public class ChangeMethodReturnType implements ErrorRule<Void> {
 
         if (mt.getReturnType() == null) return null;
 
-        TypeMirror targetType = purify(info, info.getTrees().getTypeMirror(treePath));
+        TypeMirror targetType; 
 
-        if (targetType == null) return null;
-
-        if (targetType.getKind() == TypeKind.EXECUTABLE) {
+        if (treePath.getLeaf().getKind() == Kind.METHOD_INVOCATION) {
             String expression = info.getText().substring((int) info.getTrees().getSourcePositions().getStartPosition(info.getCompilationUnit(), treePath.getLeaf()), (int) info.getTrees().getSourcePositions().getEndPosition(info.getCompilationUnit(), treePath.getLeaf()));
             Scope s = info.getTrees().getScope(treePath);
             ExpressionTree expr = info.getTreeUtilities().parseExpression(expression, new SourcePositions[1]);
 
             targetType = purify(info, info.getTreeUtilities().attributeTree(expr, s));
+        } else {
+            targetType = purify(info, info.getTrees().getTypeMirror(treePath));
         }
 
         if (targetType == null || targetType.getKind() == TypeKind.EXECUTABLE) return null;

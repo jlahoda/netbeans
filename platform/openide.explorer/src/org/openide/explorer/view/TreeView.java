@@ -139,7 +139,7 @@ public abstract class TreeView extends JScrollPane {
     //
 
     /** Main <code>JTree</code> component. */
-    transient protected JTree tree;
+    protected transient JTree tree;
 
     /** model */
     transient NodeTreeModel treeModel;
@@ -181,21 +181,21 @@ public abstract class TreeView extends JScrollPane {
     transient boolean dropTargetPopupAllowed = true;
     
     // default DnD actions
-    transient private int allowedDragActions = DnDConstants.ACTION_COPY_OR_MOVE | DnDConstants.ACTION_REFERENCE;
-    transient private int allowedDropActions = DnDConstants.ACTION_COPY_OR_MOVE | DnDConstants.ACTION_REFERENCE;
+    private transient int allowedDragActions = DnDConstants.ACTION_COPY_OR_MOVE | DnDConstants.ACTION_REFERENCE;
+    private transient int allowedDropActions = DnDConstants.ACTION_COPY_OR_MOVE | DnDConstants.ACTION_REFERENCE;
     
     /** Quick Search support */
-    transient private QuickSearch qs;
+    private transient QuickSearch qs;
     
     /** wait cursor is shown automatically during expanding */
-    transient private boolean autoWaitCursor = true;
+    private transient boolean autoWaitCursor = true;
 
     /** Holds VisualizerChildren for all visible nodes */
     private final VisualizerHolder visHolder = new VisualizerHolder();
     /** reference to the last visible search field */
     private static Reference<TreeView> lastSearchField = new WeakReference<TreeView>(null);
 
-    transient private boolean removedNodeWasSelected = false;
+    private transient boolean removedNodeWasSelected = false;
 
     /** Constructor.
     */
@@ -405,6 +405,30 @@ public abstract class TreeView extends JScrollPane {
     public void setRootVisible(boolean visible) {
         tree.setRootVisible(visible);
         tree.setShowsRootHandles(!visible);
+    }
+
+
+    /**
+     * Set the <code>scrollsOnExpand</code> property on the
+     * underlying tree component.
+     * @see javax.swing.JTree#setScrollsOnExpand(boolean)
+     *
+     * @param newValue the new value of the property
+     * @since 6.73
+     */
+    public void setScrollsOnExpand(boolean newValue) {
+        tree.setScrollsOnExpand(newValue);
+    }
+
+    /**
+     * Returns the value of the <code>scrollsOnExpand</code> property of
+     * the underlying tree component.
+     *
+     * @return the value of the <code>scrollsOnExpand</code> property
+     * @since 6.73
+     */
+    public boolean getScrollsOnExpand() {
+        return tree.getScrollsOnExpand();
     }
 
     /**

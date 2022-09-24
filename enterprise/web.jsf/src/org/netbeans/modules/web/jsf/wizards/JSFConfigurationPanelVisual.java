@@ -151,13 +151,15 @@ public class JSFConfigurationPanelVisual extends javax.swing.JPanel implements H
     /** Cached all JSF libraries */
     private static volatile boolean jsfLibrariesCacheDirty = true;
     private static final List<Library> JSF_LIBRARIES_CACHE = new CopyOnWriteArrayList<>();
-    
+
     /** Map used for faster seek of JSF registered libraries. */
     private static final Map<Boolean, String> JSF_SEEKING_MAP = new LinkedHashMap<>(2);
 
     static {
         JSF_SEEKING_MAP.put(false, JSFUtils.EJB_STATELESS);    //NOI18N
         JSF_SEEKING_MAP.put(true, JSFUtils.FACES_EXCEPTION);   //NOI18N
+        JSF_SEEKING_MAP.put(false, JSFUtils.JAKARTAEE_EJB_STATELESS);    //NOI18N
+        JSF_SEEKING_MAP.put(true, JSFUtils.JAKARTAEE_FACES_EXCEPTION);   //NOI18N
     }
 
     /**
@@ -248,7 +250,7 @@ public class JSFConfigurationPanelVisual extends javax.swing.JPanel implements H
                 }
 
                 // searching in server registered JSF libraries
-                J2eeModuleProvider j2eeModuleProvider = (J2eeModuleProvider) project.getLookup().lookup(J2eeModuleProvider.class);
+                J2eeModuleProvider j2eeModuleProvider = project.getLookup().lookup(J2eeModuleProvider.class);
                 Set<ServerLibraryDependency> deps = getServerDependencies(j2eeModuleProvider);
                 for (ServerLibraryDependency serverLibraryDependency : deps) {
                     if (serverLibraryDependency.getName().startsWith("jsf")) { //NOI18N
@@ -396,7 +398,7 @@ public class JSFConfigurationPanelVisual extends javax.swing.JPanel implements H
 
 //        libsInitialized = true;
         repaint();
-        LOG.finest("Time spent in "+this.getClass().getName() +" setLibraryModel = "+(System.currentTimeMillis()-time) +" ms");   //NOI18N
+        LOG.log(Level.FINEST, "Time spent in {0} setLibraryModel = {1} ms", new Object[]{this.getClass().getName(), System.currentTimeMillis()-time});   //NOI18N
     }
 
     private void setServerLibraryModel(Collection<ServerLibraryItem> items) {
@@ -1043,7 +1045,7 @@ private void serverLibrariesActionPerformed(java.awt.event.ActionEvent evt) {//G
     private Profile getProfile() {
         Properties properties = panel.getController().getProperties();
         String j2eeLevel = (String)properties.getProperty("j2eeLevel"); // NOI18N
-        return j2eeLevel == null ? Profile.JAVA_EE_7_FULL : Profile.fromPropertiesString(j2eeLevel);
+        return j2eeLevel == null ? Profile.JAVA_EE_8_FULL : Profile.fromPropertiesString(j2eeLevel);
     }
 
     void update() {
@@ -1544,10 +1546,10 @@ private void serverLibrariesActionPerformed(java.awt.event.ActionEvent evt) {//G
     public final class JSFComponentsTableModel extends AbstractTableModel {
 
         private final Class<?>[] COLUMN_TYPES = new Class<?>[] {Boolean.class, JsfComponentImplementation.class, JButton.class};
-        private DefaultListModel model;
+        private DefaultListModel<JSFComponentModelItem> model;
 
         public JSFComponentsTableModel() {
-            model = new DefaultListModel();
+            model = new DefaultListModel<>();
         }
 
         public int getColumnCount() {
@@ -1599,7 +1601,7 @@ private void serverLibrariesActionPerformed(java.awt.event.ActionEvent evt) {//G
         }
 
         private JSFComponentModelItem getItem(int index) {
-            return (JSFComponentModelItem) model.get(index);
+            return model.get(index);
         }
 
         public void addItem(JSFComponentModelItem item){
@@ -1805,7 +1807,9 @@ private void serverLibrariesActionPerformed(java.awt.event.ActionEvent evt) {//G
                     setServerLibraryModel(serverJsfLibraries);
                     if (serverJsfLibraries.isEmpty()) {
                         Library preferredLibrary;
-                        if (getProfile() != null && getProfile().isAtLeast(Profile.JAVA_EE_5)) {
+                        if (getProfile() != null && getProfile().isAtLeast(Profile.JAKARTA_EE_9_WEB)) {
+                            preferredLibrary = LibraryManager.getDefault().getLibrary(JSFUtils.DEFAULT_JSF_3_0_NAME);
+                        } else if (getProfile() != null && getProfile().isAtLeast(Profile.JAVA_EE_5)) {
                             preferredLibrary = LibraryManager.getDefault().getLibrary(JSFUtils.DEFAULT_JSF_2_0_NAME);
                         } else {
                             preferredLibrary = LibraryManager.getDefault().getLibrary(JSFUtils.DEFAULT_JSF_1_2_NAME);

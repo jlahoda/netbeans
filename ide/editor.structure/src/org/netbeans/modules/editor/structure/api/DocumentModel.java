@@ -27,9 +27,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.List;
 import java.util.Map;
-import java.util.WeakHashMap;
 import java.util.WeakHashMap;
 import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
@@ -573,8 +571,6 @@ public final class DocumentModel {
                 if(debug) System.out.println("Warning: DocumentModel.getChildren(...) called for " + de + " which has already been removed!");
                 return Collections.emptyList();
             }
-
-            //assert elements.get(index) == de;
             
             //there is a problem with empty elements - if an element is removed its boundaries
             //are the some and the standart getParent/getChildren algorith fails.
@@ -731,7 +727,7 @@ public final class DocumentModel {
     // ------ model synchronization -------
     //-------------------------------------
     
-    public synchronized final void readLock() {
+    public final synchronized void readLock() {
         try {
             while (currWriter != null) {
                 if (currWriter == Thread.currentThread()) {
@@ -747,7 +743,7 @@ public final class DocumentModel {
         }
     }
     
-    public synchronized final void readUnlock() {
+    public final synchronized void readUnlock() {
         if (currWriter == Thread.currentThread()) {
             // writer has full read access.
             return;
@@ -758,7 +754,7 @@ public final class DocumentModel {
         notify();
     }
     
-    private synchronized final void writeLock() {
+    private final synchronized void writeLock() {
         try {
             while ((numReaders > 0) || (currWriter != null)) {
                 if (Thread.currentThread() == currWriter) {
@@ -778,7 +774,7 @@ public final class DocumentModel {
         }
     }
     
-    private synchronized final void writeUnlock() {
+    private final synchronized void writeUnlock() {
         if (--numWriters <= 0) {
             numWriters = 0;
             currWriter = null;
@@ -846,8 +842,6 @@ public final class DocumentModel {
             
             //create a new DocumentElement instance
             DocumentElement de = createDocumentElement(name, type, attributes, startOffset, endOffset);
-
-            assert startOffset < endOffset;
 
             if(!elements.contains(de)) {
                 if(debug) System.out.println("# ADD " + de + " adding into transaction");

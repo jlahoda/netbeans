@@ -66,6 +66,7 @@ import java.io.InputStreamReader;
 import java.io.InterruptedIOException;
 import java.io.Reader;
 import java.util.function.Predicate;
+import javax.lang.model.util.ElementScanner14;
 
 import javax.swing.SwingUtilities;
 import javax.swing.text.ChangedCharSetException;
@@ -80,13 +81,16 @@ import javax.tools.JavaFileObject;
 
 import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.annotations.common.NonNull;
+import org.netbeans.api.annotations.common.NullAllowed;
 import org.netbeans.api.editor.mimelookup.MimeLookup;
 import org.netbeans.api.editor.mimelookup.MimePath;
 import org.netbeans.api.java.classpath.ClassPath;
 import org.netbeans.api.java.classpath.JavaClassPathConstants;
 import org.netbeans.api.java.lexer.JavaTokenId;
+import org.netbeans.api.java.queries.CompilerOptionsQuery;
 import org.netbeans.api.java.queries.JavadocForBinaryQuery;
 import org.netbeans.api.java.queries.SourceForBinaryQuery;
+import org.netbeans.api.java.queries.SourceLevelQuery;
 import org.netbeans.api.java.source.ClasspathInfo.PathKind;
 import org.netbeans.api.java.source.JavaSource.Phase;
 import org.netbeans.api.java.source.matching.Matcher;
@@ -101,6 +105,7 @@ import org.netbeans.modules.java.source.JavadocHelper;
 import org.netbeans.modules.java.source.ModuleNames;
 import org.netbeans.modules.java.source.indexing.FQN2Files;
 import org.netbeans.modules.java.source.indexing.JavaCustomIndexer;
+import org.netbeans.modules.java.source.parsing.ClassParser;
 import org.netbeans.modules.java.source.parsing.ClasspathInfoProvider;
 import org.netbeans.modules.java.source.parsing.FileObjects;
 import org.netbeans.modules.java.source.parsing.Hacks;
@@ -120,6 +125,7 @@ import org.netbeans.spi.java.classpath.support.ClassPathSupport;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.filesystems.URLMapper;
+import org.openide.modules.SpecificationVersion;
 import org.openide.util.Exceptions;
 import org.openide.util.Lookup;
 import org.openide.util.Pair;
@@ -191,7 +197,7 @@ public class SourceUtils {
     
     public static TypeMirror getBound(WildcardType wildcardType) {
         Type.TypeVar bound = ((Type.WildcardType)wildcardType).bound;
-        return bound != null ? bound.bound : null;
+        return bound != null ? bound.getUpperBound() : null;
     }
 
     /**
@@ -401,6 +407,7 @@ public class SourceUtils {
             if (info instanceof WorkingCopy) {
                 CompilationUnitTree nue = (CompilationUnitTree) ((WorkingCopy)info).resolveRewriteTarget(cut);
                 ((WorkingCopy)info).rewrite(info.getCompilationUnit(), GeneratorUtilities.get((WorkingCopy)info).addImports(nue, elementsToImport));
+                ((WorkingCopy)info).invalidateSourceAfter = true;
             } else {
                 final ElementHandle handle = ElementHandle.create(toImport);
                 SwingUtilities.invokeLater(new Runnable() {
@@ -563,7 +570,7 @@ public class SourceUtils {
         }
         return null;        
     }
-    
+
     private static FileObject findSourceForBinary(FileObject binaryRoot, FileObject binary, String signature, String pkgName, String className, boolean isPkg) throws IOException {
         FileObject[] sourceRoots = SourceForBinaryQuery.findSourceRoots(binaryRoot.toURL()).getRoots();                        
         ClassPath sourcePath = ClassPathSupport.createClassPath(sourceRoots);
@@ -644,7 +651,7 @@ public class SourceUtils {
         return null;
     }
 
-    private static abstract class Match {
+    private abstract static class Match {
 
         private final String name;
 
@@ -825,7 +832,17 @@ public class SourceUtils {
     }
         
     //Helper methods
-    
+
+    /**
+     * Returns true if the given file is a class file
+     * @param file
+     * @return true if the given file is a class file
+     * @since 2.51
+     */
+    public static boolean isClassFile(@NonNull final FileObject file) {
+        return FileObjects.CLASS.equals(file.getExt()) || ClassParser.MIME_TYPE.equals(file.getMIMEType(ClassParser.MIME_TYPE));
+    }
+
     /**
      * Returns classes declared in the given source file which have the main method.
      * @param fo source file
@@ -851,7 +868,7 @@ public class SourceUtils {
                 public void run(final CompilationController control) throws Exception {
                     if (control.toPhase(JavaSource.Phase.ELEMENTS_RESOLVED).compareTo (JavaSource.Phase.ELEMENTS_RESOLVED)>=0) {
                         final List<TypeElement>  types = new ArrayList<>();
-                        final ElementScanner6<Void,Void> visitor = new ElementScanner6<Void, Void>() {
+                        final ElementScanner6<Void,Void> visitor = new ElementScanner14<Void, Void>() {
                             @Override
                             public Void visitType(TypeElement e, Void p) {
                                 if (e.getEnclosingElement().getKind() == ElementKind.PACKAGE
@@ -862,6 +879,7 @@ public class SourceUtils {
                                     return null;
                                 }
                             }
+
                         };
                         visitor.scan(control.getTopLevelElements(), null);
                         for (TypeElement type : types) {
@@ -1347,5 +1365,22 @@ public class SourceUtils {
      */
     public static Object getDiagnosticParam(Diagnostic<?> d, int index) {
         return Hacks.getDiagnosticParam(d, index);
+    }
+
+    /**
+     * Ensure that the given file is parsed from source, in the context of the
+     * provided parser instance.
+     *
+     * Please note this only has an effect before invoking {@link CompilationController#toPhase(org.netbeans.api.java.source.JavaSource.Phase) }.
+     *
+     * @param cc the parser instance that should be augmented
+     * @param file the input source file
+     * @since 2.46
+     */
+    public static void forceSource(CompilationController cc, FileObject file) {
+        if (cc.getPhase() != Phase.MODIFIED) {
+            throw new IllegalStateException("Must invoke before running toPhase!");
+        }
+        cc.addForceSource(file);
     }
 }

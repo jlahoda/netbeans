@@ -112,13 +112,13 @@ public class MavenWhiteListQueryImpl implements WhiteListQueryImplementation {
                         if (newTransitive == null) {
                             newTransitive = Collections.emptySet();
                         }
-                        HashSet oldNotNew1 = new HashSet(oldPrivate);
+                        Set<String> oldNotNew1 = new HashSet<>(oldPrivate);
                         oldNotNew1.removeAll(newPrivate);
-                        HashSet newNotOld1 = new HashSet(newPrivate);
+                        Set<String> newNotOld1 = new HashSet<>(newPrivate);
                         newNotOld1.removeAll(oldPrivate);
-                        HashSet oldNotNew2 = new HashSet(oldTransitive);
+                        Set<String> oldNotNew2 = new HashSet<>(oldTransitive);
                         oldNotNew2.removeAll(newTransitive);
-                        HashSet newNotOld2 = new HashSet(newTransitive);
+                        Set<String> newNotOld2 = new HashSet<>(newTransitive);
                         newNotOld2.removeAll(oldTransitive);
                         
                         boolean privateChanged = !oldNotNew1.isEmpty() || !newNotOld1.isEmpty();
@@ -201,7 +201,7 @@ public class MavenWhiteListQueryImpl implements WhiteListQueryImplementation {
     }
     
     public static boolean isUseOSGiDependencies(Project project) {
-        String useOsgiString = PluginPropertyUtils.getPluginProperty(project, MavenNbModuleImpl.GROUPID_MOJO, MavenNbModuleImpl.NBM_PLUGIN, "useOSGiDependencies", null, null);
+        String useOsgiString = PluginBackwardPropertyUtils.getPluginProperty(project, "useOSGiDependencies", null, null);
         return  useOsgiString != null ? Boolean.parseBoolean(useOsgiString) : false;
     }
     
@@ -253,7 +253,7 @@ public class MavenWhiteListQueryImpl implements WhiteListQueryImplementation {
             }
         }
         
-        List<ExplicitDependency> explicits = PluginPropertyUtils.getPluginPropertyBuildable(project, MavenNbModuleImpl.GROUPID_MOJO, MavenNbModuleImpl.NBM_PLUGIN, null, new ExplicitBuilder());
+        List<ExplicitDependency> explicits = PluginBackwardPropertyUtils.getPluginPropertyBuildable(project, null, new ExplicitBuilder());
 //        String codenamebase = PluginPropertyUtils.getPluginProperty(project, MavenNbModuleImpl.GROUPID_MOJO, MavenNbModuleImpl.NBM_PLUGIN, "codeNameBase", null, null);
 //        if (codenamebase == null) {
 //            codenamebase = mp.getGroupId() + "." + mp.getArtifactId();
@@ -330,7 +330,7 @@ public class MavenWhiteListQueryImpl implements WhiteListQueryImplementation {
         assert Thread.holdsLock(LOCK);
         final Set<MavenWhiteListImplementation> set;
         synchronized (results) {
-            set = new HashSet(results);
+            set = new HashSet<>(results);
         }
         RP.post(new Runnable() {
             @Override

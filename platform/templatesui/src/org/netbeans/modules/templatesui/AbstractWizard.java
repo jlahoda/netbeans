@@ -121,7 +121,7 @@ implements WizardDescriptor.InstantiatingIterator<WizardDescriptor> {
             name(tw.getTargetName()).
             withParameters(params).build();
                     
-            Set<DataObject> objs = new LinkedHashSet(result.size() * 2);
+            Set<DataObject> objs = new LinkedHashSet<>(result.size() * 2);
             for (FileObject fileObject : result) {
                 objs.add(DataObject.find(fileObject));
             }
@@ -476,7 +476,7 @@ implements WizardDescriptor.InstantiatingIterator<WizardDescriptor> {
     }
 
     @JavaScriptBody(args = "code", body = "return 0 || eval(code);")
-    native static Object eval(String code);
+    static native Object eval(String code);
     
     @JavaScriptBody(args = { "arr" }, body = 
         "for (var i = 0; i < arr.length; i++) {\n" +

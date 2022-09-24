@@ -80,7 +80,7 @@ public final class XMLDataObject extends org.openide.loaders.XMLDataObject
     private static final long serialVersionUID = 9153823984913876866L;
     
     /** Synchronization implementation delegate. */
-    private Reference<XMLSyncSupport> refSync;
+    private Reference<Synchronizator> refSync;
     
     /** Cookie Manager */
     private final DataObjectCookieManager cookieManager;
@@ -159,7 +159,7 @@ public final class XMLDataObject extends org.openide.loaders.XMLDataObject
     protected Node createNodeDelegate () {
         if ( Util.THIS.isLoggable() ) /* then */ Util.THIS.debug ("--> XMLDataObject.createNodeDelegate: this = " + this);
 
-        DataNodeCreator dataNodeCreator = (DataNodeCreator) Lookup.getDefault().lookup (DataNodeCreator.class);
+        DataNodeCreator dataNodeCreator = Lookup.getDefault().lookup (DataNodeCreator.class);
         Node dataNode = null;
 
         if ( Util.THIS.isLoggable() ) /* then */ Util.THIS.debug ("-*- XMLD   O     .createNodeDelegate: dataNodeCreator = " + dataNodeCreator);
@@ -256,7 +256,7 @@ public final class XMLDataObject extends org.openide.loaders.XMLDataObject
             return sync;
         }
         sync = new XMLSyncSupport(this);
-        refSync = new WeakReference(sync);
+        refSync = new WeakReference<>(sync);
         return sync;
     }
 
@@ -357,10 +357,7 @@ public final class XMLDataObject extends org.openide.loaders.XMLDataObject
         /**
          */
         public void view () {
-            try {
-                HtmlBrowser.URLDisplayer.getDefault().showURL(primary.getFile().getURL());
-            } catch (FileStateInvalidException e) {
-            }
+            HtmlBrowser.URLDisplayer.getDefault().showURL(primary.getFile().toURL());
         }
 
     } // end of class ViewSupport

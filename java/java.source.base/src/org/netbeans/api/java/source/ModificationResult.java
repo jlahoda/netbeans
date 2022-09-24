@@ -236,7 +236,7 @@ public final class ModificationResult {
                     }
                 });
                 if (exceptions [0] != null) {
-                    LOG.log(Level.INFO, "ModificationResult commit failed with an exception: ", exceptions[0]);
+                    LOG.log(Level.INFO, "Cannot commit changes into " + fo, exceptions[0]);
                     int s = lastCommitted.size();
                     for (Throwable t : lastCommitted) {
                         LOG.log(Level.INFO, "Previous commit number " + s--, t);
@@ -400,11 +400,14 @@ public final class ModificationResult {
                 // first insert the new content, THEN remove the old one. In situations where the content AFTER the
                 // change is not writable this ordering allows to replace the content, but if we first delete, 
                 // replacement cannot be inserted into the nonwritable area.
-                int delta = diff.getNewText().length();
                 int offs = diff.getStartPosition().getOffset();
                 int removeLen = diff.getEndPosition().getOffset() - offs;
                 
+                // [NETBEANS-4270] Can't use "delta = diff.getNewText().length()".
+                // doc.insertString may filter chars, e.g. '\r', and change length.
+                int initialLength = doc.getLength();
                 doc.insertString(offs, diff.getNewText(), null);
+                int delta = doc.getLength() - initialLength;
                 doc.remove(delta + offs, removeLen);
                 break;
             }

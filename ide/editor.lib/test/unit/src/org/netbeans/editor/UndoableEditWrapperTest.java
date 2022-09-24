@@ -93,14 +93,14 @@ public class UndoableEditWrapperTest extends NbTestCase {
         static final String mimeType = "text/plain";
 
         /** the support to work with */
-        transient final CES support;
+        final transient CES support;
         
         private transient String content = ""; // initial document content
         private transient boolean modified = false;
         /** if not null contains message why this document cannot be modified */
         private transient String cannotBeModified;
         private transient Date date = new Date ();
-        private transient List/*<PropertyChangeListener>*/ propL = new ArrayList ();
+        private transient List<PropertyChangeListener> propL = new ArrayList<>();
         private transient VetoableChangeListener vetoL;
 
         public CESEnv() {

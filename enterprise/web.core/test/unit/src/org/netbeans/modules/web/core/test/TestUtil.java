@@ -35,7 +35,7 @@ import java.util.StringTokenizer;
 import java.util.WeakHashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.netbeans.api.project.Project;
 import org.netbeans.junit.NbTestCase;
 import org.netbeans.modules.j2ee.deployment.impl.ServerRegistry;
@@ -182,9 +182,9 @@ public final class TestUtil extends ProxyLookup {
      * (with any outcome) on a given project directory.
      */
     public static int projectLoadCount(FileObject dir) {
-        Integer i = (Integer)loadCount.get(dir);
+        Integer i = loadCount.get(dir);
         if (i != null) {
-            return i.intValue();
+            return i;
         } else {
             return 0;
         }

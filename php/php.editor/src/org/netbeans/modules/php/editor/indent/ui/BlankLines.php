@@ -16,6 +16,13 @@ public function method($text, $number){
 }
 function connect() {
 }
+enum Enumeration: int implements I {
+    case A = 1;
+    case B = 2;
+    const CONSTANT = self::A;
+    public function impl(): void {
+    }
+}
 namespace AnotherProject;
 const CONNECT_OK = 1;
 class Connection {
@@ -27,6 +34,8 @@ class Connection {
      * comment for field2
      */
     public $field2;
+    #[Attr(1, "param")]
+    public $field3;
 }
 function connect() {
 }

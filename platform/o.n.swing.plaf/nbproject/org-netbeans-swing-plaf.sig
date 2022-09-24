@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.45.1
+#Version 1.59
 
 CLSS public java.lang.Object
 cons public init()
@@ -23,11 +23,13 @@ fld protected final static java.lang.String DESKTOP_BACKGROUND = "Nb.Desktop.bac
 fld protected final static java.lang.String DESKTOP_BORDER = "Nb.Desktop.border"
 fld protected final static java.lang.String DESKTOP_SPLITPANE_BORDER = "nb.desktop.splitpane.border"
 fld protected final static java.lang.String EDITOR_ERRORSTRIPE_SCROLLBAR_INSETS = "Nb.Editor.ErrorStripe.ScrollBar.Insets"
+fld protected final static java.lang.String EDITOR_PREFERRED_COLOR_PROFILE = "nb.preferred.color.profile"
 fld protected final static java.lang.String EDITOR_STATUS_INNER_BORDER = "Nb.Editor.Status.innerBorder"
 fld protected final static java.lang.String EDITOR_STATUS_LEFT_BORDER = "Nb.Editor.Status.leftBorder"
 fld protected final static java.lang.String EDITOR_STATUS_ONLYONEBORDER = "Nb.Editor.Status.onlyOneBorder"
 fld protected final static java.lang.String EDITOR_STATUS_RIGHT_BORDER = "Nb.Editor.Status.rightBorder"
 fld protected final static java.lang.String EDITOR_TABBED_CONTAINER_UI = "TabbedContainerUI"
+fld protected final static java.lang.String EDITOR_TABSCOMPONENT_BORDER = "Nb.Editor.TabsComponent.border"
 fld protected final static java.lang.String EDITOR_TAB_CONTENT_BORDER = "TabbedContainer.editor.contentBorder"
 fld protected final static java.lang.String EDITOR_TAB_DISPLAYER_UI = "EditorTabDisplayerUI"
 fld protected final static java.lang.String EDITOR_TAB_OUTER_BORDER = "TabbedContainer.editor.outerBorder"
@@ -79,6 +81,9 @@ fld protected final static java.lang.String WORKPLACE_FILL = "nb_workplace_fill"
 fld public final static java.lang.String CONTROLFONT = "controlFont"
 fld public final static java.lang.String LISTFONT = "List.font"
 fld public final static java.lang.String MENUFONT = "menuFont"
+fld public final static java.lang.String OPTIONS_CATEGORIES_BUTTON_USE_NIMBUS = "nb.options.categories.button.useNimbusCategoryButton"
+fld public final static java.lang.String OPTIONS_CATEGORIES_SEPARATOR_COLOR = "nb.options.categories.separatorColor"
+fld public final static java.lang.String OPTIONS_USE_UI_DEFAULT_COLORS = "nb.options.useUIDefaultsColors"
 fld public final static java.lang.String PANELFONT = "Panel.font"
 fld public final static java.lang.String PROGRESS_CANCEL_BUTTON_ICON = "nb.progress.cancel.icon"
 fld public final static java.lang.String PROGRESS_CANCEL_BUTTON_PRESSED_ICON = "nb.progress.cancel.icon.pressed"

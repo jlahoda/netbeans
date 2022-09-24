@@ -23,7 +23,6 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.swing.SwingUtilities;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import javax.swing.text.JTextComponent;
@@ -37,6 +36,7 @@ import org.netbeans.modules.editor.NbEditorUtilities;
 import org.netbeans.modules.editor.indent.api.Indent;
 import org.netbeans.modules.html.editor.api.HtmlKit;
 import org.netbeans.modules.html.editor.api.gsf.HtmlParserResult;
+import org.netbeans.modules.html.editor.lib.api.HtmlParsingResult;
 import org.netbeans.modules.html.editor.lib.api.elements.CloseTag;
 import org.netbeans.modules.html.editor.lib.api.elements.Element;
 import org.netbeans.modules.html.editor.lib.api.elements.ElementType;
@@ -152,7 +152,7 @@ public class InjectCompositeComponent {
             public void run(ResultIterator resultIterator) throws Exception {
                 ResultIterator ri = WebUtils.getResultIterator(resultIterator, HtmlKit.HTML_MIME_TYPE);
                 if (ri != null) {
-                    HtmlParserResult result = (HtmlParserResult) ri.getParserResult();
+                    HtmlParsingResult result = (HtmlParsingResult) ri.getParserResult();
                     if (result != null) {
                         declaredPrefixes.set(result.getNamespaces());
                     }
@@ -233,8 +233,9 @@ public class InjectCompositeComponent {
                 @Override
                 public void run(ResultIterator resultIterator) throws Exception {
                     final Map<Library, String> importsMap = new LinkedHashMap<>();
-                    for (String uri : context.getDeclarations().keySet()) {
-                        String prefix = context.getDeclarations().get(uri);
+                    for (Map.Entry<String, String> entry : context.getDeclarations().entrySet()) {
+                        String uri = entry.getKey();
+                        String prefix = entry.getValue();
                         Library lib = jsfs.getLibrary(uri);
                         if (lib != null) {
                             importsMap.put(lib, prefix);

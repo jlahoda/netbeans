@@ -26,7 +26,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,11 +64,15 @@ public enum JSFVersion {
     JSF_1_2("JSF 1.2"),
     JSF_2_0("JSF 2.0"),
     JSF_2_1("JSF 2.1"),
-    JSF_2_2("JSF 2.2");
+    JSF_2_2("JSF 2.2"),
+    JSF_2_3("JSF 2.3"),
+    JSF_3_0("JSF 3.0");
 
-    private static final LinkedHashMap<JSFVersion, String> SPECIFIC_CLASS_NAMES = new LinkedHashMap<JSFVersion, String>();
+    private static final LinkedHashMap<JSFVersion, String> SPECIFIC_CLASS_NAMES = new LinkedHashMap<>();
 
     static {
+        SPECIFIC_CLASS_NAMES.put(JSFVersion.JSF_3_0, JSFUtils.JSF_3_0__API_SPECIFIC_CLASS);
+        SPECIFIC_CLASS_NAMES.put(JSFVersion.JSF_2_3, JSFUtils.JSF_2_3__API_SPECIFIC_CLASS);
         SPECIFIC_CLASS_NAMES.put(JSFVersion.JSF_2_2, JSFUtils.JSF_2_2__API_SPECIFIC_CLASS);
         SPECIFIC_CLASS_NAMES.put(JSFVersion.JSF_2_1, JSFUtils.JSF_2_1__API_SPECIFIC_CLASS);
         SPECIFIC_CLASS_NAMES.put(JSFVersion.JSF_2_0, JSFUtils.JSF_2_0__API_SPECIFIC_CLASS);
@@ -87,13 +90,13 @@ public enum JSFVersion {
     public String getShortName() {
         return shortName;
     }
-    
+
     private static final RequestProcessor RP = new RequestProcessor(JSFVersion.class);
     private static final Logger LOG = Logger.getLogger(JSFVersion.class.getName());
 
     // caches for holding JSF version and the project CP listeners
-    private static final Map<WebModule, JSFVersion> projectVersionCache = new WeakHashMap<WebModule, JSFVersion>();
-    private static final Map<WebModule, PropertyChangeListener> projectListenerCache = new WeakHashMap<WebModule, PropertyChangeListener>();
+    private static final Map<WebModule, JSFVersion> projectVersionCache = new WeakHashMap<>();
+    private static final Map<WebModule, PropertyChangeListener> projectListenerCache = new WeakHashMap<>();
 
     /**
      * Gets the JSF version supported by the WebModule. It seeks for the JSF only on the classpath including the
@@ -103,7 +106,7 @@ public enum JSFVersion {
      * @return JSF version if any found on the WebModule compile classpath, {@code null} otherwise
      */
     @CheckForNull
-    public synchronized static JSFVersion forWebModule(@NonNull final WebModule webModule) {
+    public static synchronized JSFVersion forWebModule(@NonNull final WebModule webModule) {
         Parameters.notNull("webModule", webModule); //NOI18N
         JSFVersion version = projectVersionCache.get(webModule);
         if (version == null) {
@@ -135,7 +138,7 @@ public enum JSFVersion {
      * @since 1.65
      */
     @CheckForNull
-    public synchronized static JSFVersion forProject(@NonNull final Project project) {
+    public static synchronized JSFVersion forProject(@NonNull final Project project) {
         Parameters.notNull("project", project); //NOI18N
         WebModule webModule = WebModule.getWebModule(project.getProjectDirectory());
         if (webModule != null) {
@@ -209,7 +212,11 @@ public enum JSFVersion {
     public static JSFVersion forServerLibrary(@NonNull ServerLibrary lib) {
         Parameters.notNull("serverLibrary", lib); //NOI18N
         if ("JavaServer Faces".equals(lib.getSpecificationTitle())) { // NOI18N
-            if (Version.fromJsr277NotationWithFallback("2.2").equals(lib.getSpecificationVersion())) { //NOI18N
+            if (Version.fromJsr277NotationWithFallback("3.0").equals(lib.getSpecificationVersion())) { //NOI18N
+                return JSFVersion.JSF_3_0;
+            } else if (Version.fromJsr277NotationWithFallback("2.3").equals(lib.getSpecificationVersion())) { //NOI18N
+                return JSFVersion.JSF_2_3;
+            } else if (Version.fromJsr277NotationWithFallback("2.2").equals(lib.getSpecificationVersion())) { //NOI18N
                 return JSFVersion.JSF_2_2;
             } else if (Version.fromJsr277NotationWithFallback("2.1").equals(lib.getSpecificationVersion())) { //NOI18N
                 return JSFVersion.JSF_2_1;

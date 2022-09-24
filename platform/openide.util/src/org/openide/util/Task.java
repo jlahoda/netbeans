@@ -20,6 +20,7 @@ package org.openide.util;
 
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -68,7 +69,7 @@ public class Task extends Object implements Runnable {
     private boolean finished;
 
     /** listeners for the finish of task (TaskListener) */
-    private HashSet<TaskListener> list;
+    private Set<TaskListener> list;
 
     /** Create a new task.
     * The runnable should provide its own error-handling, as
@@ -195,7 +196,7 @@ public class Task extends Object implements Runnable {
     * @see #run
     */
     protected final void notifyFinished() {
-        Iterator it;
+        Iterator<TaskListener> it;
 
         synchronized (this) {
             finished = true;
@@ -207,11 +208,11 @@ public class Task extends Object implements Runnable {
                 return;
             }
 
-            it = ((HashSet) list.clone()).iterator();
+            it = (new HashSet<>(list)).iterator();
         }
 
         while (it.hasNext()) {
-            TaskListener l = (TaskListener) it.next();
+            TaskListener l = it.next();
             l.taskFinished(this);
         }
     }
@@ -246,7 +247,7 @@ public class Task extends Object implements Runnable {
         boolean callNow;
         synchronized (this) {
             if (list == null) {
-                list = new HashSet<TaskListener>();
+                list = new HashSet<>();
             }
             list.add(l);
             

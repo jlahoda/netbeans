@@ -924,7 +924,7 @@ public final class DocumentViewOp
         float lineHeightCorrectionOrig = rowHeightCorrection;
         rowHeightCorrection = prefs.getFloat(SimpleValueNames.LINE_HEIGHT_CORRECTION, 1.0f);
         boolean inlineHintsEnableOrig = inlineHintsEnable;
-        inlineHintsEnable = Boolean.TRUE.equals(prefs.getBoolean("enable.inline.hints", false)); // NOI18N
+        inlineHintsEnable = Boolean.TRUE.equals(prefs.getBoolean("enable.inline.hints", true)); // NOI18N
         boolean updateMetrics = (rowHeightCorrection != lineHeightCorrectionOrig);
         boolean releaseChildren = nonInitialUpdate && 
                 ((nonPrintableCharactersVisible != nonPrintableCharactersVisibleOrig) ||
@@ -1391,7 +1391,7 @@ public final class DocumentViewOp
 
     TextLayout createTextLayout(String text, Font font) {
         checkSettingsInfo();
-        if (fontRenderContext != null && font != null) {
+        if (fontRenderContext != null && font != null && text.length() > 0) {
             ViewStats.incrementTextLayoutCreated(text.length());
             FontInfo fontInfo = getFontInfo(font);
             TextLayout textLayout = new TextLayout(text, fontInfo.renderFont, fontRenderContext);
@@ -1510,7 +1510,7 @@ public final class DocumentViewOp
        
         JTextComponent textComponent = docView.getTextComponent();
         Keymap keymap = textComponent.getKeymap();
-        int wheelRotation = evt.getWheelRotation();
+        double wheelRotation = evt.getPreciseWheelRotation();
         if (wheelRotation < 0) {
             Action action = keymap.getAction(KeyStroke.getKeyStroke(0x290, modifiers)); //WHEEL_UP constant
             if (action != null) {

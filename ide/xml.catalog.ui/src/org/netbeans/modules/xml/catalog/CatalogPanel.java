@@ -54,9 +54,9 @@ public class CatalogPanel extends TopComponent implements ExplorerManager.Provid
     private ExplorerManager manager;
     private CatalogTreeView view;
     private JTree tree;
-    static private Set newlyCreatedFolders;
+    private static Set newlyCreatedFolders;
     
-    static private FileObject catalogRoot;
+    private static FileObject catalogRoot;
     
     /** Creates new form CatalogPanel */
     public CatalogPanel() {
@@ -143,7 +143,7 @@ public class CatalogPanel extends TopComponent implements ExplorerManager.Provid
         return new CatalogRootNode();
     }
     
-    static private final class TemplateFilter implements DataFilter {
+    private static final class TemplateFilter implements DataFilter {
         public boolean acceptDataObject(DataObject obj) {
             return acceptTemplate(obj);
         }
@@ -298,24 +298,24 @@ public class CatalogPanel extends TopComponent implements ExplorerManager.Provid
     private javax.swing.JPanel treePanel;
     // End of variables declaration//GEN-END:variables
     
-    static private DataObject getDOFromNode(Node n) {
-        DataObject dobj = (DataObject) n.getLookup().lookup(DataObject.class);
+    private static DataObject getDOFromNode(Node n) {
+        DataObject dobj = n.getLookup().lookup(DataObject.class);
         assert dobj != null : "DataObject for node " + n;
         return dobj;
     }
     
-    static private DataFolder getTargetFolder(Node [] nodes) {
+    private static DataFolder getTargetFolder(Node [] nodes) {
         DataFolder folder = null;
         if (nodes == null || nodes.length == 0) {
             folder = DataFolder.findFolder(getCatalogRoot());
         } else {
             // try if has a data folder (alert: leaf node can be a empty folder)
-            folder = (DataFolder) nodes [0].getLookup().lookup(DataFolder.class);
+            folder = nodes [0].getLookup().lookup(DataFolder.class);
             
             // if not this node then try its parent
             if (folder == null && nodes [0].isLeaf()) {
                 Node parent = nodes [0].getParentNode();
-                folder = (DataFolder) parent.getLookup().lookup(DataFolder.class);
+                folder = parent.getLookup().lookup(DataFolder.class);
             }
         }
         return folder;
@@ -386,7 +386,7 @@ public class CatalogPanel extends TopComponent implements ExplorerManager.Provid
     private int getNodePosition(Node n) {
         Index supp = getIndexSupport(n);
         
-        DataFolder df = (DataFolder) n.getParentNode().getLookup().lookup(DataFolder.class);
+        DataFolder df = n.getParentNode().getLookup().lookup(DataFolder.class);
         df.getNodeDelegate().getChildren().getNodes(true);
         
         int pos = supp.indexOf(n);
@@ -400,7 +400,7 @@ public class CatalogPanel extends TopComponent implements ExplorerManager.Provid
         Node parent = n.getParentNode();
         assert parent != null : "Node " + n + " has a parent.";
         
-        Index index = (Index) parent.getLookup().lookup(Index.class);
+        Index index = parent.getLookup().lookup(Index.class);
         assert index != null : "Node " + parent + " has Index cookie.";
         
         return index;

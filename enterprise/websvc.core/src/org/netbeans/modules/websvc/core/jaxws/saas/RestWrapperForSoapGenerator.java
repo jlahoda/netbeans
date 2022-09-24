@@ -159,7 +159,7 @@ public class RestWrapperForSoapGenerator {
         targetSource.runModificationTask(task).commit();
 
 
-        return new HashSet<FileObject>(Collections.EMPTY_LIST);
+        return new HashSet<FileObject>(Collections.<FileObject>emptyList());
     }
 
     private void addQNameImport(WorkingCopy copy) {
@@ -281,7 +281,7 @@ public class RestWrapperForSoapGenerator {
             return Boolean.FALSE;
         }
         if (type == Character.class) {
-            return Character.valueOf('\0');
+            return '\0';
         }
         return null;
     }
@@ -315,7 +315,7 @@ public class RestWrapperForSoapGenerator {
         try {
             return loader.loadClass(raw);
         } catch (ClassNotFoundException ex) {
-            Logger.global.log(Level.INFO, "", ex);
+            Logger.getGlobal().log(Level.INFO, "", ex);
             return null;
         }
     }

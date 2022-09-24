@@ -60,8 +60,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertTrue;
 import org.netbeans.api.j2ee.core.Profile;
 import org.netbeans.api.java.classpath.ClassPath;
 import org.netbeans.modules.csl.api.CodeCompletionContext;
@@ -610,7 +608,7 @@ public class ELTestBase extends CslTestBase {
         }
 
         public Profile getJ2eeProfile() {
-            return Profile.JAVA_EE_6_FULL;
+            return Profile.JAVA_EE_8_FULL;
         }
 
         public FileObject getWebInf() {

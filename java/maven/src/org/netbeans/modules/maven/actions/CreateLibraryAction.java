@@ -44,7 +44,6 @@ import org.apache.maven.shared.dependency.tree.DependencyNode;
 import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.annotations.common.StaticResource;
 import org.netbeans.api.progress.ProgressHandle;
-import org.netbeans.api.progress.ProgressHandleFactory;
 import org.netbeans.api.project.libraries.LibrariesCustomizer;
 import org.netbeans.api.project.libraries.Library;
 import org.netbeans.api.project.libraries.LibraryManager;
@@ -76,7 +75,7 @@ import org.openide.util.Utilities;
 public class CreateLibraryAction extends AbstractAction implements LookupListener {
     private final Lookup lookup;
     private final Lookup.Result<DependencyNode> result;
-    private final static @StaticResource String LIBRARIES_ICON = "org/netbeans/modules/maven/actions/libraries.gif";;
+    private static final @StaticResource String LIBRARIES_ICON = "org/netbeans/modules/maven/actions/libraries.gif";;
     private boolean createRunning;
 
     @Messages("ACT_Library=Create Library")
@@ -145,7 +144,7 @@ public class CreateLibraryAction extends AbstractAction implements LookupListene
     })
     @SuppressWarnings("RV_RETURN_VALUE_IGNORED_BAD_PRACTICE") // baseFolder.mkdirs; will throw IOE later from getJarUri
     private static @CheckForNull Library createLibrary(LibraryManager libraryManager, String libraryName, List<Artifact> includeArtifacts, boolean allSourceAndJavadoc, MavenProject project, String copyTo) {
-        ProgressHandle handle = ProgressHandleFactory.createHandle(MSG_Create_Library(),
+        ProgressHandle handle = ProgressHandle.createHandle(MSG_Create_Library(),
                 ProgressTransferListener.cancellable());
         int count = includeArtifacts.size() * (allSourceAndJavadoc ? 3 : 1) + 5;
         handle.start(count);

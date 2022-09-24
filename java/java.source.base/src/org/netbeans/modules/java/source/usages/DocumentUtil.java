@@ -21,6 +21,8 @@ package org.netbeans.modules.java.source.usages;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -82,6 +84,8 @@ public class DocumentUtil {
 
     private static final char EK_CLASS = 'C';                           //NOI18N
     private static final char EK_LOCAL_CLASS = 'c';                     //NOI18N
+    private static final char EK_RECORD = 'R';                          //NOI18N
+    private static final char EK_LOCAL_RECORD = 'r';                    //NOI18N
     private static final char EK_INTERFACE = 'I';                       //NOI18N
     private static final char EK_LOCAL_INTERFACE = 'i';                 //NOI18N
     private static final char EK_ENUM = 'E';                            //NOI18N
@@ -113,12 +117,13 @@ public class DocumentUtil {
     }
 
     @NonNull
-    public static Convertor<Document,ElementHandle<TypeElement>> typeElementConvertor() {
-        return new ElementHandleConvertor<> (
-                ElementKind.CLASS,
-                ElementKind.ENUM,
-                ElementKind.INTERFACE,
-                ElementKind.ANNOTATION_TYPE);
+    public static Convertor<Document, ElementHandle<TypeElement>> typeElementConvertor() {
+        List<ElementKind> eleKindList = new ArrayList<>();
+        ElementKind[] otherElekinds = {ElementKind.ENUM, ElementKind.INTERFACE, ElementKind.ANNOTATION_TYPE, ElementKind.RECORD};
+        eleKindList.addAll(Arrays.asList(otherElekinds));
+        return new ElementHandleConvertor<>(
+                ElementKind.CLASS, eleKindList.toArray(new ElementKind[0]));
+
     }
     
     @NonNull
@@ -364,6 +369,9 @@ public class DocumentUtil {
                 return ElementKind.ANNOTATION_TYPE;
             case EK_MODULE:
                 return ElementKind.MODULE;
+            case EK_RECORD:
+            case EK_LOCAL_RECORD:
+                return ElementKind.valueOf("RECORD");
             default:
                 throw new IllegalArgumentException ();
         }
@@ -388,6 +396,9 @@ public class DocumentUtil {
             case MODULE:
                 return EK_MODULE;
             default:
+                if (kind.name().equals("RECORD")) {
+                    return isLocal ? EK_LOCAL_RECORD : EK_RECORD;
+                }
                 throw new IllegalArgumentException ();
         }
     }

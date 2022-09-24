@@ -46,7 +46,7 @@ import org.openide.util.lookup.ServiceProvider;
 public final class J2SEPlatformDefaultJavadocImpl implements J2SEPlatformDefaultJavadoc {
 
     private static final Logger LOG = Logger.getLogger(J2SEPlatformDefaultJavadocImpl.class.getName());
-    private static final Map<String,String> OFFICIAL_JAVADOC = new HashMap<String,String>();
+    private static final Map<String,String> OFFICIAL_JAVADOC = new HashMap<>();
     static {
         OFFICIAL_JAVADOC.put("1.0", null); // NOI18N
         OFFICIAL_JAVADOC.put("1.1", null); // NOI18N
@@ -61,8 +61,14 @@ public final class J2SEPlatformDefaultJavadocImpl implements J2SEPlatformDefault
         OFFICIAL_JAVADOC.put("10", "https://docs.oracle.com/javase/10/docs/api/"); // NOI18N
         OFFICIAL_JAVADOC.put("11", "https://docs.oracle.com/en/java/javase/11/docs/api/"); // NOI18N
         OFFICIAL_JAVADOC.put("12", "https://docs.oracle.com/en/java/javase/12/docs/api/"); // NOI18N
-        OFFICIAL_JAVADOC.put("13", "https://download.java.net/java/early_access/jdk13/docs/api/"); // NOI18N Early access
-        OFFICIAL_JAVADOC.put("14", "https://download.java.net/java/early_access/jdk14/docs/api/"); // NOI18N Early access
+        OFFICIAL_JAVADOC.put("13", "https://docs.oracle.com/en/java/javase/13/docs/api/"); // NOI18N
+        OFFICIAL_JAVADOC.put("14", "https://docs.oracle.com/en/java/javase/14/docs/api/"); // NOI18N
+        OFFICIAL_JAVADOC.put("15", "https://docs.oracle.com/en/java/javase/15/docs/api/"); // NOI18N
+        OFFICIAL_JAVADOC.put("16", "https://docs.oracle.com/en/java/javase/16/docs/api/"); // NOI18N
+        OFFICIAL_JAVADOC.put("17", "https://docs.oracle.com/en/java/javase/17/docs/api/"); // NOI18N
+        OFFICIAL_JAVADOC.put("18", "https://docs.oracle.com/en/java/javase/18/docs/api/"); // NOI18N
+        OFFICIAL_JAVADOC.put("19", "https://download.java.net/java/early_access/jdk19/docs/api/"); // NOI18N Early access
+        OFFICIAL_JAVADOC.put("20", "https://download.java.net/java/early_access/jdk20/docs/api/"); // NOI18N Early access
     }
 
     @Override

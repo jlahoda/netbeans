@@ -51,7 +51,6 @@ import org.apache.tools.ant.module.bridge.AntBridge;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.options.OptionsDisplayer;
 import org.netbeans.api.progress.ProgressHandle;
-import org.netbeans.api.progress.ProgressHandleFactory;
 import org.netbeans.modules.options.java.api.JavaOptions;
 import org.openide.ErrorManager;
 import org.openide.LifecycleManager;
@@ -454,7 +453,7 @@ public final class TargetExecutor implements Runnable {
     /** Call execute(), not this method directly!
      */
     @SuppressWarnings("NestedSynchronizedStatement")
-    synchronized public @Override void run () {
+    public synchronized @Override void run () {
         final LastTargetExecuted[] thisExec = new LastTargetExecuted[1];
         final StopAction sa = stopActions.get(io);
         assert sa != null;
@@ -555,7 +554,7 @@ public final class TargetExecutor implements Runnable {
         }
         
 	    // #58513, #87801: register a progress handle for the task too.
-        final ProgressHandle handle = ProgressHandleFactory.createHandle(displayName, new Cancellable() {
+        final ProgressHandle handle = ProgressHandle.createHandle(displayName, new Cancellable() {
             public boolean cancel() {
                 sa.actionPerformed(null);
                 return true;

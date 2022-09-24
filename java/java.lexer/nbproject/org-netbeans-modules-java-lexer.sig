@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.39.1
+#Version 1.52
 
 CLSS public abstract interface java.io.Serializable
 
@@ -21,7 +21,6 @@ meth public final java.lang.String name()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
-hfds name,ordinal
 
 CLSS public java.lang.Object
 cons public init()
@@ -140,6 +139,7 @@ fld public final static org.netbeans.api.java.lexer.JavaTokenId MINUS
 fld public final static org.netbeans.api.java.lexer.JavaTokenId MINUSEQ
 fld public final static org.netbeans.api.java.lexer.JavaTokenId MINUSMINUS
 fld public final static org.netbeans.api.java.lexer.JavaTokenId MODULE
+fld public final static org.netbeans.api.java.lexer.JavaTokenId MULTILINE_STRING_LITERAL
 fld public final static org.netbeans.api.java.lexer.JavaTokenId NATIVE
 fld public final static org.netbeans.api.java.lexer.JavaTokenId NEW
 fld public final static org.netbeans.api.java.lexer.JavaTokenId NULL

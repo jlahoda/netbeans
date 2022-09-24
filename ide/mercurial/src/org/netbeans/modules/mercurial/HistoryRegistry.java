@@ -60,7 +60,7 @@ public class HistoryRegistry {
     
     private HistoryRegistry() {}
     
-    public synchronized static HistoryRegistry getInstance() {
+    public static synchronized HistoryRegistry getInstance() {
         if(instance == null) {
             instance = new HistoryRegistry();
         }
@@ -71,7 +71,7 @@ public class HistoryRegistry {
         HgLogMessage[] history = 
                 HgCommand.getLogMessages(
                     repository,
-                    new HashSet(Arrays.asList(files)), 
+                    new HashSet<File>(Arrays.asList(files)), 
                     fromRevision, 
                     toRevision, 
                     false, // show merges

@@ -54,7 +54,31 @@ public enum JavaEEProfile {
     v1_7_web(Version.v1_7, Type.WEB, "1.7-web"),
 
     /** JavaEE 1.7 full profile. */
-    v1_7(Version.v1_7, Type.FULL, "1.7");
+    v1_7(Version.v1_7, Type.FULL, "1.7"),
+
+    /** JavaEE 1.8 web profile. */
+    v1_8_web(Version.v1_8, Type.WEB, "1.8-web"),
+
+    /** JavaEE 1.8 full profile. */
+    v1_8(Version.v1_8, Type.FULL, "1.8"),
+
+    /** JakartaEE 8 web profile. */
+    v8_0_0_web(Version.v8_0_0, Type.WEB, "8.0.0-web"),
+
+    /** JakartaEE 8 full profile. */
+    v8_0_0(Version.v8_0_0, Type.FULL, "8.0.0"),
+
+    /** JakartaEE 9 web profile. */
+    v9_0_0_web(Version.v9_0_0, Type.WEB, "9.0.0-web"),
+
+    /** JakartaEE 9 full profile. */
+    v9_0_0(Version.v9_0_0, Type.FULL, "9.0.0"),
+    
+    /** JakartaEE 9.1 web profile. */
+    v9_1_0_web(Version.v9_1_0, Type.WEB, "9.1.0-web"),
+
+    /** JakartaEE 9.1 full profile. */
+    v9_1_0(Version.v9_1_0, Type.FULL, "9.1.0");
 
     ////////////////////////////////////////////////////////////////////////////
     // Inner enums                                                            //
@@ -104,7 +128,15 @@ public enum JavaEEProfile {
         /** JavaEE 1.6. */
         v1_6("1.6"),
         /** JavaEE 1.7. */
-        v1_7("1.7");
+        v1_7("1.7"),
+        /** JavaEE 1.8. */
+        v1_8("1.8"),
+        /** JakartaEE 8.0. */
+        v8_0_0("8.0.0"),
+        /** JakartaEE 9.0. */
+        v9_0_0("9.0.0"),
+        /** JakartaEE 9.1. */
+        v9_1_0("9.1.0");
 
         /** JavaEE profile type name. */
         private final String name;
@@ -129,18 +161,18 @@ public enum JavaEEProfile {
             return this.name;
         }
     }
-    
+
     ////////////////////////////////////////////////////////////////////////////
     // Class attributes                                                       //
     ////////////////////////////////////////////////////////////////////////////
 
     /** GlassFish JavaEE profile enumeration length. */
     public static final int length = JavaEEProfile.values().length;
-    
+
     /** JavaEE profile type element separator character. */
     public static final char TYPE_SEPARATOR = '-';
 
-    /** 
+    /**
      * Stored <code>String</code> values for backward <code>String</code>
      * conversion.
      */
@@ -194,7 +226,7 @@ public enum JavaEEProfile {
                         ServerConfigException.INVALID_EE_PLATFORM_TYPE);
         }
         return names;
-    } 
+    }
 
     /**
      * Returns a <code>JavaEEProfile</code> with a value represented by the
@@ -203,7 +235,7 @@ public enum JavaEEProfile {
      * matches any <code>String</code> returned by <code>toString</code> method.
      * Otherwise <code>null</code> value is returned.
      * <p>
-     * @param name Value containing <code>JavaEEProfile</code> 
+     * @param name Value containing <code>JavaEEProfile</code>
      *                    <code>toString</code> representation.
      * @return <code>JavaEEProfile</code> value represented
      *         by <code>String</code> or <code>null</code> if value

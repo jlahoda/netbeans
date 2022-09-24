@@ -92,6 +92,10 @@ public final class MethodElementImpl extends PhpElementImpl implements MethodEle
         retval.add(createMagicMethod(type, "__sleep",  Modifier.PUBLIC)); //NOI18N
         retval.add(createMagicMethod(type, "__wakeup",  Modifier.PUBLIC)); //NOI18N
         retval.add(createMagicMethod(type, "__toString",  Modifier.PUBLIC)); //NOI18N
+        // PHP 7.4 New custom object serialization mechanism
+        // https://wiki.php.net/rfc/custom_object_serialization
+        retval.add(createMagicMethod(type, "__serialize", Modifier.PUBLIC)); //NOI18N
+        retval.add(createMagicMethod(type, "__unserialize", Modifier.PUBLIC, "array $data")); //NOI18N
         return retval;
     }
 
@@ -113,7 +117,7 @@ public final class MethodElementImpl extends PhpElementImpl implements MethodEle
     private static List<ParameterElement> fromParameterNames(String... names) {
         List<ParameterElement> retval = new ArrayList<>();
         for (String parameterName : names) {
-            retval.add(new ParameterElementImpl(parameterName, null, 0, Collections.<TypeResolver>emptySet(), true, true, false, false));
+            retval.add(new ParameterElementImpl(parameterName, null, 0, Collections.<TypeResolver>emptySet(), true, true, false, false, false, 0, false));
         }
         return retval;
     }
@@ -165,7 +169,7 @@ public final class MethodElementImpl extends PhpElementImpl implements MethodEle
                 fileQuery,
                 BaseFunctionElementSupport.ParametersImpl.create(info.getParameters()),
                 BaseFunctionElementSupport.ReturnTypesImpl.create(
-                    TypeResolverImpl.parseTypes(VariousUtils.getReturnType(fileQuery.getResult().getProgram(), node.getFunction()))),
+                    TypeResolverImpl.parseTypes(VariousUtils.getReturnType(fileQuery.getResult().getProgram(), node.getFunction())), node.getFunction().getReturnType()),
                 VariousUtils.isDeprecatedFromPHPDoc(fileQuery.getResult().getProgram(), node.getFunction()));
     }
 
@@ -202,6 +206,16 @@ public final class MethodElementImpl extends PhpElementImpl implements MethodEle
     @Override
     public Collection<TypeResolver> getReturnTypes() {
         return this.functionSupport.getReturnTypes();
+    }
+
+    @Override
+    public boolean isReturnUnionType() {
+        return functionSupport.isReturnUnionType();
+    }
+
+    @Override
+    public boolean isReturnIntersectionType() {
+        return functionSupport.isReturnIntersectionType();
     }
 
     @Override
@@ -263,24 +277,26 @@ public final class MethodElementImpl extends PhpElementImpl implements MethodEle
 
     private String getSignatureLastPart() {
         StringBuilder sb = new StringBuilder();
-        sb.append(getOffset()).append(Separator.SEMICOLON); //NOI18N
+        sb.append(getOffset()).append(Separator.SEMICOLON);
         List<ParameterElement> parameterList = getParameters();
         for (int idx = 0; idx < parameterList.size(); idx++) {
             ParameterElementImpl parameter = (ParameterElementImpl) parameterList.get(idx);
             if (idx > 0) {
-                sb.append(Separator.COMMA); //NOI18N
+                sb.append(Separator.COMMA);
             }
             sb.append(parameter.getSignature());
         }
-        sb.append(Separator.SEMICOLON); //NOI18N
+        sb.append(Separator.SEMICOLON);
         for (TypeResolver typeResolver : getReturnTypes()) {
             TypeResolverImpl resolverImpl = (TypeResolverImpl) typeResolver;
             sb.append(resolverImpl.getSignature());
         }
-        sb.append(Separator.SEMICOLON); //NOI18N
+        sb.append(Separator.SEMICOLON);
         sb.append(getPhpModifiers().toFlags()).append(Separator.SEMICOLON);
         sb.append(isDeprecated() ? 1 : 0).append(Separator.SEMICOLON);
         sb.append(getFilenameUrl()).append(Separator.SEMICOLON);
+        sb.append(isReturnUnionType()? 1 : 0).append(Separator.SEMICOLON);
+        sb.append(isReturnIntersectionType() ? 1 : 0).append(Separator.SEMICOLON);
         return sb.toString();
     }
 
@@ -354,6 +370,14 @@ public final class MethodElementImpl extends PhpElementImpl implements MethodEle
         String getFileUrl() {
             return signature.string(7);
         }
+
+        boolean isUnionType() {
+            return signature.integer(8) == 1;
+        }
+
+        boolean isIntersectionType() {
+            return signature.integer(9) == 1;
+        }
     }
 
     private void checkSignature(StringBuilder sb) {
@@ -405,9 +429,13 @@ public final class MethodElementImpl extends PhpElementImpl implements MethodEle
         private final MethodSignatureParser methodSignatureParser;
         //@GuardedBy("this")
         private Set<TypeResolver> retrievedReturnTypes = null;
+        private final boolean isUnionType;
+        private final boolean isIntersectionType;
 
         public ReturnTypesFromSignature(MethodSignatureParser methodSignatureParser) {
             this.methodSignatureParser = methodSignatureParser;
+            this.isUnionType = methodSignatureParser.isUnionType();
+            this.isIntersectionType = methodSignatureParser.isIntersectionType();
         }
 
         @Override
@@ -416,6 +444,16 @@ public final class MethodElementImpl extends PhpElementImpl implements MethodEle
                 retrievedReturnTypes = methodSignatureParser.getReturnTypes();
             }
             return retrievedReturnTypes;
+        }
+
+        @Override
+        public boolean isUnionType() {
+            return isUnionType;
+        }
+
+        @Override
+        public boolean isIntersectionType() {
+            return isIntersectionType;
         }
 
     }

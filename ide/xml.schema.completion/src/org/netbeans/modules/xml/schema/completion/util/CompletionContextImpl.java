@@ -721,10 +721,8 @@ public class CompletionContextImpl extends CompletionContext {
         if(se == null)
             return;
         Stack<SyntaxElement> stack = new Stack<>();
-        boolean insideEmpty = false;
         if(support.isEmptyTag(se)) {
             stack.push(se);
-            insideEmpty = true;
         }
         
         while( se != null) {
@@ -735,11 +733,7 @@ public class CompletionContextImpl extends CompletionContext {
                 se = se.getPrevious();
                 continue;
             }
-            if (support.isEmptyTag(se)) {
-                if (insideEmpty) {
-                    stack.pop();
-                }
-            } else if (support.isStartTag(se)) {
+            if (support.isStartTag(se)) {
                 SyntaxElement end = stack.isEmpty() ? null : stack.peek();
                 if (support.isEndTag(end)) {
                     if(end.getNode().getNodeName().equals(se.getNode().getNodeName())) {
@@ -749,7 +743,6 @@ public class CompletionContextImpl extends CompletionContext {
                     stack.push(se);
                 }
             }
-            insideEmpty = false;
             se = se.getPrevious();
         }
         
@@ -990,8 +983,7 @@ public class CompletionContextImpl extends CompletionContext {
             return;
         
 //        specialCompletion = true;
-        for(String prefix : declaredNamespaces.keySet()) {
-            String temp = declaredNamespaces.get(prefix);
+        for(String temp : declaredNamespaces.values()) {
             try {
                 if (nsModelMap.containsKey(temp)) {
                     // ignore, was added from specific location
@@ -1030,15 +1022,17 @@ public class CompletionContextImpl extends CompletionContext {
 
         //if the tns is already present in declared namespaces,
         //return the prefix
-        for(String key : getDeclaredNamespaces().keySet()) {
-            String ns = getDeclaredNamespaces().get(key);
+        for(Map.Entry<String, String> entry : getDeclaredNamespaces().entrySet()) {
+            String key = entry.getKey();
+            String ns = entry.getValue();
             if(ns.equals(tns))
                 return key;
         }
 
         //then try to look that up in the suggested namespace
-        for(String key : suggestedNamespaces.keySet()) {
-            String ns = suggestedNamespaces.get(key);
+        for(Map.Entry<String, String> entry : suggestedNamespaces.entrySet()) {
+            String key = entry.getKey();
+            String ns = entry.getValue();
             if(ns.equals(tns))
                 return key;
         }

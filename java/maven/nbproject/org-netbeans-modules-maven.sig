@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 2.132.1
+#Version 2.154
 
 CLSS public abstract java.awt.Component
 cons protected init()
@@ -159,8 +159,6 @@ meth public java.awt.im.InputMethodRequests getInputMethodRequests()
 meth public java.awt.image.ColorModel getColorModel()
 meth public java.awt.image.VolatileImage createVolatileImage(int,int)
 meth public java.awt.image.VolatileImage createVolatileImage(int,int,java.awt.ImageCapabilities) throws java.awt.AWTException
-meth public java.awt.peer.ComponentPeer getPeer()
- anno 0 java.lang.Deprecated()
 meth public java.beans.PropertyChangeListener[] getPropertyChangeListeners()
 meth public java.beans.PropertyChangeListener[] getPropertyChangeListeners(java.lang.String)
 meth public java.lang.String getName()
@@ -274,8 +272,6 @@ meth public void transferFocusUpCycle()
 meth public void update(java.awt.Graphics)
 meth public void validate()
 supr java.lang.Object
-hfds FOCUS_TRAVERSABLE_DEFAULT,FOCUS_TRAVERSABLE_SET,FOCUS_TRAVERSABLE_UNKNOWN,LOCK,acc,actionListenerK,adjustmentListenerK,appContext,autoFocusTransferOnDisposal,background,backgroundEraseDisabled,boundsOp,bufferStrategy,changeSupport,coalesceEventsParams,coalesceMap,coalescingEnabled,componentListener,componentListenerK,componentOrientation,componentSerializedDataVersion,compoundShape,containerListenerK,cursor,dropTarget,enabled,eventCache,eventLog,eventMask,focusListener,focusListenerK,focusLog,focusTraversalKeyPropertyNames,focusTraversalKeys,focusTraversalKeysEnabled,focusable,font,foreground,graphicsConfig,height,hierarchyBoundsListener,hierarchyBoundsListenerK,hierarchyListener,hierarchyListenerK,ignoreRepaint,incRate,inputMethodListener,inputMethodListenerK,isAddNotifyComplete,isFocusTraversableOverridden,isInc,isPacked,itemListenerK,keyListener,keyListenerK,locale,log,maxSize,maxSizeSet,minSize,minSizeSet,mixingCutoutRegion,mixingLog,mouseListener,mouseListenerK,mouseMotionListener,mouseMotionListenerK,mouseWheelListener,mouseWheelListenerK,name,nameExplicitlySet,newEventsOnly,objectLock,ownedWindowK,parent,peer,peerFont,popups,prefSize,prefSizeSet,requestFocusController,serialVersionUID,textListenerK,valid,visible,width,windowClosingException,windowFocusListenerK,windowListenerK,windowStateListenerK,x,y
-hcls AWTTreeLock,BltSubRegionBufferStrategy,DummyRequestFocusController,FlipSubRegionBufferStrategy,ProxyCapabilities,SingleBufferStrategy
 
 CLSS public java.awt.Container
 cons public init()
@@ -360,8 +356,6 @@ meth public void transferFocusDownCycle()
 meth public void update(java.awt.Graphics)
 meth public void validate()
 supr java.awt.Component
-hfds EMPTY_ARRAY,INCLUDE_SELF,SEARCH_HEAVYWEIGHTS,component,containerListener,containerSerializedDataVersion,descendUnconditionallyWhenValidating,descendantsCount,dispatcher,eventLog,focusCycleRoot,focusTraversalPolicy,focusTraversalPolicyProvider,isJavaAwtSmartInvalidate,layoutMgr,listeningBoundsChildren,listeningChildren,log,mixingLog,modalAppContext,modalComp,numOfHWComponents,numOfLWComponents,preserveBackgroundColor,printing,printingThreads,serialPersistentFields,serialVersionUID
-hcls DropTargetEventTargetFilter,EventTargetFilter,MouseEventTargetFilter,WakingRunnable
 
 CLSS public abstract interface java.awt.MenuContainer
 meth public abstract boolean postEvent(java.awt.Event)
@@ -407,9 +401,10 @@ meth public void setPreferred(boolean)
 meth public void setShortDescription(java.lang.String)
 meth public void setValue(java.lang.String,java.lang.Object)
 supr java.lang.Object
-hfds TRANSIENT,classRef,displayName,expert,hidden,name,preferred,shortDescription,table
 
 CLSS public abstract interface java.io.Serializable
+
+CLSS public abstract interface java.lang.Cloneable
 
 CLSS public abstract interface java.lang.Comparable<%0 extends java.lang.Object>
 meth public abstract int compareTo({java.lang.Comparable%0})
@@ -435,7 +430,12 @@ meth public final java.lang.String name()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
-hfds name,ordinal
+
+CLSS public abstract interface !annotation java.lang.FunctionalInterface
+ anno 0 java.lang.annotation.Documented()
+ anno 0 java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy value=RUNTIME)
+ anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[TYPE])
+intf java.lang.annotation.Annotation
 
 CLSS public java.lang.Object
 cons public init()
@@ -450,6 +450,10 @@ meth public final void wait(long) throws java.lang.InterruptedException
 meth public final void wait(long,int) throws java.lang.InterruptedException
 meth public int hashCode()
 meth public java.lang.String toString()
+
+CLSS public abstract interface java.lang.Runnable
+ anno 0 java.lang.FunctionalInterface()
+meth public abstract void run()
 
 CLSS public abstract interface java.lang.annotation.Annotation
 meth public abstract boolean equals(java.lang.Object)
@@ -481,6 +485,47 @@ CLSS public abstract interface java.util.EventListener
 
 CLSS public abstract interface javax.accessibility.Accessible
 meth public abstract javax.accessibility.AccessibleContext getAccessibleContext()
+
+CLSS public abstract javax.swing.AbstractAction
+cons public init()
+cons public init(java.lang.String)
+cons public init(java.lang.String,javax.swing.Icon)
+fld protected boolean enabled
+fld protected javax.swing.event.SwingPropertyChangeSupport changeSupport
+intf java.io.Serializable
+intf java.lang.Cloneable
+intf javax.swing.Action
+meth protected java.lang.Object clone() throws java.lang.CloneNotSupportedException
+meth protected void firePropertyChange(java.lang.String,java.lang.Object,java.lang.Object)
+meth public boolean isEnabled()
+meth public java.beans.PropertyChangeListener[] getPropertyChangeListeners()
+meth public java.lang.Object getValue(java.lang.String)
+meth public java.lang.Object[] getKeys()
+meth public void addPropertyChangeListener(java.beans.PropertyChangeListener)
+meth public void putValue(java.lang.String,java.lang.Object)
+meth public void removePropertyChangeListener(java.beans.PropertyChangeListener)
+meth public void setEnabled(boolean)
+supr java.lang.Object
+
+CLSS public abstract interface javax.swing.Action
+fld public final static java.lang.String ACCELERATOR_KEY = "AcceleratorKey"
+fld public final static java.lang.String ACTION_COMMAND_KEY = "ActionCommandKey"
+fld public final static java.lang.String DEFAULT = "Default"
+fld public final static java.lang.String DISPLAYED_MNEMONIC_INDEX_KEY = "SwingDisplayedMnemonicIndexKey"
+fld public final static java.lang.String LARGE_ICON_KEY = "SwingLargeIconKey"
+fld public final static java.lang.String LONG_DESCRIPTION = "LongDescription"
+fld public final static java.lang.String MNEMONIC_KEY = "MnemonicKey"
+fld public final static java.lang.String NAME = "Name"
+fld public final static java.lang.String SELECTED_KEY = "SwingSelectedKey"
+fld public final static java.lang.String SHORT_DESCRIPTION = "ShortDescription"
+fld public final static java.lang.String SMALL_ICON = "SmallIcon"
+intf java.awt.event.ActionListener
+meth public abstract boolean isEnabled()
+meth public abstract java.lang.Object getValue(java.lang.String)
+meth public abstract void addPropertyChangeListener(java.beans.PropertyChangeListener)
+meth public abstract void putValue(java.lang.String,java.lang.Object)
+meth public abstract void removePropertyChangeListener(java.beans.PropertyChangeListener)
+meth public abstract void setEnabled(boolean)
 
 CLSS public abstract javax.swing.JComponent
 cons public init()
@@ -638,8 +683,6 @@ meth public void unregisterKeyboardAction(javax.swing.KeyStroke)
 meth public void update(java.awt.Graphics)
 meth public void updateUI()
 supr java.awt.Container
-hfds ACTIONMAP_CREATED,ANCESTOR_INPUTMAP_CREATED,ANCESTOR_USING_BUFFER,AUTOSCROLLS_SET,COMPLETELY_OBSCURED,CREATED_DOUBLE_BUFFER,DEBUG_GRAPHICS_LOADED,FOCUS_INPUTMAP_CREATED,FOCUS_TRAVERSAL_KEYS_BACKWARD_SET,FOCUS_TRAVERSAL_KEYS_FORWARD_SET,INHERITS_POPUP_MENU,INPUT_VERIFIER_SOURCE_KEY,IS_DOUBLE_BUFFERED,IS_OPAQUE,IS_PAINTING_TILE,IS_PRINTING,IS_PRINTING_ALL,IS_REPAINTING,KEYBOARD_BINDINGS_KEY,KEY_EVENTS_ENABLED,NEXT_FOCUS,NOT_OBSCURED,OPAQUE_SET,PARTIALLY_OBSCURED,REQUEST_FOCUS_DISABLED,RESERVED_1,RESERVED_2,RESERVED_3,RESERVED_4,RESERVED_5,RESERVED_6,WHEN_IN_FOCUSED_WINDOW_BINDINGS,WIF_INPUTMAP_CREATED,WRITE_OBJ_COUNTER_FIRST,WRITE_OBJ_COUNTER_LAST,aaTextInfo,actionMap,alignmentX,alignmentY,ancestorInputMap,autoscrolls,border,clientProperties,componentObtainingGraphicsFrom,componentObtainingGraphicsFromLock,defaultLocale,flags,focusController,focusInputMap,inputVerifier,isAlignmentXSet,isAlignmentYSet,managingFocusBackwardTraversalKeys,managingFocusForwardTraversalKeys,paintingChild,popupMenu,readObjectCallbacks,revalidateRunnableScheduled,tempRectangles,uiClassID,verifyInputWhenFocusTarget,vetoableChangeSupport,windowInputMap
-hcls ActionStandin,IntVector,KeyboardState,ReadObjectCallback
 
 CLSS public javax.swing.JTable
 cons public init()
@@ -844,8 +887,6 @@ meth public void tableChanged(javax.swing.event.TableModelEvent)
 meth public void updateUI()
 meth public void valueChanged(javax.swing.event.ListSelectionEvent)
 supr javax.swing.JComponent
-hfds autoCreateRowSorter,columnSelectionAdjusting,dragEnabled,dropLocation,dropMode,editorRemover,fillsViewportHeight,ignoreSortChange,isRowHeightSet,printError,rowModel,rowSelectionAdjusting,sortManager,sorterChanged,surrendersFocusOnKeystroke,uiClassID,updateSelectionOnSort
-hcls BooleanEditor,BooleanRenderer,CellEditorRemover,DateRenderer,DoubleRenderer,GenericEditor,IconRenderer,ModelChange,NumberEditor,NumberRenderer,Resizable2,Resizable3,SortManager,ThreadSafePrintable
 
 CLSS public abstract interface javax.swing.Scrollable
 meth public abstract boolean getScrollableTracksViewportHeight()
@@ -956,6 +997,7 @@ fld public final static java.lang.String PLUGIN_COMPILER = "maven-compiler-plugi
 fld public final static java.lang.String PLUGIN_COMPILER_VERSION_SUPPORTING_JDK9 = "3.6"
 fld public final static java.lang.String PLUGIN_EAR = "maven-ear-plugin"
 fld public final static java.lang.String PLUGIN_EJB = "maven-ejb-plugin"
+fld public final static java.lang.String PLUGIN_FAILSAFE = "maven-failsafe-plugin"
 fld public final static java.lang.String PLUGIN_JAR = "maven-jar-plugin"
 fld public final static java.lang.String PLUGIN_RESOURCES = "maven-resources-plugin"
 fld public final static java.lang.String PLUGIN_SITE = "maven-site-plugin"
@@ -1072,6 +1114,7 @@ hfds MODULE_INFO
 CLSS public final org.netbeans.modules.maven.api.NbMavenProject
 fld public final static java.lang.String PROP_PROJECT = "MavenProject"
 fld public final static java.lang.String PROP_RESOURCE = "RESOURCES"
+fld public final static java.lang.String TYPE = "org-netbeans-modules-maven"
 fld public final static java.lang.String TYPE_APPCLIENT = "app-client"
 fld public final static java.lang.String TYPE_EAR = "ear"
 fld public final static java.lang.String TYPE_EJB = "ejb"
@@ -1117,6 +1160,7 @@ hcls AccessorImpl,FCHSL
 
 CLSS public org.netbeans.modules.maven.api.PluginPropertyUtils
 innr public abstract interface static ConfigurationBuilder
+innr public final static PluginConfigPathParams
 meth public static <%0 extends java.lang.Object> {%%0} getPluginPropertyBuildable(org.apache.maven.project.MavenProject,java.lang.String,java.lang.String,java.lang.String,org.netbeans.modules.maven.api.PluginPropertyUtils$ConfigurationBuilder<{%%0}>)
  anno 1 org.netbeans.api.annotations.common.NonNull()
  anno 2 org.netbeans.api.annotations.common.NonNull()
@@ -1217,6 +1261,11 @@ meth public static java.lang.String[] getReportPluginPropertyList(org.netbeans.a
  anno 4 org.netbeans.api.annotations.common.NonNull()
  anno 5 org.netbeans.api.annotations.common.NonNull()
  anno 6 org.netbeans.api.annotations.common.NullAllowed()
+meth public static java.util.List<org.apache.maven.artifact.Artifact> getPluginPathProperty(org.netbeans.api.project.Project,org.netbeans.modules.maven.api.PluginPropertyUtils$PluginConfigPathParams,boolean,java.util.List<org.apache.maven.artifact.resolver.ArtifactResolutionException>)
+ anno 0 org.netbeans.api.annotations.common.CheckForNull()
+ anno 1 org.netbeans.api.annotations.common.NonNull()
+ anno 2 org.netbeans.api.annotations.common.NonNull()
+ anno 4 org.netbeans.api.annotations.common.NullAllowed()
 meth public static java.util.Properties getPluginPropertyParameter(org.apache.maven.project.MavenProject,java.lang.String,java.lang.String,java.lang.String,java.lang.String)
  anno 0 org.netbeans.api.annotations.common.CheckForNull()
  anno 1 org.netbeans.api.annotations.common.NonNull()
@@ -1239,11 +1288,27 @@ meth public static org.codehaus.plexus.component.configurator.expression.Express
  anno 1 org.netbeans.api.annotations.common.NonNull()
 supr java.lang.Object
 hfds CONTEXT_EXPRESSION_EVALUATOR,DUMMY_EVALUATOR,LIFECYCLE_PLUGINS
-hcls ExternalDefaultBuilder
+hcls DependencyListBuilder,ExternalDefaultBuilder
 
 CLSS public abstract interface static org.netbeans.modules.maven.api.PluginPropertyUtils$ConfigurationBuilder<%0 extends java.lang.Object>
  outer org.netbeans.modules.maven.api.PluginPropertyUtils
 meth public abstract {org.netbeans.modules.maven.api.PluginPropertyUtils$ConfigurationBuilder%0} build(org.codehaus.plexus.util.xml.Xpp3Dom,org.codehaus.plexus.component.configurator.expression.ExpressionEvaluator)
+
+CLSS public final static org.netbeans.modules.maven.api.PluginPropertyUtils$PluginConfigPathParams
+ outer org.netbeans.modules.maven.api.PluginPropertyUtils
+cons public init(java.lang.String,java.lang.String,java.lang.String,java.lang.String)
+meth public java.lang.String getArtifactType()
+meth public java.lang.String getDefaultScope()
+meth public java.lang.String getGoal()
+meth public java.lang.String getPathItemName()
+meth public java.lang.String getPathProperty()
+meth public java.lang.String getPluginArtifactId()
+meth public java.lang.String getPluginGroupId()
+meth public void setArtifactType(java.lang.String)
+meth public void setDefaultScope(java.lang.String)
+meth public void setGoal(java.lang.String)
+supr java.lang.Object
+hfds artifactType,defaultScope,goal,pathItemName,pathProperty,pluginArtifactId,pluginGroupId
 
 CLSS public abstract interface org.netbeans.modules.maven.api.ProjectProfileHandler
 meth public abstract java.util.List<java.lang.String> getActiveProfiles(boolean)
@@ -1290,6 +1355,8 @@ meth public static org.openide.WizardDescriptor$InstantiatingIterator<?> defined
  anno 0 java.lang.Deprecated()
  anno 4 org.netbeans.api.annotations.common.NullAllowed()
 meth public static org.openide.WizardDescriptor$InstantiatingIterator<?> definedArchetype(java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String)
+ anno 4 org.netbeans.api.annotations.common.NullAllowed()
+meth public static org.openide.WizardDescriptor$InstantiatingIterator<?> definedArchetype(java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.util.Map<java.lang.String,java.lang.String>)
  anno 4 org.netbeans.api.annotations.common.NullAllowed()
 meth public static org.openide.WizardDescriptor$Panel<org.openide.WizardDescriptor> basicWizardPanel(org.netbeans.validation.api.ui.ValidationGroup,boolean,org.netbeans.modules.maven.api.archetype.Archetype)
  anno 3 org.netbeans.api.annotations.common.NullAllowed()
@@ -1386,6 +1453,7 @@ meth public org.netbeans.modules.maven.model.pom.POMModel getPOMModel()
 meth public static org.netbeans.modules.maven.api.customizer.ModelHandle2$Configuration createCustomConfiguration(java.lang.String)
 meth public static org.netbeans.modules.maven.api.customizer.ModelHandle2$Configuration createDefaultConfiguration()
 meth public static org.netbeans.modules.maven.api.customizer.ModelHandle2$Configuration createProfileConfiguration(java.lang.String)
+meth public static org.netbeans.modules.maven.api.customizer.ModelHandle2$Configuration createProvidedConfiguration(java.lang.String)
 meth public static org.netbeans.modules.maven.execute.model.NetbeansActionMapping getDefaultMapping(java.lang.String,org.netbeans.api.project.Project)
  anno 0 org.netbeans.api.annotations.common.CheckForNull()
 meth public static org.netbeans.modules.maven.execute.model.NetbeansActionMapping getMapping(java.lang.String,org.netbeans.api.project.Project,org.netbeans.spi.project.ProjectConfiguration)
@@ -1408,6 +1476,7 @@ CLSS public static org.netbeans.modules.maven.api.customizer.ModelHandle2$Config
  outer org.netbeans.modules.maven.api.customizer.ModelHandle2
 meth public boolean isDefault()
 meth public boolean isProfileBased()
+meth public boolean isProvided()
 meth public boolean isShared()
 meth public java.lang.String getDisplayName()
 meth public java.lang.String getFileNameExt()
@@ -1417,10 +1486,11 @@ meth public java.util.List<java.lang.String> getActivatedProfiles()
 meth public java.util.Map<java.lang.String,java.lang.String> getProperties()
 meth public void setActivatedProfiles(java.util.List<java.lang.String>)
 meth public void setDefault(boolean)
+meth public void setDisplayName(java.lang.String)
 meth public void setProperties(java.util.Map<java.lang.String,java.lang.String>)
 meth public void setShared(boolean)
 supr java.lang.Object
-hfds activatedProfiles,defaul,id,profileBased,properties,shared
+hfds activatedProfiles,defaul,displayName,id,profileBased,properties,shared
 
 CLSS public abstract org.netbeans.modules.maven.api.customizer.support.CheckBoxUpdater
 cons public init(javax.swing.JCheckBox)
@@ -1569,6 +1639,7 @@ meth public abstract void setPreExecution(org.netbeans.modules.maven.api.execute
 meth public abstract void setProperty(java.lang.String,java.lang.String)
  anno 1 org.netbeans.api.annotations.common.NonNull()
  anno 2 org.netbeans.api.annotations.common.NullAllowed()
+meth public org.openide.util.Lookup getActionContext()
 
 CLSS public final static !enum org.netbeans.modules.maven.api.execute.RunConfig$ReactorStyle
  outer org.netbeans.modules.maven.api.execute.RunConfig
@@ -1618,6 +1689,7 @@ meth public abstract java.util.Set<? extends org.netbeans.modules.maven.api.outp
 CLSS public final org.netbeans.modules.maven.api.output.OutputUtils
 fld public final static java.util.regex.Pattern linePattern
 meth public static org.openide.windows.OutputListener matchStackTraceLine(java.lang.String,org.netbeans.api.java.classpath.ClassPath)
+ anno 0 java.lang.Deprecated()
 meth public static org.openide.windows.OutputListener matchStackTraceLine(java.lang.String,org.netbeans.api.project.Project)
 meth public static org.openide.windows.OutputListener matchStackTraceLine(java.lang.String,org.openide.filesystems.FileObject)
 supr java.lang.Object
@@ -1680,6 +1752,313 @@ meth public abstract void addReport(org.netbeans.modules.maven.api.problem.Probl
 meth public abstract void addReports(org.netbeans.modules.maven.api.problem.ProblemReport[])
 meth public abstract void removeReport(org.netbeans.modules.maven.api.problem.ProblemReport)
 
+CLSS public abstract org.netbeans.modules.maven.execute.AbstractMavenExecutor
+cons protected init(org.netbeans.modules.maven.api.execute.RunConfig)
+fld protected final java.lang.Object SEMAPHORE
+fld protected org.netbeans.modules.maven.api.execute.RunConfig config
+fld protected org.netbeans.modules.maven.execute.AbstractMavenExecutor$MavenItem item
+fld protected org.openide.execution.ExecutorTask task
+innr protected MavenItem
+innr protected abstract interface static ResumeFromFinder
+innr public final static OptionsAction
+innr public final static TabContext
+intf org.netbeans.modules.maven.execute.MavenExecutor
+intf org.openide.util.Cancellable
+meth protected final org.netbeans.modules.maven.execute.AbstractMavenExecutor$TabContext createContext()
+meth protected final void actionStatesAtFinish(org.netbeans.modules.maven.execute.AbstractMavenExecutor$ResumeFromFinder,org.netbeans.modules.maven.execute.cmd.ExecutionEventObject$Tree)
+ anno 1 org.netbeans.api.annotations.common.NullAllowed()
+ anno 2 org.netbeans.api.annotations.common.NullAllowed()
+meth protected final void actionStatesAtStart()
+meth protected final void processInitialMessage()
+meth protected java.lang.Class<org.netbeans.modules.maven.execute.AbstractMavenExecutor$TabContext> tabContextType()
+meth protected javax.swing.Action[] createNewTabActions()
+meth protected void reassignAdditionalContext(org.netbeans.modules.maven.execute.AbstractMavenExecutor$TabContext)
+meth public final void addInitialMessage(java.lang.String,org.openide.windows.OutputListener)
+meth public final void setTask(org.openide.execution.ExecutorTask)
+supr org.netbeans.modules.maven.execute.OutputTabMaintainer<org.netbeans.modules.maven.execute.AbstractMavenExecutor$TabContext>
+hfds listeners,messages,tabContext
+hcls ReRunAction,ResumeAction,ShowOverviewAction,StopAction
+
+CLSS protected org.netbeans.modules.maven.execute.AbstractMavenExecutor$MavenItem
+ outer org.netbeans.modules.maven.execute.AbstractMavenExecutor
+cons protected init(org.netbeans.modules.maven.execute.AbstractMavenExecutor)
+intf org.netbeans.spi.project.ui.support.BuildExecutionSupport$ActionItem
+meth public boolean equals(java.lang.Object)
+meth public boolean isRunning()
+meth public int hashCode()
+meth public java.lang.String getAction()
+meth public java.lang.String getDisplayName()
+meth public org.openide.filesystems.FileObject getProjectDirectory()
+meth public void repeatExecution()
+meth public void stopRunning()
+supr java.lang.Object
+
+CLSS public final static org.netbeans.modules.maven.execute.AbstractMavenExecutor$OptionsAction
+ outer org.netbeans.modules.maven.execute.AbstractMavenExecutor
+cons public init()
+meth public void actionPerformed(java.awt.event.ActionEvent)
+supr javax.swing.AbstractAction
+
+CLSS protected abstract interface static org.netbeans.modules.maven.execute.AbstractMavenExecutor$ResumeFromFinder
+ outer org.netbeans.modules.maven.execute.AbstractMavenExecutor
+meth public abstract org.netbeans.modules.maven.api.NbMavenProject find(org.netbeans.api.project.Project)
+ anno 0 org.netbeans.api.annotations.common.CheckForNull()
+ anno 1 org.netbeans.api.annotations.common.NonNull()
+
+CLSS public final static org.netbeans.modules.maven.execute.AbstractMavenExecutor$TabContext
+ outer org.netbeans.modules.maven.execute.AbstractMavenExecutor
+cons public init()
+meth protected org.netbeans.modules.maven.execute.AbstractMavenExecutor$TabContext clone()
+supr java.lang.Object
+hfds options,overview,rerun,rerunDebug,resume,stop
+
+CLSS public abstract org.netbeans.modules.maven.execute.AbstractOutputHandler
+cons protected init(org.netbeans.api.project.Project,org.netbeans.api.progress.ProgressHandle,org.netbeans.modules.maven.api.execute.RunConfig,org.netbeans.modules.maven.api.output.OutputVisitor)
+fld protected final static java.lang.String PRJ_EXECUTE = "project-execute"
+fld protected final static java.lang.String SESSION_EXECUTE = "session-execute"
+fld protected java.util.HashMap<java.lang.String,java.util.Set<org.netbeans.modules.maven.api.output.OutputProcessor>> processors
+fld protected java.util.Set<org.netbeans.modules.maven.api.output.NotifyFinishOutputProcessor> toFinishProcessors
+fld protected java.util.Set<org.netbeans.modules.maven.api.output.OutputProcessor> currentProcessors
+fld protected org.netbeans.modules.maven.api.output.OutputVisitor visitor
+innr public final static !enum Level
+meth protected abstract org.openide.windows.InputOutput getIO()
+meth protected final java.lang.String getEventId(java.lang.String,java.lang.String)
+meth protected final void buildFinished()
+meth protected final void initProcessorList(org.netbeans.api.project.Project,org.netbeans.modules.maven.api.execute.RunConfig)
+meth protected final void processEnd(java.lang.String,org.openide.windows.OutputWriter)
+meth protected final void processFail(java.lang.String,org.openide.windows.OutputWriter)
+meth protected final void processLine(java.lang.String,org.openide.windows.OutputWriter,org.netbeans.modules.maven.execute.AbstractOutputHandler$Level)
+meth protected final void processMultiLine(java.lang.String,org.openide.windows.OutputWriter,org.netbeans.modules.maven.execute.AbstractOutputHandler$Level)
+meth protected final void processStart(java.lang.String,org.openide.windows.OutputWriter)
+meth protected final void quitSleepiness()
+meth protected void checkSleepiness()
+meth public static java.util.List<java.lang.String> splitMultiLine(java.lang.String)
+supr java.lang.Object
+hfds SLEEP_DELAY,protectedMode,protectedModeLock,sleepTask
+
+CLSS public final static !enum org.netbeans.modules.maven.execute.AbstractOutputHandler$Level
+ outer org.netbeans.modules.maven.execute.AbstractOutputHandler
+fld public final static org.netbeans.modules.maven.execute.AbstractOutputHandler$Level DEBUG
+fld public final static org.netbeans.modules.maven.execute.AbstractOutputHandler$Level ERROR
+fld public final static org.netbeans.modules.maven.execute.AbstractOutputHandler$Level FATAL
+fld public final static org.netbeans.modules.maven.execute.AbstractOutputHandler$Level INFO
+fld public final static org.netbeans.modules.maven.execute.AbstractOutputHandler$Level WARNING
+meth public static org.netbeans.modules.maven.execute.AbstractOutputHandler$Level valueOf(java.lang.String)
+meth public static org.netbeans.modules.maven.execute.AbstractOutputHandler$Level[] values()
+supr java.lang.Enum<org.netbeans.modules.maven.execute.AbstractOutputHandler$Level>
+
+CLSS public final org.netbeans.modules.maven.execute.ActionToGoalUtils
+fld public static org.netbeans.modules.maven.execute.ActionToGoalUtils$ContextAccessor ACCESSOR
+innr public abstract static ContextAccessor
+meth public static boolean isActionEnable(java.lang.String,org.netbeans.modules.maven.NbMavenProjectImpl,org.netbeans.spi.project.ProjectConfiguration,org.openide.util.Lookup)
+meth public static boolean isActionEnable(java.lang.String,org.netbeans.modules.maven.NbMavenProjectImpl,org.openide.util.Lookup)
+meth public static boolean isDisabledMapping(org.netbeans.modules.maven.execute.model.NetbeansActionMapping)
+meth public static java.io.File resolveProjectExecutionBasedir(org.netbeans.modules.maven.execute.model.NetbeansActionMapping,org.netbeans.api.project.Project)
+meth public static java.util.List<? extends org.netbeans.modules.maven.spi.actions.MavenActionsProvider> actionProviders(org.netbeans.api.project.Project)
+ anno 0 org.netbeans.api.annotations.common.NonNull()
+ anno 1 org.netbeans.api.annotations.common.NonNull()
+meth public static org.netbeans.modules.maven.api.execute.RunConfig createRunConfig(java.lang.String,org.netbeans.modules.maven.NbMavenProjectImpl,org.netbeans.spi.project.ProjectConfiguration,org.openide.util.Lookup)
+meth public static org.netbeans.modules.maven.api.execute.RunConfig createRunConfig(java.lang.String,org.netbeans.modules.maven.NbMavenProjectImpl,org.openide.util.Lookup)
+meth public static org.netbeans.modules.maven.execute.model.ActionToGoalMapping readMappingsFromFileAttributes(org.openide.filesystems.FileObject)
+meth public static org.netbeans.modules.maven.execute.model.NetbeansActionMapping getActiveMapping(java.lang.String,org.netbeans.api.project.Project,org.netbeans.modules.maven.configurations.M2Configuration)
+meth public static org.netbeans.modules.maven.execute.model.NetbeansActionMapping getDefaultMapping(java.lang.String,org.netbeans.api.project.Project)
+meth public static org.netbeans.modules.maven.execute.model.NetbeansActionMapping[] getActiveCustomMappings(org.netbeans.modules.maven.NbMavenProjectImpl)
+meth public static org.netbeans.modules.maven.execute.model.NetbeansActionMapping[] getActiveCustomMappingsForFile(org.netbeans.modules.maven.NbMavenProjectImpl)
+meth public static void writeMappingsToFileAttributes(org.openide.filesystems.FileObject,org.netbeans.modules.maven.execute.model.ActionToGoalMapping)
+supr java.lang.Object
+hfds FO_ATTR_CUSTOM_MAPP
+hcls PackagingProvider
+
+CLSS public abstract static org.netbeans.modules.maven.execute.ActionToGoalUtils$ContextAccessor
+ outer org.netbeans.modules.maven.execute.ActionToGoalUtils
+cons public init()
+meth public abstract org.netbeans.modules.maven.api.execute.ExecutionContext createContext(org.openide.windows.InputOutput,org.netbeans.api.progress.ProgressHandle)
+supr java.lang.Object
+
+CLSS public org.netbeans.modules.maven.execute.BeanRunConfig
+cons public init()
+cons public init(org.netbeans.modules.maven.api.execute.RunConfig)
+intf org.netbeans.modules.maven.api.execute.RunConfig
+meth public final boolean isInteractive()
+meth public final boolean isRecursive()
+meth public final boolean isShowDebug()
+meth public final boolean isShowError()
+meth public final boolean isUpdateSnapshots()
+meth public final java.io.File getExecutionDirectory()
+meth public final java.lang.Boolean isOffline()
+meth public final java.lang.String getExecutionName()
+meth public final java.lang.String getTaskDisplayName()
+meth public final java.util.List<java.lang.String> getActivatedProfiles()
+meth public final java.util.List<java.lang.String> getGoals()
+meth public final java.util.Map<? extends java.lang.String,? extends java.lang.String> getProperties()
+meth public final java.util.Map<? extends java.lang.String,?> getInternalProperties()
+meth public final org.apache.maven.project.MavenProject getMavenProject()
+meth public final org.netbeans.api.project.Project getProject()
+meth public final org.netbeans.modules.maven.api.execute.RunConfig$ReactorStyle getReactorStyle()
+meth public final void addProperties(java.util.Map<java.lang.String,java.lang.String>)
+meth public final void setActivatedProfiles(java.util.List<java.lang.String>)
+meth public final void setExecutionDirectory(java.io.File)
+meth public final void setExecutionName(java.lang.String)
+meth public final void setGoals(java.util.List<java.lang.String>)
+meth public final void setInteractive(boolean)
+meth public final void setInternalProperty(java.lang.String,java.lang.Object)
+ anno 1 org.netbeans.api.annotations.common.NonNull()
+ anno 2 org.netbeans.api.annotations.common.NullAllowed()
+meth public final void setOffline(java.lang.Boolean)
+meth public final void setProject(org.netbeans.api.project.Project)
+meth public final void setProperty(java.lang.String,java.lang.String)
+ anno 1 org.netbeans.api.annotations.common.NonNull()
+ anno 2 org.netbeans.api.annotations.common.NullAllowed()
+meth public final void setReactorStyle(org.netbeans.modules.maven.api.execute.RunConfig$ReactorStyle)
+meth public final void setRecursive(boolean)
+meth public final void setShowDebug(boolean)
+meth public final void setShowError(boolean)
+meth public final void setTaskDisplayName(java.lang.String)
+meth public final void setUpdateSnapshots(boolean)
+meth public java.lang.String getActionName()
+meth public org.netbeans.modules.maven.api.execute.RunConfig getPreExecution()
+meth public org.openide.filesystems.FileObject getSelectedFileObject()
+meth public org.openide.util.Lookup getActionContext()
+meth public void reassignMavenProjectFromParent()
+meth public void setActionContext(org.openide.util.Lookup)
+meth public void setActionName(java.lang.String)
+meth public void setFileObject(org.openide.filesystems.FileObject)
+meth public void setPreExecution(org.netbeans.modules.maven.api.execute.RunConfig)
+supr java.lang.Object
+hfds actionContext,actionName,activate,executionDirectory,executionName,goals,interactive,internalProperties,mp,offline,parent,preexecution,project,projectDirectory,properties,reactor,recursive,selectedFO,showDebug,showError,taskName,updateSnapshots
+
+CLSS public org.netbeans.modules.maven.execute.CommandLineOutputHandler
+cons public init(org.openide.windows.InputOutput,org.netbeans.api.project.Project,org.netbeans.api.progress.ProgressHandle,org.netbeans.modules.maven.api.execute.RunConfig,boolean)
+fld public final static java.util.regex.Pattern reactorSummaryLine
+fld public final static java.util.regex.Pattern startPatternM2
+fld public final static java.util.regex.Pattern startPatternM3
+innr public static ContextImpl
+meth protected final void checkSleepiness()
+meth protected org.openide.windows.InputOutput getIO()
+meth public org.netbeans.modules.maven.execute.cmd.ExecutionEventObject$Tree getExecutionTree()
+ anno 0 org.netbeans.api.annotations.common.CheckForNull()
+supr org.netbeans.modules.maven.execute.AbstractOutputHandler
+hfds DOWNLOAD,END_TO_START_Mappings,LOG,PROCESSOR,SEC_MOJO_EXEC,addMojoFold,addProjectFold,contextImpl,currentProject,currentTag,currentTreeNode,executionTree,firstFailure,forkCount,handle,inStackTrace,inp,inputOutput,linePattern,mavenSomethingPlugin,mavencoreurls,outTask,parser,projectCount,reactorFailure,reactorSize,somethingMavenPlugin,stackTraceElement,state,stdOut
+hcls FindByEvents,FindByName,Input,Output,ProgressState
+
+CLSS public static org.netbeans.modules.maven.execute.CommandLineOutputHandler$ContextImpl
+ outer org.netbeans.modules.maven.execute.CommandLineOutputHandler
+intf org.netbeans.modules.maven.api.output.OutputVisitor$Context
+meth public org.netbeans.api.project.Project getCurrentProject()
+ anno 0 org.netbeans.api.annotations.common.CheckForNull()
+meth public org.netbeans.modules.maven.execute.cmd.ExecutionEventObject$Tree getExecutionTree()
+meth public void setCurrentProject(org.netbeans.api.project.Project)
+ anno 1 org.netbeans.api.annotations.common.NullAllowed()
+supr java.lang.Object
+hfds currentProject,executionTree
+
+CLSS public org.netbeans.modules.maven.execute.DefaultActionGoalProvider
+cons public init()
+meth protected java.io.InputStream getActionDefinitionStream()
+supr org.netbeans.modules.maven.spi.actions.AbstractMavenActionsProvider
+hfds MAPPINGS
+
+CLSS public org.netbeans.modules.maven.execute.DefaultReplaceTokenProvider
+cons public init(org.netbeans.api.project.Project)
+fld public final static java.lang.String METHOD_NAME = "nb.single.run.methodName"
+fld public static java.lang.String[] fileBasedProperties
+intf org.netbeans.modules.maven.spi.actions.ActionConvertor
+intf org.netbeans.modules.maven.spi.actions.ReplaceTokenProvider
+meth public java.lang.String convert(java.lang.String,org.openide.util.Lookup)
+meth public java.util.Map<java.lang.String,java.lang.String> createReplacements(java.lang.String,org.openide.util.Lookup)
+meth public static java.util.Map<java.lang.String,java.lang.String> readVariables()
+supr java.lang.Object
+hfds ABSOLUTE_PATH,ARTIFACTID,CLASSNAME,CLASSNAME_EXT,CLASSPATHSCOPE,GROUPID,PACK_CLASSNAME,VARIABLE_PREFIX,project
+
+CLSS public org.netbeans.modules.maven.execute.MavenCommandLineExecutor
+cons public init(org.netbeans.modules.maven.api.execute.RunConfig,org.openide.windows.InputOutput,org.netbeans.modules.maven.execute.AbstractMavenExecutor$TabContext)
+innr public static ExecuteMaven
+meth public boolean cancel()
+meth public static org.openide.execution.ExecutorTask executeMaven(org.netbeans.modules.maven.api.execute.RunConfig,org.openide.windows.InputOutput,org.netbeans.modules.maven.execute.AbstractMavenExecutor$TabContext)
+meth public void run()
+supr org.netbeans.modules.maven.execute.AbstractMavenExecutor
+hfds ENV_JAVAHOME,ENV_PREFIX,INTERNAL_PREFIX,KEY_UUID,LOGGER,NETBEANS_MAVEN_COMMAND_LINE,RP,UPDATE_INDEX_RP,VER17,preProcess,preProcessUUID,process,processUUID
+hcls WrapperShellConstructor
+
+CLSS public static org.netbeans.modules.maven.execute.MavenCommandLineExecutor$ExecuteMaven
+ outer org.netbeans.modules.maven.execute.MavenCommandLineExecutor
+cons public init()
+meth public org.openide.execution.ExecutorTask execute(org.netbeans.modules.maven.api.execute.RunConfig,org.openide.windows.InputOutput,org.netbeans.modules.maven.execute.AbstractMavenExecutor$TabContext)
+supr java.lang.Object
+
+CLSS public abstract interface org.netbeans.modules.maven.execute.MavenExecutor
+intf java.lang.Runnable
+meth public abstract org.openide.windows.InputOutput getInputOutput()
+meth public abstract void addInitialMessage(java.lang.String,org.openide.windows.OutputListener)
+meth public abstract void setTask(org.openide.execution.ExecutorTask)
+
+CLSS public final org.netbeans.modules.maven.execute.ModelRunConfig
+cons public init(org.netbeans.api.project.Project,org.netbeans.modules.maven.execute.model.NetbeansActionMapping,java.lang.String,org.openide.filesystems.FileObject,org.openide.util.Lookup,boolean)
+fld public final static java.lang.String EXEC_MERGED = "exec.args.merged"
+meth public boolean isFallback()
+supr org.netbeans.modules.maven.execute.BeanRunConfig
+hfds CP_PLACEHOLDER,EXEC_ARGS,LOG,fallback,model
+hcls ExecPluginConfigBuilder
+
+CLSS public org.netbeans.modules.maven.execute.NbGlobalActionGoalProvider
+cons public init()
+meth protected boolean reloadStream()
+meth public java.io.InputStream getActionDefinitionStream()
+meth public org.netbeans.modules.maven.execute.model.NetbeansActionMapping[] getCustomMappings()
+supr org.netbeans.modules.maven.spi.actions.AbstractMavenActionsProvider
+hfds FILENAME,FILENAME_FOLDER,FILE_NAME_PATH,LOG,listener,resetCache
+
+CLSS public abstract org.netbeans.modules.maven.execute.OutputTabMaintainer<%0 extends java.lang.Object>
+cons protected init(java.lang.String)
+fld protected org.openide.windows.InputOutput io
+meth protected abstract java.lang.Class<{org.netbeans.modules.maven.execute.OutputTabMaintainer%0}> tabContextType()
+meth protected abstract void reassignAdditionalContext({org.netbeans.modules.maven.execute.OutputTabMaintainer%0})
+meth protected abstract {org.netbeans.modules.maven.execute.OutputTabMaintainer%0} createContext()
+meth protected final org.openide.windows.InputOutput createInputOutput()
+meth protected final void markFreeTab()
+meth protected javax.swing.Action[] createNewTabActions()
+meth public final org.openide.windows.InputOutput getInputOutput()
+supr java.lang.Object
+hfds freeTabs,name
+hcls AllContext
+
+CLSS public org.netbeans.modules.maven.execute.PrereqCheckerMerger
+cons public init()
+intf org.netbeans.spi.project.LookupMerger<org.netbeans.modules.maven.api.execute.PrerequisitesChecker>
+meth public java.lang.Class<org.netbeans.modules.maven.api.execute.PrerequisitesChecker> getMergeableClass()
+meth public org.netbeans.modules.maven.api.execute.PrerequisitesChecker merge(org.openide.util.Lookup)
+supr java.lang.Object
+hcls Impl
+
+CLSS public org.netbeans.modules.maven.execute.ProxyNonSelectableInputOutput
+cons public init(org.openide.windows.InputOutput)
+intf org.openide.windows.InputOutput
+meth public boolean isClosed()
+meth public boolean isErrSeparated()
+meth public boolean isFocusTaken()
+meth public java.io.Reader flushReader()
+meth public java.io.Reader getIn()
+meth public org.openide.windows.OutputWriter getErr()
+meth public org.openide.windows.OutputWriter getOut()
+meth public void closeInputOutput()
+meth public void select()
+meth public void setErrSeparated(boolean)
+meth public void setErrVisible(boolean)
+meth public void setFocusTaken(boolean)
+meth public void setInputVisible(boolean)
+meth public void setOutputVisible(boolean)
+supr java.lang.Object
+hfds delegate
+
+CLSS public org.netbeans.modules.maven.execute.ReactorChecker
+cons public init()
+intf org.netbeans.modules.maven.api.execute.PrerequisitesChecker
+meth public boolean checkRunConfig(org.netbeans.modules.maven.api.execute.RunConfig)
+meth public static org.netbeans.modules.maven.api.NbMavenProject findReactor(org.netbeans.modules.maven.api.NbMavenProject)
+ anno 0 org.netbeans.api.annotations.common.NonNull()
+ anno 1 org.netbeans.api.annotations.common.NonNull()
+supr java.lang.Object
+
 CLSS public org.netbeans.modules.maven.execute.model.ActionToGoalMapping
 cons public init()
 intf java.io.Serializable
@@ -1737,14 +2116,16 @@ hfds actionName,activatedProfiles,basedir,displayName,goals,modelEncoding,packag
 
 CLSS public org.netbeans.modules.maven.execute.model.NetbeansActionProfile
 cons public init()
+meth public java.lang.String getDisplayName()
 meth public java.lang.String getId()
 meth public java.util.List<org.netbeans.modules.maven.execute.model.NetbeansActionMapping> getActions()
 meth public void addAction(org.netbeans.modules.maven.execute.model.NetbeansActionMapping)
 meth public void removeAction(org.netbeans.modules.maven.execute.model.NetbeansActionMapping)
 meth public void setActions(java.util.List<org.netbeans.modules.maven.execute.model.NetbeansActionMapping>)
+meth public void setDisplayName(java.lang.String)
 meth public void setId(java.lang.String)
 supr java.lang.Object
-hfds actions,id
+hfds actions,displayName,id
 
 CLSS public abstract org.netbeans.modules.maven.execute.model.NetbeansActionReader
 cons public init()
@@ -1802,7 +2183,7 @@ meth public void write(java.io.Writer,org.netbeans.modules.maven.execute.model.A
 supr java.lang.Object
 hfds NAMESPACE
 
-CLSS public abstract interface org.netbeans.modules.maven.model.ModelOperation<%0 extends org.netbeans.modules.xml.xam.dom.AbstractDocumentModel>
+CLSS public abstract interface org.netbeans.modules.maven.model.ModelOperation<%0 extends org.netbeans.modules.xml.xam.dom.AbstractDocumentModel<? extends org.netbeans.modules.xml.xam.dom.DocumentComponent<?>>>
 meth public abstract void performOperation({org.netbeans.modules.maven.model.ModelOperation%0})
 
 CLSS public org.netbeans.modules.maven.spi.IconResources
@@ -1842,8 +2223,10 @@ meth public java.util.Set<java.lang.String> getSupportedDefaultActions()
 meth public org.netbeans.modules.maven.execute.model.ActionToGoalMapping getRawMappings()
 meth public org.netbeans.modules.maven.execute.model.NetbeansActionMapping getMappingForAction(java.lang.String,org.netbeans.api.project.Project)
 meth public static java.lang.String dynamicSubstitutions(java.util.Map<java.lang.String,java.lang.String>,java.lang.String)
+meth public static org.netbeans.modules.maven.spi.actions.MavenActionsProvider fromNbActions(org.netbeans.api.project.Project,java.net.URL)
 supr java.lang.Object
 hfds LOG,writer
+hcls ResourceConfigAwareProvider
 
 CLSS public abstract interface org.netbeans.modules.maven.spi.actions.ActionConvertor
 meth public abstract java.lang.String convert(java.lang.String,org.openide.util.Lookup)
@@ -2005,8 +2388,36 @@ meth public abstract void resetCachedValue()
 CLSS public abstract interface org.netbeans.modules.maven.spi.queries.JavaLikeRootProvider
 meth public abstract java.lang.String kind()
 
+CLSS public abstract interface org.netbeans.spi.project.LookupMerger<%0 extends java.lang.Object>
+innr public abstract interface static !annotation Registration
+meth public abstract java.lang.Class<{org.netbeans.spi.project.LookupMerger%0}> getMergeableClass()
+meth public abstract {org.netbeans.spi.project.LookupMerger%0} merge(org.openide.util.Lookup)
+
 CLSS public abstract interface org.netbeans.spi.project.ProjectConfiguration
 meth public abstract java.lang.String getDisplayName()
+
+CLSS public final org.netbeans.spi.project.ui.support.BuildExecutionSupport
+innr public abstract interface static ActionItem
+innr public abstract interface static Item
+meth public static org.netbeans.spi.project.ui.support.BuildExecutionSupport$Item getLastFinishedItem()
+meth public static void addChangeListener(javax.swing.event.ChangeListener)
+meth public static void registerFinishedItem(org.netbeans.spi.project.ui.support.BuildExecutionSupport$Item)
+meth public static void registerRunningItem(org.netbeans.spi.project.ui.support.BuildExecutionSupport$Item)
+meth public static void removeChangeListener(javax.swing.event.ChangeListener)
+supr java.lang.Object
+
+CLSS public abstract interface static org.netbeans.spi.project.ui.support.BuildExecutionSupport$ActionItem
+ outer org.netbeans.spi.project.ui.support.BuildExecutionSupport
+intf org.netbeans.spi.project.ui.support.BuildExecutionSupport$Item
+meth public abstract java.lang.String getAction()
+meth public abstract org.openide.filesystems.FileObject getProjectDirectory()
+
+CLSS public abstract interface static org.netbeans.spi.project.ui.support.BuildExecutionSupport$Item
+ outer org.netbeans.spi.project.ui.support.BuildExecutionSupport
+meth public abstract boolean isRunning()
+meth public abstract java.lang.String getDisplayName()
+meth public abstract void repeatExecution()
+meth public abstract void stopRunning()
 
 CLSS public abstract interface org.netbeans.spi.project.ui.support.NodeList<%0 extends java.lang.Object>
 meth public abstract java.util.List<{org.netbeans.spi.project.ui.support.NodeList%0}> keys()
@@ -2147,6 +2558,9 @@ supr java.beans.FeatureDescriptor
 hfds BLOCK_EVENTS,INIT_LOCK,LOCK,TEMPL_COOKIE,err,hierarchy,listeners,lookups,parent,warnedBadProperties
 hcls LookupEventList,PropertyEditorRef
 
+CLSS public abstract interface org.openide.util.Cancellable
+meth public abstract boolean cancel()
+
 CLSS public final org.openide.util.HelpCtx
 cons public init(java.lang.Class<?>)
  anno 0 java.lang.Deprecated()
@@ -2192,4 +2606,26 @@ hcls DefLookup,Empty
 CLSS public abstract interface static org.openide.util.Lookup$Provider
  outer org.openide.util.Lookup
 meth public abstract org.openide.util.Lookup getLookup()
+
+CLSS public abstract interface org.openide.windows.InputOutput
+fld public final static java.io.Reader nullReader
+ anno 0 java.lang.Deprecated()
+fld public final static org.openide.windows.InputOutput NULL
+fld public final static org.openide.windows.OutputWriter nullWriter
+ anno 0 java.lang.Deprecated()
+meth public abstract boolean isClosed()
+meth public abstract boolean isErrSeparated()
+meth public abstract boolean isFocusTaken()
+meth public abstract java.io.Reader flushReader()
+ anno 0 java.lang.Deprecated()
+meth public abstract java.io.Reader getIn()
+meth public abstract org.openide.windows.OutputWriter getErr()
+meth public abstract org.openide.windows.OutputWriter getOut()
+meth public abstract void closeInputOutput()
+meth public abstract void select()
+meth public abstract void setErrSeparated(boolean)
+meth public abstract void setErrVisible(boolean)
+meth public abstract void setFocusTaken(boolean)
+meth public abstract void setInputVisible(boolean)
+meth public abstract void setOutputVisible(boolean)
 

@@ -72,7 +72,7 @@ public class JavaBeansUtil {
     /**
      * The methods in this class will do proper XML indention for you.
      */
-    public static abstract class IndentingBeanWriter implements BeanWriter {
+    public abstract static class IndentingBeanWriter implements BeanWriter {
         protected String indentBy;
         protected String indent;
         protected int indentLevel = 0;
@@ -536,7 +536,7 @@ public class JavaBeansUtil {
      * contents.
      */
     public static void copyBean(Object src, Object dest) throws java.beans.IntrospectionException {
-        copyBean(src, dest, Collections.EMPTY_MAP);
+        copyBean(src, dest, Collections.emptyMap());
     }
     
     /**

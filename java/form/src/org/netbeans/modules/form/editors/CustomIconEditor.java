@@ -247,13 +247,8 @@ public class CustomIconEditor extends javax.swing.JPanel {
     }
 
     private FileObject[] findSourceRoots(FileObject fo) {
-        try {
-            ClassPath cp = ClassPath.getClassPath(propertyEditor.getSourceFile(), ClassPath.EXECUTE);
-            return SourceForBinaryQuery.findSourceRoots(cp.findOwnerRoot(fo).getURL()).getRoots();
-        } catch (FileStateInvalidException fsiex) {
-            Logger.getLogger(CustomIconEditor.class.getName()).log(Level.INFO, null, fsiex);
-        }
-        return null;
+        ClassPath cp = ClassPath.getClassPath(propertyEditor.getSourceFile(), ClassPath.EXECUTE);
+        return SourceForBinaryQuery.findSourceRoots(cp.findOwnerRoot(fo).toURL()).getRoots();
     }
 
     private FileObject findSourceRootOf(FileObject[] roots, String resName) {
@@ -272,7 +267,7 @@ public class CustomIconEditor extends javax.swing.JPanel {
     private void setFromFileName(String fileName) {
         selectedExternalFile = new File(fileName);
         try {
-            urlField.setText(selectedExternalFile.toURL().toExternalForm());
+            urlField.setText(selectedExternalFile.toURI().toURL().toExternalForm());
         }
         catch (MalformedURLException ex) {
             urlField.setText("file:/" + fileName); // NOI18N
@@ -344,7 +339,7 @@ public class CustomIconEditor extends javax.swing.JPanel {
             if (selectedCPFile != null && selectedExternalFile == null && selectedURL == null) {
                 selectedExternalFile = FileUtil.toFile(selectedCPFile);
                 try {
-                    urlField.setText(selectedExternalFile.toURL().toExternalForm());
+                    urlField.setText(selectedExternalFile.toURI().toURL().toExternalForm());
                 }
                 catch (MalformedURLException ex) { // should not happen for existing file
                     ErrorManager.getDefault().notify(ErrorManager.INFORMATIONAL, ex);
@@ -658,7 +653,7 @@ public class CustomIconEditor extends javax.swing.JPanel {
                         selectedURL = null;
                         externalRadio.setSelected(true);
                         try {
-                            urlField.setText(file.toURL().toExternalForm());
+                            urlField.setText(file.toURI().toURL().toExternalForm());
                         } catch (MalformedURLException ex) {
                             ErrorManager.getDefault().notify(ErrorManager.INFORMATIONAL, ex);
                         }
@@ -734,7 +729,7 @@ public class CustomIconEditor extends javax.swing.JPanel {
             File file = fileChooser.getSelectedFile();
             if (file != null) {
                 try {
-                    urlField.setText(file.toURL().toExternalForm());
+                    urlField.setText(file.toURI().toURL().toExternalForm());
                 }
                 catch (MalformedURLException ex) {
                     ErrorManager.getDefault().notify(ErrorManager.INFORMATIONAL, ex);

@@ -88,8 +88,9 @@ public class DriverMaps {
     }
     
     private static final String getPrefix(Map<String, String> classMap, String inClass) {
-        for(String urlPrefix: classMap.keySet()) {
-            String dsClass = classMap.get(urlPrefix);
+        for(Map.Entry<String, String> entry: classMap.entrySet()) {
+            String urlPrefix = entry.getKey();
+            String dsClass = entry.getValue();
             if(dsClass.equalsIgnoreCase(inClass)) {
                 return urlPrefix;           
             }    
@@ -174,7 +175,7 @@ public class DriverMaps {
         //driverMap.put("jdbc:microsoft:sqlserver:", "com.microsoft.jdbc.sqlserver.SQLServerDriver");
         driverMap.put("jdbc:sqlserver:", "com.microsoft.sqlserver.jdbc.SQLServerDriver"); //NOI18N
         //MySQL (Connector/J driver)
-        driverMap.put("jdbc:mysql:", "com.mysql.jdbc.Driver");
+        driverMap.put("jdbc:mysql:", "com.mysql.cj.jdbc.Driver");
         //MySQL (MM.MySQL driver)
         //driverMap.put("jdbc:mysql:", "org.gjt.mm.mysql.Driver");
         

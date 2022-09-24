@@ -161,7 +161,7 @@ public class SwitcherTable extends JTable {
         if (ren instanceof JLabel) {
             // #199007: Swing HTML renderer does a poor job of truncating long labels
             JLabel prototype = (JLabel) ren;
-            lbl = HtmlRenderer.createLabel();
+            lbl = (JLabel) HtmlRenderer.createRenderer();
             if( lbl instanceof HtmlRenderer.Renderer ) {
                 ((HtmlRenderer.Renderer)lbl).setRenderStyle( HtmlRenderer.STYLE_TRUNCATE );
             }
@@ -218,7 +218,7 @@ public class SwitcherTable extends JTable {
         if( null == htmlText )
             return null;
         String res = htmlText.replaceAll( "<[^>]*>", "" ); // NOI18N // NOI18N
-        res = res.replaceAll( "&nbsp;", " " ); // NOI18N // NOI18N
+        res = res.replace( "&nbsp;", " " ); // NOI18N // NOI18N
         res = res.trim();
         return res;
     }

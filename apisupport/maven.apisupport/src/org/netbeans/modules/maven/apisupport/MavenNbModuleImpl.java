@@ -25,10 +25,11 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -57,7 +58,6 @@ import org.netbeans.modules.apisupport.project.spi.PlatformJarProvider;
 import org.netbeans.modules.maven.api.FileUtilities;
 import org.netbeans.modules.maven.api.ModelUtils;
 import org.netbeans.modules.maven.api.NbMavenProject;
-import org.netbeans.modules.maven.api.PluginPropertyUtils;
 import org.netbeans.modules.maven.embedder.EmbedderFactory;
 import org.netbeans.modules.maven.indexer.api.NBVersionInfo;
 import org.netbeans.modules.maven.indexer.api.RepositoryInfo;
@@ -78,7 +78,6 @@ import org.openide.filesystems.FileSystem;
 import org.openide.filesystems.FileUtil;
 import org.openide.filesystems.XMLFileSystem;
 import org.openide.modules.SpecificationVersion;
-import org.openide.util.RequestProcessor;
 
 /**
  *
@@ -86,14 +85,15 @@ import org.openide.util.RequestProcessor;
  */
 @ProjectServiceProvider(service=NbModuleProvider.class, projectType="org-netbeans-modules-maven/" + NbMavenProject.TYPE_NBM)
 public class MavenNbModuleImpl implements NbModuleProvider {
+
+    
     private final Project project;
     private final DependencyAdder dependencyAdder = new DependencyAdder();
-    private static final RequestProcessor RP = new RequestProcessor(MavenNbModuleImpl.class);
-    
-    private final RequestProcessor.Task tsk = RP.create(dependencyAdder);
-    
-    public static final String NETBEANS_REPO_ID = "netbeans";
-    public static final String NETBEANS_SNAPSHOT_REPO_ID = "netbeans-snapshot";
+
+    public static final String MAVEN_CENTRAL = "central";
+    public static final String APACHE_SNAPSHOT_REPO_ID = "apache.snapshots";
+    // this repository is not good anymore, dev-SNAPSHOT version are buil on apache snapshot
+    // netbeans-snapshot contains "8.3-dev"  public static final String NETBEANS_SNAPSHOT_REPO_ID = "netbeans-snapshot";
     /**
      * the property defined by nbm-maven-plugin's run-ide goal.
      * can help finding the defined netbeans platform.
@@ -101,11 +101,11 @@ public class MavenNbModuleImpl implements NbModuleProvider {
     private static final String PROP_NETBEANS_INSTALL = "netbeans.installation"; //NOI18N
 
     public static final String GROUPID_MOJO = "org.codehaus.mojo";
+    public static final String GROUPID_APACHE = "org.apache.netbeans.utilities";
     public static final String NBM_PLUGIN = "nbm-maven-plugin";
-    public static final String LATEST_NBM_PLUGIN_VERSION = "3.13";
-    
-    public static final String NETBEANSAPI_GROUPID = "org.netbeans.api";  
-    
+    static final String LATEST_NBM_PLUGIN_VERSION = "4.7";
+
+    public static final String NETBEANSAPI_GROUPID = "org.netbeans.api";
 
     /** Creates a new instance of MavenNbModuleImpl 
      * @param project 
@@ -114,15 +114,29 @@ public class MavenNbModuleImpl implements NbModuleProvider {
         this.project = project;
     }
 
-    static RepositoryInfo netbeansRepo() {
-        return RepositoryPreferences.getInstance().getRepositoryInfoById(NETBEANS_REPO_ID);
+    static List<RepositoryInfo> netbeansRepo() {
+        return Arrays.asList(
+                RepositoryPreferences.getInstance().getRepositoryInfoById(MAVEN_CENTRAL));
     }
-    
+
+    /**
+     * Returns the latest known version of the NetBeans maven plugin.
+     * This method will not wait for the index to be downloaded, it will return a default value instead.
+     */
+    public static String getLatestNbmPluginVersion() {
+        RepositoryQueries.Result<NBVersionInfo> versionsResult = RepositoryQueries.getVersionsResult(GROUPID_APACHE, NBM_PLUGIN, null);
+
+        // Versions are sorted in descending order
+        List<NBVersionInfo> results = versionsResult.getResults();
+        if (!results.isEmpty()) {
+            return results.get(0).getVersion();
+        }
+        return LATEST_NBM_PLUGIN_VERSION;
+    }
+
     private File getModuleXmlLocation() {
-        String file = PluginPropertyUtils.getPluginProperty(project, 
-                GROUPID_MOJO,
-                NBM_PLUGIN, //NOI18N
-                "descriptor", null, null); //NOI18N
+        String file = PluginBackwardPropertyUtils.getPluginProperty(project, 
+                    "descriptor", null, null); //NOI18N
         if (file == null) {
             file = "src/main/nbm/module.xml"; //NOI18N
         }
@@ -133,14 +147,14 @@ public class MavenNbModuleImpl implements NbModuleProvider {
         return FileUtil.normalizeFile(rel);
     }
     
-    private Xpp3Dom getModuleDom() throws UnsupportedEncodingException, IOException, XmlPullParserException {
+    private Xpp3Dom getModuleDom() throws IOException, XmlPullParserException {
         //TODO convert to FileOBject and have the IO stream from there..
         File file = getModuleXmlLocation();
         if (!file.exists()) {
             return null;
         }
         FileInputStream is = new FileInputStream(file);
-        Reader reader = new InputStreamReader(is, "UTF-8"); //NOI18N
+        Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8);
         try {
             return Xpp3DomBuilder.build(reader);
         } finally {
@@ -157,10 +171,8 @@ public class MavenNbModuleImpl implements NbModuleProvider {
 
     @Override
     public String getCodeNameBase() {
-        String codename = PluginPropertyUtils.getPluginProperty(project, 
-                GROUPID_MOJO,
-                NBM_PLUGIN, //NOI18N
-                "codeNameBase", "manifest", null);
+        String codename = PluginBackwardPropertyUtils.getPluginProperty(project, 
+                    "codeNameBase", "manifest", null);
         if (codename == null) {
             //this is deprecated in 3.8, but kept around for older versions
             try {
@@ -184,7 +196,7 @@ public class MavenNbModuleImpl implements NbModuleProvider {
             MavenProject prj = project.getLookup().lookup(NbMavenProject.class).getMavenProject();
             //same fallback is in nbm-maven-plugin, keep it synchronized with codeNameBase parameter
             codename = prj.getGroupId() + "." + prj.getArtifactId(); //NOI18N
-            codename = codename.replaceAll( "-", "." ); //NOI18N
+            codename = codename.replace( "-", "." ); //NOI18N
         }
         return codename;
     }
@@ -218,10 +230,8 @@ public class MavenNbModuleImpl implements NbModuleProvider {
 
     @Override
     public FileObject getManifestFile() {
-        String manifest = PluginPropertyUtils.getPluginProperty(project, 
-                GROUPID_MOJO,
-                NBM_PLUGIN, //NOI18N
-                "sourceManifestFile", "manifest", null);
+        String manifest = PluginBackwardPropertyUtils.getPluginProperty(project, 
+                    "sourceManifestFile", "manifest", null);
         if (manifest != null) {
             return FileUtilities.convertStringToFileObject(manifest);
         }
@@ -270,7 +280,7 @@ public class MavenNbModuleImpl implements NbModuleProvider {
         for (NbModuleProvider.ModuleDependency mdep : dependencies) {
         String codeNameBase = mdep.getCodeNameBase();
         SpecificationVersion version = mdep.getVersion();
-        String artifactId = codeNameBase.replaceAll("\\.", "-"); //NOI18N
+        String artifactId = codeNameBase.replace(".", "-"); //NOI18N
         NbMavenProject watch = project.getLookup().lookup(NbMavenProject.class);
         if (hasDependency(codeNameBase)) {
             //TODO
@@ -279,11 +289,11 @@ public class MavenNbModuleImpl implements NbModuleProvider {
             continue;
         }
         Dependency dep = null;
-        RepositoryInfo nbrepo = netbeansRepo();
+        List<RepositoryInfo> nbrepo = netbeansRepo();
         if (nbrepo != null) {
             File platformFile = lookForModuleInPlatform(artifactId);
             if (platformFile != null) {
-                List<NBVersionInfo> lst = RepositoryQueries.findBySHA1Result(platformFile, Collections.singletonList(nbrepo)).getResults();
+                List<NBVersionInfo> lst = RepositoryQueries.findBySHA1Result(platformFile, Collections.unmodifiableList(nbrepo)).getResults();
                 for (NBVersionInfo elem : lst) {
                     dep = new Dependency();
                     dep.setArtifactId(elem.getArtifactId());
@@ -311,7 +321,7 @@ public class MavenNbModuleImpl implements NbModuleProvider {
         }
         if (dep.getVersion() == null) {
             if (nbrepo != null) {
-                List<NBVersionInfo> versions = RepositoryQueries.getVersionsResult("org.netbeans.cluster", "platform", Collections.singletonList(nbrepo)).getResults();
+                List<NBVersionInfo> versions = RepositoryQueries.getVersionsResult("org.netbeans.cluster", "platform", Collections.unmodifiableList(nbrepo)).getResults();
                 if (!versions.isEmpty()) {
                     dep.setVersion(versions.get(0).getVersion());
                 }
@@ -354,7 +364,7 @@ public class MavenNbModuleImpl implements NbModuleProvider {
     }
 
     public @Override boolean hasDependency(String codeNameBase) throws IOException {
-        String artifactId = codeNameBase.replaceAll("\\.", "-"); //NOI18N
+        String artifactId = codeNameBase.replace(".", "-"); //NOI18N
         NbMavenProject watch = project.getLookup().lookup(NbMavenProject.class);
         Set<Artifact> set = watch.getMavenProject().getDependencyArtifacts();
         if (set != null) {
@@ -376,7 +386,8 @@ public class MavenNbModuleImpl implements NbModuleProvider {
             public @Override void performOperation(POMModel model) {
                 Build build = model.getProject().getBuild();
                 if (build != null) {
-                    Plugin nbmPlugin = build.findPluginById(GROUPID_MOJO, NBM_PLUGIN);
+                    // look at apache netbeans plugin first
+                    Plugin nbmPlugin = PluginBackwardPropertyUtils.findPluginFromBuild(build);
                     if (nbmPlugin != null) {
                         Configuration configuration = nbmPlugin.getConfiguration();
                         if (configuration == null) {
@@ -459,7 +470,7 @@ public class MavenNbModuleImpl implements NbModuleProvider {
      */ 
     @Override
     public SpecificationVersion getDependencyVersion(String codenamebase) throws IOException {
-        String artifactId = codenamebase.replaceAll("\\.", "-"); //NOI18N
+        String artifactId = codenamebase.replace(".", "-"); //NOI18N
         NbMavenProject watch = project.getLookup().lookup(NbMavenProject.class);
         for (Artifact art : watch.getMavenProject().getArtifacts()) {
             if (art.getGroupId().startsWith("org.netbeans") && art.getArtifactId().equals(artifactId)) { //NOI18N
@@ -555,7 +566,7 @@ public class MavenNbModuleImpl implements NbModuleProvider {
      * Looks for the configured location of the IDE installation for a standalone or suite module.
      */
     static @CheckForNull File findIDEInstallation(Project project) {
-        String installProp = PluginPropertyUtils.getPluginProperty(project, GROUPID_MOJO, NBM_PLUGIN, "netbeansInstallation", "run-ide", PROP_NETBEANS_INSTALL);
+        String installProp = PluginBackwardPropertyUtils.getPluginProperty(project, "netbeansInstallation", "run-ide", PROP_NETBEANS_INSTALL);
         if (installProp != null) {
             return FileUtilities.convertStringToFile(installProp);
         } else {
@@ -628,15 +639,15 @@ public class MavenNbModuleImpl implements NbModuleProvider {
             if (watch == null) {
                 return null; //not a maven project.
             }
-            String outputDir = PluginPropertyUtils.getPluginProperty(appProject,
-                    GROUPID_MOJO, NBM_PLUGIN, "outputDirectory", "cluster-app", null); //NOI18N
+            String outputDir = PluginBackwardPropertyUtils.getPluginProperty(appProject,
+                    "outputDirectory", "cluster-app", null); //NOI18N
             if( null == outputDir ) {
                 outputDir = "target"; //NOI18N
             }
-
-            String brandingToken = PluginPropertyUtils.getPluginProperty(appProject,
-                    GROUPID_MOJO, NBM_PLUGIN, "brandingToken", "cluster-app", "netbeans.branding.token"); //NOI18N
-             return FileUtilities.resolveFilePath(FileUtil.toFile(appProject.getProjectDirectory()), outputDir + File.separator + brandingToken);
+            
+            String brandingToken = PluginBackwardPropertyUtils.getPluginProperty(appProject,
+                    "brandingToken", "cluster-app", "netbeans.branding.token"); //NOI18N
+            return FileUtilities.resolveFilePath(FileUtil.toFile(appProject.getProjectDirectory()), outputDir + File.separator + brandingToken);
     }
 
     @Override public FileSystem getEffectiveSystemFilesystem() throws IOException {

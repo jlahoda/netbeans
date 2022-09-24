@@ -96,6 +96,7 @@ public class CompletionTestBase extends CompletionTestBaseBase {
                 if (!(org.openide.util.Utilities.isMac() && itemString.equals("apple") //ignoring 'apple' package
                         || itemString.equals("jdk")        //ignoring 'jdk' package introduced by jdk1.7.0_40
                         || itemString.equals("netscape")   //ignoring 'netscape' package present in some JDK builds
+                        || itemString.equals("nbjavac")   //ignoring 'nbjavac' package from nbjavac
                         || itemString.equals("oracle"))) { //ignoring 'oracle' package present in some JDK builds
                     out.write(itemString);
                     out.write("\n");
@@ -212,11 +213,13 @@ public class CompletionTestBase extends CompletionTestBaseBase {
         public CI createVariableItem(CompilationInfo info, VariableElement elem, TypeMirror type, int substitutionOffset, ReferencesCount referencesCount, boolean isInherited, boolean isDeprecated, boolean smartType, int assignToVarOffset) {
             String varName = elem.getSimpleName().toString();
             String typeName = type != null ? info.getTypeUtilities().getTypeName(type).toString() : null;
-            switch (elem.getKind()) {
+            ElementKind ek = elem.getKind();
+            switch (ek) {
                 case LOCAL_VARIABLE:
                 case RESOURCE_VARIABLE:
                 case PARAMETER:
                 case EXCEPTION_PARAMETER:
+                case BINDING_VARIABLE:
                     return new CI((typeName != null ? typeName + " " : "") + varName, smartType ? 200 - SMART_TYPE : 200, varName);
                 case ENUM_CONSTANT:
                 case FIELD:

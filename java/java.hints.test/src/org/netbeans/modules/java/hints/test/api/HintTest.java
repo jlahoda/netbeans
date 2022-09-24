@@ -27,6 +27,7 @@ import java.io.OutputStream;
 import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -50,17 +51,9 @@ import java.util.logging.Logger;
 import java.util.prefs.AbstractPreferences;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
-import java.util.regex.Pattern;
 import javax.swing.event.ChangeListener;
 import javax.swing.text.Document;
 import javax.tools.Diagnostic;
-import junit.framework.Assert;
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertNotSame;
-import static junit.framework.Assert.assertTrue;
-import static junit.framework.TestCase.assertFalse;
-
 import org.netbeans.api.editor.mimelookup.MimeLookup;
 import org.netbeans.api.java.classpath.ClassPath;
 import org.netbeans.api.java.classpath.JavaClassPathConstants;
@@ -117,10 +110,10 @@ import org.netbeans.spi.java.hints.JavaFix;
 import org.netbeans.spi.java.queries.CompilerOptionsQueryImplementation;
 import org.netbeans.spi.java.queries.SourceForBinaryQueryImplementation;
 import org.netbeans.spi.java.queries.SourceLevelQueryImplementation;
+import org.netbeans.spi.lexer.MutableTextInput;
 import org.openide.LifecycleManager;
 import org.openide.cookies.EditorCookie;
 import org.openide.filesystems.FileObject;
-import org.openide.filesystems.FileStateInvalidException;
 import org.openide.filesystems.FileSystem;
 import org.openide.filesystems.FileUtil;
 import org.openide.filesystems.MultiFileSystem;
@@ -133,6 +126,12 @@ import org.openide.util.Exceptions;
 import org.openide.util.Lookup;
 import org.openide.util.NbBundle;
 import org.openide.util.lookup.Lookups;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertTrue;
 
 /**A support class for writing a test for a Java Hint. A test verifying that correct
  * warnings are produced should look like:
@@ -166,8 +165,10 @@ import org.openide.util.lookup.Lookups;
 public class HintTest {
 
     private static final Logger INDEXING_LOGGER = /* RepositoryUpdater.UI_LOGGER */ Logger.getLogger("org.netbeans.ui.indexing");
+    private static final Logger LEXER_LOG_LOCK = Logger.getLogger(MutableTextInput.class.getName());
     static {
         INDEXING_LOGGER.setLevel(Level.WARNING);
+        LEXER_LOG_LOCK.setLevel(Level.OFF);
     }
 
     private final File workDir;
@@ -196,7 +197,7 @@ public class HintTest {
                 layers.add(en.nextElement());
             }
 
-            Assert.assertTrue(layer, found);
+            assertTrue(layer, found);
         }
 
         XMLFileSystem xmlFS = new XMLFileSystem();
@@ -1255,7 +1256,7 @@ public class HintTest {
 
     static {
         System.setProperty("org.openide.util.Lookup", TestLookup.class.getName());
-        Assert.assertEquals(TestLookup.class, Lookup.getDefault().getClass());
+        assertEquals(TestLookup.class, Lookup.getDefault().getClass());
     }
 
     //workdir computation (copied from NbTestCase):
@@ -1447,7 +1448,7 @@ public class HintTest {
 
     private static FileObject copyStringToFile (FileObject f, String content) throws Exception {
         OutputStream os = f.getOutputStream();
-        os.write(content.getBytes("UTF-8"));
+        os.write(content.getBytes(StandardCharsets.UTF_8));
         os.close ();
 
         return f;

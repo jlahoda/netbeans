@@ -53,6 +53,7 @@ import org.openide.util.NbPreferences;
 import org.eclipse.aether.repository.MirrorSelector;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.util.repository.DefaultMirrorSelector;
+import org.openide.util.NbBundle;
 
 /**
  * List of Maven repositories of interest.
@@ -75,8 +76,8 @@ public final class RepositoryPreferences {
     public static final int FREQ_ONCE_DAY = 1;
     public static final int FREQ_STARTUP = 2;
     public static final int FREQ_NEVER = 3;
-    private final Map<String,RepositoryInfo> infoCache = new HashMap<String,RepositoryInfo>();
-    private final Map<Object,List<RepositoryInfo>> transients = new LinkedHashMap<Object,List<RepositoryInfo>>();
+    private final Map<String,RepositoryInfo> infoCache = new HashMap<>();
+    private final Map<Object,List<RepositoryInfo>> transients = new LinkedHashMap<>();
     private RepositoryInfo local;
     private final RepositoryInfo central;
     private final ChangeSupport cs = new ChangeSupport(this);
@@ -100,7 +101,7 @@ public final class RepositoryPreferences {
         return NbPreferences.root().node("org/netbeans/modules/maven/repositories");
     }
 
-    public synchronized static RepositoryPreferences getInstance() {
+    public static synchronized RepositoryPreferences getInstance() {
         if (instance == null) {
             instance = new RepositoryPreferences();
         }
@@ -166,15 +167,15 @@ public final class RepositoryPreferences {
     }
 
     public List<RepositoryInfo> getRepositoryInfos() {
-        List<RepositoryInfo> toRet = new ArrayList<RepositoryInfo>();
+        List<RepositoryInfo> toRet = new ArrayList<>();
         toRet.add(getLocalRepository());
-        Set<String> ids = new HashSet<String>();
+        Set<String> ids = new HashSet<>();
         ids.add(RepositorySystem.DEFAULT_LOCAL_REPO_ID);
-        Set<String> urls = new HashSet<String>();
+        Set<String> urls = new HashSet<>();
         synchronized (infoCache) {
             Preferences storage = storage();
             try {
-                Set<String> gone = new HashSet<String>(infoCache.keySet());
+                Set<String> gone = new HashSet<>(infoCache.keySet());
                 for (String c : storage.childrenNames()) {
                     RepositoryInfo ri = infoCache.get(c);
                     if (ri == null) {
@@ -220,41 +221,41 @@ public final class RepositoryPreferences {
                 }
             }
         }
-            MavenEmbedder embedder2 = EmbedderFactory.getOnlineEmbedder();
-            DefaultMirrorSelector selectorWithGroups = new DefaultMirrorSelector();
-            DefaultMirrorSelector selectorWithoutGroups = new DefaultMirrorSelector();
-            final Settings settings = embedder2.getSettings();
-            for (Mirror mirror : settings.getMirrors()) {
-                String mirrorOf = mirror.getMirrorOf();
-                selectorWithGroups.add(mirror.getId(), mirror.getUrl(), mirror.getLayout(), false, mirrorOf, mirror.getMirrorOfLayouts());
-                if (!mirrorOf.contains("*")) {
-                    selectorWithoutGroups.add(mirror.getId(), mirror.getUrl(), mirror.getLayout(), false, mirrorOf, mirror.getMirrorOfLayouts());
-                }
+        MavenEmbedder embedder2 = EmbedderFactory.getOnlineEmbedder();
+        DefaultMirrorSelector selectorWithGroups = new DefaultMirrorSelector();
+        DefaultMirrorSelector selectorWithoutGroups = new DefaultMirrorSelector();
+        final Settings settings = embedder2.getSettings();
+        for (Mirror mirror : settings.getMirrors()) {
+            String mirrorOf = mirror.getMirrorOf();
+            selectorWithGroups.add(mirror.getId(), mirror.getUrl(), mirror.getLayout(), false, mirrorOf, mirror.getMirrorOfLayouts());
+            if (!mirrorOf.contains("*")) {
+                selectorWithoutGroups.add(mirror.getId(), mirror.getUrl(), mirror.getLayout(), false, mirrorOf, mirror.getMirrorOfLayouts());
             }
+        }
 
-            List<RepositoryInfo> semiTreed = new ArrayList<RepositoryInfo>();
-            for (RepositoryInfo in: toRet) {
-                if (in.getMirrorStrategy() == RepositoryInfo.MirrorStrategy.ALL || in.getMirrorStrategy() == RepositoryInfo.MirrorStrategy.NON_WILDCARD) {
-                    RepositoryInfo processed = getMirrorInfo(in, in.getMirrorStrategy() == RepositoryInfo.MirrorStrategy.ALL ? selectorWithGroups : selectorWithoutGroups, settings);
-                    boolean isMirror = true;
-                    if (processed == null) {
-                        isMirror = false;
-                        processed = in;
-                    }
-                    int index = semiTreed.indexOf(processed);
-                    if (index > -1) {
-                        processed = semiTreed.get(index);
-                    } else {
-                        semiTreed.add(processed);
-                    }
-                    if (isMirror) {
-                        processed.addMirrorOfRepository(in);
-                    }
-                } else {
-                    semiTreed.add(in);
+        List<RepositoryInfo> semiTreed = new ArrayList<>();
+        for (RepositoryInfo in : toRet) {
+            if (in.getMirrorStrategy() == RepositoryInfo.MirrorStrategy.ALL || in.getMirrorStrategy() == RepositoryInfo.MirrorStrategy.NON_WILDCARD) {
+                RepositoryInfo processed = getMirrorInfo(in, in.getMirrorStrategy() == RepositoryInfo.MirrorStrategy.ALL ? selectorWithGroups : selectorWithoutGroups, settings);
+                boolean isMirror = true;
+                if (processed == null) {
+                    isMirror = false;
+                    processed = in;
                 }
+                int index = semiTreed.indexOf(processed);
+                if (index > -1) {
+                    processed = semiTreed.get(index);
+                } else {
+                    semiTreed.add(processed);
+                }
+                if (isMirror) {
+                    processed.addMirrorOfRepository(in);
+                }
+            } else {
+                semiTreed.add(in);
             }
-            return semiTreed;
+        }
+        return semiTreed;
     }
     
     /**
@@ -334,8 +335,23 @@ public final class RepositoryPreferences {
     }
 
     public static int getIndexUpdateFrequency() {
-        return getPreferences().getInt(PROP_INDEX_FREQ, Boolean.getBoolean("netbeans.full.hack") ? FREQ_NEVER : FREQ_ONCE_WEEK);
+        int defaultFrequency;
+        if (Boolean.getBoolean("netbeans.full.hack")) { // NOI18N
+            defaultFrequency = FREQ_NEVER;
+        } else {
+            defaultFrequency = getDefaultIndexUpdateFrequency();
+        }
+        return getPreferences().getInt(PROP_INDEX_FREQ, defaultFrequency);
     }
+
+    @NbBundle.Messages({
+        "# FREQ_ONCE_WEEK = 0, FREQ_ONCE_DAY = 1, FREQ_STARTUP = 2, FREQ_NEVER = 3;",
+        "DEFAULT_UPDATE_FREQ=0"
+    })
+    static int getDefaultIndexUpdateFrequency() throws NumberFormatException {
+        return Integer.parseInt(Bundle.DEFAULT_UPDATE_FREQ());
+    }
+
     /**
      * @since 2.27
      * @param bool 
@@ -349,7 +365,15 @@ public final class RepositoryPreferences {
      * @return 
      */
     public static boolean isIndexRepositories() {
-        return getPreferences().getBoolean(PROP_INDEX, true);
+        return getPreferences().getBoolean(PROP_INDEX, getDefaultIndexRepositories());
+    }
+
+    @NbBundle.Messages({
+        "# true or false:",
+        "DEFAULT_CREATE_INDEX=true"
+    })
+    static boolean getDefaultIndexRepositories() {
+        return Boolean.valueOf(Bundle.DEFAULT_CREATE_INDEX());
     }
 
     public static Date getLastIndexUpdate(String repoId) {
@@ -400,7 +424,7 @@ public final class RepositoryPreferences {
         synchronized (infoCache) {
             List<RepositoryInfo> infos = transients.get(key);
             if (infos == null) {
-                infos = new ArrayList<RepositoryInfo>();
+                infos = new ArrayList<>();
                 transients.put(key, infos);
             }
             RepositoryInfo info = new RepositoryInfo(id, displayName, null, url);
@@ -445,7 +469,7 @@ public final class RepositoryPreferences {
      * @since 2.12
      */
     public List<ArtifactRepository> remoteRepositories(MavenEmbedder embedder) {
-        List<ArtifactRepository> remotes = new ArrayList<ArtifactRepository>();
+        List<ArtifactRepository> remotes = new ArrayList<>();
         for (RepositoryInfo info : getRepositoryInfos()) {
             // XXX should there be a String preferredId parameter to limit the remote repositories used in case we have a "reference" ID somehow?
             if (!info.isLocal()) {

@@ -121,6 +121,7 @@ import org.netbeans.api.lexer.TokenHierarchy;
 import org.netbeans.api.lexer.TokenSequence;
 import org.netbeans.api.queries.FileEncodingQuery;
 import org.netbeans.api.scripting.Scripting;
+import org.netbeans.modules.java.source.GeneratorUtilitiesAccessor;
 import org.netbeans.modules.java.source.builder.CommentHandlerService;
 import org.netbeans.modules.java.source.builder.CommentSetImpl;
 import org.netbeans.modules.java.source.parsing.AbstractSourceFileObject;
@@ -131,6 +132,8 @@ import org.netbeans.modules.java.source.save.DiffContext;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.util.Exceptions;
+
+import static javax.lang.model.type.TypeKind.VOID;
 
 /**
  *
@@ -1047,6 +1050,22 @@ public final class GeneratorUtilities {
         } catch (Exception e) {}
         return copy.getTreeMaker().Block(Collections.emptyList(), false);
     }
+
+    /**
+     * Creates a default lambda expression.
+     *
+     * @param lambda a lambda to generate the expression for
+     * @param method a method of a functional interface to be implemented by the lambda expression
+     * @return the lambda expression
+     * @since 2.57
+     */
+    public ExpressionTree createDefaultLambdaExpression(LambdaExpressionTree lambda, ExecutableElement method) {
+        try {
+            String bodyTemplate = readFromTemplate(LAMBDA_EXPRESSION, createBindings(null, method)); //NOI18N
+            return copy.getTreeMaker().createLambdaExpression(lambda, bodyTemplate);
+        } catch (Exception e) {}
+        return null;
+    }
     
     private boolean isStarImport(ImportTree imp) {
         Tree qualIdent = imp.getQualifiedIdentifier();        
@@ -1067,6 +1086,10 @@ public final class GeneratorUtilities {
      * @since 0.86
      */
     public CompilationUnitTree addImports(CompilationUnitTree cut, Set<? extends Element> toImport) {
+        return addImports(cut, cut.getImports(), toImport);
+    }
+
+    private CompilationUnitTree addImports(CompilationUnitTree cut, List<? extends ImportTree> cutImports, Set<? extends Element> toImport) {
         assert cut != null && toImport != null && toImport.size() > 0;
 
         ArrayList<Element> elementsToImport = new ArrayList<Element>(toImport.size());
@@ -1132,6 +1155,7 @@ public final class GeneratorUtilities {
                 case CLASS:
                 case ENUM:
                 case INTERFACE:
+                case RECORD:
                     if (e.getEnclosingElement().getKind() == ElementKind.PACKAGE)
                         el = e.getEnclosingElement();
                     break;
@@ -1168,7 +1192,7 @@ public final class GeneratorUtilities {
                 }
             }
         }
-        List<ImportTree> imports = new ArrayList<ImportTree>(cut.getImports());
+        List<ImportTree> imports = new ArrayList<ImportTree>(cutImports);
         for (ImportTree imp : imports) {
             Element e = getImportedElement(cut, imp);
             if (!elementsToImport.contains(e)) {
@@ -1254,9 +1278,8 @@ public final class GeneratorUtilities {
                     if (sym.getKind().isClass() || sym.getKind().isInterface()) {
                         if (sym != element) {
                             explicitNamedImports.add(element);
+                            break;// break if explicitNameImport was added
                         }
-                        // break if explicitNameImport was added, or when the symbol is correctly resolved.
-                        break;
                     }
                 }
             }
@@ -1821,7 +1844,7 @@ public final class GeneratorUtilities {
             if (parent == null)
                 parent = getElementByFQN(cut, ((MemberSelectTree)qualIdent).getExpression().toString());
             if (parent != null && (parent.getKind().isClass() || parent.getKind().isInterface())) {
-                Scope s = trees.getScope(new TreePath(cut));
+                Scope s = trees.getScope(new TreePath(copy.getCompilationUnit()));
                 for (Element e : parent.getEnclosedElements()) {
                     if (name == e.getSimpleName() && e.getModifiers().contains(Modifier.STATIC) && trees.isAccessible(s, e, (DeclaredType)parent.asType()))
                         return e;
@@ -2169,6 +2192,7 @@ public final class GeneratorUtilities {
     private static final String GENERATED_METHOD_BODY = "Templates/Classes/Code/GeneratedMethodBody"; //NOI18N
     private static final String OVERRIDDEN_METHOD_BODY = "Templates/Classes/Code/OverriddenMethodBody"; //NOI18N
     private static final String LAMBDA_BODY = "Templates/Classes/Code/LambdaBody"; //NOI18N
+    private static final String LAMBDA_EXPRESSION = "Templates/Classes/Code/LambdaExpression"; //NOI18N
     private static final String METHOD_RETURN_TYPE = "method_return_type"; //NOI18N
     private static final String DEFAULT_RETURN_TYPE_VALUE = "default_return_value"; //NOI18N
     private static final String SUPER_METHOD_CALL = "super_method_call"; //NOI18N
@@ -2239,5 +2263,14 @@ public final class GeneratorUtilities {
             }
         }.scan(tree, false);
         return b != null ? b : false;
+    }
+
+    static {
+        GeneratorUtilitiesAccessor.setInstance(new GeneratorUtilitiesAccessor() {
+            @Override
+            public CompilationUnitTree addImports(GeneratorUtilities gu, CompilationUnitTree cut, List<? extends ImportTree> cutImports, Set<? extends Element> toImport) {
+                return gu.addImports(cut, cutImports, toImport);
+            }
+        });
     }
 }

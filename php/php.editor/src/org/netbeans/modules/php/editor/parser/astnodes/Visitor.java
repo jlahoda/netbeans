@@ -32,11 +32,19 @@ public interface Visitor {
     //public void endVisit(ArrayCreation arrayCreation);
     public void visit(ArrayElement arrayElement);
 
+    public void visit(ArrowFunctionDeclaration arrowFunctionDeclaration);
+
     //public void endVisit(ArrayElement arrayElement);
     public void visit(Assignment assignment);
 
     //public void endVisit(Assignment assignment);
     public void visit(ASTError astError);
+
+    public void visit(ASTErrorExpression astErrorExpression);
+
+    public void visit(Attribute attribute);
+
+    public void visit(AttributeDeclaration attributeDeclaration);
 
     //public void endVisit(ASTError astError);
     public void visit(BackTickExpression backTickExpression);
@@ -46,6 +54,8 @@ public interface Visitor {
 
     //public void endVisit(Block block);
     public void visit(BreakStatement breakStatement);
+
+    public void visit(CaseDeclaration caseDeclaration);
 
     //public void endVisit(BreakStatement breakStatement);
     public void visit(CastExpression castExpression);
@@ -91,6 +101,8 @@ public interface Visitor {
     //public void endVisit(EchoStatement echoStatement);
     public void visit(EmptyStatement emptyStatement);
 
+    public void visit(EnumDeclaration enumDeclaration);
+
     public void visit(ExpressionArrayAccess node);
 
     //public void endVisit(EmptyStatement emptyStatement);
@@ -103,6 +115,8 @@ public interface Visitor {
     public void visit(FieldsDeclaration fieldsDeclaration);
 
     public void visit(FinallyClause finallyClause);
+
+    public void visit(FirstClassCallableArg firstClassCallableArg);
 
     //public void endVisit(FieldsDeclaration fieldsDeclaration);
     public void visit(ForEachStatement forEachStatement);
@@ -127,6 +141,12 @@ public interface Visitor {
 
     //public void endVisit(GlobalStatement globalStatement);
     public void visit(Identifier identifier);
+
+    public void visit(MatchArm matchArm);
+
+    public void visit(MatchExpression matchExpression);
+
+    public void visit(NamedArgument namedArgument);
 
     //public void endVisit(Identifier identifier);
     public void visit(NamespaceName namespaceName);
@@ -166,6 +186,8 @@ public interface Visitor {
 
     //public void endVisit(InstanceOfExpression instanceOfExpression);
     public void visit(InterfaceDeclaration interfaceDeclaration);
+
+    public void visit(IntersectionType intersectionType);
 
     //public void endVisit(InterfaceDeclaration interfaceDeclaration);
     public void visit(ListVariable listVariable);
@@ -243,7 +265,7 @@ public interface Visitor {
     public void visit(SwitchStatement switchStatement);
 
     //public void endVisit(SwitchStatement switchStatement);
-    public void visit(ThrowStatement throwStatement);
+    public void visit(ThrowExpression throwStatement);
 
     public void visit(TraitDeclaration traitDeclaration);
 
@@ -256,6 +278,10 @@ public interface Visitor {
 
     //public void endVisit(TryStatement tryStatement);
     public void visit(UnaryOperation unaryOperation);
+
+    public void visit(UnionType unionType);
+
+    public void visit(UnpackableArrayElement unpackableArrayElement);
 
     public void visit(UseTraitStatement useTraitStatement);
 

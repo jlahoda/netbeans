@@ -44,9 +44,11 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.Buffer;
 import java.nio.CharBuffer;
 import java.nio.channels.CompletionHandler;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -132,7 +134,7 @@ public class FileObjects {
     public static final String MODULE_INFO = "module-info";   //NOI18N
 
     private static final Charset SYSTEM_ENCODING = Charset.defaultCharset();
-    private static final Charset UTF8_ENCODING = Charset.forName("UTF-8");  //NOI18N
+    private static final Charset UTF8_ENCODING = StandardCharsets.UTF_8;
     private static final Pattern MATCHER_PATCH =
                 Pattern.compile("(.+)=(.+)");  //NOI18N
     //todo: If more clients than btrace will need this, create a SPI.
@@ -513,7 +515,9 @@ public class FileObjects {
             return new MemoryFileObject(pkgStr, nameStr, uri, lastModified, CharBuffer.wrap( content ) );
         }
         else {
-            return new MemoryFileObject(pkgStr, nameStr, uri, lastModified, (CharBuffer)CharBuffer.allocate( length + 1 ).append( content ).append( ' ' ).flip() );
+            Buffer buf = CharBuffer.allocate( length + 1 ).append( content ).append( ' ' );
+            CharBuffer flipped = (CharBuffer) buf.flip();
+            return new MemoryFileObject(pkgStr, nameStr, uri, lastModified, flipped);
         }
     }
 
@@ -546,11 +550,12 @@ public class FileObjects {
         final String[] path = getFolderAndBaseName(relPath.toString(), separator);
         String fileUri;
         if (rootUri != null) {
-            fileUri = relPath.toUri().getRawPath();
-            if (fileUri.charAt(0) == FileObjects.NBFS_SEPARATOR_CHAR) {
-                fileUri = fileUri.substring(1);
+            try {
+                fileUri = new URI(null, relPath.toString(), null).getRawPath();
+                fileUri = rootUri + fileUri;
+            } catch (URISyntaxException ex) {
+                throw new IllegalArgumentException(ex);
             }
-            fileUri = rootUri + fileUri;
         } else {
             fileUri = null;
         }
@@ -1008,7 +1013,7 @@ public class FileObjects {
     //</editor-fold>
 
     //<editor-fold defaultstate="collapsed" desc="JavaFileObject implementation">
-    public static abstract class Base implements InferableJavaFileObject {
+    public abstract static class Base implements InferableJavaFileObject {
 
         protected final JavaFileObject.Kind kind;
         protected final String pkgName;
@@ -1159,7 +1164,7 @@ public class FileObjects {
         }
     }
 
-    public static abstract class PrefetchableBase extends Base implements PrefetchableJavaFileObject {
+    public abstract static class PrefetchableBase extends Base implements PrefetchableJavaFileObject {
 
         private volatile CharSequence data;
 
@@ -1344,7 +1349,7 @@ public class FileObjects {
         }
     }
 
-    private static abstract class PathBase extends Base {
+    private abstract static class PathBase extends Base {
 
         private volatile URI uriCache;
 

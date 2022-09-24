@@ -312,12 +312,12 @@ public final class DeployOnSaveManager {
                 preparedArtifacts.add(artifact);
             }
 
-            boolean delayed = true;
+            boolean delayed = false;
             if (current != null && !current.isDone()) {
                 // TODO interruption throws exception to user from lower levels :((
                 // this is dummy interruption signal handling :(
                 current.cancel(false);
-                delayed = false;
+                delayed = true;
             }
 
             current = EXECUTOR.submit(new DeployTask(delayed));
@@ -496,7 +496,7 @@ public final class DeployOnSaveManager {
 
                 ProgressUI ui = new ProgressUI(NbBundle.getMessage(TargetServer.class,
                         "MSG_DeployOnSave", provider.getDeploymentName()), false);
-                ui.start(Integer.valueOf(PROGRESS_DELAY));
+                ui.start(PROGRESS_DELAY);
                 try {
                     DeploymentHelper.deployServerLibraries(provider);
                     DeploymentHelper.deployDatasources(provider);

@@ -75,9 +75,9 @@ public class TemplateClientPanelVisual extends javax.swing.JPanel implements Hel
 
     private WizardDescriptor wizardDescriptor;
 
-    private final Set/*<ChangeListener>*/ listeners = new HashSet(1);
+    private final Set<ChangeListener> listeners = new HashSet<>(1);
 
-    private final static String VALUE_NAME = "name";    //NOI18N
+    private static final String VALUE_NAME = "name";    //NOI18N
 
     /** Creates new form TemplateClientPanel */
     public TemplateClientPanelVisual(WizardDescriptor wizardDescriptor) {

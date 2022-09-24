@@ -21,6 +21,7 @@ package org.netbeans.modules.java.openjdk.project;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 import org.netbeans.api.java.classpath.ClassPath;
 import org.netbeans.api.java.classpath.ClassPath.PathConversionMode;
@@ -28,6 +29,7 @@ import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.api.project.Project;
 import org.netbeans.junit.NbTestCase;
 import org.netbeans.modules.java.hints.test.Utilities.TestLookup;
+import org.netbeans.modules.java.openjdk.common.BuildUtils;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.modules.InstalledFileLocator;
@@ -91,8 +93,8 @@ public class ClassPathProviderImplTest extends NbTestCase {
     }
 
     private void checkCompileClassPath(String module, String expected) {
-        FileObject prj = root.getFileObject(module);
-        FileObject src = prj.getFileObject("share/classes");
+        FileObject prj = BuildUtils.getFileObject(root, module);
+        FileObject src = BuildUtils.getFileObject(prj, "share/classes");
 
         Project project = FileOwnerQuery.getOwner(src);
 
@@ -210,7 +212,7 @@ public class ClassPathProviderImplTest extends NbTestCase {
 
     private void copyString2File(FileObject file, String content) throws IOException {
         try (OutputStream out = file.getOutputStream()) {
-            out.write(content.getBytes("UTF-8"));
+            out.write(content.getBytes(StandardCharsets.UTF_8));
         }
     }
 

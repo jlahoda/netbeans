@@ -269,9 +269,9 @@ public final class Terminal extends JComponent {
      */
     private class MyTermListener implements TermListener {
 
-        private final static int MAX_TITLE_LENGTH = 35;
-        private final static String PREFIX = "..."; // NOI18N
-        private final static String INFIX = " - "; // NOI18N
+        private static final int MAX_TITLE_LENGTH = 35;
+        private static final String PREFIX = "..."; // NOI18N
+        private static final String INFIX = " - "; // NOI18N
 
         @Override
         public void sizeChanged(Dimension cells, Dimension pixels) {
@@ -1125,7 +1125,7 @@ public final class Terminal extends JComponent {
     }
 
     public void setHyperlinkListener(final HyperlinkListener hyperlinkListener) {
-	((ActiveTerm) term).setActionListener(new ActiveTermListener() {
+	term.setActionListener(new ActiveTermListener() {
 	    public void action(ActiveRegion r, InputEvent e) {
 		if (r.isLink()) {
 		    String url = (String) r.getUserObject();

@@ -30,6 +30,7 @@ import java.io.OutputStream;
 import java.lang.instrument.IllegalClassFormatException;
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.JarURLConnection;
 import java.net.MalformedURLException;
@@ -38,6 +39,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
+import java.nio.file.NoSuchFileException;
 import java.security.CodeSource;
 import java.security.PermissionCollection;
 import java.security.Policy;
@@ -52,12 +54,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.Vector;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.jar.Attributes;
+import java.util.jar.Attributes.Name;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
@@ -75,7 +79,29 @@ import org.openide.util.Exceptions;
  * @author  Petr Nejedly
  */
 public class JarClassLoader extends ProxyClassLoader {
+    //
+    // When making changes to this file, check if
+    // platform/netbinox/src/org/netbeans/modules/netbinox/JarBundleFile.java
+    // should also be adjusted. At least the multi-release handling is similar.
+    //
+    
     private static Stamps cache;
+    private static final String META_INF = "META-INF/";
+    private static final Name MULTI_RELEASE = new Name("Multi-Release");
+    private static final int BASE_VERSION = 8;
+    private static final int RUNTIME_VERSION;
+
+    static {
+        int version;
+        try {
+            Object runtimeVersion = Runtime.class.getMethod("version").invoke(null);
+            version = (int) runtimeVersion.getClass().getMethod("major").invoke(runtimeVersion);
+        } catch (ReflectiveOperationException ex) {
+            version = BASE_VERSION;
+        }
+        RUNTIME_VERSION = version;
+    }
+    
     static Archive archive = new Archive(); 
 
     static void initializeCache() {
@@ -204,7 +230,7 @@ public class JarClassLoader extends ProxyClassLoader {
     }
     
     @Override
-    protected Class doLoadClass(String pkgName, String name) {
+    protected Class<?> doLoadClass(String pkgName, String name) {
         String path = name.replace('.', '/').concat(".class"); // NOI18N
         
         // look up the Sources and return a class based on their content
@@ -271,6 +297,7 @@ public class JarClassLoader extends ProxyClassLoader {
                     }
                 }
                 Manifest man = new DelayedManifest();
+
                 try {
                     definePackage(pkgName, man, src.getURL());
                 } catch (IllegalArgumentException x) {
@@ -330,11 +357,12 @@ public class JarClassLoader extends ProxyClassLoader {
         }
     }
 
-    static abstract class Source {
+    abstract static class Source {
         private URL url;
         private ProtectionDomain pd;
         protected JarClassLoader jcl;
         private static Map<String,Source> sources = new HashMap<String, Source>();
+        private Boolean multiRelease;
         
         public Source(URL url) {
             this.url = url;
@@ -411,6 +439,23 @@ public class JarClassLoader extends ProxyClassLoader {
             return url.toString();
         }
 
+        protected boolean isMultiRelease() {
+            Manifest man = getManifest();
+            if(man == null) {
+                return false;
+            }
+            if(multiRelease != null) {
+                return multiRelease;
+            }
+            if (man.getMainAttributes().containsKey(MULTI_RELEASE)) {
+                String multiReleaseString = (String) man.getMainAttributes().get(MULTI_RELEASE);
+                multiRelease = Boolean.valueOf(multiReleaseString);
+            } else {
+                multiRelease = false;
+            }
+            return multiRelease;
+        }
+
     }
     
     static void dumpFiles(File f, int retry) {
@@ -441,6 +486,7 @@ public class JarClassLoader extends ProxyClassLoader {
         private boolean dead;
         private int requests;
         private int used;
+        private volatile int[] versions;
         private volatile Reference<Manifest> manifest;
         /** #141110: expensive to repeatedly look for them */
         private final Set<String> nonexistentResources = Collections.synchronizedSet(new HashSet<String>());
@@ -519,7 +565,7 @@ public class JarClassLoader extends ProxyClassLoader {
                                         JarFile ret;
                                         try {
                                             ret = new JarFile(file, false);
-                                        } catch (FileNotFoundException ex) {
+                                        } catch (FileNotFoundException | NoSuchFileException ex) {
                                             throw (ZipException)new ZipException(ex.getMessage()).initCause(ex);
                                         }
                                         long took = System.currentTimeMillis() - now;
@@ -573,13 +619,56 @@ public class JarClassLoader extends ProxyClassLoader {
         @Override
         protected byte[] readClass(String path) throws IOException {
             try {
+                if ((! path.startsWith(META_INF)) && isMultiRelease() && RUNTIME_VERSION > BASE_VERSION) {
+                    int[] vers = getVersions();
+                    for (int version: vers) {
+                        byte[] data = archive.getData(this, "META-INF/versions/" + version + "/" + path);
+                        if (data != null) {
+                            return data;
+                        }
+                    }
+                }
                 return archive.getData(this, path);
             } catch (ZipException ex) {
                 dumpFiles(file, -1);
                 throw ex;
             }
         }
-        
+
+        /**
+         * @return versions for which a {@code META-INF/versions/NUMBER} entry exists.
+         * The order is from largest version to lowest. Only versions supported by
+         * the runtime VM are reported.
+         */
+        private int[] getVersions() {
+            if (versions != null) {
+                return versions;
+            }
+            try {
+                Set<Integer> vers = new TreeSet<>(Collections.reverseOrder());
+                for(int i = BASE_VERSION; i <= RUNTIME_VERSION; i++) {
+                    String directory = "META-INF/versions/" + i;
+                    byte[] data = archive.getData(this, directory);
+                    if (data != null && data.length == 0) {
+                        vers.add(i);
+                    }
+                }
+                int[] ret = new int[vers.size()];
+                int i = 0;
+                for (Integer ver : vers) {
+                    ret[i++] = ver;
+                }
+                versions = ret;
+                return ret;
+            } catch (IOException ioe) {
+                if (warnedFiles.add(file)) {
+                    LOGGER.log(Level.WARNING, "problems with " + file, ioe);
+                    dumpFiles(file, -1);
+                }
+            }
+            return new int[0];
+        }
+
         @Override
         public byte[] resource(String path) throws IOException {
             if (nonexistentResources.contains(path)) {
@@ -672,7 +761,9 @@ public class JarClassLoader extends ProxyClassLoader {
         @Override
         protected void destroy() throws IOException {
             super.destroy();
-            assert dead == false : "Already had dead JAR: " + file;
+            if (dead) {
+                return;
+            }
             
             File orig = file;
 
@@ -1138,6 +1229,7 @@ public class JarClassLoader extends ProxyClassLoader {
             return new JarFile(src.file); // #134424
         }
 
+        @SuppressWarnings("rawtypes")
         public @Override Object getContent(Class[] classes) throws IOException {
             if (Arrays.asList(classes).contains(ClassLoader.class)) {
                 return loader;

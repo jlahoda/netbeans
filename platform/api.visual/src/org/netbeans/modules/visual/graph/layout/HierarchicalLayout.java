@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.SortedSet;
@@ -633,8 +634,9 @@ public class HierarchicalLayout<N, E> extends GraphLayout<N, E> {
         }
 
         protected void run() {
-
-            layers = new List[layerCount];
+            @SuppressWarnings({"unchecked", "rawtypes"})
+            List<LayoutNode>[] layersTmp = new List[layerCount];
+            layers = layersTmp;
 
             for (int i = 0; i < layerCount; i++) {
                 layers[i] = new ArrayList<LayoutNode>();
@@ -852,11 +854,17 @@ public class HierarchicalLayout<N, E> extends GraphLayout<N, E> {
             }
         }
 
+        @Override
         protected void run() {
-
-            space = new ArrayList[layers.length];
-            downProcessingOrder = new ArrayList[layers.length];
-            upProcessingOrder = new ArrayList[layers.length];
+            @SuppressWarnings({"unchecked", "rawtypes"})
+            ArrayList<Integer>[] spaceTmp = new ArrayList[layers.length];
+            space = spaceTmp;
+            @SuppressWarnings({"unchecked", "rawtypes"})
+            ArrayList<LayoutNode>[] downProcessingOrderTmp = new ArrayList[layers.length];
+            downProcessingOrder = downProcessingOrderTmp;
+            @SuppressWarnings({"unchecked", "rawtypes"})
+            ArrayList<LayoutNode>[] upProcessingOrderTmp = new ArrayList[layers.length];
+            upProcessingOrder = upProcessingOrderTmp;
 
             for (int i = 0; i < layers.length; i++) {
                 space[i] = new ArrayList<Integer>();
@@ -1085,14 +1093,11 @@ public class HierarchicalLayout<N, E> extends GraphLayout<N, E> {
 
             int minX = Integer.MAX_VALUE;
             int minY = Integer.MAX_VALUE;
-            for (N v : vertexPositions.keySet()) {
-                Point p = vertexPositions.get(v);
+            for (Point p : vertexPositions.values()) {
                 minX = Math.min(minX, p.x);
                 minY = Math.min(minY, p.y);
             }
-
-            for (E l : linkPositions.keySet()) {
-                List<Point> points = linkPositions.get(l);
+            for (List<Point> points : linkPositions.values()) {
                 for (Point p : points) {
                     if (p != null) {
                         minX = Math.min(minX, p.x);
@@ -1102,8 +1107,9 @@ public class HierarchicalLayout<N, E> extends GraphLayout<N, E> {
 
             }
 
-            for (N v : vertexPositions.keySet()) {
-                Point p = vertexPositions.get(v);
+            for (Map.Entry<N, Point> entry : vertexPositions.entrySet()) {
+                N v = entry.getKey();
+                Point p = entry.getValue();
                 p.x -= minX;
                 p.y -= minY;
                 Widget w = graph.getScene().findWidget(v);
@@ -1114,8 +1120,9 @@ public class HierarchicalLayout<N, E> extends GraphLayout<N, E> {
                 }
             }
 
-            for (E l : linkPositions.keySet()) {
-                List<Point> points = linkPositions.get(l);
+            for (Map.Entry<E, List<Point>> entry : linkPositions.entrySet()) {
+                E l = entry.getKey();
+                List<Point> points = entry.getValue();
 
                 for (Point p : points) {
                     if (p != null) {

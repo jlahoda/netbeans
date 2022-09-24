@@ -57,6 +57,22 @@ public final class Profile {
 
     public static final Profile JAVA_EE_7_WEB  = new Profile(7, "1.7", "web", "JavaEE7Web.displayName");
 
+    public static final Profile JAVA_EE_8_FULL  = new Profile(8, "1.8", null, "JavaEE8Full.displayName");
+
+    public static final Profile JAVA_EE_8_WEB  = new Profile(9, "1.8", "web", "JavaEE8Web.displayName");
+
+    public static final Profile JAKARTA_EE_8_FULL  = new Profile(10, "8.0", null, "JakartaEE8Full.displayName");
+
+    public static final Profile JAKARTA_EE_8_WEB  = new Profile(11, "8.0", "web", "JakartaEE8Web.displayName");
+
+    public static final Profile JAKARTA_EE_9_WEB  = new Profile(12, "9.0", "web", "JakartaEE9Web.displayName");
+
+    public static final Profile JAKARTA_EE_9_FULL  = new Profile(13, "9.0", null, "JakartaEE9Full.displayName");
+    
+    public static final Profile JAKARTA_EE_9_1_WEB  = new Profile(14, "9.1", "web", "JakartaEE91Web.displayName");
+
+    public static final Profile JAKARTA_EE_9_1_FULL  = new Profile(15, "9.1", null, "JakartaEE91Full.displayName");
+
     private final int order;
 
     // cache
@@ -120,26 +136,54 @@ public final class Profile {
 
     @CheckForNull
     public static Profile fromPropertiesString(@NullAllowed String value) {
-        if (J2EE_13.toPropertiesString().equals(value)) {
+        String valueMinusQuotes = value;
+        if(value != null && value.contains("\"")){
+            valueMinusQuotes = value.replace("\"","");
+        }
+        if (J2EE_13.toPropertiesString().equals(valueMinusQuotes)) {
             return J2EE_13;
-        } else if (J2EE_14.toPropertiesString().equals(value)) {
+        } else if (J2EE_14.toPropertiesString().equals(valueMinusQuotes)) {
             return J2EE_14;
-        } else if (JAVA_EE_5.toPropertiesString().equals(value)) {
+        } else if (JAVA_EE_5.toPropertiesString().equals(valueMinusQuotes)) {
             return JAVA_EE_5;
-        } else if (JAVA_EE_6_FULL.toPropertiesString().equals(value)
-                || "EE_6_FULL".equals(value)) { // NOI18N
+        } else if (JAVA_EE_6_FULL.toPropertiesString().equals(valueMinusQuotes)
+                || "EE_6_FULL".equals(value)){ // NOI18N
             return JAVA_EE_6_FULL;
-        } else if (JAVA_EE_6_WEB.toPropertiesString().equals(value)
+        } else if (JAVA_EE_6_WEB.toPropertiesString().equals(valueMinusQuotes)
                 || "EE_6_WEB".equals(value)) {
             return JAVA_EE_6_WEB;
-        } else if (JAVA_EE_7_FULL.toPropertiesString().equals(value)
+        } else if (JAVA_EE_7_FULL.toPropertiesString().equals(valueMinusQuotes)
                 || "EE_7_FULL".equals(value)) { // NOI18N
             return JAVA_EE_7_FULL;
-        } else if (JAVA_EE_7_WEB.toPropertiesString().equals(value)
+        } else if (JAVA_EE_7_WEB.toPropertiesString().equals(valueMinusQuotes)
                 || "EE_7_WEB".equals(value)) {
             return JAVA_EE_7_WEB;
+        } else if (JAVA_EE_8_FULL.toPropertiesString().equals(valueMinusQuotes)
+                || "EE_8_FULL".equals(value)) { // NOI18N
+            return JAVA_EE_8_FULL;
+        } else if (JAVA_EE_8_WEB.toPropertiesString().equals(valueMinusQuotes)
+                || "EE_8_WEB".equals(value)) {
+            return JAVA_EE_8_WEB;
+        } else if (JAKARTA_EE_8_FULL.toPropertiesString().equals(valueMinusQuotes)
+                || "JAKARTA_EE_8_FULL".equals(value)) {
+            return JAKARTA_EE_8_FULL;
+        } else if (JAKARTA_EE_8_WEB.toPropertiesString().equals(valueMinusQuotes)
+                || "JAKARTA_EE_8_WEB".equals(value)) {
+            return JAKARTA_EE_8_WEB;
+        } else if (JAKARTA_EE_9_FULL.toPropertiesString().equals(valueMinusQuotes)
+                || "JAKARTA_EE_9_FULL".equals(value)) {
+            return JAKARTA_EE_9_FULL;
+        } else if (JAKARTA_EE_9_WEB.toPropertiesString().equals(valueMinusQuotes)
+                || "JAKARTA_EE_9_WEB".equals(value)) {
+            return JAKARTA_EE_9_WEB;
+        } else if (JAKARTA_EE_9_1_FULL.toPropertiesString().equals(valueMinusQuotes)
+                || "JAKARTA_EE_9_1_FULL".equals(value)) {
+            return JAKARTA_EE_9_1_FULL;
+        } else if (JAKARTA_EE_9_1_WEB.toPropertiesString().equals(valueMinusQuotes)
+                || "JAKARTA_EE_9_1_WEB".equals(value)) {
+            return JAKARTA_EE_9_1_WEB;
         } else {
-            return null;
+          return null;
         }
     }
 
@@ -210,12 +254,8 @@ public final class Profile {
             if (profileToCompareVersion.equals(comparingProfileVersion)) {
                 return compareWebAndFull(profileToCompare, comparingVersion);
             } else {
-                if (comparisonResult > 0) {
-                    // profileToCompare has lower version than comparingVersion
-                    return false;
-                } else {
-                    return true;
-                }
+                // profileToCompare has lower version than comparingVersion
+                return comparisonResult <= 0;
             }
         }
     }

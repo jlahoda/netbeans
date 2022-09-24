@@ -65,7 +65,6 @@ import org.openide.util.LookupListener;
 import org.openide.util.Utilities;
 import org.openide.util.WeakListeners;
 import org.openide.util.actions.BooleanStateAction;
-import org.openide.util.actions.Presenter;
 import org.openide.util.actions.SystemAction;
 
 
@@ -915,7 +914,7 @@ public class Actions {
     * if such change occures, updateState method is called to
     * reflect it.
     */
-    private static abstract class Bridge extends Object implements PropertyChangeListener {
+    private abstract static class Bridge extends Object implements PropertyChangeListener {
         /** component to work with */
         protected JComponent comp;
 
@@ -1693,6 +1692,7 @@ public class Actions {
         * @deprecated use {@link #CheckboxMenuItem(javax.swing.Action, boolean)}. 
         * Have your action to implement properly {@link Action#getValue} for {@link Action#SELECTED_KEY}
         */
+        @Deprecated
         public CheckboxMenuItem(BooleanStateAction aAction, boolean useMnemonic) {
             Actions.connect(this, aAction, !useMnemonic);
         }

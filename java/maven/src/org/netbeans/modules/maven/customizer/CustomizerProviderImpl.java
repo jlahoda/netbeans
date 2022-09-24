@@ -25,6 +25,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -75,6 +77,7 @@ import org.openide.util.HelpCtx;
 import org.openide.util.Lookup;
 import org.openide.util.lookup.Lookups;
 import static org.netbeans.modules.maven.customizer.Bundle.*;
+import org.netbeans.spi.project.ActionProvider;
 import org.netbeans.spi.project.ui.CustomizerProvider2;
 import org.openide.util.Mutex;
 import org.openide.util.NbBundle.Messages;
@@ -223,6 +226,21 @@ public class CustomizerProviderImpl implements CustomizerProvider2 {
                 active = c;
             }
         }
+
+        for (M2Configuration config : provider.getProvidedConfigurations()) {
+            mapps.put(config.getId(), reader.read(new StringReader(config.getRawMappingsAsString())));
+            c = ModelHandle.createDefaultConfiguration();
+            CustomizerProviderImpl.ACCESSOR.setConfigurationId(c, config.getId());
+            String dn = config.getDisplayName();
+            if (!config.getId().equals(dn)) {
+                c.setDisplayName(dn);
+            }
+            configs.add(c);
+            if (act.equals(config)) {
+                active = c;
+            }
+        }
+
         for (M2Configuration config : provider.getProfileConfigurations()) {
             mapps.put(config.getId(), reader.read(new StringReader(config.getRawMappingsAsString())));
             c = ModelHandle.createProfileConfiguration(config.getId());
@@ -231,15 +249,20 @@ public class CustomizerProviderImpl implements CustomizerProvider2 {
                 active = c;
             }
         }
+
         if (active == null) { //#152706
             active = configs.get(0); //default if current not found..
         }
+        
+        ActionProvider ap = project.getLookup().lookup(ActionProvider.class);
+        List<String> actionNames = ap == null ? Collections.emptyList() : Arrays.asList(ap.getSupportedActions());
 
         handle = ACCESSOR.createHandle(model,
                 project.getLookup().lookup(NbMavenProject.class).getMavenProject(), mapps, configs, active,
                 project.getLookup().lookup(MavenProjectPropsImpl.class));
         handle2 = ACCESSOR2.createHandle(model,
-                project.getLookup().lookup(NbMavenProject.class).getMavenProject(), mapps, new ArrayList<ModelHandle2.Configuration>(configs), active, 
+                project.getLookup().lookup(NbMavenProject.class).getMavenProject(), mapps, new ArrayList<ModelHandle2.Configuration>(configs), active,
+                actionNames,
                 project.getLookup().lookup(MavenProjectPropsImpl.class));
         return model;
     }
@@ -265,23 +288,26 @@ public class CustomizerProviderImpl implements CustomizerProvider2 {
     }    
     
     
-    public static abstract class ModelAccessor {
+    public abstract static class ModelAccessor {
+        public abstract void setConfigurationId(ModelHandle.Configuration cfg, String id);
         
         public abstract ModelHandle createHandle(POMModel model, MavenProject proj, Map<String, ActionToGoalMapping> mapp,
                 List<ModelHandle.Configuration> configs, ModelHandle.Configuration active, MavenProjectPropsImpl auxProps);
         
     }
         
-    public static abstract class ModelAccessor2 {
+    public abstract static class ModelAccessor2 {
         
         public abstract ModelHandle2 createHandle(POMModel model, MavenProject proj, Map<String, ActionToGoalMapping> mapp,
-                List<ModelHandle2.Configuration> configs, ModelHandle2.Configuration active, MavenProjectPropsImpl auxProps);
+                List<ModelHandle2.Configuration> configs, ModelHandle2.Configuration active, List<String> allActions, MavenProjectPropsImpl auxProps);
         
         public abstract TreeMap<String, String> getModifiedAuxProps(ModelHandle2 handle, boolean shared);
         
         public abstract boolean isConfigurationModified(ModelHandle2 handle);
         
         public abstract boolean isModified(ModelHandle2 handle, ActionToGoalMapping mapp);
+        
+        public abstract List<String> getAllActions(ModelHandle2 handle);
         
         }
         

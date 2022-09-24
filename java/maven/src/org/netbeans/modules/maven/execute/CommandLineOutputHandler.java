@@ -24,12 +24,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.Reader;
+import java.io.Writer;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -50,14 +52,15 @@ import org.netbeans.modules.maven.api.NbMavenProject;
 import org.netbeans.modules.maven.api.output.OutputUtils;
 import org.netbeans.modules.maven.api.output.OutputVisitor;
 import org.netbeans.modules.maven.execute.AbstractMavenExecutor.ResumeFromFinder;
+
 import static org.netbeans.modules.maven.execute.AbstractOutputHandler.PRJ_EXECUTE;
 import static org.netbeans.modules.maven.execute.AbstractOutputHandler.SESSION_EXECUTE;
+
 import org.netbeans.modules.maven.execute.cmd.ExecMojo;
 import org.netbeans.modules.maven.execute.cmd.ExecProject;
 import org.netbeans.modules.maven.execute.cmd.ExecSession;
 import org.netbeans.modules.maven.options.MavenSettings;
 import org.netbeans.spi.project.ProjectContainerProvider;
-import org.netbeans.spi.project.SubprojectProvider;
 import org.openide.util.Exceptions;
 import org.openide.util.RequestProcessor;
 import org.openide.util.RequestProcessor.Task;
@@ -199,7 +202,7 @@ public class CommandLineOutputHandler extends AbstractOutputHandler {
         private boolean skipLF = false;
 
         public Output(InputStream instream) {
-            str = new BufferedReader(new InputStreamReader(instream));
+            str = new BufferedReader(new InputStreamReader(instream, getPreferredCharset()));
         }
 
         private String readLine() throws IOException {
@@ -674,8 +677,8 @@ public class CommandLineOutputHandler extends AbstractOutputHandler {
 
     static class Input implements Runnable {
 
-        private InputOutput inputOutput;
-        private OutputStream str;
+        private final InputOutput inputOutput;
+        private final OutputStream str;
         private boolean stopIn = false;
 
         public Input(OutputStream out, InputOutput inputOutput) {
@@ -685,38 +688,34 @@ public class CommandLineOutputHandler extends AbstractOutputHandler {
 
         public void stopInput() {
             stopIn = true;
-            try {
-                inputOutput.getIn().close();
-            } catch (IOException ex) {
-                Exceptions.printStackTrace(ex);
-            }
+            // Do not close synchronously as BufferedReaders waiting on input
+            // would block. See https://bugs.openjdk.java.net/browse/JDK-4859836
+            PROCESSOR.post(() -> {
+                try {
+                    inputOutput.getIn().close();
+                } catch (IOException ex) {
+                    Exceptions.printStackTrace(ex);
+                }
+            });
         }
 
         public @Override void run() {
             Reader in = inputOutput.getIn();
-            try {
+            try (Writer out = new OutputStreamWriter(str, getPreferredCharset())) {
                 while (true) {
                     int read = in.read();
                     if (read != -1) {
-                        str.write(read);
-                        str.flush();
+                        out.write(read);
+                        out.flush();
                     } else {
-                        str.close();
                         return;
                     }
                     if (stopIn) {
                         return;
                     }
                 }
-
             } catch (IOException ex) {
                 ex.printStackTrace();
-            } finally {
-                try {
-                    str.close();
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
             }
         }
     }
@@ -828,7 +827,46 @@ public class CommandLineOutputHandler extends AbstractOutputHandler {
         }
         
     }    
+    
+    /**
+     * Returns the preferred Charset that is obtained by checking the following system properties:
+     * stdout.encoding, sun.stdout.encoding, native.encoding, Charset.defaultCharset()
+     * @see org.netbeans.api.extexecution.base.BaseExecutionService#getInputOutputEncoding
+     * @return Charset
+     */
+    private static Charset getPreferredCharset() {
+        // The CommandLineOutputHandler used the default charset to convert
+        // output from command line invocations to strings. That encoding is
+        // derived from the system file.encoding. From JDK 18 onwards its
+        // default value changed to UTF-8.
+        // JDK 17+ exposes the native encoding as the new system property
+        // native.encoding, prior versions don't have that property and will
+        // report NULL for it.
+        // To account for the behavior of JEP400 the following order is used to determine the encoding:
+        // stdout.encoding, sun.stdout.encoding, native.encoding, Charset.defaultCharset()
+        String[] encodingSystemProperties = new String[]{"stdout.encoding", "sun.stdout.encoding", "native.encoding"};
 
+        Charset preferredCharset = null;
+        for (String encodingProperty : encodingSystemProperties) {
+            String encodingPropertyValue = System.getProperty(encodingProperty);
+            if (encodingPropertyValue == null) {
+                continue;
+            }
+
+            try {
+                preferredCharset = Charset.forName(encodingPropertyValue);
+            } catch (IllegalArgumentException ex) {
+                LOG.log(java.util.logging.Level.WARNING, "Failed to get charset for '" + encodingProperty + "' value : '" + encodingPropertyValue + "'", ex);
+            }
+
+            if (preferredCharset != null) {
+                return preferredCharset;
+            }
+
+        }
+
+        return Charset.defaultCharset();
+    }
 }
 
 

@@ -57,6 +57,8 @@ import java.util.logging.Logger;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.ModuleElement;
+import javax.lang.model.element.Name;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -77,6 +79,8 @@ import org.netbeans.api.java.queries.JavadocForBinaryQuery;
 import org.netbeans.api.java.queries.SourceForBinaryQuery;
 import org.netbeans.api.java.source.SourceUtils;
 import org.netbeans.api.progress.ProgressHandle;
+import org.netbeans.modules.classfile.ClassFile;
+import org.netbeans.modules.classfile.Module;
 import org.netbeans.modules.java.source.base.Bundle;
 import org.netbeans.modules.java.source.indexing.JavaIndex;
 import org.netbeans.modules.java.source.parsing.CachingArchiveProvider;
@@ -576,6 +580,7 @@ public class JavadocHelper {
             throw new IllegalArgumentException("Cannot pass null as an argument of the SourceUtils.getJavadoc"); // NOI18N
         }
         ClassSymbol clsSym = null;
+        String moduleName = null;
         String pkgName;
         String pageName;
         boolean buildFragment = false;
@@ -590,6 +595,7 @@ public class JavadocHelper {
             if (clsSym == null) {
                 return Collections.emptyList();
             }
+            moduleName = moduleNameFor(element);
             pkgName = FileObjects.convertPackage2Folder(((PackageElement) element).getQualifiedName().toString());
             pageName = PACKAGE_SUMMARY;
         } else if (element.getKind() == ElementKind.MODULE) {
@@ -613,6 +619,7 @@ public class JavadocHelper {
             if (clsSym == null) {
                 return Collections.emptyList();
             }
+            moduleName = moduleNameFor(e);
             pkgName = FileObjects.convertPackage2Folder(((PackageElement) e).getQualifiedName().toString());
             pageName = sb.toString();
             buildFragment = element != clsSym;
@@ -624,6 +631,7 @@ public class JavadocHelper {
         if (clsSym.classfile != null) {
             try {
                 final URL classFile = clsSym.classfile.toUri().toURL();
+                final String moduleNameF = moduleName;
                 final String pkgNameF = pkgName;
                 final String pageNameF = pageName;
                 final Collection<? extends CharSequence> fragment = buildFragment ? getFragment(element) : Collections.<CharSequence>emptySet();
@@ -631,7 +639,7 @@ public class JavadocHelper {
                     @Override
                     @NonNull
                     public List<TextStream> call() throws Exception {
-                        return findJavadoc(classFile, pkgNameF, pageNameF, fragment, remoteJavadocPolicy);
+                        return findJavadoc(classFile, moduleNameF, pkgNameF, pageNameF, fragment, remoteJavadocPolicy);
                     }
                 };
                 final boolean sync = cancel == null || remoteJavadocPolicy != RemoteJavadocPolicy.USE;
@@ -674,9 +682,26 @@ public class JavadocHelper {
 
     private static final String PACKAGE_SUMMARY = "package-summary"; // NOI18N
 
+    private static String moduleNameFor(Element element) {
+        Element e = element;
+        while (e != null && e.getKind() != ElementKind.MODULE) {
+            e = element.getEnclosingElement();
+        }
+        if (e == null) {
+            return null;
+        }
+        String name = ((ModuleElement) e).getQualifiedName().toString();
+        if (!name.isEmpty()) {
+            return name;
+        } else {
+            return null;
+        }
+    }
+
     @NonNull
     private static List<TextStream> findJavadoc(
             @NonNull final URL classFile,
+            final String moduleName,
             @NonNull final String pkgName,
             @NonNull final String pageName,
             @NonNull final Collection<? extends CharSequence> fragment,
@@ -760,7 +785,12 @@ binRoots:   for (URL binary : binaries) {
                                 throw new IllegalArgumentException(remoteJavadocPolicy.name());
                         }
                     }
-                    URL url = new URL(root, pkgName + "/" + pageName + ".html");
+                    URL url;
+                    if (moduleName != null) {
+                        url = new URL(root, moduleName + "/" + pkgName + "/" + pageName + ".html");
+                    } else {
+                        url = new URL(root, pkgName + "/" + pageName + ".html");
+                    }
                     InputStream is = null;
                     String rootS = root.toString();
                     boolean useKnownGoodRoots = result.length == 1 && isRemote;
@@ -768,7 +798,36 @@ binRoots:   for (URL binary : binaries) {
                         LOG.log(Level.FINE, "assumed valid Javadoc stream at {0}", url);
                     } else if (!speculative || !isRemote) {
                         try {
-                            is = openStream(url, Bundle.LBL_HTTPJavadocDownload());
+                            try {
+                                is = openStream(url, Bundle.LBL_HTTPJavadocDownload());
+                            } catch (InterruptedIOException iioe)  {
+                                throw iioe;
+                            } catch (IOException x) {
+                                if (moduleName == null) {
+                                    // Some libraries like OpenJFX prefix their
+                                    // javadoc by module, similar to the JDK.
+                                    // Only search there when the default fails
+                                    // to avoid additional I/O.
+                                    // NOTE: No multi-release jar support for now.
+                                    URL moduleInfo = new URL(binary, "module-info.class");
+                                    try (InputStream classData = moduleInfo.openStream()) {
+                                        ClassFile clazz = new ClassFile(classData, false);
+                                        Module module = clazz.getModule();
+                                        if (module == null) {
+                                            throw x;
+                                        }
+                                        String modName = module.getName();
+                                        if (modName == null) {
+                                            throw x;
+                                        }
+                                        url = new URL(root, modName + "/" + pkgName + "/" + pageName + ".html");
+                                    }
+                                } else {
+                                    // fallback to without module name
+                                    url = new URL(root, pkgName + "/" + pageName + ".html");
+                                }
+                                is = openStream(url, Bundle.LBL_HTTPJavadocDownload());
+                            }
                             if (useKnownGoodRoots) {
                                 knownGoodRoots.add(rootS);
                                 LOG.log(Level.FINE, "found valid Javadoc stream at {0}", url);
@@ -827,10 +886,10 @@ binRoots:   for (URL binary : binaries) {
 
     @NonNull
     private static Collection<? extends CharSequence> getFragment(Element e) {
-        final FragmentBuilder fb = new FragmentBuilder();
+        final FragmentBuilder fb = new FragmentBuilder(e.getKind());
         if (!e.getKind().isClass() && !e.getKind().isInterface()) {
             if (e.getKind() == ElementKind.CONSTRUCTOR) {
-                fb.append(e.getEnclosingElement().getSimpleName());
+                fb.constructor(e.getEnclosingElement().getSimpleName());
             } else {
                 fb.append(e.getSimpleName());
             }
@@ -870,21 +929,43 @@ binRoots:   for (URL binary : binaries) {
             final List<Convertor<CharSequence,CharSequence>> tmp = new ArrayList<>();
             tmp.add(Convertors.<CharSequence>identity());
             tmp.add(new JDoc8025633());
+            tmp.add(new JDoc8046068());
             FILTERS = Collections.unmodifiableList(tmp);
         };
         private final StringBuilder[] sbs;
 
-        FragmentBuilder() {
-            this.sbs = new StringBuilder[FILTERS.size()];
+        FragmentBuilder(@NonNull ElementKind kind) {
+            int size = FILTERS.size();
+            // JDK-8046068 changed the constructor format from "Name" to "<init>"
+            if (kind == ElementKind.CONSTRUCTOR) {
+                size *= 2;
+            }
+            this.sbs = new StringBuilder[size];
             for (int i = 0; i < sbs.length; i++) {
                 sbs[i] = new StringBuilder();
             }
         }
+        
+        @NonNull
+        FragmentBuilder constructor(@NonNull final CharSequence text) {
+            CharSequence constructor = text;
+            for (int i = 0; i < sbs.length;) {
+                for (int j = 0; j < FILTERS.size(); j++) {
+                    sbs[i].append(FILTERS.get(j).convert(constructor));
+                    i++;
+                }
+                constructor = "<init>";
+            }
+            return this;
+        }
 
         @NonNull
         FragmentBuilder append(@NonNull final CharSequence text) {
-            for (int i = 0; i < sbs.length; i++) {
-                sbs[i].append(FILTERS.get(i).convert(text));
+            for (int i = 0; i < sbs.length;) {
+                for (int j = 0; j < FILTERS.size(); j++) {
+                    sbs[i].append(FILTERS.get(j).convert(text));
+                    i++;
+                }
             }
             return this;
         }
@@ -936,6 +1017,14 @@ binRoots:   for (URL binary : binaries) {
                     }
                 }
                 return sb.toString();
+            }
+        }
+        
+        private static final class JDoc8046068 implements Convertor<CharSequence,CharSequence> {
+            @Override
+            @NonNull
+            public CharSequence convert(@NonNull final CharSequence text) {
+                return text.toString().replace(" ", "");
             }
         }
     }

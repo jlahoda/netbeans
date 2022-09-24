@@ -299,7 +299,7 @@ public final class ModuleManager extends Modules {
         return completeLookup;
     }
     // Access from ChangeFirer:
-    final void fireModulesCreatedDeleted(Set created, Set deleted) {
+    final void fireModulesCreatedDeleted(Set<Module> created, Set<Module> deleted) {
         if (Util.err.isLoggable(Level.FINE)) {
             Util.err.fine("lookup created: " + created + " deleted: " + deleted);
         }
@@ -311,7 +311,7 @@ public final class ModuleManager extends Modules {
      * @see #PROP_MODULES
      */
     public Set<Module> getModules() {
-        return new HashSet<Module>(modules);
+        return new HashSet<>(modules);
     }
 
     final int getModuleCount() {
@@ -731,12 +731,12 @@ public final class ModuleManager extends Modules {
         }
 
         @Override
-        protected synchronized Class loadClass(String name, boolean resolve) throws ClassNotFoundException {
+        protected synchronized Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
             ProxyClassLoader priviledged = null;
             NetigsoLoader osgi = null;
             if (!name.startsWith("java.")) { // NOI18N
-                Class[] stack = TopSecurityManager.getStack();
-                for (Class c: stack) {
+                Class<?>[] stack = TopSecurityManager.getStack();
+                for (Class<?> c: stack) {
                     ClassLoader l = c.getClassLoader();
                     if (l == this) {
                         continue;
@@ -896,7 +896,7 @@ public final class ModuleManager extends Modules {
         return installer.refineProvides (m);
     }
     /** Used by Module to communicate with the ModuleInstaller re. classloader. */
-    public ClassLoader refineClassLoader(Module m, List parents) {
+    public ClassLoader refineClassLoader(Module m, List<? extends ClassLoader> parents) {
         // #27853:
         installer.refineClassLoader(m, parents);
         // if fragment, integrate into the host's classloader. Should be called under mutex()
@@ -932,10 +932,12 @@ public final class ModuleManager extends Modules {
             return;
         }
         for (Module inject : injectList) {
-            Util.err.log(Level.FINER, "Compat: injecting contents of fragment " + inject.getCodeNameBase() + " into " + m.getCodeNameBase());
-            List<File> allJars = inject.getAllJars();
-            // PENDING: shouldn't we add those jars first, so they take precedence ?
-            path.addAll(allJars);
+            if (isOrWillEnable(inject)) {
+                Util.err.log(Level.FINER, "Compat: injecting contents of fragment " + inject.getCodeNameBase() + " into " + m.getCodeNameBase());
+                List<File> allJars = inject.getAllJars();
+                // PENDING: shouldn't we add those jars first, so they take precedence ?
+                path.addAll(allJars);
+            }
         }
     }
 
@@ -1154,8 +1156,8 @@ public final class ModuleManager extends Modules {
      */
     public void delete(Module m) throws IllegalArgumentException {
         assertWritable();
-        if (m.isFixed()) throw new IllegalArgumentException("fixed module: " + m); // NOI18N
-        if (m.isEnabled()) throw new IllegalArgumentException("enabled module: " + m); // NOI18N
+        if (m.isFixed()) throw new IllegalModuleException(IllegalModuleException.Reason.DELETE_FIXED_MODULE, m);
+        if (m.isEnabled()) throw new IllegalModuleException(IllegalModuleException.Reason.DELETE_ENABLED_MODULE, m);
         ev.log(Events.DELETE_MODULE, m);
         removeFragmentFromHost(m);
         modules.remove(m);
@@ -1190,8 +1192,8 @@ public final class ModuleManager extends Modules {
         if (Util.err.isLoggable(Level.FINE)) {
             Util.err.fine("reload: " + m);
         }
-        if (m.isFixed()) throw new IllegalArgumentException("reload fixed module: " + m); // NOI18N
-        if (m.isEnabled()) throw new IllegalArgumentException("reload enabled module: " + m); // NOI18N
+        if (m.isFixed()) throw new IllegalModuleException(IllegalModuleException.Reason.RELOAD_FIXED_MODULE, m);
+        if (m.isEnabled()) throw new IllegalModuleException(IllegalModuleException.Reason.RELOAD_ENABLED_MODULE, m);
         providersOf.possibleProviderRemoved(m);
         try {
             m.reload();
@@ -1253,6 +1255,34 @@ public final class ModuleManager extends Modules {
     public void enable(Set<Module> modules) throws IllegalArgumentException, InvalidException {
         enable(modules, true);
     }
+    
+    /**
+     * Context of the pending 'enable' operation. Some calls go back to ModuleManager
+     * from other objects, that can't be compatibly passed 'willEnable' info.
+     */
+    static class EnableContext {
+        final List<Module> willEnable;
+
+        public EnableContext(List<Module> willEnable) {
+            this.willEnable = willEnable;
+        }
+    }
+    
+    private final ThreadLocal<EnableContext> enableContext = new ThreadLocal<>();
+    
+    /**
+     * Checks if the module is enabled or WILL be enabled by the current enable operation.
+     * @param m module to check
+     * @return true, if the module is/will enable.
+     */
+    boolean isOrWillEnable(Module m) {
+        if (m.isEnabled()) {
+            return true;
+        }
+        EnableContext ctx = enableContext.get();
+        return ctx != null && ctx.willEnable.contains(m);
+    }
+    
     private void enable(Set<Module> modules, boolean honorAutoloadEager) throws IllegalArgumentException, InvalidException {
         assertWritable();
         Util.err.log(Level.FINE, "enable: {0}", modules);
@@ -1275,11 +1305,19 @@ public final class ModuleManager extends Modules {
             if (! testing.containsAll(modules)) {
                 Set<Module> bogus = new HashSet<Module>(modules);
                 bogus.removeAll(testing);
-                throw new IllegalArgumentException("Not all requested modules can be enabled: " + bogus); // NOI18N
+                Map<Module, Set<Union2<Dependency,InvalidException>>> errors = new HashMap<>();
+                for (Module b : bogus) {
+                    errors.put(b, missingDependencies(b));
+                }
+                throw new IllegalModuleException(IllegalModuleException.Reason.ENABLE_MISSING, errors);
             }
             for (Module m : testing) {
                 if (!modules.contains(m) && !m.isAutoload() && !m.isEager()) {
-                    throw new IllegalArgumentException("Would also need to enable " + m); // NOI18N
+                    // it is acceptable if the module is a non-autoload host fragment, and its host enabled (thus enabled the fragment):
+                    Module maybeHost =  attachModuleFragment(m);
+                    if (maybeHost == null && !testing.contains(maybeHost)) {
+                        throw new IllegalModuleException(IllegalModuleException.Reason.ENABLE_TESTING, m);
+                    }
                 }
             }
         }
@@ -1288,15 +1326,16 @@ public final class ModuleManager extends Modules {
 
         ev.log(Events.START_ENABLE_MODULES, toEnable);
         netigso.willEnable(toEnable);
+        try {
+            enableContext.set(new EnableContext(toEnable));
+            doEnable(toEnable);
+        } finally {
+            enableContext.remove();
+        }
+    }
+    
+    private void doEnable(List<Module> toEnable) throws IllegalArgumentException, InvalidException {
         for (;;) {
-            // first connect fragments to their hosts, so classloaders are populated
-            for (Module m: toEnable) {
-                if (m.isEnabled()) {
-                    continue;
-                }
-                // store information from fragment modules for early initialization of hosting classlaoder:
-                attachModuleFragment(m);
-            }
             // Actually turn on the listed modules.
             // List of modules that need to be "rolled back".
             LinkedList<Module> fallback = new LinkedList<Module>();
@@ -1497,7 +1536,7 @@ public final class ModuleManager extends Modules {
             // Verify that dependencies are OK.
             for (Module m: toDisable) {
                 if (!modules.contains(m) && !m.isAutoload() && !m.isEager()) {
-                    throw new IllegalArgumentException("Would also need to disable: " + m); // NOI18N
+                    throw new IllegalModuleException(IllegalModuleException.Reason.DISABLE_TOO, m);
                 }
             }
         }
@@ -1510,7 +1549,14 @@ public final class ModuleManager extends Modules {
                 installer.dispose(m);
                 m.setEnabled(false);
                 m.unregisterInstrumentation();
-                m.classLoaderDown();
+                // do not down classloader for fragments, as they are shared with the
+                // hosting module.
+                if (m.getFragmentHostCodeName() == null) {
+                    m.classLoaderDown();
+                }
+                // release the classloader from the module; it will be created again by
+                // classLoaderUp.
+                m.releaseClassLoader();
             }
             System.gc(); // hope OneModuleClassLoader.finalize() is called...
             System.runFinalization();
@@ -1564,10 +1610,15 @@ public final class ModuleManager extends Modules {
         Collection<Module> fragments = getAttachedFragments(m);
         if (!fragments.isEmpty()) {
             for (Module frag : fragments) {
-                Set<Module> mods = calculateParents(frag);
-                mods.remove(m);
-                res.addAll(mods);
+                if (isOrWillEnable(frag)) {
+                    Set<Module> mods = calculateParents(frag);
+                    res.addAll(mods);
+                }
             }
+            // remove m and m's fragments from parent classloaders, as fragment
+            // jars are merged into m's own classloader already.
+            res.remove(m);
+            res.removeAll(fragments);
         }
         return res;
     }
@@ -1624,11 +1675,11 @@ public final class ModuleManager extends Modules {
         Set<Module> willEnable = new TreeSet<Module>(new CodeNameBaseComparator());
         for (Module m: modules) {
             if (honorAutoloadEager) {
-                if (m.isAutoload()) throw new IllegalArgumentException("Cannot simulate enabling an autoload: " + m); // NOI18N
-                if (m.isEager()) throw new IllegalArgumentException("Cannot simulate enabling an eager module: " + m); // NOI18N
+                if (m.isAutoload()) throw new IllegalModuleException(IllegalModuleException.Reason.SIMULATE_ENABLE_AUTOLOAD, m);
+                if (m.isEager()) throw new IllegalModuleException(IllegalModuleException.Reason.SIMULATE_ENABLE_EAGER, m);
             }
-            if (m.isEnabled()) throw new IllegalArgumentException("Already enabled: " + m); // NOI18N
-            if (!m.isValid()) throw new IllegalArgumentException("Not managed by me: " + m + " in " + m); // NOI18N
+            if (m.isEnabled()) throw new IllegalModuleException(IllegalModuleException.Reason.SIMULATE_ENABLE_ALREADY, m);
+            if (!m.isValid()) throw new IllegalModuleException(IllegalModuleException.Reason.SIMULATE_ENABLE_INVALID, m);
             maybeAddToEnableList(willEnable, modules, m, true);
         }
         // XXX clumsy but should work:
@@ -1694,7 +1745,8 @@ public final class ModuleManager extends Modules {
     private void maybeAddToEnableList(Set<Module> willEnable, Set<Module> mightEnable, Module m, boolean okToFail) {
         if (! missingDependencies(m).isEmpty()) {
             if (!okToFail) {
-                Util.err.warning("Module " + m + " had unexpected problems: " + missingDependencies(m) + " (willEnable: " + willEnable + " mightEnable: " + mightEnable + ")");
+                Util.err.warning("Module " + m + " had unexpected problems: " + missingDependencies(m));
+                Util.err.fine(" (willEnable: " + willEnable + " mightEnable: " + mightEnable + ")");
             }
             // Cannot satisfy its dependencies, exclude it.
             return;
@@ -1760,8 +1812,10 @@ public final class ModuleManager extends Modules {
         }
         Collection<Module> frags = getAttachedFragments(m);
         for (Module fragMod : frags) {
-            if (! fragMod.isEnabled()) {
-                maybeAddToEnableList(willEnable, mightEnable, fragMod, fragMod.isEager());
+            // do not enable regular fragments unless eager: if something depends on a fragment, it will 
+            // enable the fragment along with normal dependencies.
+            if (fragMod.isEager()) {
+                maybeAddToEnableList(willEnable, mightEnable, fragMod, fragMod.isAutoload() || fragMod.isEager());
             }
         }
     }
@@ -1784,6 +1838,13 @@ public final class ModuleManager extends Modules {
                 continue;
             }
             if (m.isEager()) {
+                if (m.getFragmentHostCodeName() != null) {
+                    Module host = modulesByName.get(m.getFragmentHostCodeName());
+                    if (host == null || (!m.isEnabled() && !willEnable.contains(m))) {
+                        // will not enable if its host is not enabled or will not be enabled
+                        continue;
+                    }
+                }
                 if (couldBeEnabledWithEagers(m, willEnable, new HashSet<Module>())) {
                     // Go for it!
                     found = true;
@@ -1893,10 +1954,10 @@ public final class ModuleManager extends Modules {
         // Probably not a very efficient algorithm. But it probably does not need to be.
         Set<Module> willDisable = new TreeSet<Module>(new CodeNameBaseComparator());
         for (Module m : modules) {
-            if (m.isAutoload()) throw new IllegalArgumentException("Cannot disable autoload: " + m); // NOI18N
-            if (m.isEager()) throw new IllegalArgumentException("Cannot disable eager module: " + m); // NOI18N
-            if (m.isFixed()) throw new IllegalArgumentException("Cannot disable fixed module: " + m); // NOI18N
-            if (! m.isEnabled()) throw new IllegalArgumentException("Already disabled: " + m); // NOI18N
+            if (m.isAutoload()) throw new IllegalModuleException(IllegalModuleException.Reason.SIMULATE_DISABLE_AUTOLOAD, m);
+            if (m.isEager()) throw new IllegalModuleException(IllegalModuleException.Reason.SIMULATE_DISABLE_EAGER, m);
+            if (m.isFixed()) throw new IllegalModuleException(IllegalModuleException.Reason.SIMULATE_DISABLE_FIXED, m);
+            if (! m.isEnabled()) throw new IllegalModuleException(IllegalModuleException.Reason.SIMULATE_DISABLE_ALREADY, m);
             addToDisableList(willDisable, m);
         }
         Set<Module> stillEnabled = new HashSet<Module>(getEnabledModules());
@@ -1973,6 +2034,15 @@ public final class ModuleManager extends Modules {
     FIND_AUTOLOADS:
         while (it.hasNext()) {
             Module m = it.next();
+            String host = m.getFragmentHostCodeName();
+            if (host != null) {
+                Module theHost = modulesByName.get(host);
+                if (theHost != null && theHost.isEnabled()) {
+                    // will not disable fragment module, as it is merged to an
+                    // enabled host.
+                    continue;
+                }
+            }
             if (m.isAutoload()) {
                 for (Module other: stillEnabled) {
                     Dependency[] dependencies = other.getDependenciesArray();
@@ -2451,7 +2521,7 @@ public final class ModuleManager extends Modules {
             willEnable = null;
         }
 
-        synchronized final void registerEnable(Set<Module> modules, List<Module> l) {
+        final synchronized void registerEnable(Set<Module> modules, List<Module> l) {
             toEnable = new HashSet<String>();
             for (Module m : modules) {
                 toEnable.add(m.getCodeNameBase());
@@ -2464,7 +2534,7 @@ public final class ModuleManager extends Modules {
             Stamps.getModulesJARs().scheduleSave(this, CACHE, false);
         }
 
-        synchronized final List<String> simulateEnable(Set<Module> modules) {
+        final synchronized List<String> simulateEnable(Set<Module> modules) {
             if (
                 toEnable != null &&
                 modules.size() == toEnable.size() &&

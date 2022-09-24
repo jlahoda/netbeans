@@ -20,6 +20,7 @@ package org.netbeans.modules.java.source.save;
 
 import com.sun.source.tree.*;
 import com.sun.source.tree.LambdaExpressionTree.BodyKind;
+import com.sun.source.tree.Tree.Kind;
 import com.sun.source.util.*;
 import com.sun.tools.javac.api.JavacTaskImpl;
 import com.sun.tools.javac.api.JavacTrees;
@@ -29,12 +30,12 @@ import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCBlock;
 import com.sun.tools.javac.tree.JCTree.JCMethodDecl;
 import com.sun.tools.javac.tree.JCTree.JCModifiers;
-import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 import javax.lang.model.element.Name;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
+import javax.lang.model.element.Modifier;
 import org.netbeans.api.editor.document.LineDocumentUtils;
 import org.netbeans.api.editor.guards.DocumentGuards;
 import org.netbeans.api.java.classpath.ClassPath;
@@ -48,12 +49,12 @@ import org.netbeans.api.java.source.support.ErrorAwareTreePathScanner;
 import org.netbeans.api.lexer.Token;
 import org.netbeans.api.lexer.TokenHierarchy;
 import org.netbeans.api.lexer.TokenSequence;
+import org.netbeans.api.lexer.TokenUtilities;
 import org.netbeans.modules.editor.indent.spi.Context;
 import org.netbeans.modules.editor.indent.spi.ExtraLock;
 import org.netbeans.modules.editor.indent.spi.ReformatTask;
 import org.netbeans.modules.java.source.JavaSourceAccessor;
 import org.netbeans.modules.java.source.NoJavacHelper;
-import org.netbeans.modules.java.source.TreeShims;
 import org.netbeans.modules.java.source.parsing.FileObjects;
 import org.netbeans.modules.java.source.parsing.JavacParser;
 import org.netbeans.modules.parsing.api.Embedding;
@@ -72,7 +73,7 @@ import org.openide.util.Pair;
  * @author Dusan Balek
  */
 public class Reformatter implements ReformatTask {
-    
+
     private static final Object CT_HANDLER_DOC_PROPERTY = "code-template-insert-handler"; // NOI18N
 
     private Source source;
@@ -101,7 +102,7 @@ public class Reformatter implements ReformatTask {
             }
         }
     }
-    
+
     public static String reformat(String text, CodeStyle style) {
         return reformat(text, style, style.getRightMargin());
     }
@@ -128,7 +129,7 @@ public class Reformatter implements ReformatTask {
 
         return sb.toString();
     }
-    
+
     private boolean initRegionData(final Context.Region region) {
         if (controller == null || (currentEmbedding != null
                 && !(currentEmbedding.containsOriginalOffset(region.getStartOffset())
@@ -145,7 +146,7 @@ public class Reformatter implements ReformatTask {
                                 controller = CompilationController.get(result);
                             }
                         }
-                        
+
                         private Parser.Result findEmbeddedJava(final ResultIterator theMess) throws ParseException {
                             final Collection<Embedding> todo = new LinkedList<Embedding>();
                             //BFS should perform better than DFS in this dark.
@@ -360,7 +361,7 @@ public class Reformatter implements ReformatTask {
             }
         };
     }
-    
+
     private TreePath getCommonPath(int startOffset, int endOffset) {
         TreeUtilities tu = controller.getTreeUtilities();
         TreePath startPath = tu.pathFor(startOffset);
@@ -390,7 +391,7 @@ public class Reformatter implements ReformatTask {
                 return null;
             Source source = Source.create(context.document());
             return source != null ? new Reformatter(source, context) : null;
-        }        
+        }
     }
 
     private static class Pretty extends ErrorAwareTreePathScanner<Boolean, Void> {
@@ -417,6 +418,7 @@ public class Reformatter implements ReformatTask {
         private static final String JDOC_RETURN_TAG = "@return"; //NOI18N
         private static final String JDOC_THROWS_TAG = "@throws"; //NOI18N
         private static final String JDOC_VALUE_TAG = "@value"; //NOI18N
+        private static final String JDOC_SNIPPET_TAG = "@snippet"; //NOI18N
         private static final String ERROR = "<error>"; //NOI18N
 
         private final String fText;
@@ -429,7 +431,7 @@ public class Reformatter implements ReformatTask {
         private final int continuationIndentSize;
         private final boolean expandTabToSpaces;
 
-        private TokenSequence<JavaTokenId> tokens;    
+        private TokenSequence<JavaTokenId> tokens;
         private int indent;
         private boolean continuationIndent;
         private int col;
@@ -444,7 +446,7 @@ public class Reformatter implements ReformatTask {
         private WrapAbort checkWrap;
         private boolean fieldGroup;
         private boolean templateEdit;
-        private LinkedList<Diff> diffs = new LinkedList<Diff>();
+        private final LinkedList<Diff> diffs = new LinkedList<>();
         private DanglingElseChecker danglingElseChecker = new DanglingElseChecker();
         private CompilationUnitTree root;
         private int startOffset;
@@ -461,7 +463,7 @@ public class Reformatter implements ReformatTask {
                     path, info.getTrees().getSourcePositions(), cs, startOffset, endOffset, cs.getRightMargin());
             this.templateEdit = templateEdit;
         }
-        
+
         private Pretty(String text, TokenSequence<JavaTokenId> tokens, TreePath path, SourcePositions sp, CodeStyle cs, int startOffset, int endOffset, int rightMargin) {
             this.fText = text;
             this.sp = sp;
@@ -556,7 +558,7 @@ public class Reformatter implements ReformatTask {
         @Override
         public Boolean scan(Tree tree, Void p) {
             int lastEndPos = endPos;
-            if (tree != null && tree.getKind() != Tree.Kind.COMPILATION_UNIT) {                
+            if (tree != null && tree.getKind() != Tree.Kind.COMPILATION_UNIT) {
                 if (tree instanceof FakeBlock) {
                     endPos = Integer.MAX_VALUE;
                 } else {
@@ -578,7 +580,13 @@ public class Reformatter implements ReformatTask {
             try {
                 if (endPos < 0)
                     return false;
-                Boolean ret = tokens.offset() <= endPos ? (tree.getKind().toString().equals(TreeShims.SWITCH_EXPRESSION)) ? scanSwitchExpression(tree,p) : super.scan(tree, p) : null;
+                if (tokens.offset() > endPos)
+                    return true;
+
+                Boolean ret;
+
+                ret = super.scan(tree, p);
+
                 return ret != null ? ret : true;
             }
             finally {
@@ -651,7 +659,7 @@ public class Reformatter implements ReformatTask {
                 continuationIndent = true;
                 space();
                 scan(node.getName(), p);
-            } finally {                
+            } finally {
                 continuationIndent = old;
             }
             CodeStyle.BracePlacement bracePlacement = cs.getModuleDeclBracePlacement();
@@ -710,7 +718,7 @@ public class Reformatter implements ReformatTask {
                         diff.text = getIndent();
                     else
                         diff.text = diff.text.substring(0, idx + 1) + getIndent();
-                    
+
                 }
                 String spaces = diff.text != null ? diff.text : getIndent();
                 if (spaces.equals(fText.substring(diff.start, diff.end)))
@@ -870,6 +878,9 @@ public class Reformatter implements ReformatTask {
 
         @Override
         public Boolean visitClass(ClassTree node, Void p) {
+            if (node.getKind() == Kind.RECORD) {
+                return scanRecord(node, p);
+            }
             Tree parent = getCurrentPath().getParentPath().getLeaf();
             if (parent.getKind() != Tree.Kind.NEW_CLASS && (parent.getKind() != Tree.Kind.VARIABLE || !isEnumerator((VariableTree)parent))) {
                 boolean old = continuationIndent;
@@ -932,6 +943,11 @@ public class Reformatter implements ReformatTask {
                     if (impls != null && !impls.isEmpty()) {
                         wrapToken(cs.wrapExtendsImplementsKeyword(), 1, id == INTERFACE ? EXTENDS : IMPLEMENTS);
                         wrapList(cs.wrapExtendsImplementsList(), cs.alignMultilineImplements(), true, COMMA, impls);
+                    }
+                    List<? extends Tree> perms = node.getPermitsClause();
+                    if (perms != null && !perms.isEmpty()) {
+                        wrapToken(cs.wrapExtendsImplementsKeyword(), 1, EXTENDS); 
+                        wrapList(cs.wrapExtendsImplementsList(), cs.alignMultilineImplements(), true, COMMA, perms);
                     }
                 } finally {
                     continuationIndent = old;
@@ -1062,6 +1078,12 @@ public class Reformatter implements ReformatTask {
                                 }
                                 blankLines(cs.getBlankLinesAfterClass());
                                 break;
+                            case RECORD:
+                                if (!first)
+                                    blankLines(cs.getBlankLinesBeforeMethods());
+                                scanRecord((ClassTree)member, p);
+                                blankLines(cs.getBlankLinesAfterMethods());
+                                break;
                         }
                         first = false;
                     }
@@ -1079,7 +1101,7 @@ public class Reformatter implements ReformatTask {
                         diff.text = getIndent();
                     else
                         diff.text = diff.text.substring(0, idx + 1) + getIndent();
-                    
+
                 }
                 String spaces = diff.text != null ? diff.text : getIndent();
                 if (spaces.equals(fText.substring(diff.start, diff.end)))
@@ -1129,12 +1151,25 @@ public class Reformatter implements ReformatTask {
                                 newline();
                             else
                                 space();
-                        } else {
+                        } else if (sp.getStartPosition(root, mods) != sp.getStartPosition(root, node.getType())) {
                             space();
                         }
                     } else if (afterAnnotation) {
+                        WrapStyle newWrapStyle = cs.wrapAnnotations();
+                        if (parent instanceof ClassTree) {
+                            for (Tree member : ((ClassTree) parent).getMembers()) {
+                                if (member.getKind() == Kind.RECORD) {
+                                    ClassTree cls = (ClassTree) member;
+                                    for (Tree recMember : cls.getMembers()) {
+                                        if (recMember.equals(getCurrentPath().getLeaf())) {
+                                            newWrapStyle = WrapStyle.WRAP_NEVER;
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         if (org.netbeans.api.java.source.TreeUtilities.CLASS_TREE_KINDS.contains(parent.getKind()) || parent.getKind() == Tree.Kind.BLOCK) {
-                            switch (cs.wrapAnnotations()) {
+                            switch (newWrapStyle) {
                                 case WRAP_ALWAYS:
                                     newline();
                                     break;
@@ -1162,7 +1197,7 @@ public class Reformatter implements ReformatTask {
                         int index = tokens.index();
                         int c = col;
                         Diff d = diffs.isEmpty() ? null :diffs.getFirst();
-                        spaces(cs.spaceBeforeMethodCallParen() ? 1 : 0);            
+                        spaces(cs.spaceBeforeMethodCallParen() ? 1 : 0);
                         JavaTokenId id = accept(LPAREN);
                         if (id != LPAREN)
                             rollback(index, c, d);
@@ -1183,7 +1218,7 @@ public class Reformatter implements ReformatTask {
                                 lastIndent = oldLastIndent;
                                 continuationIndent = isLastIndentContinuation = continuation;
                             }
-                            spaces(cs.spaceWithinMethodCallParens() ? 1 : 0, true);            
+                            spaces(cs.spaceWithinMethodCallParens() ? 1 : 0, true);
                         }
                         if (id == LPAREN)
                             accept(RPAREN);
@@ -1237,6 +1272,179 @@ public class Reformatter implements ReformatTask {
                 continuationIndent = old;
             }
             return true;
+        }
+
+        private Boolean scanRecord(ClassTree node, Void p) {
+            boolean old = continuationIndent;
+            int oldIndent = indent;
+            try {
+                continuationIndent = true;
+                ModifiersTree mods = node.getModifiers();
+                if (mods != null) {
+                    if (scan(mods, p)) {
+
+                        if (cs.placeNewLineAfterModifiers()) {
+                            newline();
+                        } else {
+                            space();
+                        }
+                    } else if (afterAnnotation) {
+                        newline();
+                    }
+                    afterAnnotation = false;
+                }
+                accept(IDENTIFIER);
+                space();
+
+                if (!ERROR.contentEquals(node.getSimpleName())) {
+                    accept(IDENTIFIER, UNDERSCORE);
+                }
+
+                List<? extends TypeParameterTree> tparams = node.getTypeParameters();
+                if (tparams != null && !tparams.isEmpty()) {
+                    if (LT == accept(LT)) {
+                        tpLevel++;
+                    }
+
+                    for (Iterator<? extends TypeParameterTree> it = tparams.iterator(); it.hasNext();) {
+                        TypeParameterTree tparam = it.next();
+                        scan(tparam, p);
+                        if (it.hasNext()) {
+                            spaces(cs.spaceBeforeComma() ? 1 : 0);
+                            accept(COMMA);
+                            spaces(cs.spaceAfterComma() ? 1 : 0);
+                        }
+                    }
+                    JavaTokenId accepted;
+                    if (tpLevel > 0 && (accepted = accept(GT, GTGT, GTGTGT)) != null) {
+                        switch (accepted) {
+                            case GTGTGT:
+                                tpLevel -= 3;
+                                break;
+                            case GTGT:
+                                tpLevel -= 2;
+                                break;
+                            case GT:
+                                tpLevel--;
+                                break;
+                        }
+                    }
+                    spaces(0, true);
+                }
+
+                spaces(cs.spaceBeforeMethodDeclParen() ? 1 : 0);
+                accept(LPAREN);
+                List<? extends Tree> members = node.getMembers();
+                List recParams = new ArrayList<Tree>();
+
+                for (Tree member : members) {
+                    if (member.getKind() == Tree.Kind.VARIABLE) {
+                        ModifiersTree modifiers = ((VariableTree) member).getModifiers();
+                        Set<Modifier> modifierSet = modifiers.getFlags();
+
+                        if (!modifierSet.contains(Modifier.STATIC)) {
+                            recParams.add(member);
+                        }
+                    }
+                }
+
+                if (!recParams.isEmpty()) {
+                    spaces(cs.spaceWithinMethodDeclParens() ? 1 : 0, true);
+                    wrapList(cs.wrapMethodParams(), cs.alignMultilineMethodParams(), false, COMMA, recParams);
+                }
+                accept(RPAREN);
+                List<? extends Tree> impls = node.getImplementsClause();
+                if (impls != null && !impls.isEmpty()) {
+                    wrapToken(cs.wrapExtendsImplementsKeyword(), 1, IMPLEMENTS);
+                    wrapList(cs.wrapExtendsImplementsList(), cs.alignMultilineImplements(), true, COMMA, impls);
+                }
+                int oldLastIndent = lastIndent;
+                int lastMaxPreservedBlankLines = maxPreservedBlankLines;
+                maxPreservedBlankLines = cs.getMaximumBlankLinesInDeclarations();
+                classLeftBracePlacement();
+
+                continuationIndent = old;
+                try {
+                    if (members != null && !members.isEmpty()) {
+
+                        boolean isFirstMember = true;
+                        blankLines(node.getSimpleName().length() == 0 ? 0 : cs.getBlankLinesAfterClassHeader());
+                        for (Tree member : members) {
+                            if (recParams.contains(member)) {
+                                continue;
+                            }
+                            blankLines(0);
+                            switch (member.getKind()) {
+                                case VARIABLE:
+                                    boolean b = tokens.moveNext();
+                                    if (b) {
+                                        tokens.movePrevious();
+                                        if (!isFirstMember) {
+                                            blankLines(cs.getBlankLinesBeforeFields());
+                                        }
+                                        scan(member, p);
+                                        blankLines(cs.getBlankLinesAfterFields());
+                                    }
+                                    break;
+                                default:
+                                    if (!isFirstMember) {
+                                        blankLines(cs.getBlankLinesBeforeMethods());
+                                    }
+                                    scan(member, p);
+                                    blankLines(cs.getBlankLinesAfterMethods());
+                            }
+                            if (isFirstMember) {
+                                isFirstMember = false;
+                            }
+                        }
+
+                        spaces(cs.spaceWithinMethodDeclParens() ? 1 : 0, true);
+                    }
+                } finally {
+                    indent = oldIndent;
+                    lastIndent = oldLastIndent;
+                    continuationIndent = old;
+                    maxPreservedBlankLines = lastMaxPreservedBlankLines;
+                }
+                newline();
+                accept(RBRACE);
+            } finally {
+                continuationIndent = old;
+            }
+            return true;
+        }
+
+        private void classLeftBracePlacement() {
+            CodeStyle.BracePlacement bracePlacement = cs.getClassDeclBracePlacement();
+            boolean spaceBeforeLeftBrace = cs.spaceBeforeClassDeclLeftBrace();
+            int old = indent = lastIndent;
+            int halfIndent = lastIndent;
+            switch (bracePlacement) {
+                case SAME_LINE:
+                    spaces(spaceBeforeLeftBrace ? 1 : 0, tokens.offset() < startOffset);
+                    accept(LBRACE);
+                    indent = lastIndent + indentSize;
+                    break;
+                case NEW_LINE:
+                    newline();
+                    accept(LBRACE);
+                    indent = lastIndent + indentSize;
+                    break;
+                case NEW_LINE_HALF_INDENTED:
+                    int oldLast = lastIndent;
+                    indent = lastIndent + (indentSize >> 1);
+                    halfIndent = indent;
+                    newline();
+                    accept(LBRACE);
+                    indent = oldLast + indentSize;
+                    break;
+                case NEW_LINE_INDENTED:
+                    indent = lastIndent + indentSize;
+                    halfIndent = indent;
+                    newline();
+                    accept(LBRACE);
+                    break;
+            }
         }
 
         @Override
@@ -1351,7 +1559,7 @@ public class Reformatter implements ReformatTask {
             TreePath path = getCurrentPath().getParentPath();
             Tree parent = path.getLeaf();
             path = path.getParentPath();
-            Tree grandParent = path.getLeaf();
+            Tree grandParent = path != null ? path.getLeaf(): parent;
             boolean isStandalone = parent.getKind() != Tree.Kind.VARIABLE ||
                     org.netbeans.api.java.source.TreeUtilities.CLASS_TREE_KINDS.contains(grandParent.getKind()) || grandParent.getKind() == Tree.Kind.BLOCK;
             while (tokens.offset() < endPos) {
@@ -1847,7 +2055,7 @@ public class Reformatter implements ReformatTask {
             maxPreservedBlankLines = lastMaxPreservedBlankLines;
             indent = lastIndent = old;
             return true;
-        }       
+        }
 
         @Override
         public Boolean visitMemberSelect(MemberSelectTree node, Void p) {
@@ -1874,9 +2082,9 @@ public class Reformatter implements ReformatTask {
         @Override
         public Boolean visitMemberReference(MemberReferenceTree node, Void p) {
             scan(node.getQualifierExpression(), p);
-            spaces(cs.spaceAroundMethodReferenceDoubleColon() ? 1 : 0); 
+            spaces(cs.spaceAroundMethodReferenceDoubleColon() ? 1 : 0);
             accept(COLONCOLON);
-            spaces(cs.spaceAroundMethodReferenceDoubleColon() ? 1 : 0); 
+            spaces(cs.spaceAroundMethodReferenceDoubleColon() ? 1 : 0);
             int index = tokens.index();
             int c = col;
             Diff d = diffs.isEmpty() ? null : diffs.getFirst();
@@ -1938,7 +2146,7 @@ public class Reformatter implements ReformatTask {
             }
             return true;
         }
-        
+
         @Override
         public Boolean visitLambdaExpression(LambdaExpressionTree node, Void p) {
             List<? extends VariableTree> params = node.getParameters();
@@ -1959,7 +2167,7 @@ public class Reformatter implements ReformatTask {
                             wrapList(cs.wrapLambdaParams(), cs.alignMultilineLambdaParams(), false, COMMA, params);
                         } finally {
                             indent = oldIndent;
-                            lastIndent = oldLastIndent; 
+                            lastIndent = oldLastIndent;
                             continuationIndent = isLastIndentContinuation = continuation;
                         }
                         spaces(cs.spaceWithinLambdaParens() ? 1 : 0);
@@ -2029,7 +2237,7 @@ public class Reformatter implements ReformatTask {
                     indent += continuationIndentSize;
                     isLastIndentContinuation = false;
                 }
-                ExpressionTree exp = ((MemberSelectTree)ms).getExpression();                
+                ExpressionTree exp = ((MemberSelectTree)ms).getExpression();
                 scan(exp, p);
                 WrapStyle wrapStyle = cs.wrapChainedMethodCalls();
                 if (wrapStyle == WrapStyle.WRAP_ALWAYS && exp.getKind() != Tree.Kind.METHOD_INVOCATION)
@@ -2139,7 +2347,7 @@ public class Reformatter implements ReformatTask {
                         isLastIndentContinuation = false;
                     }
                     try {
-                        spaces(cs.spaceWithinMethodCallParens() ? 1 : 0, true); 
+                        spaces(cs.spaceWithinMethodCallParens() ? 1 : 0, true);
                         wrapList(cs.wrapMethodCallArgs(), cs.alignMultilineCallArgs(), false, COMMA, args);
                     } finally {
                         indent = oldIndent;
@@ -2301,12 +2509,12 @@ public class Reformatter implements ReformatTask {
             }
             return true;
         }
-        
+
         /**
          * Finds the end of the line (for brace insertion) after the statement Tree, provided
          * the statement is followed nu whitespace only.
          * @param statement
-         * @return 
+         * @return
          */
         private int findNewlineAfterStatement(Tree statement) {
             int pos = (int)sp.getEndPosition(root, statement);
@@ -2441,7 +2649,7 @@ public class Reformatter implements ReformatTask {
             accept(WHILE);
             boolean old = continuationIndent;
             try {
-                continuationIndent = true;            
+                continuationIndent = true;
                 spaces(cs.spaceBeforeWhileParen() ? 1 : 0);
                 scan(node.getCondition(), p);
             } finally {
@@ -2518,7 +2726,7 @@ public class Reformatter implements ReformatTask {
                 redundantForBraces = CodeStyle.BracesGenerationStyle.LEAVE_ALONE;
             }
             wrapStatement(cs.wrapForStatement(), redundantForBraces, cs.spaceBeforeForLeftBrace() ? 1 : 0, node.getStatement());
-            return true;            
+            return true;
         }
 
         @Override
@@ -2569,21 +2777,90 @@ public class Reformatter implements ReformatTask {
             return handleSwitch(node, p);
         }
 
-        private Boolean scanSwitchExpression(Tree node, Void p) {
-         return handleSwitch(node,p);
+        @Override
+        public Boolean visitSwitchExpression(SwitchExpressionTree node, Void p) {
+            return handleSwitch(node,p);
+        }
+
+        @Override
+        public Boolean visitYield(YieldTree node, Void p) {
+            ExpressionTree exprTree = node.getValue();
+            if (exprTree != null) {
+                accept(IDENTIFIER);
+                space();
+                scan(exprTree, p);
+            }
+            accept(SEMICOLON);
+            return true;
+        }
+
+        @Override
+        public Boolean visitBindingPattern(BindingPatternTree node, Void p) {
+            scan(node.getVariable(), p);
+            return true;
+        }
+
+        @Override
+        public Boolean visitDefaultCaseLabel(DefaultCaseLabelTree node, Void p) {
+            accept(DEFAULT);
+            return true;
+        }
+
+        @Override
+        public Boolean visitConstantCaseLabel(ConstantCaseLabelTree node, Void p) {
+            scan(node.getConstantExpression(), p);
+            return true;
+        }
+
+        @Override
+        public Boolean visitPatternCaseLabel(PatternCaseLabelTree node, Void p) {
+            scan(node.getPattern(), p);
+            space();
+            accept(IDENTIFIER);
+            space();
+            scan(node.getGuard(), p);
+            return true;
+        }
+
+        @Override
+        public Boolean visitDeconstructionPattern(DeconstructionPatternTree node, Void p) {
+            scan(node.getDeconstructor(), p);
+            accept(LPAREN);
+            scan(node.getNestedPatterns(), p);
+            accept(RPAREN);
+            if (node.getVariable() != null) {
+                space();
+                accept(IDENTIFIER);
+            }
+            return true;
+        }
+
+        @Override
+        public Boolean visitParenthesizedPattern(ParenthesizedPatternTree node, Void p) {
+            accept(LPAREN);
+            spaces(0);
+            scan(node.getPattern(), p);
+            spaces(0);
+            accept(RPAREN);
+            return true;
         }
 
         private boolean handleSwitch(Tree node, Void p) {
+            ExpressionTree selExpr;
+            List<? extends CaseTree> cases;
+            if (node.getKind() == Kind.SWITCH) {
+                selExpr = ((SwitchTree) node).getExpression();
+                cases = ((SwitchTree) node).getCases();
+            } else {
+                selExpr = ((SwitchExpressionTree) node).getExpression();
+                cases = ((SwitchExpressionTree) node).getCases();
+            }
             accept(SWITCH);
             boolean oldContinuationIndent = continuationIndent;
             try {
                 continuationIndent = true;
                 spaces(cs.spaceBeforeSwitchParen() ? 1 : 0);
-                List<? extends ExpressionTree> exprTrees = TreeShims.getExpressions(node);
-                if (!exprTrees.isEmpty()) {
-                    ExpressionTree expressionTree = exprTrees.get(0);
-                    scan(expressionTree, p);
-                }
+                scan(selExpr, p);
             } finally {
                 continuationIndent = oldContinuationIndent;
             }
@@ -2592,7 +2869,7 @@ public class Reformatter implements ReformatTask {
             boolean indentCases = cs.indentCasesFromSwitch() ;
             int old = lastIndent;
             int halfIndent = lastIndent;
-            if (node.getKind().toString().equals(TreeShims.SWITCH_EXPRESSION)) {
+            if (node.getKind() == Kind.SWITCH_EXPRESSION) {
                 continuationIndent = false;
             }
             switch (bracePlacement) {
@@ -2632,13 +2909,11 @@ public class Reformatter implements ReformatTask {
                     }
                     break;
             }
-            if (node.getKind().toString().equals(TreeShims.SWITCH_EXPRESSION)) {
-                old = indent;
+            if (node.getKind() == Kind.SWITCH_EXPRESSION) {
                 indent = lastIndent + indentSize;
             }
-            List<? extends CaseTree> caseTrees = TreeShims.getCases(node);
             try {
-                for (CaseTree caseTree : caseTrees) {
+                for (CaseTree caseTree : cases) {
                     newline();
                     scan(caseTree, p);
                 }
@@ -2648,7 +2923,7 @@ public class Reformatter implements ReformatTask {
                 Diff diff = diffs.isEmpty() ? null : diffs.getFirst();
                 if (diff != null && diff.end == tokens.offset()) {
                     if (diff.text != null) {
-                        int idx = diff.text.lastIndexOf('\n'); //NOI18N                                                                                                                
+                        int idx = diff.text.lastIndexOf('\n'); //NOI18N
                         if (idx < 0) {
                             diff.text = getIndent();
                         } else {
@@ -2684,21 +2959,41 @@ public class Reformatter implements ReformatTask {
 
         @Override
         public Boolean visitCase(CaseTree node, Void p) {
-            ExpressionTree exp = node.getExpression();
-            if (exp != null) {
+            List<? extends CaseLabelTree> labels = node.getLabels();
+            if (labels != null && !labels.isEmpty()) {
+                if (tokens.token().id() == JavaTokenId.DEFAULT && labels.get(0).getKind() == Kind.DEFAULT_CASE_LABEL) {
+                    accept(DEFAULT);
+                } else {
+                    accept(CASE);
+                    space();
+                    for (Iterator<? extends CaseLabelTree> it = labels.iterator(); it.hasNext();) {
+                        CaseLabelTree label = it.next();
+                        scan(label, p);
+                        if (it.hasNext()) {
+                            spaces(0);
+                            accept(COMMA);
+                            space();
+                        }
+                    }
+                }
+            } else if (!node.getExpressions().isEmpty()) {
+                List<? extends ExpressionTree> exprs = node.getExpressions();
                 accept(CASE);
                 space();
-                scan(exp, p);
+                exprs.forEach(exp -> {
+                    scan(exp, p);
+                });
             } else {
                 accept(DEFAULT);
             }
             List<? extends StatementTree> statements = node.getStatements();
             Tree caseBody = null;
             if(statements != null)
-            accept(COLON);
+                accept(COLON);
             else {
+                space();
                 accept(ARROW);
-                caseBody = TreeShims.getBody(node);
+                caseBody = node.getBody();
                 if (caseBody instanceof StatementTree)
                     statements = Collections.singletonList((StatementTree) caseBody);
             }
@@ -2730,19 +3025,30 @@ public class Reformatter implements ReformatTask {
             return true;
         }
 
+        private void removeWhiteSpace(JavaTokenId forToken) {
+            do {
+                if (tokens.offset() >= endPos) {
+                    break;
+                }
+                if (tokens.token().id() == WHITESPACE) {
+                    String text = tokens.token().text().toString();
+                    String ind = getIndent();
+                    if (!ind.equals(text)) {
+                        addDiff(new Diff(tokens.offset(), tokens.offset() + tokens.token().length(), " "));
+                    }
+                } else if (forToken == null || tokens.token().id() == forToken) {
+                    break;
+                }
+            } while (tokens.moveNext());
+        }
+
         @Override
         public Boolean visitBreak(BreakTree node, Void p) {
             JavaTokenId token = accept(BREAK);
-            ExpressionTree exprTree = TreeShims.getValue(node);
-            if (exprTree != null) {
+            Name label = node.getLabel();
+            if (label != null) {
                 space();
-                scan(exprTree, p);
-            } else {
-                Name label = node.getLabel();
-                if (label != null) {
-                    space();
-                    accept(IDENTIFIER, UNDERSCORE);
-                }
+                accept(IDENTIFIER, UNDERSCORE);
             }
             accept(SEMICOLON);
             return true;
@@ -2831,7 +3137,7 @@ public class Reformatter implements ReformatTask {
             case FLOAT:
                 accept(FLOAT);
                 break;
-            case INT: 
+            case INT:
                 accept(INT);
                 break;
             case LONG:
@@ -3116,14 +3422,17 @@ public class Reformatter implements ReformatTask {
             space();
             accept(INSTANCEOF);
             space();
-            scan(node.getType(), p);
+            Tree pattern = node.getPattern();
+            if (pattern == null)
+                pattern = node.getType();
+            scan(pattern, p);
             return true;
         }
 
         @Override
         public Boolean visitLabeledStatement(LabeledStatementTree node, Void p) {
             if (!ERROR.contentEquals(node.getLabel()))
-                accept(IDENTIFIER, UNDERSCORE);            
+                accept(IDENTIFIER, UNDERSCORE);
             accept(COLON);
             int old = indent;
             if (!cs.absoluteLabelIndent()) {
@@ -3185,6 +3494,7 @@ public class Reformatter implements ReformatTask {
                         spaceWithinParens = cs.spaceWithinWhileParens();
                         break;
                     case SWITCH:
+                    case SWITCH_EXPRESSION:
                         spaceWithinParens = cs.spaceWithinSwitchParens();
                         break;
                     case SYNCHRONIZED:
@@ -3290,6 +3600,21 @@ public class Reformatter implements ReformatTask {
                         if (tokenId.fixedText() != null && tokenId.fixedText().contentEquals(tokens.token().text())) {
                             contains = true;
                             break;
+                        }
+                    }
+                    if (TokenUtilities.textEquals(tokens.token().text(), "sealed") || TokenUtilities.textEquals(tokens.token().text(), "permits")) {
+                        contains = true;
+                    }
+                    if (TokenUtilities.textEquals(tokens.token().text(), "non") && tokens.moveNext()) {
+                        if (TokenUtilities.textEquals(tokens.token().text(), "-") && tokens.moveNext()) {
+                            if (TokenUtilities.textEquals(tokens.token().text(), "sealed")) {// NOI18N
+                                contains = true;
+                            } else {
+                                tokens.movePrevious();
+                                tokens.movePrevious();
+                            }
+                        } else {
+                            tokens.movePrevious();
                         }
                     }
                 }
@@ -3425,7 +3750,7 @@ public class Reformatter implements ReformatTask {
         private void spaces(int count) {
             spaces(count, false);
         }
-        
+
         private boolean spaces(int count, boolean preserveNewline) {
             if (checkWrap != null && col > rightMargin && checkWrap.pos >= lastNewLineOffset) {
                 throw checkWrap;
@@ -3894,7 +4219,7 @@ public class Reformatter implements ReformatTask {
                 lastBlankLinesTokenIndex = -1;
             }
         }
-        
+
         private void appendToDiff(String s) {
             int offset = tokens.offset();
             Diff d = diffs.isEmpty() ? null : diffs.getFirst();
@@ -3902,7 +4227,7 @@ public class Reformatter implements ReformatTask {
                 d.text += s;
             } else {
                 addDiff(new Diff(offset, offset, s));
-            }    
+            }
         }
 
         private void addDiff(Diff diff) {
@@ -4217,7 +4542,7 @@ public class Reformatter implements ReformatTask {
                                         tokens.moveNext();
                                     }
                                     spaces(spacesCntAfterOp);
-                                }                            
+                                }
                                 continuationIndent = isLastIndentContinuation;
                             }
                         } else if (tree.getKind() != Tree.Kind.NEW_ARRAY
@@ -4265,12 +4590,13 @@ public class Reformatter implements ReformatTask {
         }
 
         private boolean wrapStatement(CodeStyle.WrapStyle wrapStyle, CodeStyle.BracesGenerationStyle bracesGenerationStyle, int spacesCnt, boolean preserveNewLine, StatementTree tree) {
-            if (tree.getKind() == Tree.Kind.EMPTY_STATEMENT) {
+            Tree.Kind kind = tree.getKind();
+            if (kind == Tree.Kind.EMPTY_STATEMENT) {
                 scan(tree, null);
                 return true;
             }
-            if (tree.getKind() == Tree.Kind.BLOCK) {
-                if (bracesGenerationStyle == CodeStyle.BracesGenerationStyle.ELIMINATE) {
+            if (kind == Tree.Kind.BLOCK || kind == Tree.Kind.TRY || kind == Tree.Kind.SYNCHRONIZED ) {
+                if (kind == Tree.Kind.BLOCK && bracesGenerationStyle == CodeStyle.BracesGenerationStyle.ELIMINATE) {
                     Iterator<? extends StatementTree> stats = ((BlockTree)tree).getStatements().iterator();
                     if (stats.hasNext()) {
                         StatementTree stat = stats.next();
@@ -4358,7 +4684,7 @@ public class Reformatter implements ReformatTask {
                 } else if (first) {
                     int index = tokens.index();
                     int c = col;
-                    Diff d = diffs.isEmpty() ? null : diffs.getFirst();                    
+                    Diff d = diffs.isEmpty() ? null : diffs.getFirst();
                     spaces(prependSpace ? 1 : 0, true);
                     if (align)
                         alignIndent = col;
@@ -4394,7 +4720,7 @@ public class Reformatter implements ReformatTask {
                 first = false;
             }
         }
-        
+
         private void scanMethodCall(MethodInvocationTree node) {
             List<? extends Tree> targs = node.getTypeArguments();
             if (targs != null && !targs.isEmpty()) {
@@ -4446,14 +4772,14 @@ public class Reformatter implements ReformatTask {
                         lastIndent = oldLastIndent;
                         continuationIndent = continuation;
                     }
-                    spaces(cs.spaceWithinMethodCallParens() ? 1 : 0, true);                    
+                    spaces(cs.spaceWithinMethodCallParens() ? 1 : 0, true);
                 }
                 accept(RPAREN);
             } finally {
                 continuationIndent = old;
             }
         }
-        
+
         private void reformatComment() {
             if (tokens.token().id() != BLOCK_COMMENT && tokens.token().id() != JAVADOC_COMMENT)
                 return;
@@ -4503,6 +4829,7 @@ public class Reformatter implements ReformatTask {
                             } else if (JDOC_LINK_TAG.equalsIgnoreCase(tokenText)
                                     || JDOC_LINKPLAIN_TAG.equalsIgnoreCase(tokenText)
                                     || JDOC_CODE_TAG.equalsIgnoreCase(tokenText)
+                                    || JDOC_SNIPPET_TAG.equalsIgnoreCase(tokenText)
                                     || JDOC_DOCROOT_TAG.equalsIgnoreCase(tokenText)
                                     || JDOC_INHERITDOC_TAG.equalsIgnoreCase(tokenText)
                                     || JDOC_VALUE_TAG.equalsIgnoreCase(tokenText)
@@ -4586,7 +4913,7 @@ public class Reformatter implements ReformatTask {
                         case OTHER_TEXT:
                             lastWSOffset = currWSOffset = -1;
                             if (cseq == null)
-                                cseq = new StringBuilder();                                        
+                                cseq = new StringBuilder();
                             cseq.append(javadocTokens.token().text());
                             int nlNum = 1;
                             int insideTagEndOffset = -1;
@@ -4772,7 +5099,7 @@ public class Reformatter implements ReformatTask {
                             lastNewLinePos = i;
                             align = -1;
                         } else {
-                            lastNewLinePos = currWSPos >= 0 ? currWSPos : i;                            
+                            lastNewLinePos = currWSPos >= 0 ? currWSPos : i;
                         }
                         firstLine = false;
                     }
@@ -4960,7 +5287,7 @@ public class Reformatter implements ReformatTask {
                                             }
                                         } else if (c == '*' || c == '/') {
                                             col++;
-                                            lastNewLinePos = -1;                                            
+                                            lastNewLinePos = -1;
                                             break;
                                         } else {
                                             if (i >= checkOffset && actionType == 6) {
@@ -4982,7 +5309,7 @@ public class Reformatter implements ReformatTask {
                                                     } else {
                                                         pendingDiff = new Diff(offset + lastNewLinePos + 1, currWSPos >= 0 ? offset + currWSPos + 1 : offset + i, indentString + SPACE);
                                                     }
-                                                    
+
                                                 } else {
                                                     if (pendingDiff != null) {
                                                         pendingDiff.end = offset + i;
@@ -4991,7 +5318,7 @@ public class Reformatter implements ReformatTask {
                                                     }
                                                     col = getCol(indentString + SPACE);
                                                 }
-                                            } else { 
+                                            } else {
                                                 if (currWSPos < 0) {
                                                     currWSPos = i;
                                                     col++;
@@ -5005,7 +5332,7 @@ public class Reformatter implements ReformatTask {
                                                             addDiff(pendingDiff);
                                                         }
                                                     }
-                                                    pendingDiff = new Diff(offset + currWSPos, offset + i, s);                                                    
+                                                    pendingDiff = new Diff(offset + currWSPos, offset + i, s);
                                                 }
                                             }
                                             lastNewLinePos = -1;
@@ -5031,7 +5358,7 @@ public class Reformatter implements ReformatTask {
                                         } else {
                                             pendingDiff = new Diff(offset + i, offset + i, s);
                                         }
-                                        col += num;                                        
+                                        col += num;
                                     }
                                     lastNewLinePos = -1;
                                 }
@@ -5086,13 +5413,13 @@ public class Reformatter implements ReformatTask {
                 }
             }
         }
-        
+
         private void addMark(Pair<Integer, Integer> mark, List<Pair<Integer, Integer>> marks, int state) {
             if (state != 6) {
                 marks.add(mark);
             }
         }
-        
+
         private int indent() {
             return continuationIndent ? indent + continuationIndentSize : indent;
         }
@@ -5102,7 +5429,7 @@ public class Reformatter implements ReformatTask {
                 return EMPTY;
             if (count == 1)
                 return SPACE;
-            StringBuilder sb = new StringBuilder(); 
+            StringBuilder sb = new StringBuilder();
             while (count-- > 0)
                 sb.append(' '); //NOI18N
             return sb.toString();
@@ -5113,14 +5440,14 @@ public class Reformatter implements ReformatTask {
                 return EMPTY;
             if (count == 1)
                 return NEWLINE;
-            StringBuilder sb = new StringBuilder(); 
+            StringBuilder sb = new StringBuilder();
             while (count-- > 0)
                 sb.append('\n'); //NOI18N
             return sb.toString();
         }
 
         private String getIndent() {
-            StringBuilder sb = new StringBuilder(); 
+            StringBuilder sb = new StringBuilder();
             int col = 0;
             if (!expandTabToSpaces) {
                 while (col + tabSize <= indent()) {
@@ -5146,6 +5473,9 @@ public class Reformatter implements ReformatTask {
                 int offset = (int)sp.getStartPosition(path.getCompilationUnit(), path.getLeaf());
                 if (offset < 0)
                     return indent;
+                if (offset == 0) {
+                    return 0;
+                }
                 tokens.move(offset);
                 String text = null;
                 while (tokens.movePrevious()) {
@@ -5213,7 +5543,7 @@ public class Reformatter implements ReformatTask {
             }
             return col;
         }
-        
+
         private boolean insideBlock(TreePath path) {
             while (path != null) {
                 if (Tree.Kind.BLOCK == path.getLeaf().getKind())
@@ -5223,12 +5553,12 @@ public class Reformatter implements ReformatTask {
                 path = path.getParentPath();
             }
             return false;
-        }        
+        }
 
         private boolean isEnumerator(VariableTree tree) {
             return (((JCModifiers)tree.getModifiers()).flags & Flags.ENUM) != 0;
         }
-        
+
         private boolean isSynthetic(CompilationUnitTree cut, Tree leaf) {
             JCTree tree = (JCTree) leaf;
             if (tree.pos == (-1))
@@ -5252,31 +5582,31 @@ public class Reformatter implements ReformatTask {
             }
             return false;
         }
-        
+
         private static class WrapAbort extends Error {
-            
+
             private int pos;
 
             public WrapAbort(int pos) {
                 this.pos = pos;
             }
-            
+
             @Override
             public synchronized Throwable fillInStackTrace() {
                 return null;
             }
         }
-    
+
         private static class FakeBlock extends JCBlock {
-            
+
             private StatementTree stat;
-            
+
             private FakeBlock(StatementTree stat) {
                 super(0L, com.sun.tools.javac.util.List.of((JCStatement)stat));
                 this.stat = stat;
             }
         }
-        
+
         private static class DanglingElseChecker extends SimpleTreeVisitor<Void, Void> {
 
             private boolean foundDanglingElse;
@@ -5355,7 +5685,7 @@ public class Reformatter implements ReformatTask {
         public int getStartOffset() {
             return start;
         }
-        
+
         public int getEndOffset() {
             return end;
         }
@@ -5370,4 +5700,3 @@ public class Reformatter implements ReformatTask {
         }
     }
 }
-

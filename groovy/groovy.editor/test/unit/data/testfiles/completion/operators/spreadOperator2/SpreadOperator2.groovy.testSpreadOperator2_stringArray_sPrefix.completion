@@ -3,6 +3,7 @@ Code completion result for source line:
 (QueryType=COMPLETION, prefixSearch=true, caseSensitive=true)
 ------------------------------------
 METHOD     setMetaClass(MetaClass)                    void
+METHOD     sha256()                                   String
 METHOD     size()                                     int
 METHOD     sleep(long)                                void
 METHOD     sleep(long, Closure)                       void
@@ -17,7 +18,10 @@ METHOD     sprintf(String, Object)                    String
 METHOD     startsWith(String)              [PUBLIC]   boolean
 METHOD     startsWith(String, int)         [PUBLIC]   boolean
 METHOD     startsWithAny(CharSequence[])              boolean
+METHOD     startsWithIgnoreCase(CharSeque             boolean
+METHOD     stream()                                   Stream
 METHOD     stripIndent()                              String
+METHOD     stripIndent(boolean)                       String
 METHOD     stripIndent(int)                           String
 METHOD     stripMargin()                              String
 METHOD     stripMargin(CharSequence)                  String

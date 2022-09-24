@@ -70,7 +70,7 @@ public final class
     private static final IOTable taskIOs = new IOTable(base, systemIO);
 
     /* table of window:threadgrp */
-    static private WindowTable wtable = new WindowTable();
+    private static WindowTable wtable = new WindowTable();
 
     /** list of ExecutionListeners */
     private HashSet<ExecutionListener> executionListeners = new HashSet<ExecutionListener>();
@@ -137,7 +137,7 @@ public final class
         ExecutorTaskImpl task = new ExecutorTaskImpl();
         synchronized (task.lock) {
             try {
-                new RunClassThread(g, name, number++, inout, this, task, run);
+                new RunClassThread(g, name, number++, inout, this, task, Lookup.getDefault(), run);
                 task.lock.wait();
             } catch (InterruptedException e) { // #171795
                 inout.closeInputOutput();

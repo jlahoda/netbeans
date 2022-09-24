@@ -94,6 +94,7 @@ public final class PrintSettings extends ContextSystemOption {
     }
 
     /** @deprecated Use {@link #getPageFormat(PrinterJob)} instead. */
+    @Deprecated
     public PageFormat getPageFormat() {
         return getPageFormat(PrinterJob.getPrinterJob());
     }
@@ -207,7 +208,7 @@ public final class PrintSettings extends ContextSystemOption {
     */
     public void setLineAscentCorrection(float correction) {
         PrintPreferences.setLineAscentCorrection(correction);
-        firePropertyChange(PROP_LINE_ASCENT_CORRECTION, null, new Float(correction));
+        firePropertyChange(PROP_LINE_ASCENT_CORRECTION, null, correction);
     }
 
     public void writeExternal(ObjectOutput obtos) throws IOException {
@@ -270,7 +271,7 @@ public final class PrintSettings extends ContextSystemOption {
             PageFormat npf = pj.pageDialog(pf);
 
             //setValue(npf);
-            ((PrintSettings)PrintSettings.findObject(PrintSettings.class)).setPageFormat((PageFormat) npf.clone());
+            (PrintSettings.findObject(PrintSettings.class)).setPageFormat((PageFormat) npf.clone());
             pj.cancel();
 
             return null;

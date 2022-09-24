@@ -20,27 +20,25 @@
 package org.openide.awt;
 
 import java.awt.Color;
+import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.Rectangle;
-import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.awt.font.LineMetrics;
 import java.awt.geom.Area;
 import java.awt.geom.Rectangle2D;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Set;
-import java.util.Stack;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.Icon;
 import javax.swing.JLabel;
 import javax.swing.ListCellRenderer;
-import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.tree.TreeCellRenderer;
@@ -192,7 +190,7 @@ public final class HtmlRenderer {
 
     /** Stack object used during HTML rendering to hold previous colors in
      * the case of nested color entries. */
-    private static Stack<Color> colorStack = new Stack<Color>();
+    private static LinkedList<Color> colorStack = new LinkedList<Color>();
 
     /**
      * Constant used by {@link #renderString renderString}, {@link #renderPlainString renderPlainString},
@@ -266,7 +264,7 @@ public final class HtmlRenderer {
      * @return A cell renderer that can render HTML.
      */
     public static final Renderer createRenderer() {
-        return new HtmlRendererImpl();
+        return new HtmlRendererImpl(true);
     }
 
     /**
@@ -288,7 +286,7 @@ public final class HtmlRenderer {
      * @return a label which can render a subset of HTML very quickly
      */
     public static final JLabel createLabel() {
-        return new HtmlRendererImpl();
+        return new HtmlRendererImpl(false);
     }
 
     /**
@@ -337,7 +335,7 @@ public final class HtmlRenderer {
             // #54257 - on macosx + chinese/japanese fonts, the getStringBounds() method returns bad value
             wid = fm.stringWidth(s);
         } else {
-            wid = (int)fm.getStringBounds(s, g).getWidth();
+            wid = (int) Math.ceil(fm.getStringBounds(s, g).getWidth());
         }
 
         if (paint) {
@@ -540,13 +538,11 @@ public final class HtmlRenderer {
         }
 
         //Thread safety - avoid allocating memory for the common case
-        Stack<Color> _colorStack = SwingUtilities.isEventDispatchThread() ? HtmlRenderer.colorStack : new Stack<Color>();
+        LinkedList<Color> _colorStack = EventQueue.isDispatchThread() ? HtmlRenderer.colorStack : new LinkedList<Color>();
 
         g.setColor(defaultColor);
         g.setFont(f);
-        if (HtmlLabelUI.antialias && g instanceof Graphics2D) {
-            ((Graphics2D) g).setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        }
+        GraphicsUtils.configureDefaultRenderingHints(g);
 
         char[] chars = s.toCharArray();
         int origX = x;

@@ -30,17 +30,17 @@ import org.openide.filesystems.FileObject;
 import org.xml.sax.*;
 
 
-/** Class that collects XML parsing utility methods for web applications. It is 
- * implementation private for this module, however it is also intended to be used by 
- * the DDLoaders modules, which requires tighter coupling with ddapi and has an 
+/** Class that collects XML parsing utility methods for web applications. It is
+ * implementation private for this module, however it is also intended to be used by
+ * the DDLoaders modules, which requires tighter coupling with ddapi and has an
  * implementation dependency on it.
  *
  * @author Petr Jiricka
  */
 public class WebParseUtils {
-  
+
     private static final Logger LOGGER = Logger.getLogger(WebParseUtils.class.getName());
-    
+
     /** Parsing just for detecting the version  SAX parser used
      */
     public static String getVersion(java.io.InputStream is) throws java.io.IOException, SAXException {
@@ -50,20 +50,17 @@ public class WebParseUtils {
     /** Parsing just for detecting the version  SAX parser used
      */
     public static String getVersion(FileObject fo) throws java.io.IOException, SAXException {
-        InputStream inputStream = fo.getInputStream();
-        try {
+        try (InputStream inputStream = fo.getInputStream()) {
             return ParseUtils.getVersion(inputStream, new VersionHandler(), DDResolver.getInstance());
-        } finally {
-            inputStream.close();
         }
     }
-    
+
     /** Parsing just for detecting the version  SAX parser used
     */
     public static String getVersion(InputSource is) throws IOException, SAXException {
         return ParseUtils.getVersion(is, new VersionHandler(), DDResolver.getInstance());
     }
-    
+
     private static class VersionHandler extends org.xml.sax.helpers.DefaultHandler {
         @Override
         public void startElement(String uri, String localName, String rawName, Attributes atts) throws SAXException {
@@ -77,7 +74,7 @@ public class WebParseUtils {
             }
         }
     }
-    
+
     //XXX: note that this resolver does not handle entities from included schemas
     // correctly. See #116379.
     private static class DDResolver implements EntityResolver {
@@ -91,7 +88,7 @@ public class WebParseUtils {
         public InputSource resolveEntity(String publicId, String systemId) {
             // additional logging for #127276
             if (LOGGER.isLoggable(Level.FINE)) {
-                LOGGER.log(Level.FINE, "Resolving entity [publicId: '" + publicId + "', systemId: '" + systemId + "']");
+                LOGGER.log(Level.FINE, "Resolving entity [publicId: ''{0}'', systemId: ''{1}'']", new Object[]{publicId, systemId});
             }
             String resource=null;
             // return a proper input source
@@ -107,14 +104,20 @@ public class WebParseUtils {
                 resource="/org/netbeans/modules/j2ee/dd/impl/resources/web-app_3_0.xsd"; //NOI18N
             } else if (systemId!=null && systemId.endsWith("web-app_3_1.xsd")) { //NOI18N
                 resource="/org/netbeans/modules/j2ee/dd/impl/resources/web-app_3_1.xsd"; //NOI18N
+            } else if (systemId!=null && systemId.endsWith("web-app_4_0.xsd")) { //NOI18N
+                resource="/org/netbeans/modules/j2ee/dd/impl/resources/web-app_4_0.xsd"; //NOI18N
             } else if (systemId!=null && systemId.endsWith("web-fragment_3_0.xsd")) { //NOI18N
                 resource="/org/netbeans/modules/j2ee/dd/impl/resources/web-fragment_3_0.xsd"; //NOI18N
             } else if (systemId!=null && systemId.endsWith("web-fragment_3_1.xsd")) { //NOI18N
                 resource="/org/netbeans/modules/j2ee/dd/impl/resources/web-fragment_3_1.xsd"; //NOI18N
+            } else if (systemId!=null && systemId.endsWith("web-fragment_4_0.xsd")) { //NOI18N
+                resource="/org/netbeans/modules/j2ee/dd/impl/resources/web-fragment_4_0.xsd"; //NOI18N
+            } else if (systemId!=null && systemId.endsWith("web-fragment_5_0.xsd")) { //NOI18N
+                resource="/org/netbeans/modules/j2ee/dd/impl/resources/web-fragment_5_0.xsd"; //NOI18N
             }
             // additional logging for #127276
             if (LOGGER.isLoggable(Level.FINE)) {
-                LOGGER.log(Level.FINE, "Got resource: " + resource);
+                LOGGER.log(Level.FINE, "Got resource: {0}", resource);
             }
             if (resource==null) {
                 return null;
@@ -123,22 +126,19 @@ public class WebParseUtils {
             return new InputSource(url.toString());
         }
     }
-    
+
     public static SAXParseException parse(FileObject fo)
     throws org.xml.sax.SAXException, java.io.IOException {
-        InputStream inputStream = fo.getInputStream();
-        try {
+        try (InputStream inputStream = fo.getInputStream()) {
             return parse(new InputSource(inputStream));
-        } finally {
-            inputStream.close();
         }
     }
-    
-    public static SAXParseException parse (InputSource is) 
+
+    public static SAXParseException parse (InputSource is)
             throws org.xml.sax.SAXException, java.io.IOException {
         return ParseUtils.parseDD(is, DDResolver.getInstance());
     }
-   
+
     /**
      * Parses the given <code>inputSource</code> using the given <code>resolver</code>.
      * @param inputSource the source to parse.
@@ -146,9 +146,9 @@ public class WebParseUtils {
      * @return the SAX exception encountered during parsing or null if there was
      * no exception.
      */
-    public static SAXParseException parse (InputSource is, EntityResolver resolver) 
+    public static SAXParseException parse (InputSource is, EntityResolver resolver)
             throws org.xml.sax.SAXException, java.io.IOException {
         return ParseUtils.parseDD(is, resolver);
     }
-   
+
 }

@@ -82,15 +82,6 @@
                     <build-prerequisite/>
                     <compile-dependency/>
                     <run-dependency>
-                        <specification-version>8.0</specification-version>
-                    </run-dependency>
-                </dependency>
-                <dependency>
-                    <code-name-base>org.netbeans.libs.javacimpl</code-name-base>
-                    <build-prerequisite/>
-                    <compile-dependency/>
-                    <run-dependency>
-                        <release-version>1</release-version>
                         <implementation-version/>
                     </run-dependency>
                 </dependency>
@@ -518,8 +509,8 @@
                 <package>org.netbeans.spi.java.hints.support</package>
             </public-packages>
             <class-path-extension>
-                <runtime-relative-path>ext/byte-buddy-1.7.9.jar</runtime-relative-path>
-                <binary-origin>external/byte-buddy-1.7.9.jar</binary-origin>
+                <runtime-relative-path>ext/byte-buddy-1.10.6.jar</runtime-relative-path>
+                <binary-origin>external/byte-buddy-1.10.6.jar</binary-origin>
             </class-path-extension>
         </data>
     </configuration>

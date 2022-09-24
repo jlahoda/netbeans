@@ -84,7 +84,7 @@ public class FolderObjTest extends NbTestCase {
             Level.FINEST : Level.OFF;
     }
 
-    static abstract class IntrusiveLogHandler extends Handler {
+    abstract static class IntrusiveLogHandler extends Handler {
         private String message;
         IntrusiveLogHandler(final String message) {
             this.message = message;
@@ -96,7 +96,7 @@ public class FolderObjTest extends NbTestCase {
             }
         }
 
-        abstract protected void processLogRecord(final LogRecord record);
+        protected abstract void processLogRecord(final LogRecord record);
         public void flush() {}
         public void close() { flush(); }
     }
@@ -1779,6 +1779,14 @@ public class FolderObjTest extends NbTestCase {
             t1.join();
             t2.join();
         }
+    }
+
+    public void testVirtualFOs() throws IOException {
+        final FileObject wd = FileBasedFileSystem.getFileObject(getWorkDir());
+        FileObject nonExisting = wd.getFileObject("non-existing-folder/non-existing-folder/non-existing-child.xyz", false);
+        assertFalse(nonExisting.isValid());
+        assertFalse(nonExisting.getParent().isValid());
+        assertFalse(nonExisting.getParent().getParent().isValid());
     }
 
     private class EventsEvaluator extends FileChangeAdapter {

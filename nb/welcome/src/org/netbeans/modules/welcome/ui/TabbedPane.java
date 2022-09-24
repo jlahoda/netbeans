@@ -153,7 +153,7 @@ class TabbedPane extends JPanel implements Constants {// , Scrollable {
         return d;
     }
 
-    private final static Color colBackground = Utils.getTopBarColor();
+    private static final Color colBackground = Utils.getTopBarColor();
 
     private static final Image imgSelected;
     private static final Image imgRollover;
@@ -186,7 +186,7 @@ class TabbedPane extends JPanel implements Constants {// , Scrollable {
             this.tabIndex = tabIndex;
             setOpaque( true );
             lblTitle.setFont( TAB_FONT );
-            lblTitle.setForeground( Color.white );
+            lblTitle.setForeground( Utils.getTopBarForeground() );
             lblTitle.setHorizontalAlignment( JLabel.CENTER );
             setFocusable(true);
             setBackground( colBackground );

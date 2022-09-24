@@ -25,8 +25,8 @@ import java.beans.PropertyChangeSupport;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -69,7 +69,6 @@ import org.netbeans.api.project.ui.OpenProjects;
 import org.netbeans.spi.project.ui.LogicalViewProvider;
 import org.openide.filesystems.FileUtil;
 import org.openide.loaders.DataFolder;
-import org.openide.modules.SpecificationVersion;
 import org.openide.nodes.FilterNode;
 import org.openide.util.NbBundle;
 import org.openide.util.RequestProcessor.Task;
@@ -87,15 +86,15 @@ implements ProjectFactory, PropertyChangeListener, Runnable {
     public FeatureProjectFactory() {
         OpenProjects.getDefault().addPropertyChangeListener(this);
     }
-    
+
     static Icon loadIcon() {
         return ImageUtilities.loadImageIcon(
             "org/netbeans/modules/ide/ergonomics/fod/project.png" // NOI18N
             , false
         );
     }
-    
-    final static class Data {
+
+    static final class Data {
         private final boolean deepCheck;
         private final FileObject dir;
         private Map<String,String> data;
@@ -140,7 +139,43 @@ implements ProjectFactory, PropertyChangeListener, Runnable {
         }
 
         final boolean hasFile(String relative) {
-            return dir.getFileObject(relative) != null;
+            FileObject d = dir;
+            int pos = 0;
+
+            while (relative.startsWith("../", pos) && d != null) {
+                d = d.getParent();
+                pos += 3;
+            }
+
+            if (d == null) {
+                return false;
+            }
+
+            relative = relative.substring(pos);
+
+            if (relative.contains("*")) {
+                for (String segment : relative.split("/")) {
+                    FOUND: if (segment.contains("*")) {
+                        assert segment.endsWith("*");
+                        String prefix = segment.substring(0, segment.length() - 1);
+                        for (FileObject ch : d.getChildren()) {
+                            if (ch.getNameExt().startsWith(prefix)) {
+                                d = ch;
+                                break FOUND;
+                            }
+                        }
+                        return false;
+                    } else {
+                        d = d.getFileObject(segment);
+                    }
+                    if (d == null) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            return d.getFileObject(relative) != null;
         }
 
         final boolean isDeepCheck() {
@@ -170,7 +205,7 @@ implements ProjectFactory, PropertyChangeListener, Runnable {
                 is = prj.getInputStream();
                 len = is.read(arr);
                 if (len >= 0) {
-                    content = new String(arr, 0, len, "UTF-8");
+                    content = new String(arr, 0, len, StandardCharsets.UTF_8);
                 }
             } catch (IOException ex) {
                 LOG.log(Level.FINEST, "exception while reading " + prj, ex); // NOI18N
@@ -215,7 +250,7 @@ implements ProjectFactory, PropertyChangeListener, Runnable {
 
     public Project loadProject(FileObject projectDirectory, ProjectState state) throws IOException {
         Data d = new Data(projectDirectory, true);
-        
+
         FeatureInfo lead = null;
         List<FeatureInfo> additional = new ArrayList<FeatureInfo>();
         int notEnabled = 0;
@@ -313,7 +348,7 @@ implements ProjectFactory, PropertyChangeListener, Runnable {
         }
     }
 
-    private static final class FeatureNonProject 
+    private static final class FeatureNonProject
     implements Project, ChangeListener {
         private final FeatureDelegate delegate;
         private final FeatureInfo info;
@@ -335,7 +370,7 @@ implements ProjectFactory, PropertyChangeListener, Runnable {
             this.weakL = WeakListeners.change(this, FeatureManager.getInstance());
             FeatureManager.getInstance().addChangeListener(weakL);
         }
-        
+
         public FileObject getProjectDirectory() {
             return delegate.dir;
         }
@@ -383,7 +418,7 @@ implements ProjectFactory, PropertyChangeListener, Runnable {
                 }
             }
         }
-        
+
         private final class FeatureOpenHook extends ProjectOpenedHook
         implements Runnable, ProgressMonitor {
             /**
@@ -391,7 +426,7 @@ implements ProjectFactory, PropertyChangeListener, Runnable {
              * should be cleared after that.
              */
             private FindComponentModules finder;
-            
+
             @Override
             protected void projectOpened() {
                 if (state == null) {
@@ -447,8 +482,8 @@ implements ProjectFactory, PropertyChangeListener, Runnable {
                                 sb.append(s.displayName());
                             }
                         }
-                        error = NbBundle.getMessage(FeatureProjectFactory.class, 
-                                "MSG_BrokenAction_FeatureIncomplete", 
+                        error = NbBundle.getMessage(FeatureProjectFactory.class,
+                                "MSG_BrokenAction_FeatureIncomplete",
                                 findModules.getIncompleteFeatures().iterator().next(),
                                 sb.toString());
                         return;
@@ -489,7 +524,7 @@ implements ProjectFactory, PropertyChangeListener, Runnable {
             }
         } // end of FeatureOpenHook
     } // end of FeatureNonProject
-    private static final class FeatureDelegate 
+    private static final class FeatureDelegate
     implements Lookup.Provider, ProjectInformation, LogicalViewProvider {
         private final FileObject dir;
         private final PropertyChangeSupport support;

@@ -86,6 +86,8 @@ import org.openide.util.NbBundle;
 import org.openide.xml.XMLUtil;
 import org.netbeans.swing.plaf.LFCustoms;
 
+import static javax.lang.model.type.TypeKind.VOID;
+
 /**
  *
  * @author Dusan Balek
@@ -119,6 +121,8 @@ public abstract class JavaCompletionItem implements CompletionItem {
                 return new EnumItem(info, elem, type, 0, substitutionOffset, referencesCount, isDeprecated, insideNew, addSimpleName, smartType, autoImportEnclosingType, whiteList);
             case ANNOTATION_TYPE:
                 return new AnnotationTypeItem(info, elem, type, 0, substitutionOffset, referencesCount, isDeprecated, insideNew, addSimpleName, smartType, autoImportEnclosingType, whiteList);
+            case RECORD:
+                return new RecordItem(info, elem, type, 0, substitutionOffset, referencesCount, isDeprecated, insideNew, addSimpleName, smartType, autoImportEnclosingType, whiteList);
             default:
                 throw new IllegalArgumentException("kind=" + elem.getKind());
         }
@@ -156,7 +160,11 @@ public abstract class JavaCompletionItem implements CompletionItem {
     }
 
     public static JavaCompletionItem createVariableItem(CompilationInfo info, VariableElement elem, TypeMirror type, TypeMirror castType, int substitutionOffset, ReferencesCount referencesCount, boolean isInherited, boolean isDeprecated, boolean smartType, int assignToVarOffset, WhiteListQuery.WhiteList whiteList) {
-        switch (elem.getKind()) {
+        ElementKind ek = elem.getKind();
+        if ("BINDING_VARIABLE".equals(ek.name())) {
+            ek = ElementKind.LOCAL_VARIABLE;
+        }
+        switch (ek) {
             case LOCAL_VARIABLE:
             case RESOURCE_VARIABLE:
             case PARAMETER:
@@ -250,8 +258,8 @@ public abstract class JavaCompletionItem implements CompletionItem {
         return new InitializeAllConstructorItem(info, isDefault, fields, superConstructor, parent, substitutionOffset);
     }
 
-    public static JavaCompletionItem createLambdaItem(CompilationInfo info, TypeElement elem, DeclaredType type, int substitutionOffset, boolean addSemicolon) {
-        return new LambdaCompletionItem(info, elem, type, substitutionOffset, addSemicolon);
+    public static JavaCompletionItem createLambdaItem(CompilationInfo info, TypeElement elem, DeclaredType type, int substitutionOffset, boolean expression, boolean addSemicolon) {
+        return new LambdaCompletionItem(info, elem, type, substitutionOffset, expression, addSemicolon);
     }
 
     private static CompletionItem createExcludeItem(CharSequence name) {
@@ -598,7 +606,7 @@ public abstract class JavaCompletionItem implements CompletionItem {
         return null;
     }
 
-    static abstract class WhiteListJavaCompletionItem<T extends Element> extends JavaCompletionItem {
+    abstract static class WhiteListJavaCompletionItem<T extends Element> extends JavaCompletionItem {
 
         private static final String WARNING = "org/netbeans/modules/java/editor/resources/warning_badge.gif";   //NOI18N
         private static ImageIcon warningIcon;
@@ -987,6 +995,7 @@ public abstract class JavaCompletionItem implements CompletionItem {
             return simpleName;
         }
 
+        @Override
         public List<CompletionItem> getSubItems() {
             return subItems;
         }
@@ -1309,7 +1318,25 @@ public abstract class JavaCompletionItem implements CompletionItem {
             return icon;
         }
     }
+    
+    static class RecordItem extends ClassItem {
 
+        private static final String RECORD = "org/netbeans/modules/editor/resources/completion/record.png"; // NOI18N
+        private static ImageIcon icon;
+
+        private RecordItem(CompilationInfo info, TypeElement elem, DeclaredType type, int dim, int substitutionOffset, ReferencesCount referencesCount, boolean isDeprecated, boolean insideNew, boolean addSimpleName, boolean smartType, boolean autoImport, WhiteListQuery.WhiteList whiteList) {
+            super(info, elem, type, dim, substitutionOffset, referencesCount, isDeprecated, insideNew, false, addSimpleName, smartType, autoImport, whiteList);
+        }
+
+        @Override
+        protected ImageIcon getBaseIcon() {
+            if (icon == null) {
+                icon = ImageUtilities.loadImageIcon(RECORD, false);
+            }
+            return icon;
+        }
+    }
+    
     static class AnnotationTypeItem extends ClassItem {
 
         private static final String ANNOTATION = "org/netbeans/modules/editor/resources/completion/annotation_type.png"; // NOI18N
@@ -1493,19 +1520,19 @@ public abstract class JavaCompletionItem implements CompletionItem {
             this.assignToVarText = assignToVarOffset < 0 ? null : createAssignToVarText(info, type, this.simpleName);
             if (castType != null) {
                 try {
+                    TreePath tp = info.getTreeUtilities().pathFor(substitutionOffset);
                     if (this.startOffset < 0) {
-                        TreePath tp = info.getTreeUtilities().pathFor(substitutionOffset);
                         if (tp != null && tp.getLeaf().getKind() == Tree.Kind.MEMBER_SELECT) {
                             this.startOffset = (int)info.getTrees().getSourcePositions().getStartPosition(tp.getCompilationUnit(), tp.getLeaf());
                         }
                     }
-                    this.castText = "(" + Utilities.getTypeName(info, castType, false) + (CodeStyle.getDefault(info.getDocument()).spaceAfterTypeCast() ? ") " : ")"); //NOI18N
+                    this.castText = "(" + AutoImport.resolveImport(info, tp, castType) + (CodeStyle.getDefault(info.getDocument()).spaceAfterTypeCast() ? ") " : ")"); //NOI18N
                     this.castEndOffset = findCastEndPosition(info.getTokenHierarchy().tokenSequence(JavaTokenId.language()), startOffset, substitutionOffset);
                 } catch (IOException ex) {
                 }
             } else {
                 this.castEndOffset = -1;
-            }           
+            }
         }
 
         @Override
@@ -1793,19 +1820,19 @@ public abstract class JavaCompletionItem implements CompletionItem {
             this.assignToVarText = this.startOffset < 0 ? null : createAssignToVarText(info, type.getReturnType(), this.simpleName);
             if (castType != null) {
                 try {
+                    TreePath tp = info.getTreeUtilities().pathFor(substitutionOffset);
                     if (this.startOffset < 0) {
-                        TreePath tp = info.getTreeUtilities().pathFor(substitutionOffset);
                         if (tp != null && tp.getLeaf().getKind() == Tree.Kind.MEMBER_SELECT) {
                             this.startOffset = (int)info.getTrees().getSourcePositions().getStartPosition(tp.getCompilationUnit(), tp.getLeaf());
                         }
                     }
-                    this.castText = "(" + Utilities.getTypeName(info, castType, false) + (CodeStyle.getDefault(info.getDocument()).spaceAfterTypeCast() ? ") " : ")"); //NOI18N
+                    this.castText = "(" + AutoImport.resolveImport(info, tp, castType) + (CodeStyle.getDefault(info.getDocument()).spaceAfterTypeCast() ? ") " : ")"); //NOI18N
                     this.castEndOffset = findCastEndPosition(info.getTokenHierarchy().tokenSequence(JavaTokenId.language()), startOffset, substitutionOffset);
                 } catch (IOException ex) {
                 }
             } else {
                 this.castEndOffset = -1;
-            }           
+            }
         }
 
         @Override
@@ -3122,9 +3149,6 @@ public abstract class JavaCompletionItem implements CompletionItem {
 
         private AttributeValueItem(CompilationInfo info, String value, String documentation, TypeElement element, int substitutionOffset, ReferencesCount referencesCount, WhiteListQuery.WhiteList whiteList) {
             super(substitutionOffset, element != null ? ElementHandle.create(element) : null, whiteList);
-            if (value.charAt(0) == '\"' && value.charAt(value.length() - 1) != '\"') { //NOI18N
-                value = value + '\"'; //NOI18N
-            }
             this.value = value;
             this.documentation = documentation;
             if (element != null) {
@@ -3209,7 +3233,7 @@ public abstract class JavaCompletionItem implements CompletionItem {
                 } else {
                     StringBuilder sb = new StringBuilder();
                     sb.append(ATTRIBUTE_VALUE_COLOR);
-                    sb.append(value);
+                    sb.append(escape(getLastLine()));
                     sb.append(COLOR_END);
                     leftText = sb.toString();
                 }
@@ -3239,6 +3263,12 @@ public abstract class JavaCompletionItem implements CompletionItem {
                 sb.delete(sb.length() - 6, sb.length());
             }
             return super.substituteText(c, offset, length, sb, toAdd);
+        }
+
+        private String getLastLine() {
+            String[] lines = value.split("\n");
+            String last = lines.length > 0 ? lines[lines.length - 1] : value;
+            return last.trim();
         }
 
         @Override
@@ -4120,13 +4150,14 @@ public abstract class JavaCompletionItem implements CompletionItem {
 
         private ElementHandle<ExecutableElement> handle;
         private ArrayList<ParamDesc> params;
-        private boolean addSemicolon;
-        private String typeName;
+        private final boolean expression;
+        private final boolean addSemicolon;
+        private final String typeName;
         private String sortText;
         private String leftText;
         private String rightText;
         
-        public LambdaCompletionItem(CompilationInfo info, TypeElement elem, DeclaredType type, int substitutionOffset, boolean addSemicolon) {
+        public LambdaCompletionItem(CompilationInfo info, TypeElement elem, DeclaredType type, int substitutionOffset, boolean expression, boolean addSemicolon) {
             super(substitutionOffset);
             ExecutableElement desc = info.getElementUtilities().getDescriptorElement(elem);
             this.handle = ElementHandle.create(desc);
@@ -4144,11 +4175,12 @@ public abstract class JavaCompletionItem implements CompletionItem {
             TypeMirror retType = descType.getReturnType();
             this.addSemicolon = addSemicolon && retType.getKind() == TypeKind.VOID;
             this.typeName = Utilities.getTypeName(info, retType, false).toString();
+            this.expression = expression;
         }
 
         @Override
         public int getSortPriority() {
-            return 50 - SMART_TYPE;
+            return 50 - SMART_TYPE - (expression ? 1 : 0);
         }
 
         @Override
@@ -4188,7 +4220,11 @@ public abstract class JavaCompletionItem implements CompletionItem {
                         lText.append(", "); //NOI18N
                     }
                 }
-                lText.append(") -> {...}"); //NOI18N
+                if (expression) {
+                    lText.append(") -> expr."); //NOI18N
+                } else {
+                    lText.append(") -> {...}"); //NOI18N
+                }
                 return lText.toString();
             }
             return leftText;
@@ -4222,8 +4258,8 @@ public abstract class JavaCompletionItem implements CompletionItem {
             boolean spaceAroundLambdaArrow = CodeStyle.getDefault(c.getDocument()).spaceAroundLambdaArrow();
             sb.append(spaceAroundLambdaArrow ? " ->" : "->"); //NOI18N
             sb.append(getIndent(c, spaceAroundLambdaArrow, false));                        
-            sb.append("{\n"); //NOI18N
-            sb.append(getIndent(c));
+            sb.append("{"); //NOI18N
+//            sb.append(getIndent(c));
             sb.append(addSemicolon ? "};" : "}"); //NOI18N
             return sb;
         }
@@ -4260,10 +4296,15 @@ public abstract class JavaCompletionItem implements CompletionItem {
                                     final int embeddedOffset = copy.getSnapshot().getEmbeddedOffset(off);
                                     TreePath path = copy.getTreeUtilities().pathFor(embeddedOffset);
                                     while (method != null && path.getLeaf() != path.getCompilationUnit()) {
-                                        Tree tree = path.getLeaf();
-                                        if (tree.getKind() == Tree.Kind.LAMBDA_EXPRESSION) {
-                                            BlockTree body = GeneratorUtilities.get(copy).createDefaultLambdaBody((LambdaExpressionTree)tree, method);
-                                            copy.rewrite(((LambdaExpressionTree)tree).getBody(), body);
+                                        if (path.getLeaf().getKind() == Tree.Kind.LAMBDA_EXPRESSION) {
+                                            LambdaExpressionTree tree = (LambdaExpressionTree) path.getLeaf();
+                                            Tree newBody;
+                                            if (expression && method.getReturnType().getKind() != VOID) {
+                                                newBody = GeneratorUtilities.get(copy).createDefaultLambdaExpression(tree, method);
+                                            } else {
+                                                newBody = GeneratorUtilities.get(copy).createDefaultLambdaBody(tree, method);
+                                            }
+                                            copy.rewrite(tree.getBody(), newBody);
                                             break;
                                         }
                                         path = path.getParentPath();
@@ -4284,8 +4325,26 @@ public abstract class JavaCompletionItem implements CompletionItem {
                                     sb.append(", "); //NOI18N
                                 }
                             }
-                            c.select(startPos.getOffset() + toAddText.indexOf('(') + 1, endPos.getOffset());
-                            sb.append(c.getSelectedText());
+                        }
+                        c.select(startPos.getOffset() + toAddText.indexOf('(') + 1, endPos.getOffset());
+                        String selected = c.getSelectedText();
+
+                        if (expression && selected.indexOf('{') == -1) {
+                            int n = selected.indexOf('>') + 1;
+                            sb.append(selected.substring(0, n));
+                            sb.append("${");
+                            sb.append(selected.substring(n));
+                            sb.append("}");
+                        } else {
+                            if (selected.contains("return ")) {
+                                selected = selected.replace("return ", "return ${")
+                                                   .replace(";", "};");
+                            }
+                            if (params.isEmpty()) {
+                                c.setCaretPosition(startPos.getOffset() + toAddText.indexOf('{') + 1); // between {}
+                            } else {
+                                sb.append(selected);
+                            }
                         }
                     }
                 }
@@ -4404,7 +4463,7 @@ public abstract class JavaCompletionItem implements CompletionItem {
     private static String escape(String s) {
         if (s != null) {
             try {
-                return XMLUtil.toAttributeValue(s);
+                return XMLUtil.toElementContent(s);
             } catch (Exception ex) {}
         }
         return s;

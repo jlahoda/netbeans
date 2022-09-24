@@ -58,7 +58,19 @@ public class Hk2JavaEEPlatformFactory extends J2eePlatformFactory {
     /** GlassFish V4 JavaEE platform lookup key.
      *  <p/>We will keep V3 value now because no one knows what will get broken
      *  when changing it. */
-    private static final String V4_LOOKUP_KEY = V3_LOOKUP_KEY;
+    private static final String V4_LOOKUP_KEY = "J2EE/DeploymentPlugins/gfv4ee7/Lookup";
+
+    /** GlassFish V5 JavaEE platform lookup key.
+     *  <p/>We will keep V3 value now because no one knows what will get broken
+     *  when changing it. */
+    private static final String V5_LOOKUP_KEY = "J2EE/DeploymentPlugins/gfv5ee8/Lookup";
+    private static final String V510_LOOKUP_KEY = "J2EE/DeploymentPlugins/gfv510ee8/Lookup";
+    
+    /** GlassFish V6 JakartaEE platform lookup key.
+     *  <p/>We will keep V3 value now because no one knows what will get broken
+     *  when changing it. */
+    private static final String V6_LOOKUP_KEY = "J2EE/DeploymentPlugins/gfv6ee9/Lookup";
+    private static final String V610_LOOKUP_KEY = "J2EE/DeploymentPlugins/gfv610ee9/Lookup";
 
     /** GlassFish JavaEE platform factory singleton object. */
     private static volatile Hk2JavaEEPlatformFactory instance;
@@ -94,7 +106,22 @@ public class Hk2JavaEEPlatformFactory extends J2eePlatformFactory {
      */
     private static String getDisplayName(final GlassFishVersion version) {
         final int ord = version.ordinal();
-        if (ord >= GlassFishVersion.GF_4.ordinal()) {
+        if(ord >= GlassFishVersion.GF_6_2_0.ordinal()) {
+            return NbBundle.getMessage(
+                    Hk2JavaEEPlatformFactory.class, "MSG_V620ServerPlatform");
+        } else if(ord >= GlassFishVersion.GF_6_1_0.ordinal()) {
+            return NbBundle.getMessage(
+                    Hk2JavaEEPlatformFactory.class, "MSG_V610ServerPlatform");
+        } else if(ord >= GlassFishVersion.GF_6.ordinal()) {
+            return NbBundle.getMessage(
+                    Hk2JavaEEPlatformFactory.class, "MSG_V6ServerPlatform");
+        } else if(ord >= GlassFishVersion.GF_5_1_0.ordinal()) {
+            return NbBundle.getMessage(
+                    Hk2JavaEEPlatformFactory.class, "MSG_V51ServerPlatform");
+        } else if(ord >= GlassFishVersion.GF_5.ordinal()) {
+            return NbBundle.getMessage(
+                    Hk2JavaEEPlatformFactory.class, "MSG_V5ServerPlatform");
+        } else if (ord >= GlassFishVersion.GF_4.ordinal()) {
             return NbBundle.getMessage(
                     Hk2JavaEEPlatformFactory.class, "MSG_V4ServerPlatform");
         } else if (ord >= GlassFishVersion.GF_3.ordinal()) {
@@ -119,7 +146,22 @@ public class Hk2JavaEEPlatformFactory extends J2eePlatformFactory {
      */
     private static String getLibraryName(final GlassFishVersion version) {
         final int ord = version.ordinal();
-        if (ord >= GlassFishVersion.GF_4.ordinal()) {
+        if (ord >= GlassFishVersion.GF_6_2_0.ordinal()) {
+            return NbBundle.getMessage(
+                    Hk2JavaEEPlatformFactory.class, "LBL_V620ServerLibraries");
+        } else if (ord >= GlassFishVersion.GF_6_1_0.ordinal()) {
+            return NbBundle.getMessage(
+                    Hk2JavaEEPlatformFactory.class, "LBL_V610ServerLibraries");
+        } else if (ord >= GlassFishVersion.GF_6.ordinal()) {
+            return NbBundle.getMessage(
+                    Hk2JavaEEPlatformFactory.class, "LBL_V6ServerLibraries");
+        } else if (ord >= GlassFishVersion.GF_5_1_0.ordinal()) {
+            return NbBundle.getMessage(
+                    Hk2JavaEEPlatformFactory.class, "LBL_V51ServerLibraries");
+        } else if (ord >= GlassFishVersion.GF_5.ordinal()) {
+            return NbBundle.getMessage(
+                    Hk2JavaEEPlatformFactory.class, "LBL_V5ServerLibraries");
+        } else if (ord >= GlassFishVersion.GF_4.ordinal()) {
             return NbBundle.getMessage(
                     Hk2JavaEEPlatformFactory.class, "LBL_V4ServerLibraries");
         } else if (ord >= GlassFishVersion.GF_3.ordinal()) {
@@ -144,7 +186,15 @@ public class Hk2JavaEEPlatformFactory extends J2eePlatformFactory {
      */
     private static String getLookupKey(final GlassFishVersion version) {
         final int ord = version.ordinal();
-        if (ord >= GlassFishVersion.GF_4.ordinal()) {
+        if (ord >= GlassFishVersion.GF_6_1_0.ordinal()){
+            return V610_LOOKUP_KEY;
+        } else if (ord >= GlassFishVersion.GF_6.ordinal()){
+            return V6_LOOKUP_KEY;
+        } else if (ord >= GlassFishVersion.GF_5_1_0.ordinal()){
+            return V510_LOOKUP_KEY;
+        } else if (ord >= GlassFishVersion.GF_5.ordinal()) {
+            return V5_LOOKUP_KEY;
+        } else if (ord >= GlassFishVersion.GF_4.ordinal()) {
             return V4_LOOKUP_KEY;
         } else {
             return V3_LOOKUP_KEY;

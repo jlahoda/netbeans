@@ -45,7 +45,7 @@ public class IOManager {
 
     
     /** output writer Thread */
-    private Hashtable                       lines = new Hashtable ();
+    private Hashtable<String, Object> lines = new Hashtable<>();
     private Listener                        listener = new Listener ();
 
     
@@ -63,7 +63,7 @@ public class IOManager {
     
     // public interface ........................................................
 
-    private final LinkedList buffer = new LinkedList ();
+    private final LinkedList<Text> buffer = new LinkedList<>();
     private RequestProcessor.Task task;
     
     /**

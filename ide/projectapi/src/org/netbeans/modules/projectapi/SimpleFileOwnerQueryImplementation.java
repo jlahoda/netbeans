@@ -59,9 +59,13 @@ public class SimpleFileOwnerQueryImplementation implements FileOwnerQueryImpleme
     private static final Logger LOG = Logger.getLogger(SimpleFileOwnerQueryImplementation.class.getName());
     private static final URI UNOWNED_URI = URI.create("http:unowned");
     private static final Set<String> forbiddenFolders;
+    private static final String projectScanRoot;
+    
     static {
         Set<String> files = new HashSet<String>();
+        String root = null;
         try {
+            root = System.getProperty("project.limitScanRoot"); // NOI18N
             String forbidden = System.getProperty("project.forbiddenFolders", System.getProperty("versioning.forbiddenFolders", "")); //NOI18N
             files.addAll(Arrays.asList(forbidden.split("\\;"))); //NOI18N
             files.remove(""); //NOI18N
@@ -69,6 +73,7 @@ public class SimpleFileOwnerQueryImplementation implements FileOwnerQueryImpleme
             LOG.log(Level.INFO, e.getMessage(), e);
         }
         forbiddenFolders = files;
+        projectScanRoot = root;
     }
     
     /** Do nothing */
@@ -90,7 +95,7 @@ public class SimpleFileOwnerQueryImplementation implements FileOwnerQueryImpleme
     
     private final Set<FileObject> warnedAboutBrokenProjects = new WeakSet<FileObject>();
         
-    private Map<FileObject, Reference<Project>> projectCache = new WeakHashMap();    
+    private Map<FileObject, Reference<Project>> projectCache = new WeakHashMap<>();    
     /**
      * 
      * #111892
@@ -104,10 +109,13 @@ public class SimpleFileOwnerQueryImplementation implements FileOwnerQueryImpleme
     
     
     public Project getOwner(FileObject f) {
-        List<FileObject> folders = new ArrayList();
+        List<FileObject> folders = new ArrayList<>();
         
         deserialize();
         while (f != null) {
+            if (projectScanRoot != null && !f.getPath().startsWith(projectScanRoot)) {
+                break;
+            }
             boolean folder = f.isFolder();
             final URI[] furi = new URI[1];
             if (folder) {
@@ -143,7 +151,7 @@ public class SimpleFileOwnerQueryImplementation implements FileOwnerQueryImpleme
                     }
                     if (p != null) {
                         synchronized (cacheLock) {
-                            WeakReference<Project> rp = new WeakReference(p);
+                            WeakReference<Project> rp = new WeakReference<>(p);
                             for (FileObject fldr : folders) {
                                 projectCache.put(fldr, rp);
                             }
@@ -306,8 +314,9 @@ public class SimpleFileOwnerQueryImplementation implements FileOwnerQueryImpleme
     static void serialize() {
         try {
             Preferences p = NbPreferences.forModule(SimpleFileOwnerQueryImplementation.class).node("externalOwners");
-            for (URI uri : externalOwners.keySet()) {
-                URI ownerURI = externalOwners.get(uri);
+            for (Map.Entry<URI, URI> entry : externalOwners.entrySet()) {
+                URI uri = entry.getKey();
+                URI ownerURI = entry.getValue();
                 if (ownerURI != UNOWNED_URI) {
                 p.put(uri.toString(), ownerURI.toString());
             }

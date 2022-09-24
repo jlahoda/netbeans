@@ -122,10 +122,12 @@ class IntroduceClass {
                 long lsBegin = sourcePositions.getStartPosition(compilationUnit, lastStatement);
                 // Make it relative to the beginning of the code snippet:
                 lsBegin -= codeOffset;
-                this.snippetCode = new StringBuilder(this.snippetCode)
-                        .insert((int) lsBegin, "return ")
-                        .append(';')
-                        .toString();
+                StringBuilder code = new StringBuilder(this.snippetCode)
+                        .insert((int) lsBegin, "return ");
+                if (!this.snippetCode.trim().endsWith(";")) {
+                    code.append(';');
+                }
+                this.snippetCode = code.toString();
             }
             if (returnType == null) {
                 returnType = info.getTypes().getNoType(TypeKind.VOID).toString();
@@ -236,7 +238,7 @@ class IntroduceClass {
                 if (Tree.Kind.EXPRESSION_STATEMENT.equals(first.getKind())) {
                     statements = Collections.singletonList((StatementTree) firstLeaf.getLeaf());
                 } else {
-                    statements = Collections.EMPTY_LIST;
+                    statements = Collections.emptyList();
                 }
         }
         int s = statements.size();

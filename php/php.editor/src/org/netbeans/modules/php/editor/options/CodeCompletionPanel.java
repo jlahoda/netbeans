@@ -88,6 +88,7 @@ public class CodeCompletionPanel extends JPanel {
     static final String PHP_CODE_COMPLETION_VARIABLES_SCOPE = "phpCodeCompletionVariablesScope"; // NOI18N
     static final String PHP_CODE_COMPLETION_TYPE = "phpCodeCompletionType"; // NOI18N
     static final String PHP_CODE_COMPLETION_SMART_PARAMETERS_PRE_FILLING = "phpCodeCompletionSmartParametersPreFilling"; //NOI18N
+    static final String PHP_CODE_COMPLETION_FIRST_CLASS_CALLABLE = "phpCodeCompletionFirstClassCallable"; //NOI18N
     static final String PHP_AUTO_COMPLETION_SMART_QUOTES = "phpCodeCompletionSmartQuotes"; //NOI18N
     static final String PHP_AUTO_STRING_CONCATINATION = "phpCodeCompletionStringAutoConcatination"; //NOI18N
     static final String PHP_AUTO_COMPLETION_USE_LOWERCASE_TRUE_FALSE_NULL = "phpAutoCompletionUseLowercaseTrueFalseNull"; //NOI18N
@@ -101,6 +102,7 @@ public class CodeCompletionPanel extends JPanel {
     static final boolean PHP_CODE_COMPLETION_STATIC_METHODS_DEFAULT = true;
     static final boolean PHP_CODE_COMPLETION_NON_STATIC_METHODS_DEFAULT = false;
     static final boolean PHP_CODE_COMPLETION_SMART_PARAMETERS_PRE_FILLING_DEFAULT = true;
+    static final boolean PHP_CODE_COMPLETION_FIRST_CLASS_CALLABLE_DEFAULT = false;
     static final boolean PHP_AUTO_COMPLETION_SMART_QUOTES_DEFAULT = true;
     static final boolean PHP_AUTO_STRING_CONCATINATION_DEFAULT = true;
     static final boolean PHP_AUTO_COMPLETION_USE_LOWERCASE_TRUE_FALSE_NULL_DEFAULT = true;
@@ -132,6 +134,7 @@ public class CodeCompletionPanel extends JPanel {
         CodeCompletionType type = CodeCompletionType.resolve(preferences.get(PHP_CODE_COMPLETION_TYPE, null));
         id2Saved.put(PHP_CODE_COMPLETION_TYPE, type == null ? null : type.name());
         id2Saved.put(PHP_CODE_COMPLETION_SMART_PARAMETERS_PRE_FILLING, codeCompletionSmartParametersPreFillingCheckBox.isSelected());
+        id2Saved.put(PHP_CODE_COMPLETION_FIRST_CLASS_CALLABLE, codeCompletionFirstClassCallableCheckBox.isSelected());
         id2Saved.put(PHP_AUTO_COMPLETION_SMART_QUOTES, autoCompletionSmartQuotesCheckBox.isSelected());
         id2Saved.put(PHP_AUTO_STRING_CONCATINATION, autoStringConcatenationCheckBox.isSelected());
         id2Saved.put(PHP_AUTO_COMPLETION_USE_LOWERCASE_TRUE_FALSE_NULL, trueFalseNullCheckBox.isSelected());
@@ -239,6 +242,13 @@ public class CodeCompletionPanel extends JPanel {
                 PHP_CODE_COMPLETION_SMART_PARAMETERS_PRE_FILLING_DEFAULT);
         codeCompletionSmartParametersPreFillingCheckBox.setSelected(codeCompletionSmartParametersPreFilling);
         codeCompletionSmartParametersPreFillingCheckBox.addItemListener(defaultCheckBoxListener);
+
+        // NETBEANS-5599 PHP 8.1: First-class callable syntax
+        boolean codeCompletionFirstClassCallable = preferences.getBoolean(
+                PHP_CODE_COMPLETION_FIRST_CLASS_CALLABLE,
+                PHP_CODE_COMPLETION_FIRST_CLASS_CALLABLE_DEFAULT);
+        codeCompletionFirstClassCallableCheckBox.setSelected(codeCompletionFirstClassCallable);
+        codeCompletionFirstClassCallableCheckBox.addItemListener(defaultCheckBoxListener);
     }
 
     private void initCodeCompletionForVariables() {
@@ -286,6 +296,7 @@ public class CodeCompletionPanel extends JPanel {
         preferences.putBoolean(PHP_CODE_COMPLETION_STATIC_METHODS, codeCompletionStaticMethodsCheckBox.isSelected());
         preferences.putBoolean(PHP_CODE_COMPLETION_NON_STATIC_METHODS, codeCompletionNonStaticMethodsCheckBox.isSelected());
         preferences.putBoolean(PHP_CODE_COMPLETION_SMART_PARAMETERS_PRE_FILLING, codeCompletionSmartParametersPreFillingCheckBox.isSelected());
+        preferences.putBoolean(PHP_CODE_COMPLETION_FIRST_CLASS_CALLABLE, codeCompletionFirstClassCallableCheckBox.isSelected());
         preferences.putBoolean(PHP_AUTO_COMPLETION_SMART_QUOTES, autoCompletionSmartQuotesCheckBox.isSelected());
         preferences.putBoolean(PHP_AUTO_STRING_CONCATINATION, autoStringConcatenationCheckBox.isSelected());
         preferences.putBoolean(PHP_AUTO_COMPLETION_USE_LOWERCASE_TRUE_FALSE_NULL, trueFalseNullCheckBox.isSelected());
@@ -350,6 +361,7 @@ public class CodeCompletionPanel extends JPanel {
         unqualifiedRadioButton = new JRadioButton();
         unqualifiedInfoLabel = new JLabel();
         codeCompletionSmartParametersPreFillingCheckBox = new JCheckBox();
+        codeCompletionFirstClassCallableCheckBox = new JCheckBox();
         autoCompletionSmartQuotesLabel = new JLabel();
         autoCompletionSmartQuotesCheckBox = new JCheckBox();
         autoStringConcatenationCheckBox = new JCheckBox();
@@ -414,6 +426,8 @@ public class CodeCompletionPanel extends JPanel {
         codeCompletionSmartParametersPreFillingCheckBox.setSelected(true);
         Mnemonics.setLocalizedText(codeCompletionSmartParametersPreFillingCheckBox, NbBundle.getMessage(CodeCompletionPanel.class, "CodeCompletionPanel.codeCompletionSmartParametersPreFillingCheckBox.text")); // NOI18N
 
+        Mnemonics.setLocalizedText(codeCompletionFirstClassCallableCheckBox, NbBundle.getMessage(CodeCompletionPanel.class, "CodeCompletionPanel.codeCompletionFirstClassCallableCheckBox.text")); // NOI18N
+
         autoCompletionSmartQuotesLabel.setLabelFor(autoCompletionSmartQuotesCheckBox);
         Mnemonics.setLocalizedText(autoCompletionSmartQuotesLabel, NbBundle.getMessage(CodeCompletionPanel.class, "CodeCompletionPanel.autoCompletionSmartQuotesLabel.text")); // NOI18N
 
@@ -456,7 +470,8 @@ public class CodeCompletionPanel extends JPanel {
                                     .addComponent(autoCompletionNamespacesCheckBox)))
                             .addComponent(autoCompletionSmartQuotesLabel)
                             .addComponent(autoCompletionSmartQuotesCheckBox)
-                            .addComponent(autoStringConcatenationCheckBox)))
+                            .addComponent(autoStringConcatenationCheckBox)
+                            .addComponent(codeCompletionFirstClassCallableCheckBox)))
                     .addGroup(layout.createSequentialGroup()
                         .addContainerGap()
                         .addGroup(layout.createParallelGroup(Alignment.LEADING)
@@ -506,6 +521,8 @@ public class CodeCompletionPanel extends JPanel {
                 .addComponent(codeCompletionNonStaticMethodsCheckBox)
                 .addPreferredGap(ComponentPlacement.RELATED)
                 .addComponent(codeCompletionSmartParametersPreFillingCheckBox)
+                .addPreferredGap(ComponentPlacement.RELATED)
+                .addComponent(codeCompletionFirstClassCallableCheckBox)
                 .addPreferredGap(ComponentPlacement.UNRELATED)
                 .addComponent(codeCompletionVariablesScopeLabel)
                 .addPreferredGap(ComponentPlacement.RELATED)
@@ -583,6 +600,7 @@ public class CodeCompletionPanel extends JPanel {
         getAccessibleContext().setAccessibleName(NbBundle.getMessage(CodeCompletionPanel.class, "CodeCompletionPanel.AccessibleContext.accessibleName")); // NOI18N
         getAccessibleContext().setAccessibleDescription(NbBundle.getMessage(CodeCompletionPanel.class, "CodeCompletionPanel.AccessibleContext.accessibleDescription")); // NOI18N
     }// </editor-fold>//GEN-END:initComponents
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private JRadioButton allVariablesRadioButton;
     private ButtonGroup autoCompletionButtonGroup;
@@ -596,6 +614,7 @@ public class CodeCompletionPanel extends JPanel {
     private JCheckBox autoCompletionTypesCheckBox;
     private JCheckBox autoCompletionVariablesCheckBox;
     private JCheckBox autoStringConcatenationCheckBox;
+    private JCheckBox codeCompletionFirstClassCallableCheckBox;
     private JCheckBox codeCompletionNonStaticMethodsCheckBox;
     private JCheckBox codeCompletionSmartParametersPreFillingCheckBox;
     private JCheckBox codeCompletionStaticMethodsCheckBox;

@@ -105,9 +105,9 @@ public final class WebModule {
      */
     public static WebModule getWebModule (FileObject file) {
         Parameters.notNull("file", file); // NOI18N
-        Iterator it = implementations.allInstances().iterator();
+        Iterator<WebModuleProvider> it = implementations.allInstances().iterator();
         while (it.hasNext()) {
-            WebModuleProvider impl = (WebModuleProvider)it.next();
+            WebModuleProvider impl = it.next();
             WebModule wm = impl.findWebModule (file);
             if (wm != null) {
                 return wm;
@@ -181,6 +181,7 @@ public final class WebModule {
      * @return J2EE platform version; never null.
      * @deprecated use {@link #getJ2eeProfile()}
      */
+    @Deprecated
     public String getJ2eePlatformVersion () {
         if (impl2 != null) {
             return impl2.getJ2eeProfile().toPropertiesString();

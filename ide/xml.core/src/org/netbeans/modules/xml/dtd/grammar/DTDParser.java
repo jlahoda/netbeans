@@ -123,15 +123,15 @@ public class DTDParser {
     private class Handler extends DefaultHandler implements DeclHandler {
         
         private Map attrs, elements, models, enums, attrDefaults;
-        private Set notations, entities, anys, emptyElements;
+        private Set<String> notations, entities, anys, emptyElements;
         private DTDGrammar dtd;
         
         Handler() {
             attrs = new HashMap();
             elements = new HashMap();
             models = new HashMap();
-            notations = new TreeSet();
-            entities = new TreeSet();
+            notations = new TreeSet<>();
+            entities  = new TreeSet<>();
             anys = new HashSet();
             enums = new HashMap();
             attrDefaults = new HashMap();
@@ -243,7 +243,7 @@ public class DTDParser {
     private class EntityResolverWrapper implements EntityResolver {
         
         private EntityResolver resolver;
-        private ArrayList/*<String>*/ resolvedSystemIds = new ArrayList(3);
+        private ArrayList<String> resolvedSystemIds = new ArrayList(3);
         
         public EntityResolverWrapper(EntityResolver resolver) {
             this.resolver = resolver;

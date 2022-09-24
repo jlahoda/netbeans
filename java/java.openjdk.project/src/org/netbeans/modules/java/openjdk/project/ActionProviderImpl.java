@@ -26,12 +26,14 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.swing.Action;
 
 import org.apache.tools.ant.module.api.support.ActionUtils;
 import org.netbeans.api.java.classpath.ClassPath;
 import org.netbeans.modules.java.openjdk.common.BuildUtils;
+import org.netbeans.modules.java.openjdk.common.BuildUtils.ExtraMakeTargets;
 import org.netbeans.modules.java.openjdk.common.ShortcutUtils;
 import org.netbeans.spi.java.classpath.support.ClassPathSupport;
 import org.netbeans.spi.project.ActionProgress;
@@ -99,6 +101,7 @@ public class ActionProviderImpl implements ActionProvider {
     private final FileObject script;
     private final FileObject genericScript;
     private final String[] supportedActions;
+    private final String[] genericSupportedActions;
 
     public ActionProviderImpl(JDKProject project) {
         this.project = project;
@@ -128,10 +131,15 @@ public class ActionProviderImpl implements ActionProvider {
 
         script = FileUtil.toFileObject(scriptFile);
 
+        supportedActions = readSupportedActions(script);
+        genericSupportedActions = readSupportedActions(genericScript);
+    }
+
+    private String[] readSupportedActions(FileObject from) {
         String[] supported = new String[0];
 
         try {
-            for (String l : script.asLines("UTF-8")) {
+            for (String l : from.asLines("UTF-8")) {
                 if (l.contains("SUPPORTED_ACTIONS:")) {
                     String[] actions = l.substring(l.indexOf(':') + 1).trim().split(",");
                     Set<String> filteredActions = new HashSet<>();
@@ -151,13 +159,13 @@ public class ActionProviderImpl implements ActionProvider {
             //???
             Exceptions.printStackTrace(ex);
         }
-        
-        supportedActions = supported;
+        return supported;
     }
 
     @Override
     public String[] getSupportedActions() {
-        return supportedActions;
+        Settings settings = project.getLookup().lookup(Settings.class);
+        return settings.isUseAntBuild() ? supportedActions : genericSupportedActions;
     }
 
     @Override
@@ -171,8 +179,17 @@ public class ActionProviderImpl implements ActionProvider {
             }
         }
         FileObject scriptFO = script;
+        Settings settings = project.getLookup().lookup(Settings.class);
+        Properties props = new Properties();
+        if (settings.isUseAntBuild()) {
+            props.put("langtools.build.location", settings.getAntBuildLocation());
+        } else {
+            scriptFO = genericScript;
+            if (COMMAND_BUILD_FAST.equals(command)) {
+                command = COMMAND_BUILD_GENERIC_FAST;
+            }
+        }
         if (COMMAND_BUILD_GENERIC_FAST.equals(command)) {
-            Settings settings = project.getLookup().lookup(Settings.class);
             switch (settings.getRunBuildSetting()) {
                 case NEVER:
                     ActionProgress.start(context).finished(true);
@@ -184,13 +201,17 @@ public class ActionProviderImpl implements ActionProvider {
             scriptFO = genericScript;
             command = COMMAND_BUILD_FAST; //XXX: should only do this if genericScript supports it
         }
-        Properties props = new Properties();
+        String extraTargets = context.lookupAll(ExtraMakeTargets.class)
+                                     .stream()
+                                     .flatMap(emt -> Arrays.stream(emt.getExtraMakeTargets()))
+                                     .collect(Collectors.joining(" "));
         FileObject basedirFO = project.currentModule != null ? scriptFO == genericScript ? project.moduleRepository.getJDKRoot()
                                                                                          : repository
                                                              : repository.getParent();
         props.put("basedir", FileUtil.toFile(basedirFO).getAbsolutePath());
         props.put("CONF", project.configurations.getActiveConfiguration().getLocation().getName());
         props.put("nb.jdk.project.target.java.home", BuildUtils.findTargetJavaHome(project.getProjectDirectory()).getAbsolutePath());
+        props.put("nb.extra.make.targets", extraTargets);
         RootKind kind = getKind(context);
         RunSingleConfig singleFileProperty = command2Properties.get(Pair.of(command, kind));
         if (singleFileProperty != null) {
@@ -206,7 +227,7 @@ public class ActionProviderImpl implements ActionProvider {
                         sourceCP = ClassPath.getClassPath(file, ClassPath.SOURCE);
                         break;
                     case TEST:
-                        sourceCP = ClassPathSupport.createClassPath(project.getProjectDirectory().getFileObject("../../test"));
+                        sourceCP = ClassPathSupport.createClassPath(BuildUtils.getFileObject(project.getProjectDirectory(), "../../test"));
                         break;
                     default:
                         throw new IllegalStateException(kind.name());
@@ -214,7 +235,7 @@ public class ActionProviderImpl implements ActionProvider {
                 value.append(singleFileProperty.valueType.convert(sourceCP, file));
                 sep = singleFileProperty.separator;
                 FileObject ownerRoot = sourceCP.findOwnerRoot(file);
-                srcdir = FileUtil.getRelativePath(project.getProjectDirectory().getFileObject("../.."), ownerRoot);
+                srcdir = FileUtil.getRelativePath(BuildUtils.getFileObject(project.getProjectDirectory(), "../.."), ownerRoot);
                 moduleName = ownerRoot.getParent().getParent().getNameExt();
             }
             props.put(singleFileProperty.propertyName, value.toString());
@@ -253,7 +274,7 @@ public class ActionProviderImpl implements ActionProvider {
 
     private RootKind getKind(Lookup context) {
         FileObject aFile = context.lookup(FileObject.class);
-        FileObject testDir = project.getProjectDirectory().getFileObject("../../test");
+        FileObject testDir = BuildUtils.getFileObject(project.getProjectDirectory(), "../../test");
         return aFile != null && testDir != null && FileUtil.isParentOf(testDir, aFile) ? RootKind.TEST : RootKind.SOURCE;
     }
 
