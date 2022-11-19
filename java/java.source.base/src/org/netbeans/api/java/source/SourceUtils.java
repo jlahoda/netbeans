@@ -103,6 +103,7 @@ import org.netbeans.modules.java.source.ElementHandleAccessor;
 import org.netbeans.modules.java.source.ElementUtils;
 import org.netbeans.modules.java.source.JavadocHelper;
 import org.netbeans.modules.java.source.ModuleNames;
+import org.netbeans.modules.java.source.annotations.AugmentedAnnotations;
 import org.netbeans.modules.java.source.indexing.FQN2Files;
 import org.netbeans.modules.java.source.indexing.JavaCustomIndexer;
 import org.netbeans.modules.java.source.parsing.ClassParser;
@@ -1382,5 +1383,9 @@ public class SourceUtils {
             throw new IllegalStateException("Must invoke before running toPhase!");
         }
         cc.addForceSource(file);
+    }
+
+    public static boolean attachAnnotation(CompilationInfo info, Element e, String annotationFQN) {
+        return AugmentedAnnotations.attachAnnotation(info, e, annotationFQN);
     }
 }
