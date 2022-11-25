@@ -27,9 +27,10 @@ import com.sun.source.tree.StatementTree;
 import com.sun.source.tree.Tree.Kind;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.SourcePositions;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
@@ -42,6 +43,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.AnnotationValueVisitor;
@@ -64,10 +67,12 @@ import javax.lang.model.util.Elements;
 import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.java.source.ClasspathInfo.PathKind;
 import org.netbeans.api.java.source.CompilationInfo;
+import org.netbeans.api.project.FileOwnerQuery;
+import org.netbeans.api.project.Project;
+import org.netbeans.api.project.ProjectUtils;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.util.Exceptions;
-import org.openide.util.Lookup;
 import org.openide.xml.XMLUtil;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -81,8 +86,13 @@ import org.xml.sax.SAXException;
  */
 public class AugmentedAnnotations {
 
-    //root->package->encoded element+DOM
-    private static final Map<FileObject, Map<String, Reference<ParsedAnnotationsXML>>> annotations2DOMCache = new WeakHashMap<FileObject, Map<String, Reference<ParsedAnnotationsXML>>>();
+    private static final Logger LOG = Logger.getLogger(AugmentedAnnotations.class.getName());
+    public static final String NS = "http://www.netbeans.org/ns/external-annotations-java/1";
+
+    //package->encoded element+DOM
+    private static final Map<FileObject, Reference<ParsedAnnotationsXML>> hardCodedAnnotations2DOMCache = new WeakHashMap<>();
+    //root->encoded element+DOM
+    private static final Map<FileObject, Reference<ParsedAnnotationsXML>> userAnnotations2DOMCache = new WeakHashMap<>();
 
     public static List<? extends AnnotationMirror> getAugmentedAnnotationMirrors(CompilationInfo info, Element e) {
         FileObject root = binaryRootFor(info, e);
@@ -110,40 +120,19 @@ public class AugmentedAnnotations {
 
         if (root == null) return false;
 
-        ParsedAnnotationsXML parsedAnnotations = findParsedAnnotations(info, root, e);
+        ParsedAnnotationsXML parsedAnnotations = findAugmentElementAnnotationsRoot(info, root);
+        org.w3c.dom.Element annotations = parsedAnnotations.root;
         String serialized = serialize(e);
         org.w3c.dom.Element elementsElement;
         Document document;
-        FileObject target;
 
-        if (parsedAnnotations != null && parsedAnnotations != ParsedAnnotationsXML.EMPTY) {
-            document = parsedAnnotations.root;
-            elementsElement = parsedAnnotations.encodedElement2DOMElement.get(serialized);
-            target = parsedAnnotations.file;
-        } else {
-            document = XMLUtil.createDocument("root", null, null, null);
-            elementsElement = null;
-
-            FileObject annotationsRoot = CacheBasedAnnotationDescriptionProvider.annotationDescriptionForRoot(root, true);
-
-            if (annotationsRoot == null) return false;
-
-            String packageName = info.getElements().getPackageOf(e).getQualifiedName().toString();
-
-            try {
-                target = FileUtil.createData(annotationsRoot, packageName.replace('.', '/') + "/annotations.xml");
-            } catch (IOException ex) {
-                Exceptions.printStackTrace(ex);
-
-                return false;
-            }
-        }
-
-        if (elementsElement == null) {
-            elementsElement = document.createElement("item");
-            elementsElement.setAttribute("name", serialized);
-            document.getDocumentElement().appendChild(elementsElement);
-        }
+        document = parsedAnnotations.root.getOwnerDocument();
+        elementsElement = parsedAnnotations.encodedElement2DOMElement.computeIfAbsent(serialized, s -> {
+            org.w3c.dom.Element nue = document.createElementNS(NS, "item");
+            nue.setAttribute("name", serialized);
+            annotations.appendChild(nue);
+            return nue;
+        });
 
         StatementTree st = info.getTreeUtilities().parseStatement("{ " + annotation + " int i; }", new SourcePositions[1]);
 
@@ -194,25 +183,54 @@ public class AugmentedAnnotations {
             elementsElement.appendChild(annot);
         }
 
-        OutputStream out = null;
+        writeAugmentElementAnnotationsRoot(info, root, annotations);
 
-        try {
-            out = target.getOutputStream();
-            XMLUtil.write(document, out, serialized);
-            return true;
-        } catch (IOException ex) {
-            Exceptions.printStackTrace(ex);
-            return false;
-        } finally {
-            if (out != null) {
+        userAnnotations2DOMCache.remove(root);
+
+        return true;
+    }
+
+    private static ParsedAnnotationsXML findAugmentElementAnnotationsRoot(CompilationInfo info, FileObject elementRoot) {
+        Reference<ParsedAnnotationsXML> cachedRef = userAnnotations2DOMCache.get(elementRoot);
+        ParsedAnnotationsXML cached = cachedRef.get();
+        if (cached != null) {
+            return cached;
+        }
+        Project prj = FileOwnerQuery.getOwner(elementRoot);
+        org.w3c.dom.Element parsed = null;
+        if (prj != null) {
+            parsed = ProjectUtils.getAuxiliaryConfiguration(prj).getConfigurationFragment("annotations", AugmentedAnnotations.NS, true);
+        }
+        if (parsed == null) {
+            byte[] annotations = (byte[]) elementRoot.getAttribute(AugmentedAnnotations.class.getName());
+            if (annotations != null) {
                 try {
-                    out.close();
-                } catch (IOException ex) {
-                    Exceptions.printStackTrace(ex);
+                    InputSource input = new InputSource(new ByteArrayInputStream(annotations));
+                    parsed = XMLUtil.parse(input, false, true, /*XXX*/null, null).getDocumentElement();
+                } catch (IOException | SAXException ex) {
+                    LOG.log(Level.WARNING, null, ex);
                 }
             }
+        }
+        if (parsed == null) {
+            parsed = XMLUtil.createDocument("annotations", null, null, null).createElementNS(AugmentedAnnotations.NS, "annotations");
+        }
+        ParsedAnnotationsXML result = new ParsedAnnotationsXML(parsed);
+        userAnnotations2DOMCache.put(elementRoot, new SoftReference<>(result));
+        return result;
+    }
 
-            annotations2DOMCache.clear(); //would be nicer to strip only the modified part
+    private static void writeAugmentElementAnnotationsRoot(CompilationInfo info, FileObject elementRoot, org.w3c.dom.Element annotations) {
+        Project prj = FileOwnerQuery.getOwner(elementRoot);
+        if (prj != null) {
+            ProjectUtils.getAuxiliaryConfiguration(prj).putConfigurationFragment(annotations, true);
+            return ;
+        }
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            XMLUtil.write(annotations.getOwnerDocument(), out, NS);
+            elementRoot.setAttribute(AugmentedAnnotations.class.getName(), out.toByteArray());
+        } catch (IOException ex) {
+            Exceptions.printStackTrace(ex);
         }
     }
 
@@ -245,75 +263,42 @@ public class AugmentedAnnotations {
     }
 
     private static @CheckForNull ParsedAnnotationsXML findParsedAnnotations(CompilationInfo info, FileObject binaryRoot, Element e) {
-        FileObject annotationsRoot = null;
-
-        for (AnnotationsDescriptionProvider adp : Lookup.getDefault().lookupAll(AnnotationsDescriptionProvider.class)) {
-            annotationsRoot = adp.annotationDescriptionForRoot(binaryRoot);
-
-            if (annotationsRoot != null) break;
-        }
-
-        if (annotationsRoot == null) return null;
-
-        Map<String, Reference<ParsedAnnotationsXML>> package2DOMCache = annotations2DOMCache.get(annotationsRoot);
-
-        if (package2DOMCache == null) {
-            annotations2DOMCache.put(annotationsRoot, package2DOMCache = new HashMap<String, Reference<ParsedAnnotationsXML>>());
-        }
-
         String packageName = info.getElements().getPackageOf(e).getQualifiedName().toString();
-        Reference<ParsedAnnotationsXML> parsedAnnotationsRef = package2DOMCache.get(packageName);
-        ParsedAnnotationsXML parsedAnnotations = parsedAnnotationsRef != null ? parsedAnnotationsRef.get() : null;
 
-        if (parsedAnnotations == null) {
-            parsedAnnotations = ParsedAnnotationsXML.EMPTY;
+        FileObject data = FileUtil.getConfigFile("java/annotations/external/" + packageName.replace('.', '/') + "/annotations.xml");
 
-            FileObject annotations = annotationsRoot.getFileObject(packageName.replace('.', '/') + "/annotations.xml");
+        if (data != null) {
+            Reference<ParsedAnnotationsXML> cachedDOMRef = hardCodedAnnotations2DOMCache.get(data);
+            ParsedAnnotationsXML cachedDOM = cachedDOMRef != null ? cachedDOMRef.get() : null;
 
-            if (annotations != null) {
-                InputStream in = null;
-
-                try {
-                    in = annotations.getInputStream();
-
-                    parsedAnnotations = new ParsedAnnotationsXML(annotations, XMLUtil.parse(new InputSource(in), false, false, null, null));
-                } catch (IOException ex) {
+            if (cachedDOM == null) {
+                try (InputStream in = data.getInputStream()) {
+                    cachedDOM = new ParsedAnnotationsXML(XMLUtil.parse(new InputSource(in), false, false, null, null).getDocumentElement());
+                    hardCodedAnnotations2DOMCache.put(data, new SoftReference<ParsedAnnotationsXML>(cachedDOM)); //TODO: clearing reference?
+                } catch (IOException | SAXException ex) {
                     Exceptions.printStackTrace(ex);
-                } catch (SAXException ex) {
-                    Exceptions.printStackTrace(ex);
-                } finally {
-                    if (in != null) {
-                        try {
-                            in.close();
-                        } catch (IOException ex) {
-                            Exceptions.printStackTrace(ex);
-                        }
-                    }
                 }
             }
 
-            package2DOMCache.put(packageName, new SoftReference<ParsedAnnotationsXML>(parsedAnnotations)); //TODO: clearing reference?
+            return cachedDOM;
         }
 
-        return parsedAnnotations;
+        return findAugmentElementAnnotationsRoot(info, binaryRoot);
     }
 
 
     private static final class ParsedAnnotationsXML {
         private static final ParsedAnnotationsXML EMPTY = new ParsedAnnotationsXML();
-        private final FileObject file;
-        private final Document root;
+        private final org.w3c.dom.Element root;
         private final Map<String, org.w3c.dom.Element> encodedElement2DOMElement;
         public ParsedAnnotationsXML() {
-            this.file = null;
             this.root = null;
             this.encodedElement2DOMElement = new HashMap<String, org.w3c.dom.Element>();
         }
-        public ParsedAnnotationsXML(FileObject file, Document root) {
-            this.file = file;
+        public ParsedAnnotationsXML(org.w3c.dom.Element root) {
             this.root = root;
             this.encodedElement2DOMElement = new HashMap<String, org.w3c.dom.Element>();
-            NodeList itemsList = root.getDocumentElement().getChildNodes();
+            NodeList itemsList = root.getChildNodes();
 
             for (int i = 0; i < itemsList.getLength(); i++) {
                 Node current = itemsList.item(i);

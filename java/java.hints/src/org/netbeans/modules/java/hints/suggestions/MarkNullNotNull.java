@@ -62,6 +62,7 @@ public class MarkNullNotNull {
     }
 
     private static ErrorDescription hint(HintContext ctx, int[] span, String nullAllowedAnnotations) {
+        //XXX: skip if already has the annotation!
         if (ctx.getCaretLocation() < span[0] || ctx.getCaretLocation() > span[1]) return null;
 
         return ErrorDescriptionFactory.forName(ctx, ctx.getPath(), "", new AddAnnotationFix(ctx.getInfo(), ctx.getPath(), NonNull.class.getName()).toEditorFix(), new AddAnnotationFix(ctx.getInfo(), ctx.getPath(), nullAllowedAnnotations).toEditorFix());
@@ -90,7 +91,7 @@ public class MarkNullNotNull {
                 return ;
             }
 
-            SourceUtils.attachAnnotation(ctx.getWorkingCopy(), el, annotation);
+            SourceUtils.attachAnnotation(ctx.getWorkingCopy(), el, "@" + annotation);
         }
 
     }

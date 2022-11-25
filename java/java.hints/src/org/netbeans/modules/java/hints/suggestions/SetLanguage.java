@@ -89,7 +89,6 @@ public class SetLanguage {
         } else {
             return el.getSimpleName().toString();
         }
-        //TODO: record components!
     }
 
     //TODO: partly copied from java.editor.base/.../EmbeddingProviderImpl, can be unified?
