@@ -192,7 +192,7 @@ public class AugmentedAnnotations {
 
     private static ParsedAnnotationsXML findAugmentElementAnnotationsRoot(CompilationInfo info, FileObject elementRoot) {
         Reference<ParsedAnnotationsXML> cachedRef = userAnnotations2DOMCache.get(elementRoot);
-        ParsedAnnotationsXML cached = cachedRef.get();
+        ParsedAnnotationsXML cached = cachedRef != null ? cachedRef.get() : null;
         if (cached != null) {
             return cached;
         }
