@@ -73,6 +73,9 @@ import org.openide.util.Exceptions;
  */
 public class UnusedDetector {
 
+    //XXX: hack, ability to disable the unused detection inside packages:
+    public static boolean ALLOW_UNUSED_DETECTION_IN_PACKAGES = true;
+
     public static class UnusedDescription {
         public final Element unusedElement;
         public final TreePath unusedElementPath;
@@ -113,7 +116,7 @@ public class UnusedDetector {
             TreePath declaration = e.getValue();
             Set<UseTypes> uses = uv.useTypes.getOrDefault(el, Collections.emptySet());
             boolean isPrivate = el.getModifiers().contains(Modifier.PRIVATE); //TODO: effectivelly private!
-            boolean isPkgPrivate = !isPrivate && !el.getModifiers().contains(Modifier.PUBLIC) && !el.getModifiers().contains(Modifier.PROTECTED);
+            boolean isPkgPrivate = !isPrivate && !el.getModifiers().contains(Modifier.PUBLIC) && !el.getModifiers().contains(Modifier.PROTECTED) && ALLOW_UNUSED_DETECTION_IN_PACKAGES;
             if (isLocalVariableClosure(el)) {
                 boolean isWritten = uses.contains(UseTypes.WRITTEN);
                 boolean isRead = uses.contains(UseTypes.READ);
