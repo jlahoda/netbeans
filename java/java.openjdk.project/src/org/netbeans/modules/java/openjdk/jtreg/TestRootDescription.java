@@ -33,6 +33,7 @@ public class TestRootDescription {
     }
 
     public static TestRootDescription findRootDescriptionFor(FileObject file) {
+        //TODO: caching?
         FileObject search = file.getParent();
         FileObject testProperties = null;
 
