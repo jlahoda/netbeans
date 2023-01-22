@@ -18,9 +18,13 @@
  */
 package org.netbeans.modules.java.hints.suggestions;
 
+import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
+import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.util.TreePath;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
@@ -30,6 +34,10 @@ import javax.lang.model.element.QualifiedNameable;
 import javax.lang.model.element.VariableElement;
 import org.netbeans.api.java.source.CompilationInfo;
 import org.netbeans.api.java.source.ElementHandle;
+import org.netbeans.api.java.source.JavaSource;
+import org.netbeans.api.java.source.JavaSource.Phase;
+import org.netbeans.api.java.source.SourceUtils;
+import org.netbeans.api.java.source.TreePathHandle;
 import org.netbeans.spi.editor.hints.ChangeInfo;
 import org.netbeans.spi.java.hints.Hint;
 import org.netbeans.spi.java.hints.HintContext;
@@ -42,6 +50,7 @@ import org.netbeans.spi.java.hints.Hint.Kind;
 import org.openide.DialogDescriptor;
 import org.openide.DialogDisplayer;
 import org.openide.NotifyDescriptor;
+import org.openide.NotifyDescriptor.InputLine;
 import org.openide.util.NbBundle.Messages;
 
 /**
@@ -67,7 +76,7 @@ public class SetLanguage {
         }
 
         String description = describeElement(ctx.getInfo(), targetElement);
-        return ErrorDescriptionFactory.forSpan(ctx, ctx.getCaretLocation(), ctx.getCaretLocation() + 1, Bundle.ERR_SetLanguage(description), new SetLanguageFix(ElementHandle.create(targetElement), description));
+        return ErrorDescriptionFactory.forSpan(ctx, ctx.getCaretLocation(), ctx.getCaretLocation() + 1, Bundle.ERR_SetLanguage(description), new SetLanguageFix(TreePathHandle.create(ctx.getPath(), ctx.getInfo()), description));
     }
 
     @Messages({
@@ -83,7 +92,8 @@ public class SetLanguage {
             return ((QualifiedNameable) el).getQualifiedName().toString();
         } else if (el.getKind() == ElementKind.METHOD || el.getKind() == ElementKind.CONSTRUCTOR) {
             ExecutableElement ee = (ExecutableElement) el;
-            return describeElement(info, el.getEnclosingElement()) + "." + el.getSimpleName() + ee.getParameters().stream().map(ve -> info.getTypeUtilities().getTypeName(ve.asType())).collect(Collectors.joining(", ", "(", ")"));
+            String simpleName = el.getKind() == ElementKind.METHOD ? "." + el.getSimpleName() : "";
+            return describeElement(info, el.getEnclosingElement()) + simpleName + ee.getParameters().stream().map(ve -> info.getTypeUtilities().getTypeName(ve.asType())).collect(Collectors.joining(", ", "(", ")"));
         } else if (el.getKind().isField()) {
             return describeElement(info, el.getEnclosingElement()) + "." + el.getSimpleName();
         } else {
@@ -95,18 +105,17 @@ public class SetLanguage {
     private static Element findLanguageFromTarget(CompilationInfo info, TreePath tp) {
         VariableElement target = null;
         switch (tp.getParentPath().getLeaf().getKind()) {
-            case METHOD_INVOCATION: {
-                int argPos = ((MethodInvocationTree) tp.getParentPath().getLeaf()).getArguments().indexOf(tp.getLeaf());
-                if (argPos == (-1)) {
-                    break;
-                }
-                Element el = info.getTrees().getElement(tp.getParentPath());
-                if (el == null || (el.getKind() != ElementKind.METHOD && el.getKind() != ElementKind.CONSTRUCTOR)) {
-                    break;
-                }
-                target = ((ExecutableElement) el).getParameters().get(argPos);
+            case NEW_CLASS: {
+                List<? extends ExpressionTree> arguments = ((NewClassTree) tp.getParentPath().getLeaf()).getArguments();
+                target = executableParameter(info, tp, arguments);
                 break;
             }
+            case METHOD_INVOCATION: {
+                List<? extends ExpressionTree> arguments = ((MethodInvocationTree) tp.getParentPath().getLeaf()).getArguments();
+                target = executableParameter(info, tp, arguments);
+                break;
+            }
+
             case VARIABLE: {
                 target = (VariableElement) info.getTrees().getElement(tp.getParentPath());
                 break;
@@ -115,12 +124,24 @@ public class SetLanguage {
         return target;
     }
 
+    private static VariableElement executableParameter(CompilationInfo info, TreePath paramPath, List<? extends ExpressionTree> arguments) {
+        int argPos = arguments.indexOf(paramPath.getLeaf());
+        if (argPos == (-1)) {
+            return null;
+        }
+        Element el = info.getTrees().getElement(paramPath.getParentPath());
+        if (el == null || (el.getKind() != ElementKind.METHOD && el.getKind() != ElementKind.CONSTRUCTOR)) {
+            return null;
+        }
+        return ((ExecutableElement) el).getParameters().get(argPos);
+    }
+
     private static final class SetLanguageFix implements Fix {
 
-        private final ElementHandle<?> target;
+        private final TreePathHandle target;
         private final String targetDescription;
 
-        public SetLanguageFix(ElementHandle<?> target, String targetDescription) {
+        public SetLanguageFix(TreePathHandle target, String targetDescription) {
             this.target = target;
             this.targetDescription = targetDescription;
         }
@@ -133,9 +154,26 @@ public class SetLanguage {
 
         @Override
         public ChangeInfo implement() throws Exception {
-            NotifyDescriptor nd = new DialogDescriptor.InputLine("Language:", "Select Language");
-            Object value = DialogDisplayer.getDefault().notify(nd);
-            System.err.println("value=" + value);
+            InputLine nd = new InputLine("Language:", "Select Language");
+            Object result = DialogDisplayer.getDefault().notify(nd);
+            if (Objects.equals(result, InputLine.OK_OPTION)) {
+                String language = nd.getInputText();
+                JavaSource.forFileObject(target.getFileObject())
+                          .runUserActionTask(cc -> {
+                              cc.toPhase(Phase.RESOLVED);
+                              TreePath param = target.resolve(cc);
+                              if (param == null) {
+                                  //TODO: error!
+                                  return ;
+                              }
+                              Element paramElem = findLanguageFromTarget(cc, param);
+                              if (paramElem == null) {
+                                  //TODO: error!
+                                  return ;
+                              }
+                              SourceUtils.attachAnnotation(cc, paramElem, "@Language(\"" + language + "\")");
+                          }, true);
+            }
             return null;
         }
 
