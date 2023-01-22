@@ -298,9 +298,7 @@ export function activate(context: ExtensionContext): VSNetBeansAPI {
     function checkConflict(): void {
         let conf = workspace.getConfiguration();
         if (conf.get("netbeans.conflict.check") && conf.get("netbeans.javaSupport.enabled")) {
-            const id = 'redhat.java';
-            let e = vscode.extensions.getExtension(id);
-            if (e && workspace.name) {
+            if (vscode.extensions.getExtension('redhat.java')) {
                 if (vscode.extensions.getExtension('oracle-labs-graalvm.gcn')) {
                     conf.update("netbeans.javaSupport.enabled", false, true);
                 } else {
@@ -357,6 +355,7 @@ export function activate(context: ExtensionContext): VSNetBeansAPI {
     initializeRunConfiguration().then(initialized => {
 		if (initialized) {
 			context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('java8+', runConfigurationProvider));
+			context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('java', runConfigurationProvider));
 			context.subscriptions.push(vscode.window.registerTreeDataProvider('run-config', runConfigurationNodeProvider));
 			context.subscriptions.push(vscode.commands.registerCommand('java.workspace.configureRunSettings', (...params: any[]) => {
 				configureRunSettings(context, params);

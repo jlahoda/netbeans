@@ -257,7 +257,7 @@ final class DocRenderer {
             LINK_TAGS.add("@use"); // NOI18N
         }
         private final CCDocHtmlFormatter header;
-        private final StringBuilder phpDoc = new StringBuilder();;
+        private final StringBuilder phpDoc = new StringBuilder();
         private final PhpElement indexedElement;
         private final List<String> links = new ArrayList<>();
         private final ASTNode node;
@@ -1030,6 +1030,11 @@ final class DocRenderer {
         }
 
         private static void getOverriddenConstants(TypeConstantElement constant, List<TypeConstantElement> constants) {
+            if (constant.isMagic()) {
+                // e.g. A::class
+                // prevent NPE in getIndex()
+                return;
+            }
             Set<TypeConstantElement> overriddenConstants = getOverriddenConstants(constant);
             constants.addAll(overriddenConstants);
             for (TypeConstantElement overriddenConstant : overriddenConstants) {
