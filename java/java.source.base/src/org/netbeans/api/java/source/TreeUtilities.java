@@ -689,6 +689,7 @@ public final class TreeUtilities {
             Log.DiagnosticHandler discardHandler = new Log.DiscardDiagnosticHandler(compiler.log) {
                 @Override
                 public void report(JCDiagnostic diag) {
+                    System.err.println("diag" + diag);
                     //ignore:
                 }            
             };

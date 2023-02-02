@@ -59,6 +59,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
+import javax.lang.model.element.AnnotationMirror;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -84,6 +85,7 @@ import javax.lang.model.util.Types;
 import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.annotations.common.NullAllowed;
+import org.netbeans.modules.java.source.annotations.AugmentedAnnotations;
 import org.netbeans.modules.java.source.builder.ElementsService;
 import org.netbeans.modules.java.source.base.SourceLevelUtils;
 import org.openide.util.Parameters;
@@ -921,6 +923,10 @@ public final class ElementUtilities {
         return null;
     }
     
+    public List<? extends AnnotationMirror> getAugmentedAnnotationMirrors(Element e) {
+        return AugmentedAnnotations.getAugmentedAnnotationMirrors(info, e);
+    }
+
     // private implementation --------------------------------------------------
 
     private static final Set<Modifier> NOT_OVERRIDABLE = EnumSet.of(Modifier.STATIC, Modifier.FINAL, Modifier.PRIVATE);
