@@ -116,18 +116,11 @@ public final class NbLaunchRequestHandler {
 
                         List<ElementHandle<TypeElement>> mainClasses =
                                 new ArrayList<>(SourceUtils.getMainClasses(sourceRoots));
-                        List<NotifyDescriptor.QuickPick.Item> mainClassItems =
-                                mainClasses.stream()
-                                           .map(eh -> new Item(eh.getQualifiedName(), eh.getQualifiedName()))
-                                           .collect(Collectors.toList());
-
-                        NotifyDescriptor.QuickPick pick = new DialogDescriptor.QuickPick("Please choose main class", "Choose main class", mainClassItems, false);
                         CompletableFuture<Void> currentResult = new CompletableFuture<>();
-                        DialogDisplayer.getDefault().notifyFuture(pick).thenAccept(acceptedPick -> {
+                        Consumer<ElementHandle<TypeElement>> handleSelectedMainClass = mainClass -> {
                             Map<String, Object> newLaunchArguments = new HashMap<>(launchArguments);
-                            int selected = (int) acceptedPick.getValue();
                             ClasspathInfo cpInfo = ClasspathInfo.create(ClassPath.EMPTY, ClassPath.EMPTY, ClassPathSupport.createClassPath(sourceRoots));
-                            FileObject mainClassFile = SourceUtils.getFile(mainClasses.get(selected), cpInfo);
+                            FileObject mainClassFile = SourceUtils.getFile(mainClass, cpInfo);
                             if (mainClassFile == null) {
                                 ErrorUtilities.completeExceptionally(currentResult,
                                     "Cannot find source file for the selected main class.",
@@ -140,12 +133,37 @@ public final class NbLaunchRequestHandler {
                                                                        return null;
                                                                    });
                             }
-                        }).exceptionally(t -> {
-                            ErrorUtilities.completeExceptionally(currentResult,
-                                "Failed to launch debuggee VM. No mainClass provided.",
-                                ResponseErrorCode.ServerNotInitialized);
-                            return null;
-                        });
+                        };
+
+                        switch (mainClasses.size()) {
+                            case 0:
+                                ErrorUtilities.completeExceptionally(currentResult,
+                                    "Failed to launch debuggee VM. No mainClass provided.",
+                                    ResponseErrorCode.ServerNotInitialized);
+                                break;
+                            case 1:
+                                handleSelectedMainClass.accept(mainClasses.get(0));
+                                break;
+                            case 2:
+                                List<NotifyDescriptor.QuickPick.Item> mainClassItems =
+                                        mainClasses.stream()
+                                                   .map(eh -> new Item(eh.getQualifiedName(), eh.getQualifiedName()))
+                                                   .collect(Collectors.toList());
+
+                                NotifyDescriptor.QuickPick pick = new DialogDescriptor.QuickPick("Please choose main class",
+                                                                                                 "Choose main class", mainClassItems, false);
+                                DialogDisplayer.getDefault().notifyFuture(pick).thenAccept(acceptedPick -> {
+                                    int selected = (int) acceptedPick.getValue();
+                                    ElementHandle<TypeElement> mainClass = mainClasses.get(selected);
+                                    handleSelectedMainClass.accept(mainClass);
+                                }).exceptionally(t -> {
+                                    ErrorUtilities.completeExceptionally(currentResult,
+                                        "Failed to launch debuggee VM. No mainClass provided.",
+                                        ResponseErrorCode.ServerNotInitialized);
+                                    return null;
+                                });
+                                break;
+                        }
                         return currentResult;
                     }));
                 });
