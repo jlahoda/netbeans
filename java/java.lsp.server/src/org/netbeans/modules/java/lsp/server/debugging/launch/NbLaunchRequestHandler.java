@@ -137,8 +137,12 @@ public final class NbLaunchRequestHandler {
 
                         switch (mainClasses.size()) {
                             case 0:
+                                String message = "Failed to launch debuggee VM. No mainClass provided.";
+                                if (SourceUtils.isScanInProgress()) {
+                                    message += " Indexing is in progress, please try again when the indexing is completed.";
+                                }
                                 ErrorUtilities.completeExceptionally(currentResult,
-                                    "Failed to launch debuggee VM. No mainClass provided.",
+                                    message,
                                     ResponseErrorCode.ServerNotInitialized);
                                 break;
                             case 1:
@@ -153,9 +157,14 @@ public final class NbLaunchRequestHandler {
                                 NotifyDescriptor.QuickPick pick = new DialogDescriptor.QuickPick("Please choose main class",
                                                                                                  "Choose main class", mainClassItems, false);
                                 DialogDisplayer.getDefault().notifyFuture(pick).thenAccept(acceptedPick -> {
-                                    int selected = (int) acceptedPick.getValue();
-                                    ElementHandle<TypeElement> mainClass = mainClasses.get(selected);
-                                    handleSelectedMainClass.accept(mainClass);
+                                    for (int i = 0; i < acceptedPick.getItems().size(); i++) {
+                                        NotifyDescriptor.QuickPick.Item item = acceptedPick.getItems().get(i);
+                                        if (item.isSelected()) {
+                                            ElementHandle<TypeElement> mainClass = mainClasses.get(i);
+                                            handleSelectedMainClass.accept(mainClass);
+                                            break;
+                                        }
+                                    }
                                 }).exceptionally(t -> {
                                     ErrorUtilities.completeExceptionally(currentResult,
                                         "Failed to launch debuggee VM. No mainClass provided.",
