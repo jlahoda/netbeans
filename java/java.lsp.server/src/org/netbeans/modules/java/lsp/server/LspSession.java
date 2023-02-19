@@ -69,7 +69,7 @@ public final class LspSession {
         if (server == null) {
             lookupControler.setLookups();
         } else {
-            Lookup l = server.getServerLookup();
+            Lookup l = server.getServerServicesLookup();
             if (l != null) {
                 lookupControler.setLookups(l);
             }
@@ -114,7 +114,7 @@ public final class LspSession {
          */
         Future<Void> getRunningFuture();
 
-        default Lookup getServerLookup() {
+        default Lookup getServerServicesLookup() {
             return null;
         }
     }
