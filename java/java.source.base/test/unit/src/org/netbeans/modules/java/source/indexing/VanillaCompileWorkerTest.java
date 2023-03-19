@@ -53,6 +53,7 @@ import org.netbeans.junit.NbTestSuite;
 import org.netbeans.modules.classfile.ClassFile;
 import org.netbeans.modules.java.source.indexing.CompileWorker.ParsingOutput;
 import org.netbeans.modules.java.source.indexing.JavaCustomIndexer.CompileTuple;
+import org.netbeans.modules.java.source.parsing.JavacParser;
 import org.netbeans.modules.parsing.spi.indexing.Context;
 import org.netbeans.spi.java.classpath.support.ClassPathSupport;
 import org.openide.filesystems.FileObject;
@@ -2240,6 +2241,58 @@ public class VanillaCompileWorkerTest extends CompileWorkerTestBase {
                 "    \n" +
                 "    public void test2(Object o) {\n" +
                 "        throw new java.lang.RuntimeException(\"Uncompilable code\");\n" +
+                "    }\n" +
+                "}");
+        assertEquals(expected, file2Fixed);
+    }
+
+    public void testTypeTest() throws Exception {
+        setSourceLevel("17");
+
+        Map<String, String> file2Fixed = new HashMap<>();
+        VanillaCompileWorker.fixedListener = (file, cut) -> {
+            try {
+                FileObject source = URLMapper.findFileObject(file.toUri().toURL());
+                file2Fixed.put(FileUtil.getRelativePath(getRoot(), source), cut.toString());
+            } catch (MalformedURLException ex) {
+                throw new IllegalStateException(ex);
+            }
+        };
+        ParsingOutput result = runIndexing(Arrays.asList(compileTuple("test/Test.java",
+                                                                      "package test;\n" +
+                                                                      "public class Test {\n" +
+                                                                      "    public void test1(Object o) {\n" +
+                                                                      "        if (o instanceof String s) {\n" +
+                                                                      "            System.err.println();\n" +
+                                                                      "        }\n" +
+                                                                      "    }\n" +
+                                                                      "}\n")),
+                                           Arrays.asList());
+
+        assertFalse(result.lowMemory);
+        assertTrue(result.success);
+
+        Set<String> createdFiles = new HashSet<String>();
+
+        for (File created : result.createdFiles) {
+            createdFiles.add(getWorkDir().toURI().relativize(created.toURI()).getPath());
+        }
+
+        assertEquals(new HashSet<String>(Arrays.asList("cache/s1/java/15/classes/test/Test.sig")),
+                     createdFiles);
+        Map<String, String> expected = Collections.singletonMap("test/Test.java",
+                "package test;\n" +
+                "\n" +
+                "public class Test {\n" +
+                "    \n" +
+                "    public Test() {\n" +
+                "        super();\n" +
+                "    }\n" +
+                "    \n" +
+                "    public void test1(Object o) {\n" +
+                "        if (o instanceof String s) {\n" +
+                "            System.err.println();\n" +
+                "        }\n" +
                 "    }\n" +
                 "}");
         assertEquals(expected, file2Fixed);
