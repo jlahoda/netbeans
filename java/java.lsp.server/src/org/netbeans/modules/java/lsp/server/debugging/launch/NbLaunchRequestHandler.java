@@ -97,86 +97,81 @@ public final class NbLaunchRequestHandler {
                 return resultFuture;
             }
             if (StringUtils.isBlank(mainFilePath) && StringUtils.isBlank(filePath) && StringUtils.isBlank(projectFilePath)) {
-                AtomicReference<CompletableFuture<Void>> result = new AtomicReference<>();
-                Lookups.executeWith(context.getLspSession().getLookup(), () -> {
-                    LspServerState state = Lookup.getDefault().lookup(LspServerState.class);
-                    if (state == null) {
-                        ErrorUtilities.completeExceptionally(resultFuture,
-                            "Failed to launch debuggee VM. Missing mainClass or modulePaths/classPaths options in launch configuration.",
-                            ResponseErrorCode.ServerNotInitialized);
-                        result.set(resultFuture);
-                        return ;
-                    }
-                    result.set(state.openedProjects().thenCompose(prjs -> {
-                        FileObject[] sourceRoots =
-                            Arrays.stream(prjs)
-                                  .flatMap(p -> Arrays.stream(ProjectUtils.getSources(p).getSourceGroups(JavaProjectConstants.SOURCES_TYPE_JAVA)))
-                                  .map(sg -> sg.getRootFolder())
-                                  .toArray(s -> new FileObject[s]);
+                LspServerState state = Lookup.getDefault().lookup(LspServerState.class);
+                if (state == null) {
+                    ErrorUtilities.completeExceptionally(resultFuture,
+                        "Failed to launch debuggee VM. Missing mainClass or modulePaths/classPaths options in launch configuration.",
+                        ResponseErrorCode.ServerNotInitialized);
+                    return resultFuture;
+                }
+                return state.openedProjects().thenCompose(prjs -> {
+                    FileObject[] sourceRoots =
+                        Arrays.stream(prjs)
+                              .flatMap(p -> Arrays.stream(ProjectUtils.getSources(p).getSourceGroups(JavaProjectConstants.SOURCES_TYPE_JAVA)))
+                              .map(sg -> sg.getRootFolder())
+                              .toArray(s -> new FileObject[s]);
 
-                        List<ElementHandle<TypeElement>> mainClasses =
-                                new ArrayList<>(SourceUtils.getMainClasses(sourceRoots));
-                        CompletableFuture<Void> currentResult = new CompletableFuture<>();
-                        Consumer<ElementHandle<TypeElement>> handleSelectedMainClass = mainClass -> {
-                            Map<String, Object> newLaunchArguments = new HashMap<>(launchArguments);
-                            ClasspathInfo cpInfo = ClasspathInfo.create(ClassPath.EMPTY, ClassPath.EMPTY, ClassPathSupport.createClassPath(sourceRoots));
-                            FileObject mainClassFile = SourceUtils.getFile(mainClass, cpInfo);
-                            if (mainClassFile == null) {
-                                ErrorUtilities.completeExceptionally(currentResult,
-                                    "Cannot find source file for the selected main class.",
-                                    ResponseErrorCode.ServerNotInitialized);
-                            } else {
-                                newLaunchArguments.put("mainClass", mainClassFile.toURI().toString());
-                                launch(newLaunchArguments, context).thenAccept(res -> currentResult.complete(res))
-                                                                   .exceptionally(t -> {
-                                                                       currentResult.completeExceptionally(t);
-                                                                       return null;
-                                                                   });
-                            }
-                        };
-
-                        switch (mainClasses.size()) {
-                            case 0:
-                                String message = "Failed to launch debuggee VM. No mainClass provided.";
-                                if (SourceUtils.isScanInProgress()) {
-                                    message += " Indexing is in progress, please try again when the indexing is completed.";
-                                }
-                                ErrorUtilities.completeExceptionally(currentResult,
-                                    message,
-                                    ResponseErrorCode.ServerNotInitialized);
-                                break;
-                            case 1:
-                                handleSelectedMainClass.accept(mainClasses.get(0));
-                                break;
-                            case 2:
-                                List<NotifyDescriptor.QuickPick.Item> mainClassItems =
-                                        mainClasses.stream()
-                                                   .map(eh -> new Item(eh.getQualifiedName(), eh.getQualifiedName()))
-                                                   .collect(Collectors.toList());
-
-                                NotifyDescriptor.QuickPick pick = new DialogDescriptor.QuickPick("Please choose main class",
-                                                                                                 "Choose main class", mainClassItems, false);
-                                DialogDisplayer.getDefault().notifyFuture(pick).thenAccept(acceptedPick -> {
-                                    for (int i = 0; i < acceptedPick.getItems().size(); i++) {
-                                        NotifyDescriptor.QuickPick.Item item = acceptedPick.getItems().get(i);
-                                        if (item.isSelected()) {
-                                            ElementHandle<TypeElement> mainClass = mainClasses.get(i);
-                                            handleSelectedMainClass.accept(mainClass);
-                                            break;
-                                        }
-                                    }
-                                }).exceptionally(t -> {
-                                    ErrorUtilities.completeExceptionally(currentResult,
-                                        "Failed to launch debuggee VM. No mainClass provided.",
-                                        ResponseErrorCode.ServerNotInitialized);
-                                    return null;
-                                });
-                                break;
+                    List<ElementHandle<TypeElement>> mainClasses =
+                            new ArrayList<>(SourceUtils.getMainClasses(sourceRoots));
+                    CompletableFuture<Void> currentResult = new CompletableFuture<>();
+                    Consumer<ElementHandle<TypeElement>> handleSelectedMainClass = mainClass -> {
+                        Map<String, Object> newLaunchArguments = new HashMap<>(launchArguments);
+                        ClasspathInfo cpInfo = ClasspathInfo.create(ClassPath.EMPTY, ClassPath.EMPTY, ClassPathSupport.createClassPath(sourceRoots));
+                        FileObject mainClassFile = SourceUtils.getFile(mainClass, cpInfo);
+                        if (mainClassFile == null) {
+                            ErrorUtilities.completeExceptionally(currentResult,
+                                "Cannot find source file for the selected main class.",
+                                ResponseErrorCode.ServerNotInitialized);
+                        } else {
+                            newLaunchArguments.put("mainClass", mainClassFile.toURI().toString());
+                            launch(newLaunchArguments, context).thenAccept(res -> currentResult.complete(res))
+                                                               .exceptionally(t -> {
+                                                                   currentResult.completeExceptionally(t);
+                                                                   return null;
+                                                               });
                         }
-                        return currentResult;
-                    }));
+                    };
+
+                    switch (mainClasses.size()) {
+                        case 0:
+                            String message = "Failed to launch debuggee VM. No mainClass provided.";
+                            if (SourceUtils.isScanInProgress()) {
+                                message += " Indexing is in progress, please try again when the indexing is completed.";
+                            }
+                            ErrorUtilities.completeExceptionally(currentResult,
+                                message,
+                                ResponseErrorCode.ServerNotInitialized);
+                            break;
+                        case 1:
+                            handleSelectedMainClass.accept(mainClasses.get(0));
+                            break;
+                        case 2:
+                            List<NotifyDescriptor.QuickPick.Item> mainClassItems =
+                                    mainClasses.stream()
+                                               .map(eh -> new Item(eh.getQualifiedName(), eh.getQualifiedName()))
+                                               .collect(Collectors.toList());
+
+                            NotifyDescriptor.QuickPick pick = new DialogDescriptor.QuickPick("Please choose main class",
+                                                                                             "Choose main class", mainClassItems, false);
+                            DialogDisplayer.getDefault().notifyFuture(pick).thenAccept(acceptedPick -> {
+                                for (int i = 0; i < acceptedPick.getItems().size(); i++) {
+                                    NotifyDescriptor.QuickPick.Item item = acceptedPick.getItems().get(i);
+                                    if (item.isSelected()) {
+                                        ElementHandle<TypeElement> mainClass = mainClasses.get(i);
+                                        handleSelectedMainClass.accept(mainClass);
+                                        break;
+                                    }
+                                }
+                            }).exceptionally(t -> {
+                                ErrorUtilities.completeExceptionally(currentResult,
+                                    "Failed to launch debuggee VM. No mainClass provided.",
+                                    ResponseErrorCode.ServerNotInitialized);
+                                return null;
+                            });
+                            break;
+                    }
+                    return currentResult;
                 });
-                return result.get();
             }
         }
         if (StringUtils.isBlank((String)launchArguments.get("encoding"))) {
