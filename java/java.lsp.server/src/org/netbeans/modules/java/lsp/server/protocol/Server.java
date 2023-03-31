@@ -338,9 +338,8 @@ public final class Server {
         private final TextDocumentServiceImpl textDocumentService = new TextDocumentServiceImpl(this);
         private final WorkspaceServiceImpl workspaceService = new WorkspaceServiceImpl(this);
         private final InstanceContent   sessionServices = new InstanceContent();
-        private final Lookup sessionServicesLookup = new AbstractLookup(sessionServices);
         private final Lookup sessionLookup = new ProxyLookup(
-                sessionServicesLookup,
+                new AbstractLookup(sessionServices),
                 Lookup.getDefault()
         );
 
@@ -386,10 +385,6 @@ public final class Server {
 
         Lookup getSessionLookup() {
             return sessionLookup;
-        }
-
-        Lookup getSessionServicesLookup() {
-            return sessionServicesLookup;
         }
 
         /**
