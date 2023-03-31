@@ -300,6 +300,7 @@ public class FormatVisitor extends DefaultVisitor {
             if (formatTokens.get(formatTokens.size() - 1).getId() == FormatToken.Kind.WHITESPACE_INDENT
                     || path.get(1) instanceof ArrayElement
                     || path.get(1) instanceof FormalParameter
+                    || path.get(1) instanceof MatchArm
                     || path.get(1) instanceof CastExpression) {
                 // when the array is on the beginning of the line, indent items in normal way
                 delta = options.indentArrayItems;
@@ -599,7 +600,7 @@ public class FormatVisitor extends DefaultVisitor {
                 formatTokens.add(new FormatToken.IndentToken(ts.offset(), options.indentSize));
             }
 
-            if (parent instanceof ClassDeclaration || parent instanceof InterfaceDeclaration || parent instanceof TraitDeclaration) {
+            if (isTypeNode(parent)) {
                 formatTokens.add(new FormatToken(FormatToken.Kind.WHITESPACE_AFTER_CLASS_LEFT_BRACE, ts.offset()));
             } else if (isAnonymousClass(parent)) {
                 formatTokens.add(new FormatToken(FormatToken.Kind.WHITESPACE_AFTER_ANONYMOUS_CLASS_LEFT_BRACE, ts.offset()));
@@ -963,9 +964,9 @@ public class FormatVisitor extends DefaultVisitor {
                 if (putContinualIndent) {
                     formatTokens.add(new FormatToken.IndentToken(ts.offset(), options.continualIndentSize));
                 }
-                formatTokens.add(new FormatToken(FormatToken.Kind.WHITESPACE_IN_TERNARY_OP, ts.offset()));
+                formatTokens.add(new FormatToken(getTokenKindForWhiteSpaceIn(operator), ts.offset()));
                 formatTokens.add(new FormatToken(FormatToken.Kind.TEXT, ts.offset(), ts.token().text().toString()));
-                formatTokens.add(new FormatToken(FormatToken.Kind.WHITESPACE_AROUND_TERNARY_OP, ts.offset() + ts.token().length()));
+                formatTokens.add(new FormatToken(getTokenKindForWhiteSpaceAround(operator), ts.offset() + ts.token().length()));
                 // condition part
                 addAllUntilOffset(node.getIfFalse().getStartOffset());
                 formatTokens.add(new FormatToken.UnbreakableSequenceToken(ts.offset(), null, FormatToken.Kind.UNBREAKABLE_SEQUENCE_START));
@@ -975,6 +976,32 @@ public class FormatVisitor extends DefaultVisitor {
                     formatTokens.add(new FormatToken.IndentToken(ts.offset(), -1 * options.continualIndentSize));
                 }
         }
+    }
+
+    private FormatToken.Kind getTokenKindForWhiteSpaceIn(ConditionalExpression.OperatorType operatorType) {
+        FormatToken.Kind kind = FormatToken.Kind.WHITESPACE_IN_TERNARY_OP;
+        switch (operatorType) {
+            case COALESCE:
+                kind = FormatToken.Kind.WHITESPACE_IN_COALESCING_OP;
+                break;
+            default:
+                // no-op
+                break;
+        }
+        return kind;
+    }
+
+    private FormatToken.Kind getTokenKindForWhiteSpaceAround(ConditionalExpression.OperatorType operatorType) {
+        FormatToken.Kind kind = FormatToken.Kind.WHITESPACE_AROUND_TERNARY_OP;
+        switch (operatorType) {
+            case COALESCE:
+                kind = FormatToken.Kind.WHITESPACE_AROUND_COALESCING_OP;
+                break;
+            default:
+                // no-op
+                break;
+        }
+        return kind;
     }
 
     private void visitConditionalExpression(ConditionalExpression node, boolean putContinualIndent) {
