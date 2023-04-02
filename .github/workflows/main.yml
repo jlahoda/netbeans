@@ -1243,9 +1243,6 @@ jobs:
       - name: Extract
         run: tar --zstd -xf build.tar.zst
 
-      - name: api.debugger.jpda
-        run: ant $OPTS -f java/api.debugger.jpda test
-
       - name: api.java
         run: ant $OPTS -f java/api.java test
 
@@ -1257,24 +1254,6 @@ jobs:
 
       - name: dbschema
         run: ant $OPTS -f java/dbschema test -Dtest.config=stable
-
-#      - name: debugger.jpda
-#        run: ant $OPTS -f java/debugger.jpda test
-
-      - name: debugger.jpda.js
-        run: ant $OPTS -f java/debugger.jpda.js test
-
-      - name: debugger.jpda.projects
-        run: ant $OPTS -f java/debugger.jpda.projects test
-
-      - name: debugger.jpda.projectsui
-        run: ant $OPTS -f java/debugger.jpda.projectsui test
-
-#      - name: debugger.jpda.truffle
-#        run: ant $OPTS -f java/debugger.jpda.truffle test
-
-#      - name: debugger.jpda.ui
-#        run: ant $OPTS -f java/debugger.jpda.ui test
 
       - name: editor.htmlui
         run: ant $OPTS -f java/editor.htmlui test
@@ -1522,7 +1501,7 @@ jobs:
 
 
   java-debugger-test:
-    name: Java Debugger ${{ matrix.config }} on Linux/JDK ${{ matrix.java }}
+    name: Java Debugger tests on Linux/JDK ${{ matrix.java }}
     # equals env.test_java == 'true'
     if: ${{ contains(github.event.pull_request.labels.*.name, 'Java') || contains(github.event.pull_request.labels.*.name, 'ci:all-tests') || github.event_name != 'pull_request' }}
     needs: base-build
@@ -1553,8 +1532,26 @@ jobs:
       - name: Extract
         run: tar --zstd -xf build.tar.zst
 
-      - name: debugger.jpda ${{ matrix.config }}
-        run: ant $OPTS -Dtest.config=${{ matrix.config }} -f java/debugger.jpda test
+      - name: api.debugger.jpda
+        run: ant $OPTS -f java/api.debugger.jpda test
+
+      - name: debugger.jpda
+        run: ant $OPTS -f java/debugger.jpda test
+
+      - name: debugger.jpda.js
+        run: ant $OPTS -f java/debugger.jpda.js test
+
+      - name: debugger.jpda.projects
+        run: ant $OPTS -f java/debugger.jpda.projects test
+
+      - name: debugger.jpda.projectsui
+        run: ant $OPTS -f java/debugger.jpda.projectsui test
+
+#      - name: debugger.jpda.truffle
+#        run: ant $OPTS -f java/debugger.jpda.truffle test
+
+#      - name: debugger.jpda.ui
+#        run: ant $OPTS -f java/debugger.jpda.ui test
 
       - name: Create Test Summary
         uses: test-summary/action@v2
