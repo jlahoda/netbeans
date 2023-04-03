@@ -2416,6 +2416,7 @@ jobs:
       - harness-modules-test
       - java-modules-test
       - java-hints-test
+      - java-debugger-test
       - profiler-test
       - apisupport-modules-test
       - build-tools
