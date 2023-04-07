@@ -187,8 +187,6 @@ public class AugmentedAnnotationsTest extends NbTestCase {
 
         assertNotNull(tTest);
 
-        CacheBasedAnnotationDescriptionProvider.overrideCacheDirForTests = FileUtil.createFolder(sourceRoot, "../annotations-cache");
-
         assertTrue(AugmentedAnnotations.attachAnnotation(info, tTest, "@test.NonNull"));
 
         FileObject annotationsXML = sourceRoot.getFileObject("../annotations-cache/test/annotations.xml");
@@ -213,8 +211,6 @@ public class AugmentedAnnotationsTest extends NbTestCase {
         TypeElement tTest = info.getElements().getTypeElement("test.Test");
 
         assertNotNull(tTest);
-
-        CacheBasedAnnotationDescriptionProvider.overrideCacheDirForTests = FileUtil.createFolder(sourceRoot, "../annotations-cache");
 
         assertTrue(AugmentedAnnotations.attachAnnotation(info, tTest, "@test.Language(value=\"java\")"));
 
