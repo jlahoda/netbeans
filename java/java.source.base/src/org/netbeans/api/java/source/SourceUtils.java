@@ -1023,30 +1023,37 @@ public class SourceUtils {
      * @return true when the method is a main method
      */
     public static boolean isMainMethod (final ExecutableElement method) {
+        //TODO: check source level?
         if (!"main".contentEquals(method.getSimpleName())) {                //NOI18N
-            return false;
-        }
-        long flags = ((Symbol.MethodSymbol)method).flags();                 //faster
-        if (((flags & Flags.PUBLIC) == 0) || ((flags & Flags.STATIC) == 0)) {
             return false;
         }
         if (method.getReturnType().getKind() != TypeKind.VOID) {
             return false;
         }
         List<? extends VariableElement> params = method.getParameters();
-        if (params.size() != 1) {
-            return false;
+        switch (params.size()) {
+            case 0: break;
+            case 1:
+                TypeMirror param = params.get(0).asType();
+                if (param.getKind() != TypeKind.ARRAY) {
+                    return false;
+                }
+                ArrayType array = (ArrayType) param;
+                TypeMirror compound = array.getComponentType();
+                if (compound.getKind() != TypeKind.DECLARED) {
+                    return false;
+                }
+                if (!"java.lang.String".contentEquals(((TypeElement)((DeclaredType)compound).asElement()).getQualifiedName())) {   //NOI18N
+                    return false;
+                }
+                break;
+            default: return false;
         }
-        TypeMirror param = params.get(0).asType();
-        if (param.getKind() != TypeKind.ARRAY) {
-            return false;
+        long flags = ((Symbol.MethodSymbol)method).flags();                 //faster
+        if ((flags & Flags.STATIC) == 0) {
+            //TODO: check constructor
         }
-        ArrayType array = (ArrayType) param;
-        TypeMirror compound = array.getComponentType();
-        if (compound.getKind() != TypeKind.DECLARED) {
-            return false;
-        }
-        return "java.lang.String".contentEquals(((TypeElement)((DeclaredType)compound).asElement()).getQualifiedName());   //NOI18N
+        return true;
     }
 
     /**

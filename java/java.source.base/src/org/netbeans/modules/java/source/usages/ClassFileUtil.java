@@ -301,17 +301,20 @@ public class ClassFileUtil {
     public static void encodeClassName (TypeElement te, final StringBuilder sb, final char separator) {
         Name name = ((Symbol.ClassSymbol)te).flatname;
         assert name != null;
-        final int nameLength = name.getByteLength();
-        final char[] nameChars = new char[nameLength];
-        int charLength = Convert.utf2chars(name.getByteArray(), name.getByteOffset(), nameChars, 0, nameLength);
+        final String nameString = name.toString();
+        sb.ensureCapacity(sb.capacity() + nameString.length());
         if (separator != '.') {         //NOI18N
-            for (int i=0; i<charLength; i++) {
-                if (nameChars[i] == '.') {  //NOI18N
-                    nameChars[i] = separator; 
+            int charLength = nameString.length();
+            for (int i=0; i < charLength; i++) {
+                if (nameString.charAt(i) == '.') {  //NOI18N
+                    sb.append(separator);
+                } else {
+                    sb.append(nameString.charAt(i));
                 }
             }
+        } else {
+            sb.append(nameString);
         }
-        sb.append(nameChars,0,charLength);
     }
     
     /**

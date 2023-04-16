@@ -359,9 +359,16 @@ public final class TreeUtilities {
             public Void scan(Tree tree, Void p) {
                 if (tree != null) {
                     long endPos = sourcePositions.getEndPosition(getCurrentPath().getCompilationUnit(), tree);
-                    if (endPos == (-1) && tree.getKind() == Kind.ASSIGNMENT && getCurrentPath().getLeaf().getKind() == Kind.ANNOTATION) {
-                        ExpressionTree value = ((AssignmentTree) tree).getExpression();
-                        endPos = sourcePositions.getEndPosition(getCurrentPath().getCompilationUnit(), value);
+                    if (endPos == (-1)) {
+                        if (tree.getKind() == Kind.ASSIGNMENT && getCurrentPath().getLeaf().getKind() == Kind.ANNOTATION) {
+                            ExpressionTree value = ((AssignmentTree) tree).getExpression();
+                            endPos = sourcePositions.getEndPosition(getCurrentPath().getCompilationUnit(), value);
+                        } else if (tree.getKind() == Kind.CLASS) {
+                            ClassTree clazz = (ClassTree) tree;
+                            if (!clazz.getMembers().isEmpty()) {
+                                endPos = sourcePositions.getEndPosition(getCurrentPath().getCompilationUnit(), clazz.getMembers().get(clazz.getMembers().size() - 1));
+                            }
+                        }
                     }
                     if (sourcePositions.getStartPosition(getCurrentPath().getCompilationUnit(), tree) < pos && endPos >= pos) {
                         if (tree.getKind() == Tree.Kind.ERRONEOUS) {
