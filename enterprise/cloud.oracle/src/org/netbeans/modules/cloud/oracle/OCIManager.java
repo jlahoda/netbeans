@@ -42,7 +42,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.BackingStoreException;
@@ -425,7 +424,7 @@ public final class OCIManager {
             }
             if (profile == getActiveProfile()) {
                 OCIProfile def = forConfig(defaultConfigPath, profName);
-                if (profiles.values().contains(def) || profiles.isEmpty()) {
+                if (profiles.containsValue(def) || profiles.isEmpty()) {
                     resetToProfile = def;
                 } else {
                     resetToProfile = profiles.values().iterator().next();

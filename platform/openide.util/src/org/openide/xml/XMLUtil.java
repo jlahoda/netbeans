@@ -189,8 +189,8 @@ public final class XMLUtil extends Object {
      * Obtains DOMImpementaton interface providing a number of methods for performing
      * operations that are independent of any particular DOM instance.
      *
-     * @throw DOMException <code>NOT_SUPPORTED_ERR</code> if cannot get DOMImplementation
-     * @throw FactoryConfigurationError Application developers should never need to directly catch errors of this type.
+     * @throws DOMException <code>NOT_SUPPORTED_ERR</code> if cannot get DOMImplementation
+     * @throws FactoryConfigurationError Application developers should never need to directly catch errors of this type.
      *
      * @return DOMImplementation implementation
      */
@@ -590,7 +590,7 @@ public final class XMLUtil extends Object {
 
     /**
      * Escape passed string as XML element content (<code>&lt;</code>,
-     * <code>&amp;</code> and <code>&gt;</code> in <code>]]></code> sequences).
+     * <code>&amp;</code> and <code>&gt;</code> in <code>]]&gt;</code> sequences).
      *
      * @param val a string to be escaped
      *

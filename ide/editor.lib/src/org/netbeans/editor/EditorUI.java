@@ -719,7 +719,7 @@ public class EditorUI implements ChangeListener, PropertyChangeListener, MouseLi
      * 
      * @param coloringName The name of the coloring to find.
      * 
-     * @retrun The coloring or <code>null</code> if there is no coloring with the
+     * @return The coloring or <code>null</code> if there is no coloring with the
      *   requested name.
      * @deprecated Use Editor Settings API instead.
      */
@@ -922,7 +922,7 @@ public class EditorUI implements ChangeListener, PropertyChangeListener, MouseLi
      * other useful components.
      * <br>
      * The component no longer includes toolbar - it's returned
-     * by a separate method {@link #getToolbarComponent()}.
+     * by a separate method {@link #getToolBarComponent()}.
      * <br>
      * The getExtComponent() should not be used when
      * the JEditorPane is included in dialog.

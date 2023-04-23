@@ -358,7 +358,7 @@ public class NbBundle extends Object {
     * safer when used from a module as this method relies on the module's
     * classloader to currently be part of the system classloader. NetBeans
     * does add enabled modules to this classloader, however calls to
-    * this variant of the method made in <a href="@org-openide-modules@/org/openide/modules/ModuleInstall.html#validate()">ModuleInstall.validate</a>,
+    * this variant of the method made in <a href="@org-openide-modules@/org/openide/modules/ModuleInstall.html#validate--">ModuleInstall.validate</a>,
     * or made soon after a module is uninstalled (due to background threads)
     * could fail unexpectedly.
     * @param baseName bundle basename
@@ -585,7 +585,7 @@ public class NbBundle extends Object {
      * @param sname the name with slashes, e.g. <code>org/netbeans/modules/foo/Bundle</code>
      * @param locale the locale to use
      * @param suffixes a list of suffixes to apply to the bundle name, in <em>increasing</em> order of specificity
-     * @param loader a class loader to search in
+     * @param l a class loader to search in
      * @return a resource bundle (merged according to the suffixes), or null if not found
      */
     private static ResourceBundle loadBundleClass(

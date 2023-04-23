@@ -662,6 +662,10 @@ public class RunTimeDDCatalog extends GrammarQueryManager implements CatalogRead
     private static final String PERSISTENCE_3_0 = JAKARTA_PERSISTENCE_NS+"/"+PERSISTENCE_3_0_XSD; // NOI18N
     public static final String PERSISTENCE_3_0_ID = "SCHEMA:"+PERSISTENCE_3_0; // NOI18N 
     
+    private static final String PERSISTENCE_3_1_XSD="persistence_3_0.xsd"; // NOI18N
+    private static final String PERSISTENCE_3_1 = JAKARTA_PERSISTENCE_NS+"/"+PERSISTENCE_3_1_XSD; // NOI18N
+    public static final String PERSISTENCE_3_1_ID = "SCHEMA:"+PERSISTENCE_3_1; // NOI18N 
+    
     public static final String PERSISTENCEORM_NS = "http://java.sun.com/xml/ns/persistence/orm"; // NOI18N
     public static final String NEW_PERSISTENCEORM_NS = "http://xmlns.jcp.org/xml/ns/persistence/orm"; // NOI18N
     public static final String JAKARTA_PERSISTENCEORM_NS = "https://jakarta.ee/xml/ns/persistence/orm"; // NOI18N
@@ -688,6 +692,9 @@ public class RunTimeDDCatalog extends GrammarQueryManager implements CatalogRead
     private static final String PERSISTENCEORM_3_0 = JAKARTA_PERSISTENCEORM_NS+"/"+PERSISTENCEORM_3_0_XSD; // NOI18N  yes not ORM NS!!!
     public static final String PERSISTENCEORM_3_0_ID = "SCHEMA:"+PERSISTENCEORM_3_0; // NOI18N
     
+    private static final String PERSISTENCEORM_3_1_XSD="orm_3_1.xsd"; // NOI18N
+    private static final String PERSISTENCEORM_3_1 = JAKARTA_PERSISTENCEORM_NS+"/"+PERSISTENCEORM_3_1_XSD; // NOI18N  yes not ORM NS!!!
+    public static final String PERSISTENCEORM_3_1_ID = "SCHEMA:"+PERSISTENCEORM_3_1; // NOI18N
     
     public String getFullURLFromSystemId(String systemId){
         return null;
@@ -823,6 +830,8 @@ public class RunTimeDDCatalog extends GrammarQueryManager implements CatalogRead
                 return new org.xml.sax.InputSource(SCHEMASLOCATION+PERSISTENCE_2_2_XSD);
             } else if ( systemId.endsWith(PERSISTENCEORM_3_0_XSD)) {
                 return new org.xml.sax.InputSource(SCHEMASLOCATION+PERSISTENCEORM_3_0_XSD);
+            } else if ( systemId.endsWith(PERSISTENCEORM_3_1_XSD)) {
+                return new org.xml.sax.InputSource(SCHEMASLOCATION+PERSISTENCEORM_3_1_XSD);
             } else if ( systemId.endsWith(PERSISTENCE_3_0_XSD)) {
                 return new org.xml.sax.InputSource(SCHEMASLOCATION+PERSISTENCE_3_0_XSD);
             }
@@ -1021,6 +1030,9 @@ public class RunTimeDDCatalog extends GrammarQueryManager implements CatalogRead
                         case "text/x-dd-servlet-fragment3.0":  // NOI18N
                             inputSource = resolver.resolveEntity(WEBFRAGMENT_3_0_ID, "");
                             break;
+                        case "text/x-persistence3.1":  // NOI18N
+                            inputSource = resolver.resolveEntity(PERSISTENCE_3_1_ID, "");
+                            break;
                         case "text/x-persistence3.0":  // NOI18N
                             inputSource = resolver.resolveEntity(PERSISTENCE_3_0_ID, "");
                             break;
@@ -1035,6 +1047,9 @@ public class RunTimeDDCatalog extends GrammarQueryManager implements CatalogRead
                             break;
                         case "text/x-persistence1.0":  // NOI18N
                             inputSource = resolver.resolveEntity(PERSISTENCE_ID, "");
+                            break;
+                        case "text/x-orm3.1":  // NOI18N
+                            inputSource = resolver.resolveEntity(PERSISTENCEORM_3_1_ID, "");
                             break;
                         case "text/x-orm3.0":  // NOI18N
                             inputSource = resolver.resolveEntity(PERSISTENCEORM_3_0_ID, "");

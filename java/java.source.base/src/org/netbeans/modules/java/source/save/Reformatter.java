@@ -1152,7 +1152,7 @@ public class Reformatter implements ReformatTask {
                                 newline();
                             else
                                 space();
-                        } else if (sp.getStartPosition(root, mods) != sp.getStartPosition(root, node.getType())) {
+                        } else {
                             space();
                         }
                     } else if (afterAnnotation) {
@@ -1279,11 +1279,10 @@ public class Reformatter implements ReformatTask {
             boolean old = continuationIndent;
             int oldIndent = indent;
             try {
-                continuationIndent = true;
                 ModifiersTree mods = node.getModifiers();
                 if (mods != null) {
                     if (scan(mods, p)) {
-
+                        continuationIndent = true;
                         if (cs.placeNewLineAfterModifiers()) {
                             newline();
                         } else {
@@ -1295,6 +1294,7 @@ public class Reformatter implements ReformatTask {
                     afterAnnotation = false;
                 }
                 accept(IDENTIFIER);
+                continuationIndent = true;
                 space();
 
                 if (!ERROR.contentEquals(node.getSimpleName())) {
@@ -1826,6 +1826,7 @@ public class Reformatter implements ReformatTask {
                 case CLASS:
                 case ENUM:
                 case INTERFACE:
+                case RECORD:
                     bracePlacement = cs.getOtherBracePlacement();
                     if (node.isStatic())
                         spaceBeforeLeftBrace = cs.spaceBeforeStaticInitLeftBrace();
@@ -2831,10 +2832,6 @@ public class Reformatter implements ReformatTask {
             spaces(cs.spaceWithinMethodDeclParens() ? 1 : 0, true);
             wrapList(cs.wrapMethodParams(), cs.alignMultilineMethodParams(), false, COMMA, node.getNestedPatterns());
             accept(RPAREN);
-            if (node.getVariable() != null) {
-                space();
-                accept(IDENTIFIER);
-            }
             return true;
         }
 
@@ -5512,6 +5509,7 @@ public class Reformatter implements ReformatTask {
                 case CLASS:
                 case ENUM:
                 case INTERFACE:
+                case RECORD:
                     for (Tree tree : ((ClassTree)path.getLeaf()).getMembers()) {
                         if (tree == lastTree) {
                             indent += tabSize;
