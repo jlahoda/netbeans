@@ -199,6 +199,7 @@ public class JavaErrorProvider implements ErrorProvider {
             if (f instanceof org.netbeans.modules.java.hints.errors.EnablePreview.ResolveFix) {
                 org.netbeans.modules.java.hints.errors.EnablePreview.ResolveFix rf = (org.netbeans.modules.java.hints.errors.EnablePreview.ResolveFix) f;
                 CodeAction action = new CodeAction(f.getText(), new Command(f.getText(), "java.project.enable.preview", Arrays.asList(rf.getNewSourceLevel())));
+                System.err.println("action: " + action);
                 result.add(action);
             }
             if (f instanceof ImportClass.FixImport) {

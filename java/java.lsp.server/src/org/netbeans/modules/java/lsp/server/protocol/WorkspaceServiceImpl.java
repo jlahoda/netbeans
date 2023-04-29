@@ -643,6 +643,7 @@ public final class WorkspaceServiceImpl implements WorkspaceService, LanguageCli
                 return (CompletableFuture<Object>)(CompletableFuture<?>)new ProjectInfoWorker(locations, projectStructure, recursive, actions).process();
             }
             case Server.JAVA_ENABLE_PREVIEW: {
+                System.err.println("params.getArguments(): " + params.getArguments());
                 String source = ((JsonPrimitive) params.getArguments().get(0)).getAsString();
                 String newSourceLevel = params.getArguments().size() > 1 ? ((JsonPrimitive) params.getArguments().get(1)).getAsString()
                                                                          : null;

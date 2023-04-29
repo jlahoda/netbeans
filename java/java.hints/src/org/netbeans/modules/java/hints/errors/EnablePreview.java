@@ -94,6 +94,7 @@ public class EnablePreview implements ErrorRule<Void> {
 
             for (Factory factory : Lookup.getDefault().lookupAll(Factory.class)) {
                 PreviewEnabler enabler = factory.enablerFor(file);
+                System.err.println("factory: " + factory.getClass() + ", enabler: " + enabler + ", newSourceLevel: " + newSourceLevel);
                 if (enabler != null) {
                     return Collections.singletonList(new ResolveFix(enabler, newSourceLevel));
                 }
