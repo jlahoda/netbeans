@@ -21,5 +21,10 @@
 import * as vscode from 'vscode';
 
 export function activate(context: vscode.ExtensionContext) : void {
-    vscode.commands.executeCommand("java.start.language.server.impl", {configRoot: "netbeans"});
+    vscode.commands.executeCommand("java.start.language.server.impl", {configRoot: "netbeans", isJavaSupportEnabled: isJavaSupportEnabled});
 }
+
+function isJavaSupportEnabled(forceJavaSupport: boolean) : boolean {
+    return vscode.workspace.getConfiguration('netbeans')?.get('javaSupport.enabled') as boolean;
+}
+

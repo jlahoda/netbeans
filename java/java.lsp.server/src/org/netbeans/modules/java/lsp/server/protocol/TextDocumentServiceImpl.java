@@ -349,7 +349,7 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
             conf.setScopeUri(uri);
             conf.setSection(NETBEANS_JAVADOC_LOAD_TIMEOUT);
             return client.configuration(new ConfigurationParams(Collections.singletonList(conf))).thenApply(c -> {
-                if (c != null && !c.isEmpty()) {
+                if (c != null && !c.isEmpty() && c.get(0) instanceof JsonPrimitive) { //XXX: correct reading from other configuration roots!!!
                     javadocTimeout.set(((JsonPrimitive)c.get(0)).getAsInt());
                 }
                 final int caret = Utils.getOffset((LineDocument) doc, params.getPosition());
@@ -1628,7 +1628,7 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
         conf.setScopeUri(uri);
         conf.setSection(NETBEANS_JAVA_ON_SAVE_ORGANIZE_IMPORTS);
         return client.configuration(new ConfigurationParams(Collections.singletonList(conf))).thenApply(c -> {
-            if (c != null && !c.isEmpty() && ((JsonPrimitive) c.get(0)).getAsBoolean()) {
+            if (c != null && !c.isEmpty() && c.get(0) instanceof JsonPrimitive && ((JsonPrimitive) c.get(0)).getAsBoolean()) {//XXX: correct reading from other configuration roots!!!
                 try {
                     List<TextEdit> edits = TextDocumentServiceImpl.modify2TextEdits(js, wc -> {
                         wc.toPhase(JavaSource.Phase.RESOLVED);

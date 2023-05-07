@@ -151,7 +151,7 @@ export function awaitClient() : Promise<NbLanguageClient> {
     return Promise.resolve(t);
 }
 
-function findJDK(configRoot: string, onChange: (path : string | null) => void): void {
+function findJDK(configRoot: string, isJavaSupportEnabled : () => boolean, onChange: (path : string | null) => void): void {
     let nowDark : boolean = isDarkColorTheme();
     let nowJavaEnabled : boolean = isJavaSupportEnabled();
     function find(): string | null {
@@ -334,8 +334,8 @@ function shouldEnableConflictingJavaSupport() : boolean | undefined {
 }
 
 export function activate(context: ExtensionContext): VSNetBeansAPI {
-    context.subscriptions.push(commands.registerCommand('java.start.language.server.impl', (config: {configRoot: string}) => {
-        startLanguageServer(context, config.configRoot);
+    context.subscriptions.push(commands.registerCommand('java.start.language.server.impl', (config: {configRoot: string, isJavaSupportEnabled: () => boolean}) => {
+        startLanguageServer(context, config.configRoot, config.isJavaSupportEnabled);
     }));
     return Object.freeze({
         version : API_VERSION,
@@ -344,7 +344,7 @@ export function activate(context: ExtensionContext): VSNetBeansAPI {
 }
 
 //TODO: configRoot should probably be changed to something like "branding", and be a structure?
-function startLanguageServer(context: ExtensionContext, configRoot: string): void {
+function startLanguageServer(context: ExtensionContext, configRoot: string, isJavaSupportEnabled: () => boolean): void {
     let log = vscode.window.createOutputChannel("Apache NetBeans Language Server");
 
     var clientResolve : (x : NbLanguageClient) => void;
@@ -356,15 +356,16 @@ function startLanguageServer(context: ExtensionContext, configRoot: string): voi
         clientReject = reject;
     });
 
+    //XXX: conflict check should be handled by the feature extensions?
     function checkConflict(): void {
         let conf = workspace.getConfiguration();
-        if (conf.get("netbeans.conflict.check")) {
-            if (conf.get("netbeans.javaSupport.enabled")) {
+        if (conf.get(configRoot + ".conflict.check")) {
+            if (isJavaSupportEnabled()) {
                 const e : boolean | undefined = shouldEnableConflictingJavaSupport();
                 if (!e && vscode.extensions.getExtension('redhat.java')) {
                     if (e === false) {
                         // do not ask, an extension wants us to disable on conflict
-                        conf.update("netbeans.javaSupport.enabled", false, true);
+                        conf.update(configRoot + ".javaSupport.enabled", false, true);
                     } else {
                         const DISABLE_EXTENSION = `Manually disable extension`;
                         const DISABLE_JAVA = `Disable Java in Apache NetBeans Language Server`;
@@ -372,7 +373,7 @@ function startLanguageServer(context: ExtensionContext, configRoot: string): voi
                             if (DISABLE_EXTENSION === selected) {
                                 vscode.commands.executeCommand('workbench.extensions.action.showInstalledExtensions');
                             } else if (DISABLE_JAVA === selected) {
-                                conf.update("netbeans.javaSupport.enabled", false, true);
+                                conf.update(configRoot + ".javaSupport.enabled", false, true);
                             }
                         });
                     }
@@ -383,7 +384,7 @@ function startLanguageServer(context: ExtensionContext, configRoot: string): voi
                         const ENABLE_JAVA = `Enable Java in Apache NetBeans Language Server`;
                         vscode.window.showInformationMessage(`Java in Apache NetBeans Language Server is disabled and no other Java support extension is currently installed.`, ENABLE_JAVA).then((selected) => {
                             if (ENABLE_JAVA === selected) {
-                                conf.update("netbeans.javaSupport.enabled", true, true);
+                                conf.update(configRoot + ".javaSupport.enabled", true, true);
                             }
                         });
                     }
@@ -394,17 +395,17 @@ function startLanguageServer(context: ExtensionContext, configRoot: string): voi
     checkConflict();
 
     // find acceptable JDK and launch the Java part
-    findJDK(configRoot, (specifiedJDK) => {
+    findJDK(configRoot, isJavaSupportEnabled, (specifiedJDK) => {
         let currentClusters = findClusters(context.extensionPath).sort();
         context.subscriptions.push(vscode.extensions.onDidChange(() => {
             checkConflict();
             const newClusters = findClusters(context.extensionPath).sort();
             if (newClusters.length !== currentClusters.length || newClusters.find((value, index) => value !== currentClusters[index])) {
                 currentClusters = newClusters;
-                activateWithJDK(configRoot, specifiedJDK, context, log, true, clientResolve, clientReject);
+                activateWithJDK(configRoot, isJavaSupportEnabled, specifiedJDK, context, log, true, clientResolve, clientReject);
             }
         }));
-        activateWithJDK(configRoot, specifiedJDK, context, log, true, clientResolve, clientReject);
+        activateWithJDK(configRoot, isJavaSupportEnabled, specifiedJDK, context, log, true, clientResolve, clientReject);
     });
 
     //register debugger:
@@ -634,7 +635,7 @@ let maintenance : Promise<void> | null;
  */
 let activationPending : boolean = false;
 
-function activateWithJDK(configRoot: string, specifiedJDK: string | null, context: ExtensionContext, log : vscode.OutputChannel, notifyKill: boolean, 
+function activateWithJDK(configRoot: string, isJavaSupportEnabled : () => boolean, specifiedJDK: string | null, context: ExtensionContext, log : vscode.OutputChannel, notifyKill: boolean, 
     clientResolve? : (x : NbLanguageClient) => void, clientReject? : (x : any) => void): void {
     if (activationPending) {
         // do not activate more than once in parallel.
@@ -668,12 +669,12 @@ function activateWithJDK(configRoot: string, specifiedJDK: string | null, contex
     if (a != null) {
         handleLog(log, "Server activation initiated while in maintenance mode, scheduling after maintenance");
         a.then(() => stopClient(oldClient)).then(() => killNbProcess(notifyKill, log)).then(() => {
-            doActivateWithJDK(configRoot, specifiedJDK, context, log, notifyKill, setClient);
+            doActivateWithJDK(configRoot, isJavaSupportEnabled, specifiedJDK, context, log, notifyKill, setClient);
         });
     } else {
         handleLog(log, "Initiating server activation");
         stopClient(oldClient).then(() => killNbProcess(notifyKill, log)).then(() => {
-            doActivateWithJDK(configRoot, specifiedJDK, context, log, notifyKill, setClient);
+            doActivateWithJDK(configRoot, isJavaSupportEnabled, specifiedJDK, context, log, notifyKill, setClient);
         });
     }
 }
@@ -737,19 +738,14 @@ function isDarkColorTheme() : boolean {
     return false;
 }
 
-function isJavaSupportEnabled() : boolean {
-    //this is the only setting that should not be branded:
-    return workspace.getConfiguration('netbeans')?.get('javaSupport.enabled') as boolean;
-}
-
-function doActivateWithJDK(configRoot:string, specifiedJDK: string | null, context: ExtensionContext, log : vscode.OutputChannel, notifyKill: boolean,
+function doActivateWithJDK(configRoot:string, isJavaSupportEnabled: () => boolean, specifiedJDK: string | null, context: ExtensionContext, log : vscode.OutputChannel, notifyKill: boolean,
     setClient : [(c : NbLanguageClient) => void, (err : any) => void]
 ): void {
     maintenance = null;
     let restartWithJDKLater : ((time: number, n: boolean) => void) = function restartLater(time: number, n : boolean) {
         handleLog(log, `Restart of Apache Language Server requested in ${(time / 1000)} s.`);
         setTimeout(() => {
-            activateWithJDK(configRoot, specifiedJDK, context, log, n);
+            activateWithJDK(configRoot, isJavaSupportEnabled, specifiedJDK, context, log, n);
         }, time);
     };
 
@@ -893,7 +889,7 @@ function doActivateWithJDK(configRoot:string, specifiedJDK: string | null, conte
                 { pattern: '**/build.gradle'}
         ];
         const enableJava = isJavaSupportEnabled();
-        const enableGroovy : boolean = conf.get("netbeans.groovySupport.enabled") as boolean;
+        const enableGroovy : boolean = conf.get(configRoot + ".groovySupport.enabled") as boolean;
         if (enableGroovy) {
             documentSelectors.push({ language: 'groovy'});
         }
@@ -1267,7 +1263,7 @@ function doActivateWithJDK(configRoot:string, specifiedJDK: string | null, conte
                                 handleLog(log, "Installation completed: " + installProcess.pid);
                                 handleLog(log, "Additional Java Support installed with exit code " + code);
                                 // will be actually run after maintenance is resolve()d.
-                                activateWithJDK(configRoot, specifiedJDK, context, log, notifyKill)
+                                activateWithJDK(configRoot, isJavaSupportEnabled, specifiedJDK, context, log, notifyKill)
                                 resolve();
                             });
                             return installProcess;

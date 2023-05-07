@@ -64,7 +64,7 @@
 				{
 					"id": "foundProjects",
 					"name": "Projects",
-					"when": "nbJavaLSReady && config.netbeans.javaSupport.enabled"
+					"when": "nbJavaLSReady && (config.netbeans.javaSupport.enabled || nbJavaSupportEnabled)"
 				},
 				{
 					"id": "database.connections",
@@ -74,7 +74,7 @@
 				{
 					"id": "cloud.resources",
 					"name": "Cloud",
-					"when": "nbJavaLSReady && config.netbeans.javaSupport.enabled"
+					"when": "nbJavaLSReady && (config.netbeans.javaSupport.enabled || nbJavaSupportEnabled)"
 				},
 				{
 					"id": "run-config",
@@ -104,7 +104,7 @@
 				"type": "java+",
 				"label": "Java+",
 				"runtime": "node",
-				"when": "config.netbeans.javaSupport.enabled",
+				"when": "(config.netbeans.javaSupport.enabled || nbJavaSupportEnabled)",
 				"languages": [
 					"java",
 					"groovy"
@@ -334,7 +334,7 @@
 				"title": "New Project...",
 				"category": "Java",
 				"icon": "$(new-folder)",
-                                "when": "config.netbeans.javaSupport.enabled"
+                                "when": "(config.netbeans.javaSupport.enabled || nbJavaSupportEnabled)"
 			},
 			{
 				"command": "java.goto.super.implementation",
@@ -480,26 +480,26 @@
 			{
 				"command": "nbls.workspace.compile",
 				"key": "shift+alt+b",
-				"when": "nbJavaLSReady && config.netbeans.javaSupport.enabled"
+				"when": "nbJavaLSReady && (config.netbeans.javaSupport.enabled || nbJavaSupportEnabled)"
 			},
 			{
 				"command": "java.goto.super.implementation",
 				"key": "alt+U",
 				"mac": "alt+cmd+U",
-				"when": "editorHasCodeActionsProvider && editorTextFocus && config.netbeans.javaSupport.enabled"
+				"when": "editorHasCodeActionsProvider && editorTextFocus && (config.netbeans.javaSupport.enabled || nbJavaSupportEnabled)"
 			},
 			{
 				"command": "editor.action.sourceAction",
 				"key": "alt+insert",
 				"mac": "ctrl+alt+enter",
-				"when": "editorHasCodeActionsProvider && editorTextFocus && !editorReadonly && config.netbeans.javaSupport.enabled"
+				"when": "editorHasCodeActionsProvider && editorTextFocus && !editorReadonly && (config.netbeans.javaSupport.enabled || nbJavaSupportEnabled)"
 			}
 		],
 		"menus": {
 			"editor/context": [
 				{
 					"command": "java.goto.super.implementation",
-					"when": "nbJavaLSReady && editorLangId == java && editorTextFocus && config.netbeans.javaSupport.enabled",
+					"when": "nbJavaLSReady && editorLangId == java && editorTextFocus && (config.netbeans.javaSupport.enabled || nbJavaSupportEnabled)",
 					"group": "navigation@100"
 				}
 			],
@@ -517,15 +517,15 @@
 				},
 				{
 					"command": "java.workspace.newproject",
-					"when": "config.netbeans.javaSupport.enabled"
+					"when": "(config.netbeans.javaSupport.enabled || nbJavaSupportEnabled)"
 				},
 				{
 					"command": "nbls.workspace.compile",
-					"when": "nbJavaLSReady && config.netbeans.javaSupport.enabled"
+					"when": "nbJavaLSReady && (config.netbeans.javaSupport.enabled || nbJavaSupportEnabled)"
 				},
 				{
 					"command": "java.goto.super.implementation",
-					"when": "nbJavaLSReady && editorLangId == java && config.netbeans.javaSupport.enabled"
+					"when": "nbJavaLSReady && editorLangId == java && (config.netbeans.javaSupport.enabled || nbJavaSupportEnabled)"
 				},
 				{
 					"command": "graalvm.pause.script",
@@ -591,28 +591,28 @@
 			"view/title": [
 				{
 					"command": "java.workspace.newproject",
-					"when": "nbJavaLSReady && view == foundProjects && config.netbeans.javaSupport.enabled",
+					"when": "nbJavaLSReady && view == foundProjects && (config.netbeans.javaSupport.enabled || nbJavaSupportEnabled)",
 					"group": "navigation"
 				},
 				{
 					"command": "nbls.workspace.compile",
-					"when": "nbJavaLSReady && view == foundProjects && config.netbeans.javaSupport.enabled"
+					"when": "nbJavaLSReady && view == foundProjects && (config.netbeans.javaSupport.enabled || nbJavaSupportEnabled)"
 				},
 				{
 					"command": "nbls.workspace.clean",
-					"when": "nbJavaLSReady && view == foundProjects && config.netbeans.javaSupport.enabled"
+					"when": "nbJavaLSReady && view == foundProjects && (config.netbeans.javaSupport.enabled || nbJavaSupportEnabled)"
 				},
 				{
 					"command": "testing.runAll",
-					"when": "nbJavaLSReady && view == foundProjects && config.netbeans.javaSupport.enabled"
+					"when": "nbJavaLSReady && view == foundProjects && (config.netbeans.javaSupport.enabled || nbJavaSupportEnabled)"
 				},
 				{
 					"command": "workbench.action.debug.run",
-					"when": "nbJavaLSReady && view == foundProjects && config.netbeans.javaSupport.enabled"
+					"when": "nbJavaLSReady && view == foundProjects && (config.netbeans.javaSupport.enabled || nbJavaSupportEnabled)"
 				},
 				{
 					"command": "workbench.action.debug.start",
-					"when": "nbJavaLSReady && view == foundProjects && config.netbeans.javaSupport.enabled"
+					"when": "nbJavaLSReady && view == foundProjects && (config.netbeans.javaSupport.enabled || nbJavaSupportEnabled)"
 				},
 				{
 					"command": "db.add.connection",
@@ -623,7 +623,7 @@
 			"view/item/context": [
 				{
 					"command": "foundProjects.deleteEntry",
-					"when": "view == foundProjects && viewItem == node && config.netbeans.javaSupport.enabled"
+					"when": "view == foundProjects && viewItem == node && (config.netbeans.javaSupport.enabled || nbJavaSupportEnabled)"
 				},
 				{
 					"command": "nbls:Database:netbeans.db.explorer.action.Connect",
@@ -652,27 +652,27 @@
 				},
 				{
 					"command": "java.project.run",
-					"when": "view == foundProjects && viewItem =~ /is:project/ && viewItem =~ /^(?!.*is:projectRoot)/ && config.netbeans.javaSupport.enabled",
+					"when": "view == foundProjects && viewItem =~ /is:project/ && viewItem =~ /^(?!.*is:projectRoot)/ && (config.netbeans.javaSupport.enabled || nbJavaSupportEnabled)",
 					"group": "inline@10"
 				},
 				{
 					"command": "java.project.debug",
-					"when": "view == foundProjects && viewItem =~ /is:project/ && viewItem =~ /^(?!.*is:projectRoot)/ && config.netbeans.javaSupport.enabled",
+					"when": "view == foundProjects && viewItem =~ /is:project/ && viewItem =~ /^(?!.*is:projectRoot)/ && (config.netbeans.javaSupport.enabled || nbJavaSupportEnabled)",
 					"group": "inline@11"
 				},
 				{
 					"command": "java.project.test",
-					"when": "view == foundProjects && viewItem =~ /is:project/ && viewItem =~ /^(?!.*is:projectRoot)/ && config.netbeans.javaSupport.enabled",
+					"when": "view == foundProjects && viewItem =~ /is:project/ && viewItem =~ /^(?!.*is:projectRoot)/ && (config.netbeans.javaSupport.enabled || nbJavaSupportEnabled)",
 					"group": "F@30"
 				},
 				{
 					"command": "java.project.compile",
-					"when": "view == foundProjects && viewItem =~ /is:project/ && config.netbeans.javaSupport.enabled",
+					"when": "view == foundProjects && viewItem =~ /is:project/ && (config.netbeans.javaSupport.enabled || nbJavaSupportEnabled)",
 					"group": "F@10"
 				},
 				{
 					"command": "java.project.clean",
-					"when": "view == foundProjects && viewItem =~ /is:project/ && config.netbeans.javaSupport.enabled",
+					"when": "view == foundProjects && viewItem =~ /is:project/ && (config.netbeans.javaSupport.enabled || nbJavaSupportEnabled)",
 					"group": "F@20"
 				},
 				{
