@@ -1,0 +1,192 @@
+{
+	"name": "apache-netbeans-java",
+	"displayName": "Language Server for Java by Apache NetBeans",
+	"description": "Apache NetBeans Language Server Extension for Visual Studio Code",
+	"author": "Apache NetBeans",
+	"license": "Apache 2.0",
+	"version": "0.1.0",
+	"preview": false,
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/apache/netbeans"
+	},
+	"publisher": "asf",
+	"icon": "images/Apache_NetBeans_Logo.png",
+	"categories": [
+		"Programming Languages",
+		"Debuggers",
+		"Testing",
+		"Other"
+	],
+	"keywords": [
+		"multi-root ready"
+	],
+	"engines": {
+		"vscode": "^1.76.0"
+	},
+	"activationEvents": [
+		"onLanguage:java",
+		"workspaceContains:**/*.java",
+		"workspaceContains:pom.xml",
+		"workspaceContains:build.gradle",
+		"onDebug",
+		"onDebugDynamicConfigurations"
+	],
+	"main": "./out/extension.js",
+	"contributes": {
+		"configuration": {
+			"title": "Java",
+			"properties": {
+				"netbeans.jdkhome": {
+					"type": [
+						"string",
+						"null"
+					],
+					"default": null,
+					"description": "Specifies JDK for the Apache NetBeans Language Server",
+					"scope": "machine"
+				},
+				"netbeans.verbose": {
+					"type": "boolean",
+					"default": false,
+					"description": "Enables verbose messages from the Apache NetBeans Language Server"
+				},
+				"netbeans.userdir": {
+					"description": "Keep settings and caches as 'global' or 'local' per workspace?",
+					"type": "string",
+					"enum": [
+						"global",
+						"local"
+					],
+					"enumDescriptions": [
+						"Share data between all workspaces (more effective)",
+						"Each workspace has its own data (more isolated)"
+					],
+					"default": "local"
+				},
+				"netbeans.conflict.check": {
+					"type": "boolean",
+					"default": true,
+					"description": "Avoid conflicts with other Java extensions"
+				},
+				"netbeans.revealActiveInProjects": {
+					"type": "boolean",
+					"default": true,
+					"description": "Reveals active text editor in Projects view"
+				},
+				"java.test.editor.enableShortcuts": {
+					"type": "boolean",
+					"default": false,
+					"description": "Enable Run/Debug test in editor"
+				},
+				"netbeans.javaSupport.enabled": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enables Java support in Language Server"
+				},
+				"netbeans.groovySupport.enabled": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enables experimental Groovy and Spock support in Language Server"
+				},
+				"netbeans.javadoc.load.timeout": {
+					"type": "integer",
+					"default": 100,
+					"description": "Timeout (in milliseconds) for loading Javadoc in code completion (-1 for unlimited)"
+				},
+				"netbeans.format.codeFormatter": {
+					"type": "string",
+					"enum": [
+						"NetBeans",
+						"Eclipse",
+						"Google",
+						"Spring"
+					],
+					"enumDescriptions": [
+						"Internal NetBeans Code Formatter",
+						"Eclipse Code Formatter",
+						"Goolge Code Formatter",
+						"Spring Code Formatter"
+					],
+					"description": "Code formatter to use",
+					"default": "NetBeans"
+				},
+				"netbeans.format.settingsPath": {
+					"type": "string",
+					"description": "Path to the file containing exported formatter settings",
+					"default": null
+				},
+				"netbeans.java.onSave.organizeImports": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enable organize imports action on a document save"
+				},
+				"netbeans.java.imports.groups": {
+					"type": "array",
+					"description": "Groups of import statements (specified by their package prefixes) and their sorting order. Import statements within a group are ordered alphabetically",
+					"default": [
+						"java",
+						"javax",
+						"org",
+						"com",
+						""
+					]
+				},
+				"netbeans.java.imports.countForUsingStarImport": {
+					"type": "integer",
+					"description": "Class count to use a star-import",
+					"default": 999,
+					"minimum": 1
+				},
+				"netbeans.java.imports.countForUsingStaticStarImport": {
+					"type": "integer",
+					"description": "Members count to use a static star-import",
+					"default": 999,
+					"minimum": 1
+				},
+				"java+.runConfig.arguments": {
+					"type": "string",
+					"default": "",
+					"description": "Arguments"
+				},
+				"java+.runConfig.vmOptions": {
+					"type": "string",
+					"default": "",
+					"description": "VM options"
+				},
+				"java+.runConfig.env": {
+					"type": "string",
+					"default": "",
+					"description": "Environment variables"
+				},
+				"java+.runConfig.cwd": {
+					"type": "string",
+					"default": "",
+					"description": "Working directory"
+				}
+			}
+		}
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"watch": "tsc -watch -p ./",
+		"test": "node ./out/test/runTest.js",
+		"nbcode": "node ./out/nbcode.js"
+	},
+	"devDependencies": {
+		"@types/vscode": "^1.76.0",
+		"typescript": "^4.6.4"
+	},
+	"dependencies": {
+	},
+	"extensionDependencies": [
+		"asf.apache-netbeans-java-base"
+	],
+	"__metadata": {
+		"id": "66c7d7dc-934c-499b-94af-5375e8234fdd",
+		"publisherDisplayName": "Apache Software Foundation",
+		"publisherId": "4dbc1d1a-d64b-46f8-8756-1c234855f645",
+		"isPreReleaseVersion": false
+	}
+}

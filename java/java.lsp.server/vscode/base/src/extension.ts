@@ -151,11 +151,11 @@ export function awaitClient() : Promise<NbLanguageClient> {
     return Promise.resolve(t);
 }
 
-function findJDK(onChange: (path : string | null) => void): void {
+function findJDK(configRoot: string, onChange: (path : string | null) => void): void {
     let nowDark : boolean = isDarkColorTheme();
     let nowJavaEnabled : boolean = isJavaSupportEnabled();
     function find(): string | null {
-        let nbJdk = workspace.getConfiguration('netbeans').get('jdkhome');
+        let nbJdk = workspace.getConfiguration(configRoot).get('jdkhome');
         if (nbJdk) {
             return nbJdk as string;
         }
@@ -182,7 +182,8 @@ function findJDK(onChange: (path : string | null) => void): void {
             return;
         }
         let interested : boolean = false;
-        if (params.affectsConfiguration('netbeans') || params.affectsConfiguration('java')) {
+        //check both configRoot (for the real configuration), and netbeans, for the "is enabled" configuration:
+        if (params.affectsConfiguration('netbeans') || params.affectsConfiguration(configRoot) || params.affectsConfiguration('java')) {
             interested = true;
         } else if (params.affectsConfiguration('workbench.colorTheme')) {
             let d = isDarkColorTheme();
@@ -307,6 +308,8 @@ class InitialPromise extends Promise<NbLanguageClient> {
  * Determines the outcome, if there's a conflict betwee RH Java and us: disable java, enable java, ask the user.
  * @returns false, if java should be disablde; true, if enabled. Undefined if no config is present, ask the user
  */
+ //XXX: probably the feature extension should decide what to do in case of a conflict:
+ //so, move out of base?
 function shouldEnableConflictingJavaSupport() : boolean | undefined {
     // backwards compatibility; remove in NBLS 19
     if (vscode.extensions.getExtension('oracle-labs-graalvm.gcn')) {
@@ -331,6 +334,17 @@ function shouldEnableConflictingJavaSupport() : boolean | undefined {
 }
 
 export function activate(context: ExtensionContext): VSNetBeansAPI {
+    context.subscriptions.push(commands.registerCommand('java.start.language.server.impl', (config: {configRoot: string}) => {
+        startLanguageServer(context, config.configRoot);
+    }));
+    return Object.freeze({
+        version : API_VERSION,
+        apiVersion : API_VERSION
+    });
+}
+
+//TODO: configRoot should probably be changed to something like "branding", and be a structure?
+function startLanguageServer(context: ExtensionContext, configRoot: string): void {
     let log = vscode.window.createOutputChannel("Apache NetBeans Language Server");
 
     var clientResolve : (x : NbLanguageClient) => void;
@@ -380,17 +394,17 @@ export function activate(context: ExtensionContext): VSNetBeansAPI {
     checkConflict();
 
     // find acceptable JDK and launch the Java part
-    findJDK((specifiedJDK) => {
+    findJDK(configRoot, (specifiedJDK) => {
         let currentClusters = findClusters(context.extensionPath).sort();
         context.subscriptions.push(vscode.extensions.onDidChange(() => {
             checkConflict();
             const newClusters = findClusters(context.extensionPath).sort();
             if (newClusters.length !== currentClusters.length || newClusters.find((value, index) => value !== currentClusters[index])) {
                 currentClusters = newClusters;
-                activateWithJDK(specifiedJDK, context, log, true, clientResolve, clientReject);
+                activateWithJDK(configRoot, specifiedJDK, context, log, true, clientResolve, clientReject);
             }
         }));
-        activateWithJDK(specifiedJDK, context, log, true, clientResolve, clientReject);
+        activateWithJDK(configRoot, specifiedJDK, context, log, true, clientResolve, clientReject);
     });
 
     //register debugger:
@@ -608,10 +622,6 @@ export function activate(context: ExtensionContext): VSNetBeansAPI {
 
     // register completions:
     launchConfigurations.registerCompletion(context);
-    return Object.freeze({
-        version : API_VERSION,
-        apiVersion : API_VERSION
-    });
 }
 
 /**
@@ -624,7 +634,7 @@ let maintenance : Promise<void> | null;
  */
 let activationPending : boolean = false;
 
-function activateWithJDK(specifiedJDK: string | null, context: ExtensionContext, log : vscode.OutputChannel, notifyKill: boolean, 
+function activateWithJDK(configRoot: string, specifiedJDK: string | null, context: ExtensionContext, log : vscode.OutputChannel, notifyKill: boolean, 
     clientResolve? : (x : NbLanguageClient) => void, clientReject? : (x : any) => void): void {
     if (activationPending) {
         // do not activate more than once in parallel.
@@ -658,12 +668,12 @@ function activateWithJDK(specifiedJDK: string | null, context: ExtensionContext,
     if (a != null) {
         handleLog(log, "Server activation initiated while in maintenance mode, scheduling after maintenance");
         a.then(() => stopClient(oldClient)).then(() => killNbProcess(notifyKill, log)).then(() => {
-            doActivateWithJDK(specifiedJDK, context, log, notifyKill, setClient);
+            doActivateWithJDK(configRoot, specifiedJDK, context, log, notifyKill, setClient);
         });
     } else {
         handleLog(log, "Initiating server activation");
         stopClient(oldClient).then(() => killNbProcess(notifyKill, log)).then(() => {
-            doActivateWithJDK(specifiedJDK, context, log, notifyKill, setClient);
+            doActivateWithJDK(configRoot, specifiedJDK, context, log, notifyKill, setClient);
         });
     }
 }
@@ -728,21 +738,22 @@ function isDarkColorTheme() : boolean {
 }
 
 function isJavaSupportEnabled() : boolean {
+    //this is the only setting that should not be branded:
     return workspace.getConfiguration('netbeans')?.get('javaSupport.enabled') as boolean;
 }
 
-function doActivateWithJDK(specifiedJDK: string | null, context: ExtensionContext, log : vscode.OutputChannel, notifyKill: boolean,
+function doActivateWithJDK(configRoot:string, specifiedJDK: string | null, context: ExtensionContext, log : vscode.OutputChannel, notifyKill: boolean,
     setClient : [(c : NbLanguageClient) => void, (err : any) => void]
 ): void {
     maintenance = null;
     let restartWithJDKLater : ((time: number, n: boolean) => void) = function restartLater(time: number, n : boolean) {
         handleLog(log, `Restart of Apache Language Server requested in ${(time / 1000)} s.`);
         setTimeout(() => {
-            activateWithJDK(specifiedJDK, context, log, n);
+            activateWithJDK(configRoot, specifiedJDK, context, log, n);
         }, time);
     };
 
-    const netbeansConfig = workspace.getConfiguration('netbeans');
+    const netbeansConfig = workspace.getConfiguration(configRoot);
     const beVerbose : boolean = netbeansConfig.get('verbose', false);
     let userdir = process.env['nbcode_userdir'] || netbeansConfig.get('userdir', 'local');
     switch (userdir) {
@@ -892,8 +903,8 @@ function doActivateWithJDK(specifiedJDK: string | null, context: ExtensionContex
             documentSelector: documentSelectors,
             synchronize: {
                 configurationSection: [
-                    'netbeans.format',
-                    'netbeans.java.imports'
+                    configRoot + '.format',
+                    configRoot + '.java.imports'
                 ],
                 fileEvents: [
                     workspace.createFileSystemWatcher('**/*.java')
@@ -1131,7 +1142,7 @@ function doActivateWithJDK(specifiedJDK: string | null, context: ExtensionContex
         }
 
         ctx.subscriptions.push(window.onDidChangeActiveTextEditor(ed => {
-            const netbeansConfig = workspace.getConfiguration('netbeans');
+            const netbeansConfig = workspace.getConfiguration(configRoot);
             if (netbeansConfig.get("revealActiveInProjects")) {
                 revealActiveEditor(ed);
             }
@@ -1256,7 +1267,7 @@ function doActivateWithJDK(specifiedJDK: string | null, context: ExtensionContex
                                 handleLog(log, "Installation completed: " + installProcess.pid);
                                 handleLog(log, "Additional Java Support installed with exit code " + code);
                                 // will be actually run after maintenance is resolve()d.
-                                activateWithJDK(specifiedJDK, context, log, notifyKill)
+                                activateWithJDK(configRoot, specifiedJDK, context, log, notifyKill)
                                 resolve();
                             });
                             return installProcess;
