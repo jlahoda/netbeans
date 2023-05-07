@@ -1138,7 +1138,7 @@ public final class WorkspaceServiceImpl implements WorkspaceService, LanguageCli
             String formatter = formatterPrimitive != null ? formatterPrimitive.getAsString() : null;
             JsonPrimitive pathPrimitive = configuration.getAsJsonPrimitive("settingsPath");
             String path = pathPrimitive != null ? pathPrimitive.getAsString() : null;
-            if (formatter == null || "NetBeans".equals(formatter)) {
+            if (formatter == null || "NetBeans".equals(formatter) || "Internal".equals(formatter)) {
                 if (prefs != null) {
                     prefs.put("enabledFormatter.JAVA", "netbeans-formatter");
                 }
