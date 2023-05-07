@@ -178,8 +178,7 @@
 		"@types/vscode": "^1.76.0",
 		"typescript": "^4.6.4"
 	},
-	"dependencies": {
-	},
+	"dependencies": {},
 	"extensionDependencies": [
 		"asf.apache-netbeans-java-base"
 	],

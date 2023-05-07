@@ -334,7 +334,7 @@
 				"title": "New Project...",
 				"category": "Java",
 				"icon": "$(new-folder)",
-                                "when": "(config.netbeans.javaSupport.enabled || nbJavaSupportEnabled)"
+				"when": "(config.netbeans.javaSupport.enabled || nbJavaSupportEnabled)"
 			},
 			{
 				"command": "java.goto.super.implementation",

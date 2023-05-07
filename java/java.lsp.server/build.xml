@@ -68,6 +68,14 @@
         <ant dir="nbcode" target="clean" inheritall="false" inheritrefs="false"/>
     </target>
     <target name="build-vscode-ext" depends="add-extra-modules" description="Build the Visual Studio Code extension.">
+        <antcall target="-do-build-vscode-ext">
+            <param name="extension" value="base" />
+        </antcall>
+        <antcall target="-do-build-vscode-ext">
+            <param name="extension" value="main" />
+        </antcall>
+    </target>
+    <target name="-do-build-vscode-ext">
         <taskdef name="gitbranchhash" classname="org.netbeans.nbbuild.GitBranchHash" classpath="${nbantext.jar}" />
         <gitbranchhash file="." branchproperty="metabuild.branch" hashproperty="metabuild.hash" />
         <condition property="metabuild.hash" value="master" >
@@ -77,25 +85,25 @@
         </condition>
         <property name="vsix.version" value="0.1.0"/>
 
-        <exec executable="npm" failonerror="true" dir="vscode">
+        <exec executable="npm" failonerror="true" dir="vscode/${extension}">
             <arg value="--allow-same-version"/>
             <arg value="version" />
             <arg value="${vsix.version}" />
         </exec>
 
-        <exec executable="npm" failonerror="true" dir="vscode">
+        <exec executable="npm" failonerror="true" dir="vscode/${extension}">
             <arg value="install" />
         </exec>
 
-        <exec executable="npm" failonerror="true" dir="vscode">
+        <exec executable="npm" failonerror="true" dir="vscode/${extension}">
             <arg value="run" />
             <arg value="compile" />
         </exec>
 
         <delete dir="${build.dir}/bundles" />
         <mkdir dir="${build.dir}/bundles/package" />
-        <copy file="vscode/package.json" todir="${build.dir}/bundles/package" />
-        <copy file="vscode/package-lock.json" todir="${build.dir}/bundles/package" />
+        <copy file="vscode/${extension}/package.json" todir="${build.dir}/bundles/package" />
+        <copy file="vscode/${extension}/package-lock.json" todir="${build.dir}/bundles/package" />
 
         <exec executable="mvn" failonerror="true" dir="${nb_all}/nbbuild/misc/prepare-bundles">
             <arg value="package" />
@@ -110,20 +118,20 @@
             <arg value="--save" />
             <arg value="vsce@2.6.4" />
         </exec>
-        <exec executable="${build.dir}/vsce/node_modules/vsce/vsce" failonerror="true" dir="${basedir}/vscode">
+        <exec executable="${build.dir}/vsce/node_modules/vsce/vsce" failonerror="true" dir="${basedir}/vscode/${extension}">
             <arg value="package" />
             <arg value="--baseImagesUrl" />
-            <arg value="https://github.com/apache/netbeans/raw/${metabuild.hash}/java/java.lsp.server/vscode" />
+            <arg value="https://github.com/apache/netbeans/raw/${metabuild.hash}/java/java.lsp.server/vscode/${extension}" />
             <arg value="--out" />
-            <arg value="${build.dir}/apache-netbeans-java-${vsix.version}.vsix" />
+            <arg value="${build.dir}/apache-netbeans-java-${extension}-${vsix.version}.vsix" />
         </exec>
 
-        <delete dir="${build.dir}/vscode" />
-        <mkdir dir="${build.dir}/vscode" />
-        <delete dir="${build.dir}/vscode-mandatory" />
-        <mkdir dir="${build.dir}/vscode-mandatory/licenses" />
+        <delete dir="${build.dir}/vscode/${extension}" />
+        <mkdir dir="${build.dir}/vscode/${extension}" />
+        <delete dir="${build.dir}/vscode-mandatory/${extension}" />
+        <mkdir dir="${build.dir}/vscode-mandatory/${extension}/licenses" />
 
-        <unzip dest="${build.dir}/vscode" src="${build.dir}/apache-netbeans-java-${vsix.version}.vsix" />
+        <unzip dest="${build.dir}/vscode" src="${build.dir}/apache-netbeans-java-${extension}-${vsix.version}.vsix" />
 
         <taskdef name="createlicensesummary" classname="org.netbeans.nbbuild.extlibs.CreateLicenseSummary" classpath="${nbantext.jar}"/>
 
@@ -134,10 +142,10 @@
                               noticeStub="${nb_all}/nbbuild/notice-stub.txt"
                               report="${build.dir}/createlicensesummary.xml"
                               nball="${nb_all}"
-                              build="${build.dir}/vscode"
-                              license="${build.dir}/vscode-mandatory/LICENSE"
-                              licenseTargetDir="${build.dir}/vscode-mandatory/licenses"
-                              notice="${build.dir}/vscode-mandatory/NOTICE"
+                              build="${build.dir}/vscode/${extension}"
+                              license="${build.dir}/vscode-mandatory/${extension}/LICENSE"
+                              licenseTargetDir="${build.dir}/vscode-mandatory/${extension}/licenses"
+                              notice="${build.dir}/vscode-mandatory/${extension}/NOTICE"
                               binary="true"
                               excludes="${nb-extra-files}"
                               extraExternalDirectory="${build.dir}/bundles/bundles"
@@ -145,7 +153,7 @@
                               includeAllFiles="true"
         />
 
-        <zip destfile="${build.dir}/apache-netbeans-java-${vsix.version}.vsix" basedir="${build.dir}/vscode-mandatory/" update="true" />
+        <zip destfile="${build.dir}/apache-netbeans-java-${extension}-${vsix.version}.vsix" basedir="${build.dir}/vscode-mandatory/${extension}/" update="true" />
     </target>
     <target name="test-lsp-server" description="Tests the LSP server behavior">
         <ant dir="nbcode" target="test" inheritall="false" inheritrefs="false" />
