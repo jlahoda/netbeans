@@ -25,7 +25,7 @@ import java.util.Map;
 
 import org.netbeans.api.debugger.Breakpoint;
 import org.netbeans.api.debugger.DebuggerManager;
-import org.netbeans.modules.cpplite.debugger.breakpoints.CPPLiteBreakpoint;
+import org.netbeans.modules.cnd.debugger.common2.debugger.breakpoints.types.LineBreakpoint;
 import org.netbeans.modules.nativeimage.api.debug.NILineBreakpointDescriptor;
 
 /**
@@ -34,16 +34,17 @@ import org.netbeans.modules.nativeimage.api.debug.NILineBreakpointDescriptor;
  */
 final class NIBreakpoints {
 
-    private final Map<Object, CPPLiteBreakpoint> ni2C = new IdentityHashMap<>();
+    private final Map<Object, LineBreakpoint> ni2C = new IdentityHashMap<>();
 
     Breakpoint addLineBreakpoint(Object key, NILineBreakpointDescriptor bd) {
-        CPPLiteBreakpoint breakpoint;
+        LineBreakpoint breakpoint;
         boolean isNew;
         synchronized (ni2C) {
             breakpoint = ni2C.get(key);
             isNew = breakpoint == null;
             if (isNew) {
-                breakpoint = CPPLiteBreakpoint.create(bd.getFilePath(), bd.getLine());
+                breakpoint = new LineBreakpoint(0);
+                breakpoint.setFileAndLine(bd.getFilePath(), bd.getLine());
                 ni2C.put(key, breakpoint);
             }
         }
@@ -62,7 +63,7 @@ final class NIBreakpoints {
     }
 
     void removeBreakpoint(Object key) {
-        CPPLiteBreakpoint breakpoint;
+        LineBreakpoint breakpoint;
         synchronized (ni2C) {
             breakpoint = ni2C.remove(key);
         }
@@ -72,13 +73,13 @@ final class NIBreakpoints {
     }
 
     void dispose() {
-        List<CPPLiteBreakpoint> cbs;
+        List<LineBreakpoint> cbs;
         synchronized (ni2C) {
             cbs = new ArrayList<>(ni2C.size());
             cbs.addAll(ni2C.values());
             ni2C.clear();
         }
-        for (CPPLiteBreakpoint cb : cbs) {
+        for (LineBreakpoint cb : cbs) {
             DebuggerManager.getDebuggerManager().removeBreakpoint(cb);
         }
     }

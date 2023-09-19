@@ -457,6 +457,7 @@
                 <friend>org.netbeans.modules.cnd.debugger.gdbserver</friend>
                 <friend>org.netbeans.modules.cnd.kit</friend>
                 <friend>org.netbeans.modules.cnd.mixeddev</friend>
+                <friend>org.netbeans.modules.cpplite.debugger</friend>
                 <package>org.netbeans.modules.cnd.debugger.common2.capture</package>
                 <package>org.netbeans.modules.cnd.debugger.common2.debugger</package>
                 <package>org.netbeans.modules.cnd.debugger.common2.debugger.actions</package>

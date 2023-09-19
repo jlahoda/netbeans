@@ -22,7 +22,6 @@ package org.netbeans.modules.cpplite.debugger;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -51,6 +50,7 @@ import org.netbeans.api.debugger.DebuggerInfo;
 import org.netbeans.api.debugger.DebuggerManager;
 import org.netbeans.api.debugger.DebuggerManagerAdapter;
 import org.netbeans.api.extexecution.base.ExplicitProcessParameters;
+import org.netbeans.modules.cnd.debugger.common2.debugger.breakpoints.types.LineBreakpoint;
 import org.netbeans.modules.cnd.debugger.gdb2.mi.MICommand;
 import org.netbeans.modules.cnd.debugger.gdb2.mi.MICommandInjector;
 import org.netbeans.modules.cnd.debugger.gdb2.mi.MIConst;
@@ -59,7 +59,6 @@ import org.netbeans.modules.cnd.debugger.gdb2.mi.MIRecord;
 import org.netbeans.modules.cnd.debugger.gdb2.mi.MITList;
 import org.netbeans.modules.cnd.debugger.gdb2.mi.MITListItem;
 import org.netbeans.modules.cnd.debugger.gdb2.mi.MIValue;
-import org.netbeans.modules.cpplite.debugger.breakpoints.CPPLiteBreakpoint;
 import org.netbeans.modules.nativeexecution.api.ExecutionEnvironmentFactory;
 import org.netbeans.modules.nativeexecution.api.pty.Pty;
 import org.netbeans.modules.nativeexecution.api.pty.PtySupport;
@@ -71,13 +70,9 @@ import org.netbeans.spi.debugger.DebuggerEngineProvider;
 import org.netbeans.spi.debugger.SessionProvider;
 import org.netbeans.spi.debugger.ui.DebuggingView;
 
-import org.openide.filesystems.FileObject;
-import org.openide.filesystems.FileUtil;
 import org.openide.text.Annotatable;
 import org.openide.text.Line;
 import org.openide.util.Exceptions;
-import org.openide.util.Lookup;
-import org.openide.util.Pair;
 import org.openide.util.RequestProcessor;
 
 /**
@@ -908,8 +903,8 @@ public final class CPPLiteDebugger {
 
     private class BreakpointsHandler extends DebuggerManagerAdapter implements PropertyChangeListener {
 
-        private final Map<String, CPPLiteBreakpoint> breakpointsById = new ConcurrentHashMap<>();
-        private final Map<CPPLiteBreakpoint, String> breakpointIds = new ConcurrentHashMap<>();
+        private final Map<String, LineBreakpoint> breakpointsById = new ConcurrentHashMap<>();
+        private final Map<LineBreakpoint, String> breakpointIds = new ConcurrentHashMap<>();
 
         BreakpointsHandler() {
         }
@@ -917,8 +912,8 @@ public final class CPPLiteDebugger {
         private void init() {
             DebuggerManager.getDebuggerManager().addDebuggerListener(DebuggerManager.PROP_BREAKPOINTS, this);
             for (Breakpoint b : DebuggerManager.getDebuggerManager().getBreakpoints()) {
-                if (b instanceof CPPLiteBreakpoint) {
-                    CPPLiteBreakpoint cpplineBreakpoint = (CPPLiteBreakpoint) b;
+                if (b instanceof LineBreakpoint) {
+                    LineBreakpoint cpplineBreakpoint = (LineBreakpoint) b;
                     addBreakpoint(cpplineBreakpoint);
                 }
             }
@@ -927,7 +922,7 @@ public final class CPPLiteDebugger {
         void dispose() {
             DebuggerManager.getDebuggerManager().removeDebuggerListener(DebuggerManager.PROP_BREAKPOINTS, this);
             for (Breakpoint b : DebuggerManager.getDebuggerManager().getBreakpoints()) {
-                if (b instanceof CPPLiteBreakpoint) {
+                if (b instanceof LineBreakpoint) {
                     b.removePropertyChangeListener(this);
                 }
             }
@@ -935,23 +930,23 @@ public final class CPPLiteDebugger {
 
         @Override
         public void breakpointAdded(Breakpoint breakpoint) {
-            if (breakpoint instanceof CPPLiteBreakpoint) {
-                addBreakpoint((CPPLiteBreakpoint) breakpoint);
+            if (breakpoint instanceof LineBreakpoint) {
+                addBreakpoint((LineBreakpoint) breakpoint);
             }
         }
 
         @Override
         public void breakpointRemoved(Breakpoint breakpoint) {
-            if (breakpoint instanceof CPPLiteBreakpoint) {
-                removeBreakpoint((CPPLiteBreakpoint) breakpoint);
+            if (breakpoint instanceof LineBreakpoint) {
+                removeBreakpoint((LineBreakpoint) breakpoint);
             }
         }
 
         @Override
         public void propertyChange(PropertyChangeEvent evt) {
             Object source = evt.getSource();
-            if (source instanceof CPPLiteBreakpoint) {
-                String id = breakpointIds.get((CPPLiteBreakpoint) source);
+            if (source instanceof LineBreakpoint) {
+                String id = breakpointIds.get((LineBreakpoint) source);
                 if (id != null) {
                     String propertyName = evt.getPropertyName();
                     switch (propertyName) {
@@ -967,8 +962,8 @@ public final class CPPLiteDebugger {
             }
         }
 
-        private void addBreakpoint(CPPLiteBreakpoint breakpoint) {
-            String path = breakpoint.getFilePath();
+        private void addBreakpoint(LineBreakpoint breakpoint) {
+            String path = breakpoint.getFileName();
             int lineNumber = breakpoint.getLineNumber();
             String disabled = breakpoint.isEnabled() ? "-f " : "-d ";
             Command command = new Command("-break-insert " + disabled + path + ":" + lineNumber) {
@@ -992,7 +987,7 @@ public final class CPPLiteDebugger {
             breakpoint.addPropertyChangeListener(this);
         }
 
-        private void removeBreakpoint(CPPLiteBreakpoint breakpoint) {
+        private void removeBreakpoint(LineBreakpoint breakpoint) {
             String id = breakpointIds.remove(breakpoint);
             if (id != null) {
                 breakpoint.removePropertyChangeListener(this);
@@ -1001,15 +996,15 @@ public final class CPPLiteDebugger {
             }
         }
 
-        private void breakpointResolved(CPPLiteBreakpoint breakpoint, MITList list) {
-            breakpoint.setCPPValidity(Breakpoint.VALIDITY.VALID, null);
+        private void breakpointResolved(LineBreakpoint breakpoint, MITList list) {
+            breakpoint.setError(null);
             String id = list.getConstValue("number");
             breakpointsById.put(id, breakpoint);
             breakpointIds.put(breakpoint, id);
         }
 
-        private void breakpointError(CPPLiteBreakpoint breakpoint, String msg) {
-            breakpoint.setCPPValidity(Breakpoint.VALIDITY.INVALID, msg);
+        private void breakpointError(LineBreakpoint breakpoint, String msg) {
+            breakpoint.setError(msg);
         }
     }
 }

@@ -27,8 +27,8 @@ import static junit.framework.TestCase.assertNotNull;
 import org.netbeans.api.debugger.ActionsManager;
 import org.netbeans.api.debugger.DebuggerManager;
 import org.netbeans.junit.NbModuleSuite;
+import org.netbeans.modules.cnd.debugger.common2.debugger.breakpoints.types.LineBreakpoint;
 import static org.netbeans.modules.cpplite.debugger.AbstractDebugTest.compileCPP;
-import org.netbeans.modules.cpplite.debugger.breakpoints.CPPLiteBreakpoint;
 import org.openide.cookies.LineCookie;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
@@ -58,7 +58,7 @@ public class ExitTest extends AbstractDebugTest {
             compileCPP("mainExit" + exitCode, wd);
             LineCookie lc = DataObject.find(source).getLookup().lookup(LineCookie.class);
             assertNotNull(lc);
-            DebuggerManager.getDebuggerManager().addBreakpoint(CPPLiteBreakpoint.create(lc.getLineSet().getCurrent(4)));
+            DebuggerManager.getDebuggerManager().addBreakpoint(TestUtils.createLineBreakpoint(lc.getLineSet().getCurrent(4)));
             startDebugging("mainExit" + exitCode, wd);
             assertEquals(exitCode, waitAppProcessExit());
         }
@@ -76,7 +76,7 @@ public class ExitTest extends AbstractDebugTest {
         compileCPP("mainKill", wd);
         LineCookie lc = DataObject.find(source).getLookup().lookup(LineCookie.class);
         assertNotNull(lc);
-        DebuggerManager.getDebuggerManager().addBreakpoint(CPPLiteBreakpoint.create(lc.getLineSet().getCurrent(4)));
+        DebuggerManager.getDebuggerManager().addBreakpoint(TestUtils.createLineBreakpoint(lc.getLineSet().getCurrent(4)));
         startDebugging("mainKill", wd);
         assertTrue(isAppProcessAlive());
         Thread.sleep(10);

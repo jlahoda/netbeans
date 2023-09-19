@@ -28,7 +28,6 @@ import junit.framework.Test;
 import org.netbeans.api.debugger.ActionsManager;
 import org.netbeans.api.debugger.DebuggerManager;
 import org.netbeans.junit.NbModuleSuite;
-import org.netbeans.modules.cpplite.debugger.breakpoints.CPPLiteBreakpoint;
 import org.openide.cookies.LineCookie;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
@@ -72,7 +71,7 @@ public class StepTest extends AbstractDebugTest {
         compileCPP("main", wd);
         LineCookie lc = DataObject.find(source).getLookup().lookup(LineCookie.class);
         assertNotNull(lc);
-        DebuggerManager.getDebuggerManager().addBreakpoint(CPPLiteBreakpoint.create(lc.getLineSet().getCurrent(4)));
+        DebuggerManager.getDebuggerManager().addBreakpoint(TestUtils.createLineBreakpoint(lc.getLineSet().getCurrent(4)));
         startDebugging("main", wd);
 
         waitSuspended(1);

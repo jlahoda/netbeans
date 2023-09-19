@@ -1573,7 +1573,7 @@ public abstract class NativeBreakpoint
     /**
      * Get the gui to pull ... us as well as our parent.
      */
-    void updateAndParent() {
+    protected void updateAndParent() {
 	if (isEditable())
 	    return;
 	update();

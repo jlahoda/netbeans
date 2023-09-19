@@ -28,7 +28,7 @@ import junit.framework.Test;
 import org.netbeans.api.debugger.ActionsManager;
 import org.netbeans.api.debugger.DebuggerManager;
 import org.netbeans.junit.NbModuleSuite;
-import org.netbeans.modules.cpplite.debugger.breakpoints.CPPLiteBreakpoint;
+import org.netbeans.modules.cnd.debugger.common2.debugger.breakpoints.types.LineBreakpoint;
 import org.openide.cookies.LineCookie;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
@@ -76,8 +76,8 @@ public class BreakpointsTest extends AbstractDebugTest {
         compileC("breakpoints", wd);
         LineCookie lc = DataObject.find(source).getLookup().lookup(LineCookie.class);
         assertNotNull(lc);
-        CPPLiteBreakpoint bp8 = CPPLiteBreakpoint.create(lc.getLineSet().getCurrent(7));
-        CPPLiteBreakpoint bp9 = CPPLiteBreakpoint.create(lc.getLineSet().getCurrent(8));
+        LineBreakpoint bp8 = TestUtils.createLineBreakpoint(lc.getLineSet().getCurrent(7));
+        LineBreakpoint bp9 = TestUtils.createLineBreakpoint(lc.getLineSet().getCurrent(8));
         bp9.disable();
         DebuggerManager.getDebuggerManager().addBreakpoint(bp8);
         DebuggerManager.getDebuggerManager().addBreakpoint(bp9);
@@ -98,7 +98,7 @@ public class BreakpointsTest extends AbstractDebugTest {
         waitSuspended(3);
         assertStoppedAt(source.toURI(), 9);
 
-        CPPLiteBreakpoint bp10 = CPPLiteBreakpoint.create(lc.getLineSet().getCurrent(9));
+        LineBreakpoint bp10 = TestUtils.createLineBreakpoint(lc.getLineSet().getCurrent(9));
         DebuggerManager.getDebuggerManager().addBreakpoint(bp10);
 
         engine.getActionsManager().doAction(ActionsManager.ACTION_CONTINUE);
@@ -116,7 +116,7 @@ public class BreakpointsTest extends AbstractDebugTest {
 
         bp10.disable();
 
-        bp8 = CPPLiteBreakpoint.create(lc.getLineSet().getCurrent(7));
+        bp8 = TestUtils.createLineBreakpoint(lc.getLineSet().getCurrent(7));
         DebuggerManager.getDebuggerManager().addBreakpoint(bp8);
 
         engine.getActionsManager().doAction(ActionsManager.ACTION_CONTINUE);

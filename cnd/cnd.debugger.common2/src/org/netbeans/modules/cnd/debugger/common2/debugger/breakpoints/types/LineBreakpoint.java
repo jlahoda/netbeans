@@ -229,7 +229,7 @@ public final class LineBreakpoint extends NativeBreakpoint {
     public FileSystem getFileSystem() {
         return fs;
     }
-    
+
     private class LineGroupProperties extends NativeGroupProperties {
         private final FileObject fo = EditorBridge.findFileObject(getFileName(), getDebugger());
 
@@ -251,4 +251,40 @@ public final class LineBreakpoint extends NativeBreakpoint {
             }
         }
     }
+
+    private String error;
+
+    public synchronized void setError(String error) {
+        this.error = error;
+        updateAndParent();
+    }
+
+    public synchronized String getError() {
+        return this.error;
+    }
+
+    @Override
+    public boolean isBroken() {
+        return getError() != null || super.isBroken();
+    }
+
+    private boolean hidden;
+
+    public synchronized void setHidden(boolean hidden) {
+        this.hidden = hidden;
+        removeAnnotations();
+        addAnnotation(fileName.get(), lineNumber.get(), 0);
+    }
+
+    @Override
+    public void addAnnotation(Line l, long addr) {
+        synchronized (this) {
+            if (hidden) {
+                return ;
+            }
+        }
+        super.addAnnotation(l, addr);
+    }
+
+
 }
