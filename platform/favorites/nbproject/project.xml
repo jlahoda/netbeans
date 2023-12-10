@@ -242,6 +242,7 @@
             </test-dependencies>
             <friend-packages>
                 <friend>org.netbeans.modules.cnd.remote.ui</friend>
+                <friend>org.netbeans.modules.ide.remote</friend>
                 <friend>org.netbeans.modules.remotefs.versioning.api</friend>
                 <friend>org.netbeans.modules.team.ide</friend>
                 <friend>org.netbeans.modules.versioning.util</friend>
