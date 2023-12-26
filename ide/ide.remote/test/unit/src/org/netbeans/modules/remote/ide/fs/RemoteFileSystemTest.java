@@ -29,6 +29,7 @@ import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import org.netbeans.junit.NbTestCase;
 import org.netbeans.modules.remote.agent.fs.FileSystemAgent;
+import org.netbeans.modules.remote.ide.RemoteManager.RemoteDescription;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.filesystems.MIMEResolver;
@@ -55,7 +56,7 @@ public class RemoteFileSystemTest extends NbTestCase {
         File a = new File(test1, "a.txt");  write(a, "aa".getBytes(StandardCharsets.UTF_8));
 
         Socket s = new Socket("localhost", sock.getLocalPort());
-        RemoteFileSystem rfs = new RemoteFileSystem(s.getOutputStream(), s.getInputStream());
+        RemoteFileSystem rfs = new RemoteFileSystem(new RemoteDescription("", ""), s.getOutputStream(), s.getInputStream());
 
         FileObject rwd = rfs.findResource(wd.getAbsolutePath());
         FileObject[] wdChildren = rwd.getChildren(); //TODO: ordering

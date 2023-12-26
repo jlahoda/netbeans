@@ -26,18 +26,26 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.net.URLStreamHandler;
 import java.net.URLStreamHandlerFactory;
 import java.net.spi.URLStreamHandlerProvider;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import org.netbeans.modules.remote.Streams;
 import org.netbeans.modules.remote.Utils;
 import org.netbeans.modules.remote.ide.ConnectToSsh;
+import org.netbeans.modules.remote.ide.RemoteManager;
+import org.netbeans.modules.remote.ide.RemoteManager.RemoteDescription;
 import org.netbeans.modules.remote.ide.fs.FSProtokol.Request;
 import org.netbeans.modules.remote.ide.fs.FSProtokol.RequestKind;
 import org.netbeans.modules.remote.ide.fs.FSProtokol.Response;
@@ -57,23 +65,37 @@ import org.openide.util.lookup.ServiceProvider;
  */
 public class RemoteFileSystem extends AbstractFileSystem implements AbstractFileSystem.List, AbstractFileSystem.Info, AbstractFileSystem.Attr {
 
+    public static RemoteFileSystem getRemoteFileSystem(RemoteDescription remoteDescription) {
+        return RemoteManager.getDefault().getService(remoteDescription, r -> {
+            try {
+                Streams streams = r.runService("fs");
+                return new RemoteFileSystem(remoteDescription, streams.out(), streams.in());
+            } catch (IOException | ExecutionException ex) {
+                Exceptions.printStackTrace(ex);
+                return null; //TODO!
+            }
+        });
+    }
+
+    private final RemoteDescription remoteDescription;
+    private final String remoteDescriptionEncoded;
     private final OutputStream requests;
     private final InputStream responses;
     private final Gson gson = new Gson();
 
-    public RemoteFileSystem(OutputStream requests, InputStream responses) {
+    public RemoteFileSystem(RemoteDescription remoteDescription, OutputStream requests, InputStream responses) {
+        this.remoteDescription = remoteDescription;
+        this.remoteDescriptionEncoded = URLEncoder.encode(remoteDescription.encoded(), StandardCharsets.UTF_8);
         this.requests = requests;
         this.responses = responses;
         list = this;
         info = this;
         attr = this;
-
-        fs = this;
     }
 
     @Override
     public String getDisplayName() {
-        return "XXX";
+        return "Remote FileSystem (" + remoteDescription.connectionString() + ")";
     }
 
     @Override
@@ -183,8 +205,6 @@ public class RemoteFileSystem extends AbstractFileSystem implements AbstractFile
         attributes.remove(name);
     }
 
-    private static RemoteFileSystem fs;
-
     @ServiceProvider(service=URLMapper.class)
     public static final class URLMapperImpl extends URLMapper {
 
@@ -192,7 +212,8 @@ public class RemoteFileSystem extends AbstractFileSystem implements AbstractFile
         public URL getURL(FileObject fo, int type) {
             try {
                 if (fo.getFileSystem() instanceof RemoteFileSystem) {
-                    return new URL("ssh://RemoteFS/" + fo.getPath());
+                    RemoteFileSystem rfs = (RemoteFileSystem) fo.getFileSystem();
+                    return new URL("ssh://" + rfs.remoteDescriptionEncoded + "/" + fo.getPath());
                 }
             } catch (FileStateInvalidException | MalformedURLException ex) {
                 Exceptions.printStackTrace(ex);
@@ -202,12 +223,16 @@ public class RemoteFileSystem extends AbstractFileSystem implements AbstractFile
 
         @Override
         public FileObject[] getFileObjects(URL url) {
-            if (url.toString().contentEquals("ssh://RemoteFS/")) {
-                if (fs == null) {
-                    new ConnectToSsh().actionPerformed(null);
-                }
+            String urlString = url.toString();
+
+            if (urlString.startsWith("ssh://")) {
+                int slashPos = urlString.indexOf('/', 6);
+                String encoded = urlString.substring(6, slashPos);
+                RemoteDescription remoteDescription = RemoteDescription.createInstance(URLDecoder.decode(encoded, StandardCharsets.UTF_8));
+                RemoteFileSystem rfs = getRemoteFileSystem(remoteDescription);
+
                 return new FileObject[] {
-                    fs.findResource(url.toString().substring("ssh://RemoteFS/".length()))
+                    rfs.findResource(urlString.substring(slashPos + 1))
                 };
             }
             return null;
@@ -223,7 +248,7 @@ public class RemoteFileSystem extends AbstractFileSystem implements AbstractFile
                 return new URLStreamHandler() {
                     @Override
                     protected URLConnection openConnection(URL u) throws IOException {
-                        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+                        throw new UnsupportedOperationException("Not supported yet.");
                     }
                 };
             }

@@ -19,15 +19,18 @@
 package org.netbeans.modules.remote.agent.fs;
 
 import com.google.gson.Gson;
-import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.netbeans.modules.remote.Service;
 import org.netbeans.modules.remote.Utils;
 import org.netbeans.modules.remote.ide.fs.FSProtokol.Request;
 import static org.netbeans.modules.remote.ide.fs.FSProtokol.RequestKind.CHILDREN;
@@ -37,8 +40,12 @@ import org.netbeans.modules.remote.ide.fs.FSProtokol.Response;
 import org.netbeans.modules.remote.ide.fs.FSProtokol.WriteData;
 import org.openide.filesystems.FileLock;
 import org.openide.filesystems.FileObject;
+import org.openide.filesystems.FileStateInvalidException;
 import org.openide.filesystems.FileSystem;
+import org.openide.filesystems.FileUtil;
+import org.openide.util.Exceptions;
 import org.openide.util.RequestProcessor;
+import org.openide.util.lookup.ServiceProvider;
 
 /**
  *
@@ -46,8 +53,9 @@ import org.openide.util.RequestProcessor;
  */
 public class FileSystemAgent {
 
+    private static final Logger LOG = Logger.getLogger(FileSystemAgent.class.getName());
     //TODO: could use virtual threads?
-    private static final RequestProcessor WORKER = new RequestProcessor(FileSystemAgent.class.getName(), 1, false, false);
+    private final RequestProcessor WORKER = new RequestProcessor(FileSystemAgent.class.getName(), 1, false, false);
 
     private final FileSystem fs;
     private final InputStream in;
@@ -61,76 +69,84 @@ public class FileSystemAgent {
         this.out = out;
     }
 
-    public void run() throws IOException {
-        while (true) {
-            Request request = gson.fromJson(Utils.read(in), Request.class);
-            switch (request.kind) {
-                case CHILDREN:
-                    handlePathRequest(request, path -> {
-                        return Arrays.stream(path.getChildren())
-                                     .map(f -> f.getNameExt())
-                                     .toArray(s -> new String[s]);
-                    });
-                    break;
-                case LAST_MODIFIED:
-                    handlePathRequest(request, path -> path.lastModified().getTime());
-                    break;
-                case FOLDER:
-                    handlePathRequest(request, path -> path.isFolder());
-                    break;
-                case READ_ONLY:
-                    handlePathRequest(request, path -> !path.canWrite());
-                    break;
-                case MIME_TYPE:
-                    handlePathRequest(request, path -> path.getMIMEType());
-                    break;
-                case SIZE:
-                    handlePathRequest(request, path -> path.getSize());
-                    break;
-                case READ_INPUT:
-                    handlePathRequest(request, path -> path.asBytes());
-                    break;
-                case WRITE_OUTPUT:
-                    handleRequest(request, WriteData.class, data -> {
-                        FileObject fo = fs.findResource(data.path);
-                        try (OutputStream out = fo.getOutputStream()) {
-                            out.write(data.data);
-                        }
-                        return "done";
-                    });
-                    break;
-                case LOCK:
-                    handlePathRequest(request, path -> {
-                        FileLock lock = path.lock();
+    private void start() {
+        WORKER.post(this::run);
+    }
 
-                        file2Lock.put(path, lock);
-                        return "done";
-                    });
-                    break;
-                case UNLOCK:
-                    handlePathRequest(request, path -> {file2Lock.remove(path).releaseLock(); return "done";});
-                    break;
-//                case READ_ATTRIBUTE:
-//                    handleAttributeRequest(request, (file, data) -> {
-//                        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-//                             ObjectOutputStream oos = new ObjectOutputStream(baos)) {
-//                            return file.getAttribute(data.dataName);
-////                            oos.write(attribute);
-//                            return null;
-//                        }
-//                    })
-//                    break;
-//                case WRITE_ATTRIBUTE:
-//                    break;
-//                case LIST_ATTRIBUTES:
-//                    break;
-//                case RENAME_ATTRIBUTES:
-//                    break;
-//                case DELETE_ATTRIBUTES:
-//                    break;
-                default:
-                    throw new AssertionError(request.kind.name());
+    public void run() {
+        try {
+            while (true) {
+                Request request = gson.fromJson(Utils.read(in), Request.class);
+                switch (request.kind) {
+                    case CHILDREN:
+                        handlePathRequest(request, path -> {
+                            return Arrays.stream(path.getChildren())
+                                         .map(f -> f.getNameExt())
+                                         .toArray(s -> new String[s]);
+                        });
+                        break;
+                    case LAST_MODIFIED:
+                        handlePathRequest(request, path -> path.lastModified().getTime());
+                        break;
+                    case FOLDER:
+                        handlePathRequest(request, path -> path.isFolder());
+                        break;
+                    case READ_ONLY:
+                        handlePathRequest(request, path -> !path.canWrite());
+                        break;
+                    case MIME_TYPE:
+                        handlePathRequest(request, path -> path.getMIMEType());
+                        break;
+                    case SIZE:
+                        handlePathRequest(request, path -> path.getSize());
+                        break;
+                    case READ_INPUT:
+                        handlePathRequest(request, path -> path.asBytes());
+                        break;
+                    case WRITE_OUTPUT:
+                        handleRequest(request, WriteData.class, data -> {
+                            FileObject fo = fs.findResource(data.path);
+                            try (OutputStream out = fo.getOutputStream()) {
+                                out.write(data.data);
+                            }
+                            return "done";
+                        });
+                        break;
+                    case LOCK:
+                        handlePathRequest(request, path -> {
+                            FileLock lock = path.lock();
+
+                            file2Lock.put(path, lock);
+                            return "done";
+                        });
+                        break;
+                    case UNLOCK:
+                        handlePathRequest(request, path -> {file2Lock.remove(path).releaseLock(); return "done";});
+                        break;
+//                    case READ_ATTRIBUTE:
+//                        handleAttributeRequest(request, (file, data) -> {
+//                            try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+//                                 ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+//                                return file.getAttribute(data.dataName);
+//    //                            oos.write(attribute);
+//                                return null;
+//                            }
+//                        })
+//                        break;
+//                    case WRITE_ATTRIBUTE:
+//                        break;
+//                    case LIST_ATTRIBUTES:
+//                        break;
+//                    case RENAME_ATTRIBUTES:
+//                        break;
+//                    case DELETE_ATTRIBUTES:
+//                        break;
+                    default:
+                        throw new AssertionError(request.kind.name());
+                }
             }
+        } catch (IOException ex) {
+            LOG.log(Level.WARNING, null, ex);
         }
     }
 
@@ -167,4 +183,25 @@ public class FileSystemAgent {
 //    private interface AttributeProcess<R> {
 //        public R process(FileObject file, AttributeData data) throws IOException;
 //    }
+
+    @ServiceProvider(service=Service.class)
+    public static final class ServiceImpl implements Service {
+
+        @Override
+        public String name() {
+            return "fs";
+        }
+
+        @Override
+        public void run(InputStream in, OutputStream out) {
+            try {
+                FileSystem localFS = FileUtil.toFileObject(new File("/")).getFileSystem();
+                new FileSystemAgent(localFS, in, out).start();
+            } catch (FileStateInvalidException ex) {
+                LOG.log(Level.SEVERE, null, ex);
+                throw new UncheckedIOException(ex);
+            }
+        }
+
+    }
 }

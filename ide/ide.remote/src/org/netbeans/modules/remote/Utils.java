@@ -18,6 +18,7 @@
  */
 package org.netbeans.modules.remote;
 
+import com.google.gson.Gson;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -29,24 +30,35 @@ import java.nio.charset.StandardCharsets;
  */
 public class Utils {
 
+    public static final Gson gson = new Gson();
+
     public static void write(OutputStream out, String data) throws IOException {
         byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
         byte[] augmentedBytes = new byte[bytes.length + 4];
         System.arraycopy(bytes, 0, augmentedBytes, 4, bytes.length);
-        augmentedBytes[0] = (byte) ((bytes.length >> 24) & 0xFF);
-        augmentedBytes[1] = (byte) ((bytes.length >> 16) & 0xFF);
-        augmentedBytes[2] = (byte) ((bytes.length >>  8) & 0xFF);
-        augmentedBytes[3] = (byte) ((bytes.length >>  0) & 0xFF);
+        writeInt(augmentedBytes, 0, bytes.length);
         out.write(augmentedBytes);
         out.flush();
     }
 
+    public static void writeInt(byte[] data, int offset, int value) {
+        data[offset + 0] = (byte) ((value >> 24) & 0xFF);
+        data[offset + 1] = (byte) ((value >> 16) & 0xFF);
+        data[offset + 2] = (byte) ((value >>  8) & 0xFF);
+        data[offset + 3] = (byte) ((value >>  0) & 0xFF);
+    }
+
     public static String read(InputStream in) throws IOException {
-        int len = (in.read() << 24) +
-                  (in.read() << 16) +
-                  (in.read() <<  8) +
-                  (in.read() <<  0);
+        int len = readInt(in);
         byte[] data = in.readNBytes(len);
         return new String(data, StandardCharsets.UTF_8);
     }
+
+    public static int readInt(InputStream in) throws IOException {
+        return ((in.read()  & 0xFF) << 24) +
+               ((in.read()  & 0xFF) << 16) +
+               ((in.read()  & 0xFF) <<  8) +
+               ((in.read()  & 0xFF) <<  0);
+    }
+
 }

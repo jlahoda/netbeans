@@ -20,17 +20,13 @@ package org.netbeans.modules.remote.ide;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
 import org.netbeans.modules.favorites.api.Favorites;
-import org.netbeans.modules.remote.agent.fs.FileSystemAgent;
+import org.netbeans.modules.remote.ide.RemoteManager.RemoteDescription;
 import org.netbeans.modules.remote.ide.fs.RemoteFileSystem;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
 import org.openide.awt.ActionRegistration;
-import org.openide.filesystems.FileUtil;
 import org.openide.util.Exceptions;
 import org.openide.util.NbBundle.Messages;
 
@@ -48,26 +44,7 @@ public final class ConnectToSsh implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         try {
-            ServerSocket sock = new ServerSocket(0);
-
-            new Thread(() -> {
-                try {
-                    while (true) {
-                        Socket socket = sock.accept();
-                        new Thread(() -> {
-                            try {
-                                new FileSystemAgent(FileUtil.toFileObject(new File("/")).getFileSystem(), socket.getInputStream(), socket.getOutputStream()).run();
-                            } catch (IOException ex) {
-                                ex.printStackTrace();
-                            }
-                        }).start();
-                    }
-                } catch (IOException ex) {
-                    //ignore...
-                }
-            }).start();
-            Socket client = new Socket(sock.getInetAddress(), sock.getLocalPort());
-            RemoteFileSystem fs = new RemoteFileSystem(client.getOutputStream(), client.getInputStream());
+            RemoteFileSystem fs = RemoteFileSystem.getRemoteFileSystem(new RemoteDescription("lahvac@localhost", "/tmp/scratch"));
             Favorites.getDefault().add(fs.getRoot());
         } catch (IOException ex) {
             Exceptions.printStackTrace(ex);
