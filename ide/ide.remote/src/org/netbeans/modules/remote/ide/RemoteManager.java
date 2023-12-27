@@ -25,8 +25,10 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import org.netbeans.modules.remote.Remote;
+import org.netbeans.modules.remote.Streams;
 import org.netbeans.modules.remote.Utils;
 import org.openide.util.Exceptions;
 
@@ -42,7 +44,7 @@ public class RemoteManager {
     }
 
     private final Map<RemoteDescription, Remote> description2Remote = new HashMap<>();
-    private final Map<Remote, Object> remote2Services = new HashMap<>();
+    private final Map<Remote, Map<String, Object>> remote2Services = new HashMap<>();
 
     private RemoteManager() {
     }
@@ -76,9 +78,18 @@ public class RemoteManager {
         }
     }
 
-    public synchronized <T> T getService(RemoteDescription remoteDescription, Function<Remote, T> startService) {
+    public synchronized <T> T getService(RemoteDescription remoteDescription, String serviceName, Function<Streams, T> createService) {
         Remote remote = getRemote(remoteDescription);
-        return (T) remote2Services.computeIfAbsent(remote, r -> startService.apply(r));
+        return (T) remote2Services.computeIfAbsent(remote, x -> new HashMap<>())
+                                  .computeIfAbsent(serviceName, r -> {
+                                      try {
+                                          Streams streams = remote.runService(serviceName);
+                                          return createService.apply(streams);
+                                      } catch (IOException | ExecutionException ex) {
+                                          Exceptions.printStackTrace(ex);
+                                          return null;
+                                      }
+                                  });
     }
 
     public record RemoteDescription(String connectionString, String userdir, String encoded) {

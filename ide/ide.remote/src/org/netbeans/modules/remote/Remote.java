@@ -98,7 +98,7 @@ public class Remote {
         StreamMultiplexor multiplexor = new StreamMultiplexor(in, out);
         Streams streamsForChannel = multiplexor.getStreamsForChannel(0);
         AtomicInteger nextChannel = new AtomicInteger(1);
-        return AsynchronousConnection.startReceiver(streamsForChannel.in(), streamsForChannel.out(), Task.class, t -> RunService.class, value -> {
+        return AsynchronousConnection.startReceiver(streamsForChannel.in(), streamsForChannel.out(), Task.class, t -> RunService.class, (task, value) -> {
             //TODO: asynchronously
             CompletableFuture<Object> result = new CompletableFuture<Object>();
             for (Service s : Lookup.getDefault().lookupAll(Service.class)) {

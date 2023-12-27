@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.netbeans.modules.remote.agent.fs;
+package org.netbeans.modules.remote.agent;
 
 import org.netbeans.api.sendopts.CommandException;
 import org.netbeans.modules.remote.Remote;

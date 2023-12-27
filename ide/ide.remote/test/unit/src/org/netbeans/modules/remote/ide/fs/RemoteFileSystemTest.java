@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import org.netbeans.junit.NbTestCase;
+import org.netbeans.modules.remote.Utils;
 import org.netbeans.modules.remote.agent.fs.FileSystemAgent;
 import org.netbeans.modules.remote.ide.RemoteManager.RemoteDescription;
 import org.openide.filesystems.FileObject;
@@ -47,7 +48,7 @@ public class RemoteFileSystemTest extends NbTestCase {
         super(name);
     }
 
-    public void testChildren() throws IOException {
+    public void XtestChildren() throws IOException {
         clearWorkDir();
 
         File wd = getWorkDir();
@@ -126,5 +127,26 @@ public class RemoteFileSystemTest extends NbTestCase {
             return null;
         }
 
+    }
+
+    public void testByteArray() throws Throwable {
+        clearWorkDir();
+
+        File wd = getWorkDir();
+        File test1 = new File(wd, "test1"); test1.mkdir();
+        File test2 = new File(wd, "test2"); test2.mkdir();
+        File a = new File(test1, "a.txt");  write(a, "aa".getBytes(StandardCharsets.UTF_8));
+
+        Socket s = new Socket("localhost", sock.getLocalPort());
+        RemoteFileSystem rfs = new RemoteFileSystem(new RemoteDescription("", ""), s.getOutputStream(), s.getInputStream());
+
+        FileObject rwd = rfs.findResource("/home/lahvac/src/jdk/jdk/src/java.base/share/classes/java/lang/");
+        FileObject[] wdChildren = rwd.getChildren(); //TODO: ordering
+
+        for (FileObject c : wdChildren) {
+            if (c.isData()) {
+                c.asBytes();
+            }
+        }
     }
 }

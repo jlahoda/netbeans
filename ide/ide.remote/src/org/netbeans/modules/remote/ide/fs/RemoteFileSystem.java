@@ -26,24 +26,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.net.URLStreamHandler;
 import java.net.URLStreamHandlerFactory;
-import java.net.spi.URLStreamHandlerProvider;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import org.netbeans.modules.remote.Streams;
 import org.netbeans.modules.remote.Utils;
-import org.netbeans.modules.remote.ide.ConnectToSsh;
 import org.netbeans.modules.remote.ide.RemoteManager;
 import org.netbeans.modules.remote.ide.RemoteManager.RemoteDescription;
 import org.netbeans.modules.remote.ide.fs.FSProtokol.Request;
@@ -51,7 +45,6 @@ import org.netbeans.modules.remote.ide.fs.FSProtokol.RequestKind;
 import org.netbeans.modules.remote.ide.fs.FSProtokol.Response;
 import org.netbeans.modules.remote.ide.fs.FSProtokol.WriteData;
 import org.openide.filesystems.AbstractFileSystem;
-import org.openide.filesystems.DefaultAttributes;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileStateInvalidException;
 import org.openide.filesystems.URLMapper;
@@ -66,15 +59,7 @@ import org.openide.util.lookup.ServiceProvider;
 public class RemoteFileSystem extends AbstractFileSystem implements AbstractFileSystem.List, AbstractFileSystem.Info, AbstractFileSystem.Attr {
 
     public static RemoteFileSystem getRemoteFileSystem(RemoteDescription remoteDescription) {
-        return RemoteManager.getDefault().getService(remoteDescription, r -> {
-            try {
-                Streams streams = r.runService("fs");
-                return new RemoteFileSystem(remoteDescription, streams.out(), streams.in());
-            } catch (IOException | ExecutionException ex) {
-                Exceptions.printStackTrace(ex);
-                return null; //TODO!
-            }
-        });
+        return RemoteManager.getDefault().getService(remoteDescription, "fs", streams -> new RemoteFileSystem(remoteDescription, streams.out(), streams.in()));
     }
 
     private final RemoteDescription remoteDescription;
@@ -203,6 +188,10 @@ public class RemoteFileSystem extends AbstractFileSystem implements AbstractFile
     @Override
     public void deleteAttributes(String name) {
         attributes.remove(name);
+    }
+
+    public RemoteDescription getRemoteDescription() {
+        return remoteDescription;
     }
 
     @ServiceProvider(service=URLMapper.class)

@@ -19,10 +19,13 @@
 package org.netbeans.modules.remote;
 
 import com.google.gson.Gson;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import org.openide.filesystems.FileObject;
+import org.openide.filesystems.FileUtil;
 
 /**
  *
@@ -67,6 +70,10 @@ public class Utils {
             throw new EndOfInput();
         }
         return b & 0xFF;
+    }
+
+    public static FileObject resolveLocalPath(String path) {
+        return FileUtil.toFileObject(new File(path));
     }
 
     public static class EndOfInput extends IOException {}

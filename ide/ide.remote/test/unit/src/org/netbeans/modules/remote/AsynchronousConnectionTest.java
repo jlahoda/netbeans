@@ -47,7 +47,7 @@ public class AsynchronousConnectionTest extends NbTestCase {
                 Socket accepted = server.accept();
                 RequestProcessor worker = new RequestProcessor("test-receiver", 1, false, false); //TODO: virtual thread!
                 Random random = new Random();
-                AsynchronousConnection.startReceiver(accepted.getInputStream(), accepted.getOutputStream(), MessageType.class, type -> Integer.class, in -> {
+                AsynchronousConnection.startReceiver(accepted.getInputStream(), accepted.getOutputStream(), MessageType.class, type -> Integer.class, (type, in) -> {
                     CompletableFuture<Integer> result = new CompletableFuture<>();
                     worker.post(() -> {
                         result.complete(in);
@@ -77,7 +77,7 @@ public class AsynchronousConnectionTest extends NbTestCase {
             try {
                 Socket accepted = server.accept();
                 acceptedSocket.set(accepted);
-                AsynchronousConnection.startReceiver(accepted.getInputStream(), accepted.getOutputStream(), MessageType.class, type -> Integer.class, in -> {
+                AsynchronousConnection.startReceiver(accepted.getInputStream(), accepted.getOutputStream(), MessageType.class, type -> Integer.class, (type, in) -> {
                     //stall forever:
                     return new CompletableFuture<>();
                 });

@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -117,7 +118,7 @@ public class AsynchronousConnection {
         private record PendingRequest<R>(CompletableFuture<R> pending, Class<R> responseType) {}
     }
 
-    public static <E extends Enum<E>, P, R> Task startReceiver(InputStream in, OutputStream out, Class<E> messageTypeClass, Function<E, Class<P>> messageType2DataClass, Function<P, CompletableFuture<R>> function) {
+    public static <E extends Enum<E>, P, R> Task startReceiver(InputStream in, OutputStream out, Class<E> messageTypeClass, Function<E, Class<P>> messageType2DataClass, BiFunction<E, P, CompletableFuture<R>> function) {
         RequestProcessor worker = new RequestProcessor(AsynchronousConnection.class.getName() + "-receiver", 1, false, false); //TODO: virtual thread!
         return worker.post(() -> {
             try {
@@ -128,9 +129,10 @@ public class AsynchronousConnection {
                     int dataSize = Utils.readInt(in);
                     byte[] dataBytes = in.readNBytes(dataSize);
                     String kindName = new String(kindBytes, StandardCharsets.UTF_8);
-                    Class<P> expectedType = messageType2DataClass.apply(Enum.valueOf(messageTypeClass, kindName));
+                    E kind = Enum.valueOf(messageTypeClass, kindName);
+                    Class<P> expectedType = messageType2DataClass.apply(kind);
                     P dataValue = Utils.gson.fromJson(new String(dataBytes, StandardCharsets.UTF_8), expectedType);
-                    function.apply(dataValue).thenAccept(r -> {
+                    function.apply(kind, dataValue).thenAccept(r -> {
                         byte[] messageBytes = Utils.gson.toJson(r).getBytes(StandardCharsets.UTF_8);
                         byte[] output = new byte[messageBytes.length + 8];
                         Utils.writeInt(output, 0, id);
