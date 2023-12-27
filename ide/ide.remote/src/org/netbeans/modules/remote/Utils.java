@@ -55,10 +55,19 @@ public class Utils {
     }
 
     public static int readInt(InputStream in) throws IOException {
-        return ((in.read()  & 0xFF) << 24) +
-               ((in.read()  & 0xFF) << 16) +
-               ((in.read()  & 0xFF) <<  8) +
-               ((in.read()  & 0xFF) <<  0);
+        return (readByte(in) << 24) +
+               (readByte(in) << 16) +
+               (readByte(in) <<  8) +
+               (readByte(in) <<  0);
     }
 
+    private static int readByte(InputStream in) throws IOException {
+        int b = in.read();
+        if (b == (-1)) {
+            throw new EndOfInput();
+        }
+        return b & 0xFF;
+    }
+
+    public static class EndOfInput extends IOException {}
 }

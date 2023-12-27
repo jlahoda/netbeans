@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.netbeans.modules.remote.Utils.EndOfInput;
 import org.openide.util.Exceptions;
 import org.openide.util.RequestProcessor;
 
@@ -56,7 +57,7 @@ public class StreamMultiplexor {
                     int readSize = in.readNBytes(packet, 0, packetSize);
 
                     if (readSize < packetSize) {
-                        packet = Arrays.copyOf(packet, readSize);
+                        throw new EndOfInput();
                     }
 
                     ChannelInputStream input;
@@ -65,10 +66,21 @@ public class StreamMultiplexor {
                         input = channel2Input.get(channel);
                     }
 
-                    input.addBuffer(packet);
+                    if (input != null) {
+                        input.addBuffer(packet);
+                    } else {
+                        LOG.log(Level.FINE, "Got data for unknown channel: {0}", channel);
+                    }
                 }
+            } catch (EndOfInput ex) {
+                //OK
             } catch (IOException ex) {
                 Exceptions.printStackTrace(ex);
+            }
+            synchronized (channel2Input) {
+                for (ChannelInputStream cis : channel2Input.values()) {
+                    cis.close();
+                }
             }
         });
     }
@@ -81,7 +93,7 @@ public class StreamMultiplexor {
                 throw new IllegalArgumentException("Already provided stream for channel number " + channelNumber);
             }
 
-            channelIn = new ChannelInputStream();
+            channelIn = new ChannelInputStream(channelNumber);
 
             channel2Input.put(channelNumber, channelIn);
         }
@@ -95,6 +107,11 @@ public class StreamMultiplexor {
             @Override
             public void write(byte[] b, int off, int len) throws IOException {
                 send(channelNumber, b, off, len);
+            }
+
+            @Override
+            public void close() throws IOException {
+                channelIn.close();
             }
         });
     }
@@ -119,10 +136,16 @@ public class StreamMultiplexor {
         out.flush();
     }
 
-    private static class ChannelInputStream extends InputStream {
+    private class ChannelInputStream extends InputStream {
 
+        private final int channelNumber;
         private final List<byte[]> buffers = new ArrayList<>();
         private int offset;
+        private boolean closed;
+
+        public ChannelInputStream(int channelNumber) {
+            this.channelNumber = channelNumber;
+        }
 
         @Override
         public int read() throws IOException {
@@ -142,13 +165,21 @@ public class StreamMultiplexor {
                 return 0;
             }
 
-            while (buffers.isEmpty()) { //TODO: closed flag!
+            while (buffers.isEmpty() && !closed) {
                 try {
                     wait();
                 } catch (InterruptedException ex) {
                     LOG.log(Level.FINE, null, ex);
                 }
             }
+
+            if (buffers.isEmpty()) {
+                if (!closed) {
+                    throw new IllegalStateException("Should either have data, or be closed!");
+                }
+                return -1;
+            }
+
             int toRead = Math.min(buffers.get(0).length - offset, len);
             System.arraycopy(buffers.get(0), offset, b, off, toRead);
             offset += toRead;
@@ -157,6 +188,17 @@ public class StreamMultiplexor {
                 offset = 0;
             }
             return toRead;
+        }
+
+        @Override
+        public void close() {
+            synchronized (channel2Input) {
+                channel2Input.remove(channelNumber);
+            }
+            synchronized (this) {
+                closed = true;
+                notifyAll();
+            }
         }
 
         private synchronized void addBuffer(byte[] buffer) {

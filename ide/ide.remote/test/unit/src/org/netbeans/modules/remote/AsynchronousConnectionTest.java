@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.netbeans.junit.NbTestCase;
 import org.netbeans.modules.remote.AsynchronousConnection.Sender;
@@ -66,6 +67,38 @@ public class AsynchronousConnectionTest extends NbTestCase {
         }
         for (int i = 0; i < pending.size(); i++) {
             assertEquals(i, (int) pending.get(i).get());
+        }
+    }
+
+    public void testClose() throws Throwable {
+        var server = new ServerSocket(0);
+        var acceptedSocket = new AtomicReference<Socket>();
+        var connectThread = new Thread(() -> {
+            try {
+                Socket accepted = server.accept();
+                acceptedSocket.set(accepted);
+                AsynchronousConnection.startReceiver(accepted.getInputStream(), accepted.getOutputStream(), MessageType.class, type -> Integer.class, in -> {
+                    //stall forever:
+                    return new CompletableFuture<>();
+                });
+            } catch (Throwable t) {
+                t.printStackTrace();
+            }
+        });
+        connectThread.start();
+        var clientSocket = new Socket(server.getInetAddress(), server.getLocalPort());
+        var sender = new Sender(clientSocket.getInputStream(), clientSocket.getOutputStream());
+        List<CompletableFuture<Integer>> pending = new ArrayList<>();
+        for (int i = 0; i < 1_000; i++) {
+            pending.add(sender.sendAndReceive(MessageType.ECHO, i, Integer.class));
+        }
+        acceptedSocket.get().close();
+        for (int i = 0; i < pending.size(); i++) {
+            try {
+                pending.get(i).get();
+            } catch (ExecutionException ex) {
+                //OK
+            }
         }
     }
 

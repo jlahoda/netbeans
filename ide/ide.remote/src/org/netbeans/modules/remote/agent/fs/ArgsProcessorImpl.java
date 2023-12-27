@@ -25,6 +25,7 @@ import org.netbeans.spi.sendopts.Arg;
 import org.netbeans.spi.sendopts.ArgsProcessor;
 import org.netbeans.spi.sendopts.Description;
 import org.netbeans.spi.sendopts.Env;
+import org.openide.*;
 import org.openide.util.NbBundle.Messages;
 
 public final class ArgsProcessorImpl implements ArgsProcessor {
@@ -38,6 +39,9 @@ public final class ArgsProcessorImpl implements ArgsProcessor {
     public void process(Env env) throws CommandException {
         if (remoteAgent != null) {
             Remote.runAgent(env.getInputStream(), env.getOutputStream()).waitFinished();
+            if ("shutdown".equals(remoteAgent)) {
+                LifecycleManager.getDefault().exit();
+            }
         }
     }
 }

@@ -42,8 +42,8 @@ public class StreamMultiplexorTest extends NbTestCase {
 
     public void testSimpleDataPassing() throws Throwable {
         var ends = createEnds();
-        StreamMultiplexor end1 = ends.first();
-        StreamMultiplexor end2 = ends.second();
+        StreamMultiplexor end1 = ends.streams1();
+        StreamMultiplexor end2 = ends.streams2();
         Streams channel0End1 = end1.getStreamsForChannel(0);
         Streams channel0End2 = end2.getStreamsForChannel(0);
         channel0End1.out().write("hello!".getBytes(StandardCharsets.UTF_8));
@@ -60,8 +60,8 @@ public class StreamMultiplexorTest extends NbTestCase {
         byte[] data = longText.getBytes(StandardCharsets.UTF_8);
 
         var ends = createEnds();
-        StreamMultiplexor end1 = ends.first();
-        StreamMultiplexor end2 = ends.second();
+        StreamMultiplexor end1 = ends.streams1();
+        StreamMultiplexor end2 = ends.streams2();
         List<Thread> workers = new ArrayList<>();
         for (int i = 0; i < 100; i++ ){
             Streams channelEnd1 = end1.getStreamsForChannel(i);
@@ -98,14 +98,44 @@ public class StreamMultiplexorTest extends NbTestCase {
         }
     }
 
-    private static Pair<StreamMultiplexor, StreamMultiplexor> createEnds() throws Throwable {
+    public void testClose() throws Throwable {
+        {
+            var ends = createEnds();
+            StreamMultiplexor end1 = ends.streams1();
+            StreamMultiplexor end2 = ends.streams2();
+            Streams channel0End1 = end1.getStreamsForChannel(0);
+            Streams channel0End2 = end2.getStreamsForChannel(0);
+            ends.s1.close();
+            assertEquals(-1, channel0End1.in().read());
+            assertEquals(-1, channel0End2.in().read());
+        }
+        {
+            var ends = createEnds();
+            StreamMultiplexor end1 = ends.streams1();
+            StreamMultiplexor end2 = ends.streams2();
+            Streams channel0End1 = end1.getStreamsForChannel(0);
+            Streams channel0End2 = end2.getStreamsForChannel(0);
+            channel0End1.in().close();
+            channel0End2.out().write(0);
+            Thread.sleep(100);//wait a moment for the data to arrive
+            assertEquals(-1, channel0End1.in().read());
+            Streams channel1End1 = end1.getStreamsForChannel(1);
+            Streams channel1End2 = end2.getStreamsForChannel(1);
+            channel1End2.out().write(0);
+            assertEquals(0, channel1End1.in().read());
+        }
+    }
+
+    private static StreamDescription createEnds() throws Throwable {
         var server = new ServerSocket(0);
         var serverMultiplexor = new AtomicReference<StreamMultiplexor>();
+        var serverSocket = new AtomicReference<Socket>();
         var exception = new AtomicReference<Throwable>();
         var connectThread = new Thread(() -> {
             try {
                 Socket accepted = server.accept();
                 serverMultiplexor.set(new StreamMultiplexor(accepted.getInputStream(), accepted.getOutputStream()));
+                serverSocket.set(accepted);
             } catch (Throwable t) {
                 exception.set(t);
             }
@@ -116,6 +146,8 @@ public class StreamMultiplexorTest extends NbTestCase {
         if (exception.get() != null) {
             throw exception.get();
         }
-        return Pair.of(new StreamMultiplexor(clientSocket.getInputStream(), clientSocket.getOutputStream()), serverMultiplexor.get());
+        return new StreamDescription(new StreamMultiplexor(clientSocket.getInputStream(), clientSocket.getOutputStream()), serverMultiplexor.get(), clientSocket, serverSocket.get());
     }
+
+    private record StreamDescription(StreamMultiplexor streams1, StreamMultiplexor streams2, Socket s1, Socket s2) {}
 }

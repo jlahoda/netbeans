@@ -60,7 +60,7 @@ public class RemoteManager {
         connectionOptions.add("ssh");
         connectionOptions.addAll(Arrays.asList(remoteDescription.connectionString().split(" +")));
         connectionOptions.add("/home/lahvac/src/nb/remote/nbbuild/netbeans/bin/netbeans");
-        connectionOptions.add("--start-remote-agent");
+        connectionOptions.add("--start-remote-agent=shutdown");
         connectionOptions.add("--nogui");
         connectionOptions.add("--userdir");
         connectionOptions.add(remoteDescription.userdir);

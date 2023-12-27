@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.netbeans.modules.remote.Utils.EndOfInput;
 import org.openide.util.Exceptions;
 import org.openide.util.RequestProcessor;
 import org.openide.util.RequestProcessor.Task;
@@ -51,6 +52,7 @@ public class AsynchronousConnection {
             this.in = in;
             this.out = out;
             WORKER.post(() -> {
+                Exception exceptionalResult;
                 try {
                     while (true) {
                         int id = Utils.readInt(in);
@@ -69,8 +71,17 @@ public class AsynchronousConnection {
                             request.pending.complete(value);
                         }
                     }
+                } catch (EndOfInput ex) {
+                    exceptionalResult = ex;
                 } catch (IOException ex) {
+                    exceptionalResult = ex;
                     Exceptions.printStackTrace(ex);
+                }
+
+                synchronized (id2PendingRequest) {
+                    for (PendingRequest<Object> request : id2PendingRequest.values()) {
+                        request.pending.completeExceptionally(exceptionalResult);
+                    }
                 }
             });
         }
@@ -138,6 +149,7 @@ public class AsynchronousConnection {
             } catch (IOException ex) {
                 Exceptions.printStackTrace(ex);
             }
+            System.err.println("receiver finished");
         });
     }
 }
