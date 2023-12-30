@@ -85,6 +85,8 @@ import org.netbeans.modules.lsp.client.spi.LanguageServerProvider.LanguageServer
 import org.netbeans.modules.lsp.client.spi.MultiMimeLanguageServerProvider;
 import org.openide.awt.NotificationDisplayer;
 import org.openide.filesystems.FileObject;
+import org.openide.filesystems.FileStateInvalidException;
+import org.openide.filesystems.FileSystem;
 import org.openide.filesystems.FileUtil;
 import org.openide.modules.OnStop;
 import org.openide.util.ChangeSupport;
@@ -321,7 +323,11 @@ public class LSPBindings {
                     launcher.startListening();
                     LanguageServer server = launcher.getRemoteProxy();
                     InitializeResult result = initServer(p, server, dir); //XXX: what if a different root is expected????
-                    b = new LSPBindings(server, result, LanguageServerProviderAccessor.getINSTANCE().getProcess(desc));
+                    FileSystem remoteFS = null;
+                    if (prj != null) {
+                        remoteFS = Utils.getRemoteFileSystem(prj.getProjectDirectory());
+                    }
+                    b = new LSPBindings(server, result, LanguageServerProviderAccessor.getINSTANCE().getProcess(desc), remoteFS);
                     // Register cleanup via LSPReference#run
                     new LSPReference(b, Utilities.activeReferenceQueue());
                     lci.setBindings(b);
@@ -360,7 +366,7 @@ public class LSPBindings {
                 launcher.startListening();
                 LanguageServer server = launcher.getRemoteProxy();
                 InitializeResult result = initServer(null, server, root);
-                LSPBindings bindings = new LSPBindings(server, result, null);
+                LSPBindings bindings = new LSPBindings(server, result, null, null);
 
                 lc.setBindings(bindings);
 
@@ -441,11 +447,13 @@ public class LSPBindings {
     private final LanguageServer server;
     private final InitializeResult initResult;
     private final Process process;
+    public  final FileSystem baseFS;
 
-    private LSPBindings(LanguageServer server, InitializeResult initResult, Process process) {
+    private LSPBindings(LanguageServer server, InitializeResult initResult, Process process, FileSystem baseFS) {
         this.server = server;
         this.initResult = initResult;
         this.process = process;
+        this.baseFS = baseFS;
     }
 
     public TextDocumentService getTextDocumentService() {

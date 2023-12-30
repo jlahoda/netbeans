@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.JComponent;
@@ -54,13 +55,14 @@ import org.openide.util.Lookup;
 import org.openide.util.LookupEvent;
 import org.openide.util.LookupListener;
 import org.openide.util.NbBundle.Messages;
+import org.openide.util.Pair;
 import org.openide.util.lookup.ServiceProvider;
 
 /**
  *
  * @author lahvac
  */
-public class NavigatorPanelImpl extends Children.Keys<Either<SymbolInformation, DocumentSymbol>> implements NavigatorPanel, BackgroundTask, LookupListener {
+public class NavigatorPanelImpl extends Children.Keys<Pair<LSPBindings, Either<SymbolInformation, DocumentSymbol>>> implements NavigatorPanel, BackgroundTask, LookupListener {
 
     private static final Logger LOG = Logger.getLogger(NavigatorPanelImpl.class.getName());
     private static final NavigatorPanelImpl INSTANCE = new NavigatorPanelImpl();
@@ -131,7 +133,7 @@ public class NavigatorPanelImpl extends Children.Keys<Either<SymbolInformation, 
         if (file.equals(this.file)) {
             try {
                 String uri = Utils.toURI(file);
-                List<Either<SymbolInformation, DocumentSymbol>> symbols = bindings.getTextDocumentService().documentSymbol(new DocumentSymbolParams(new TextDocumentIdentifier(uri))).get();
+                List<Pair<LSPBindings, Either<SymbolInformation, DocumentSymbol>>> symbols = bindings.getTextDocumentService().documentSymbol(new DocumentSymbolParams(new TextDocumentIdentifier(uri))).get().stream().map(e -> Pair.of(bindings, e)).collect(Collectors.toList());
 
                 setKeys(symbols);
                 
@@ -149,8 +151,8 @@ public class NavigatorPanelImpl extends Children.Keys<Either<SymbolInformation, 
     }
 
     @Override
-    protected Node[] createNodes(Either<SymbolInformation, DocumentSymbol> sym) {
-        return new Node[] {new NodeImpl(Utils.toURI(file), sym)};
+    protected Node[] createNodes(Pair<LSPBindings, Either<SymbolInformation, DocumentSymbol>> sym) {
+        return new Node[] {new NodeImpl(sym.first(), Utils.toURI(file), sym.second())};
     }
 
     @Override
@@ -160,14 +162,14 @@ public class NavigatorPanelImpl extends Children.Keys<Either<SymbolInformation, 
 
     private static final class NodeImpl extends AbstractNode {
 
-        private static Children createChildren(String currentFileUri, Either<SymbolInformation, DocumentSymbol> sym) {
+        private static Children createChildren(LSPBindings server, String currentFileUri, Either<SymbolInformation, DocumentSymbol> sym) {
             if (sym.isLeft()) {
                 return LEAF;
             }
-            return createChildren(currentFileUri, sym.getRight());
+            return createChildren(server, currentFileUri, sym.getRight());
         }
 
-        private static Children createChildren(String currentFileUri, DocumentSymbol sym) {
+        private static Children createChildren(LSPBindings server, String currentFileUri, DocumentSymbol sym) {
             if (sym.getChildren() == null || sym.getChildren().isEmpty()) {
                 return LEAF;
             }
@@ -180,7 +182,7 @@ public class NavigatorPanelImpl extends Children.Keys<Either<SymbolInformation, 
                 @Override
                 protected Node[] createNodes(DocumentSymbol sym) {
                     return new Node[] {
-                        new NodeImpl(currentFileUri, sym)
+                        new NodeImpl(server, currentFileUri, sym)
                     };
                 }
 
@@ -192,35 +194,35 @@ public class NavigatorPanelImpl extends Children.Keys<Either<SymbolInformation, 
             };
         }
 
-        private static Action createOpenAction(String uri, Range range) {
+        private static Action createOpenAction(LSPBindings server, String uri, Range range) {
             return new AbstractAction() {
                 @Override
                 public void actionPerformed(ActionEvent ae) {
-                    Utils.open(uri, range);
+                    Utils.open(server, uri, range);
                 }
             };
         }
 
         private final Action open;
 
-        public NodeImpl(String currentFileUri, Either<SymbolInformation, DocumentSymbol> symbol) {
-            super(createChildren(currentFileUri, symbol));
+        public NodeImpl(LSPBindings server, String currentFileUri, Either<SymbolInformation, DocumentSymbol> symbol) {
+            super(createChildren(server, currentFileUri, symbol));
             if (symbol.isLeft()) {
                 setDisplayName(symbol.getLeft().getName());
                 setIconBaseWithExtension(Icons.getSymbolIconBase(symbol.getLeft().getKind()));
-                this.open = createOpenAction(symbol.getLeft().getLocation().getUri(), symbol.getLeft().getLocation().getRange());
+                this.open = createOpenAction(server, symbol.getLeft().getLocation().getUri(), symbol.getLeft().getLocation().getRange());
             } else {
                 setDisplayName(symbol.getRight().getName());
                 setIconBaseWithExtension(Icons.getSymbolIconBase(symbol.getRight().getKind()));
-                this.open = createOpenAction(currentFileUri, symbol.getRight().getRange());
+                this.open = createOpenAction(server, currentFileUri, symbol.getRight().getRange());
             }
         }
 
-        public NodeImpl(String currentFileUri, DocumentSymbol symbol) {
-            super(createChildren(currentFileUri, symbol));
+        public NodeImpl(LSPBindings server, String currentFileUri, DocumentSymbol symbol) {
+            super(createChildren(server, currentFileUri, symbol));
             setDisplayName(symbol.getName());
             setIconBaseWithExtension(Icons.getSymbolIconBase(symbol.getKind()));
-            this.open = createOpenAction(currentFileUri, symbol.getRange());
+            this.open = createOpenAction(server, currentFileUri, symbol.getRange());
         }
 
         @Override

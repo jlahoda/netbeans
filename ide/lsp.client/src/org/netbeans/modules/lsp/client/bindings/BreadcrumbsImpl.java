@@ -86,7 +86,7 @@ public class BreadcrumbsImpl implements BackgroundTask {
             //TODO: modified while the query is running?
             List<Either<SymbolInformation, DocumentSymbol>> symbols = bindings.getTextDocumentService().documentSymbol(new DocumentSymbolParams(new TextDocumentIdentifier(Utils.toURI(file)))).get();
 
-            this.rootElement = new RootBreadcrumbsElementImpl(file, doc, symbols.stream().map(this::toDocumentSymbol).collect(Collectors.toList()));
+            this.rootElement = new RootBreadcrumbsElementImpl(bindings, file, doc, symbols.stream().map(this::toDocumentSymbol).collect(Collectors.toList()));
 
             SwingUtilities.invokeLater(() -> update());
         } catch (InterruptedException | ExecutionException ex) {
@@ -135,8 +135,8 @@ public class BreadcrumbsImpl implements BackgroundTask {
     private static final class RootBreadcrumbsElementImpl implements BreadcrumbsElement {
         private final List<BreadcrumbsElement> children;
 
-        public RootBreadcrumbsElementImpl(FileObject file, Document doc, List<DocumentSymbol> symbols) {
-            this.children = Collections.singletonList(new FileBreadcrumbsElementImpl(file, doc, this, symbols));
+        public RootBreadcrumbsElementImpl(LSPBindings server, FileObject file, Document doc, List<DocumentSymbol> symbols) {
+            this.children = Collections.singletonList(new FileBreadcrumbsElementImpl(server, file, doc, this, symbols));
         }
 
         @Override
@@ -175,10 +175,10 @@ public class BreadcrumbsImpl implements BackgroundTask {
         private final BreadcrumbsElement root;
         private final List<BreadcrumbsElement> children;
 
-        public FileBreadcrumbsElementImpl(FileObject file, Document doc, BreadcrumbsElement root, List<DocumentSymbol> symbols) {
+        public FileBreadcrumbsElementImpl(LSPBindings server, FileObject file, Document doc, BreadcrumbsElement root, List<DocumentSymbol> symbols) {
             this.file = file;
             this.root = root;
-            this.children = BreadcrumbsElementImpl.create(this, symbols, file, doc);
+            this.children = BreadcrumbsElementImpl.create(server, this, symbols, file, doc);
         }
 
         @Override
@@ -223,6 +223,7 @@ public class BreadcrumbsImpl implements BackgroundTask {
 
     private static final class BreadcrumbsElementImpl implements BreadcrumbsElement {
 
+        private final LSPBindings server;
         private final BreadcrumbsElement parent;
         private final DocumentSymbol symbol;
         private final Position startPos;
@@ -230,16 +231,17 @@ public class BreadcrumbsImpl implements BackgroundTask {
         private final List<BreadcrumbsElement> children;
         private final Lookup lookup;
 
-        public BreadcrumbsElementImpl(BreadcrumbsElement parent, FileObject file, Document doc, DocumentSymbol symbol) throws BadLocationException {
+        public BreadcrumbsElementImpl(LSPBindings server, BreadcrumbsElement parent, FileObject file, Document doc, DocumentSymbol symbol) throws BadLocationException {
+            this.server = server;
             this.parent = parent;
             this.symbol = symbol;
             this.startPos = doc.createPosition(Utils.getOffset(doc, symbol.getRange().getStart()));
             this.endPos = doc.createPosition(Utils.getOffset(doc, symbol.getRange().getEnd()));
-            this.children = create(this, symbol.getChildren(), file, doc);
+            this.children = create(server, this, symbol.getChildren(), file, doc);
             this.lookup = Lookups.fixed(new Openable() {
                 @Override
                 public void open() {
-                    Utils.open(Utils.toURI(file), symbol.getRange());
+                    Utils.open(server, Utils.toURI(file), symbol.getRange());
                 }
             });
         }
@@ -276,20 +278,20 @@ public class BreadcrumbsImpl implements BackgroundTask {
             return parent;
         }
 
-        public static List<BreadcrumbsElement> create(BreadcrumbsElement parent, List<DocumentSymbol> symbols, FileObject file, Document doc) {
+        public static List<BreadcrumbsElement> create(LSPBindings server, BreadcrumbsElement parent, List<DocumentSymbol> symbols, FileObject file, Document doc) {
             if (symbols == null) {
                 return Collections.emptyList();
             }
             return symbols.stream()
-                          .map(c -> create(parent, file, doc, c))
+                          .map(c -> create(server, parent, file, doc, c))
                           .filter(e -> e != null)
                           .sorted((be1, be2) -> ((BreadcrumbsElementImpl) be1).startPos.getOffset() - ((BreadcrumbsElementImpl) be2).endPos.getOffset())
                           .collect(Collectors.toList());
         }
 
-        private static BreadcrumbsElement create(BreadcrumbsElement parent, FileObject file, Document doc, DocumentSymbol symbol) {
+        private static BreadcrumbsElement create(LSPBindings server, BreadcrumbsElement parent, FileObject file, Document doc, DocumentSymbol symbol) {
             try {
-                return new BreadcrumbsElementImpl(parent, file, doc, symbol);
+                return new BreadcrumbsElementImpl(server, parent, file, doc, symbol);
             } catch (BadLocationException ex) {
                 return null;
             }

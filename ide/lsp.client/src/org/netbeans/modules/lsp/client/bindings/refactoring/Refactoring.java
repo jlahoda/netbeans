@@ -136,7 +136,7 @@ public class Refactoring {
                     if(cancel.get()) {
                         break;
                     }
-                    FileObject file = Utils.fromURI(l.getUri());
+                    FileObject file = Utils.fromURI(bindings, l.getUri());
                     if (file != null) {
                         PositionBounds bounds;
                         try {
@@ -233,7 +233,7 @@ public class Refactoring {
                         if (part.isLeft()) {
                             String uri = part.getLeft().getTextDocument().getUri();
                             uri = newURI2Old.getOrDefault(uri, uri);
-                            FileObject file = Utils.fromURI(uri);
+                            FileObject file = Utils.fromURI(bindings, uri);
 
                             if (file != null) {
                                 for (TextEdit te : part.getLeft().getEdits()) {
@@ -260,14 +260,14 @@ public class Refactoring {
                             switch (part.getRight().getKind()) {
                                 case ResourceOperationKind.Rename: {
                                     RenameFile rename = (RenameFile) part.getRight();
-                                    FileObject file = Utils.fromURI(rename.getOldUri());
+                                    FileObject file = Utils.fromURI(bindings, rename.getOldUri());
                                     refactoringElements.addFileChange(refactoring, new LSPRenameFile(file, rename.getNewUri()));
                                     newURI2Old.put(rename.getNewUri(), rename.getOldUri());
                                     break;
                                 }
                                 case ResourceOperationKind.Delete: {
                                     DeleteFile delete = (DeleteFile) part.getRight();
-                                    FileObject file = Utils.fromURI(delete.getUri());
+                                    FileObject file = Utils.fromURI(bindings, delete.getUri());
                                     refactoringElements.addFileChange(refactoring, new LSPDeleteFile(file));
                                     break;
                                 }
@@ -289,7 +289,7 @@ public class Refactoring {
                             break;
                         }
                         //TODO: errors:
-                        FileObject file = Utils.fromURI(fileAndChanges.getKey());
+                        FileObject file = Utils.fromURI(bindings, fileAndChanges.getKey());
 
                         for (TextEdit te : fileAndChanges.getValue()) {
                             Difference diff = textEdit2Difference(file, te);

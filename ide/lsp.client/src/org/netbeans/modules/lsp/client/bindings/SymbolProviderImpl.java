@@ -22,6 +22,7 @@ import javax.swing.Icon;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.WorkspaceSymbol;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.netbeans.modules.lsp.client.LSPBindings;
 import org.netbeans.spi.jumpto.symbol.SymbolDescriptor;
 import org.netbeans.spi.jumpto.symbol.SymbolProvider;
 import org.openide.filesystems.FileObject;
@@ -43,15 +44,17 @@ public class SymbolProviderImpl extends BaseSymbolProvider implements SymbolProv
 
     @Override
     public void computeSymbolNames(Context context, Result result) {
-        computeSymbolNames(context.getSearchType(), context.getText(), (info, simpleName) -> result.addResult(new SymbolDescriptorImpl(info, simpleName)));
+        computeSymbolNames(context.getSearchType(), context.getText(), (server, info, simpleName) -> result.addResult(new SymbolDescriptorImpl(server, info, simpleName)));
     }
 
     public static class SymbolDescriptorImpl extends SymbolDescriptor implements BaseSymbolDescriptor {
 
+        private final LSPBindings bindings;
         private final Either<SymbolInformation, WorkspaceSymbol> info;
         private final String simpleName;
 
-        public SymbolDescriptorImpl(Either<SymbolInformation, WorkspaceSymbol> info, String simpleName) {
+        public SymbolDescriptorImpl(LSPBindings bindings, Either<SymbolInformation, WorkspaceSymbol> info, String simpleName) {
+            this.bindings = bindings;
             this.info = info;
             this.simpleName = simpleName;
         }
@@ -106,5 +109,9 @@ public class SymbolProviderImpl extends BaseSymbolProvider implements SymbolProv
             BaseSymbolDescriptor.super.open();
         }
 
+        @Override
+        public LSPBindings getBindings() {
+            return bindings;
+        }
     }
 }

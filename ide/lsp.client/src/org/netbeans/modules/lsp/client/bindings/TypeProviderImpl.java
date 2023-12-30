@@ -25,6 +25,7 @@ import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.SymbolKind;
 import org.eclipse.lsp4j.WorkspaceSymbol;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.netbeans.modules.lsp.client.LSPBindings;
 import org.netbeans.spi.jumpto.type.TypeDescriptor;
 import org.netbeans.spi.jumpto.type.TypeProvider;
 import org.openide.filesystems.FileObject;
@@ -53,20 +54,22 @@ public class TypeProviderImpl extends BaseSymbolProvider implements TypeProvider
     public void computeTypeNames(Context context, Result result) {
         computeSymbolNames(context.getSearchType(),
                            context.getText(),
-                           (info, simpleName) -> {
+                           (server, info, simpleName) -> {
                                 SymbolKind kind = info.isLeft() ? info.getLeft().getKind() : info.getRight().getKind();
                                 if (TYPE_KINDS.contains(kind)) {
-                                    result.addResult(new TypeDescriptorImpl(info, simpleName));
+                                    result.addResult(new TypeDescriptorImpl(server, info, simpleName));
                                 }
                            });
     }
 
     public static class TypeDescriptorImpl extends TypeDescriptor implements BaseSymbolDescriptor {
 
+        private final LSPBindings bindings;
         private final Either<SymbolInformation, WorkspaceSymbol> info;
         private final String simpleName;
 
-        public TypeDescriptorImpl(Either<SymbolInformation, WorkspaceSymbol> info, String simpleName) {
+        public TypeDescriptorImpl(LSPBindings bindings, Either<SymbolInformation, WorkspaceSymbol> info, String simpleName) {
+            this.bindings = bindings;
             this.info = info;
             this.simpleName = simpleName;
         }
@@ -126,5 +129,9 @@ public class TypeProviderImpl extends BaseSymbolProvider implements TypeProvider
             return null;
         }
 
+        @Override
+        public LSPBindings getBindings() {
+            return bindings;
+        }
     }
 }

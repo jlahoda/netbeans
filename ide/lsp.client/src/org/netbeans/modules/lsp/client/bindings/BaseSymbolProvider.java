@@ -53,6 +53,7 @@ import org.netbeans.spi.jumpto.type.SearchType;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.URLMapper;
 import org.openide.util.Exceptions;
+import org.openide.util.Pair;
 
 /**
  *
@@ -68,17 +69,17 @@ public class BaseSymbolProvider {
         return "lsp-client";
     }
 
-    public void computeSymbolNames(SearchType searchType, String searchText, BiConsumer<Either<SymbolInformation, WorkspaceSymbol>, String> found) {
+    public void computeSymbolNames(SearchType searchType, String searchText, Found found) {
         cancel.set(false);
 
-        List<CompletableFuture<Either<List<? extends SymbolInformation>, List<? extends WorkspaceSymbol>>>> queries = new ArrayList<>();
+        List<Pair<LSPBindings, CompletableFuture<Either<List<? extends SymbolInformation>, List<? extends WorkspaceSymbol>>>>> queries = new ArrayList<>();
 
         try {
             for (LSPBindings b : LSPBindings.getAllBindings()) {
                 if (cancel.get()) {
                     return ;
                 }
-                queries.add(b.getWorkspaceService().symbol(new WorkspaceSymbolParams(searchText)));
+                queries.add(Pair.of(b, b.getWorkspaceService().symbol(new WorkspaceSymbolParams(searchText))));
             }
 
             NameMatcher matcher = NameMatcherFactory.createNameMatcher(searchText, searchType);
@@ -90,7 +91,8 @@ public class BaseSymbolProvider {
 
 
                 try {
-                    currentQuery = queries.remove(queries.size() - 1);
+                    Pair<LSPBindings, CompletableFuture<Either<List<? extends SymbolInformation>, List<? extends WorkspaceSymbol>>>> current = queries.remove(queries.size() - 1);
+                    currentQuery = current.second();
 
                     Either<List<? extends SymbolInformation>, List<? extends WorkspaceSymbol>> infos = currentQuery.get();
 
@@ -107,7 +109,7 @@ public class BaseSymbolProvider {
                                     int nameStart = wordStartMatcher.start(2);
                                     String namePart = info.getName().substring(nameStart);
                                     if (matcher.accept(namePart)) {
-                                        found.accept(Either.forLeft(info), namePart);
+                                        found.accept(current.first(), Either.forLeft(info), namePart);
                                     }
                                 }
                             }
@@ -118,7 +120,7 @@ public class BaseSymbolProvider {
                                     int nameStart = wordStartMatcher.start(2);
                                     String namePart = sym.getName().substring(nameStart);
                                     if (matcher.accept(namePart)) {
-                                        found.accept(Either.forRight(sym), namePart);
+                                        found.accept(current.first(), Either.forRight(sym), namePart);
                                     }
                                 }
                             }
@@ -137,10 +139,14 @@ public class BaseSymbolProvider {
                 if (currentQuery != null) {
                     currentQuery.cancel(true);
                 }
-                queries.forEach(cf -> cf.cancel(true));
+                queries.forEach(cf -> cf.second().cancel(true));
             }
             currentQuery = null;
         }
+    }
+
+    protected interface Found {
+        public void accept(LSPBindings server, Either<SymbolInformation, WorkspaceSymbol> symbol, String name);
     }
 
     private static final Logger LOG = Logger.getLogger(BaseSymbolProvider.class.getName());
@@ -158,6 +164,7 @@ public class BaseSymbolProvider {
     public static interface BaseSymbolDescriptor {
 
         public Either<SymbolInformation, WorkspaceSymbol> getInfo();
+        public LSPBindings getBindings();
 
         public default Icon getIcon() {
             return Icons.getSymbolIcon(getInfo().isLeft() ? getInfo().getLeft().getKind() : getInfo().getRight().getKind());
@@ -217,7 +224,7 @@ public class BaseSymbolProvider {
         }
 
         public default void open() {
-            Utils.open(getUri(), getRange());
+            Utils.open(getBindings(), getUri(), getRange());
         }
 
         public default String getUri() {

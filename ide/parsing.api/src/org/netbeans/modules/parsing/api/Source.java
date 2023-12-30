@@ -66,6 +66,7 @@ import org.netbeans.modules.parsing.spi.Scheduler;
 import org.netbeans.modules.parsing.spi.SchedulerEvent;
 import org.netbeans.modules.parsing.spi.SourceModificationEvent;
 import org.openide.filesystems.FileObject;
+import org.openide.filesystems.FileStateInvalidException;
 import org.openide.filesystems.FileUtil;
 import org.openide.util.Lookup;
 import org.openide.util.Parameters;
@@ -234,7 +235,7 @@ public final class Source implements Lookup.Provider {
                 document.putProperty(Source.class, new WeakReference<Source>(source));
             }
 
-            assert source != null : "No Source for " + document; //NOI18N
+//            assert source != null : "No Source for " + document; //NOI18N
             return source;
         }
     }
@@ -536,8 +537,20 @@ public final class Source implements Lookup.Provider {
             @NonNull final FileObject fileObject, 
             @NonNull final Lookup context) {
         synchronized (Source.class) {
+            if (ignoredFile(fileObject)) {
+                return null;
+            }
             final Source source = SourceFactory.getDefault().createSource(fileObject, mimeType, context);
             return source;
+        }
+    }
+
+    private static boolean ignoredFile(FileObject f) {
+        try {
+            return "org.netbeans.modules.remote.ide.fs.RemoteFileSystem".equals(f.getFileSystem().getClass().getName());
+        } catch (FileStateInvalidException ex) {
+            //ignore
+            return false;
         }
     }
 

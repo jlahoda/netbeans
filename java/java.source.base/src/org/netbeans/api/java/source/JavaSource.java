@@ -191,6 +191,13 @@ public final class JavaSource {
         }
         if (!NoJavacHelper.hasWorkingJavac())
             return null;
+        for (FileObject f : files) {
+            //XXX: something better
+            if (ignoredFile(f)) {
+                return null;
+            }
+        }
+
         try {
             return new JavaSource(cpInfo, files);
 // TODO: Split
@@ -200,6 +207,15 @@ public final class JavaSource {
             Exceptions.printStackTrace(ex);
         }
         return null;
+    }
+
+    private static boolean ignoredFile(FileObject f) {
+        try {
+            return "org.netbeans.modules.remote.ide.fs.RemoteFileSystem".equals(f.getFileSystem().getClass().getName());
+        } catch (FileStateInvalidException ex) {
+            //ignore
+            return false;
+        }
     }
 
     private static Map<FileObject, Reference<JavaSource>> file2JavaSource = new WeakHashMap<FileObject, Reference<JavaSource>>();
@@ -218,6 +234,10 @@ public final class JavaSource {
         }
         if (!fileObject.isValid()) {
             LOGGER.log(Level.FINE, "FileObject ({0}) passed to JavaSource.forFileObject is invalid", fileObject.toURI().toString());
+            return null;
+        }
+
+        if (ignoredFile(fileObject)) {
             return null;
         }
 

@@ -43,13 +43,15 @@ import org.netbeans.modules.lsp.client.LSPBindings;
 import org.netbeans.modules.lsp.client.Utils;
 import org.netbeans.modules.textmate.lexer.TextmateTokenId;
 import org.openide.filesystems.FileObject;
+import org.openide.filesystems.FileStateInvalidException;
 import org.openide.util.Exceptions;
 
 /**
  *
  * @author lahvac
  */
-@MimeRegistration(mimeType="", service=HyperlinkProviderExt.class, position = 1600)
+//@MimeRegistration(mimeType="", service=HyperlinkProviderExt.class, position = 1600)
+@MimeRegistration(mimeType="", service=HyperlinkProviderExt.class, position = 100)
 public class HyperlinkProviderImpl implements HyperlinkProviderExt {
 
     @Override
@@ -65,27 +67,33 @@ public class HyperlinkProviderImpl implements HyperlinkProviderExt {
     @Override
     public int[] getHyperlinkSpan(Document doc, int offset, HyperlinkType type) {
         if (doc.getProperty(HyperlinkProviderImpl.class) != Boolean.TRUE) {
-            //not handled by a LSP handler
-            return null;
+            FileObject file = NbEditorUtilities.getFileObject(doc);
+            try {
+                if (file == null || !"org.netbeans.modules.remote.ide.fs.RemoteFileSystem".equals(file.getFileSystem().getClass().getName())) {
+                    //not handled by a LSP handler
+                    return null;
+                }
+            } catch (FileStateInvalidException ex) {
+                Exceptions.printStackTrace(ex);
+                return null;
+            }
         }
 
         BaseDocument document = (BaseDocument) doc;
         document.readLock();
         try {
             //XXX: not really using the server, are we?
-            int[] ident = Utilities.getIdentifierBlock(document, offset);
-            if (ident == null) {
-                return null;
-            }
             TokenSequence<?> ts = TokenHierarchy.get(doc).tokenSequence();
             if (ts == null) {
+                int[] ident = Utilities.getIdentifierBlock(document, offset);
                 return ident;
             }
             ts.move(offset);
             if (ts.moveNext() && ts.token().id() == TextmateTokenId.TEXTMATE) {
                 return new int[]{ts.offset(), ts.offset() + ts.token().length()};
+            } else {
+                return new int[] {ts.offset(), ts.offset() + ts.token().length()};
             }
-            return ident;
         } catch (BadLocationException ex) {
             return null;
         } finally {
@@ -129,7 +137,7 @@ public class HyperlinkProviderImpl implements HyperlinkProviderExt {
                 } else {
                     return null;
                 }
-                Utils.open(targetUri, targetRange);
+                Utils.open(server, targetUri, targetRange);
                 return null;
             }).get();
         } catch (BadLocationException ex) {

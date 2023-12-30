@@ -53,6 +53,8 @@ import org.netbeans.modules.editor.indent.api.IndentUtils;
 import org.openide.cookies.EditorCookie;
 import org.openide.cookies.LineCookie;
 import org.openide.filesystems.FileObject;
+import org.openide.filesystems.FileStateInvalidException;
+import org.openide.filesystems.FileSystem;
 import org.openide.filesystems.FileUtil;
 import org.openide.filesystems.URLMapper;
 import org.openide.loaders.DataFolder;
@@ -68,7 +70,11 @@ import org.openide.util.Exceptions;
 public class Utils {
 
     public static String toURI(FileObject file) {
-        return file.toURI().toString().replace("file:/", "file:///");
+        String uri = file.toURI().toString();
+        if (getRemoteFileSystem(file) != null) {
+            return "file:///" +  file.getPath();
+        }
+        return uri.replace("file:/", "file:///");
     }
 
     public static Position createPosition(Document doc, int offset) throws BadLocationException {
@@ -260,9 +266,12 @@ public class Utils {
         return edits;
     }
 
-    public static FileObject fromURI(String targetUri) {
+    public static FileObject fromURI(LSPBindings bindings, String targetUri) {
         try {
             URI target = URI.create(targetUri);
+            if (bindings.baseFS != null) {
+                return bindings.baseFS.findResource(target.getPath());
+            }
             return URLMapper.findFileObject(target.toURL());
         } catch (MalformedURLException ex) {
             Exceptions.printStackTrace(ex);
@@ -270,8 +279,8 @@ public class Utils {
         }
     }
 
-    public static void open(String targetUri, Range targetRange) {
-        FileObject targetFile = fromURI(targetUri);
+    public static void open(LSPBindings bindings, String targetUri, Range targetRange) {
+        FileObject targetFile = fromURI(bindings, targetUri);
 
         if (targetFile != null) {
             LineCookie lc = targetFile.getLookup().lookup(LineCookie.class);
@@ -306,5 +315,19 @@ public class Utils {
     public static boolean isEnabled(Either<Boolean, ?> settings) {
         return settings != null && (settings.isLeft() ? isTrue(settings.getLeft())
                                                        : settings.getRight() != null);
+    }
+
+    public static FileSystem getRemoteFileSystem(FileObject file) {
+        try {
+            FileSystem fs = file.getFileSystem();
+
+            if ("org.netbeans.modules.remote.ide.fs.RemoteFileSystem".equals(fs.getClass().getName())) {
+                return fs;
+            }
+        } catch (FileStateInvalidException ex) {
+            //ignore
+        }
+
+        return null;
     }
 }

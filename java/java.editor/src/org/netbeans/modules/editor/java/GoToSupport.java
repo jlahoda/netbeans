@@ -142,9 +142,15 @@ public class GoToSupport {
                 return null;
             }
 
+            Source src = Source.create(fo);
+
+            if (src == null) {
+                return null;
+            }
+
             final String[] result = new String[1];
 
-            ParserManager.parse(Collections.singleton (Source.create(doc)), new UserTask() {
+            ParserManager.parse(Collections.singleton (src), new UserTask() {
                 @Override
                 public void run(ResultIterator resultIterator) throws Exception {
                     Result res = resultIterator.getParserResult (offset);
@@ -170,7 +176,8 @@ public class GoToSupport {
     public static CompletableFuture<HyperlinkLocation> getGoToLocation(final Document doc, final int offset, final boolean goToSource) {
         try {
             final FileObject fo = getFileObject(doc);
-            if (fo != null) {
+            Source src = Source.create(fo);
+            if (fo != null && src != null) {
                 final GoToTarget[] target = new GoToTarget[1];
                 final LineMap[] lineMap = new LineMap[1];
 
@@ -235,8 +242,13 @@ public class GoToSupport {
             }
 
             GoToTarget[] target = new GoToTarget[1];
+            Source src = Source.create(doc);
 
-            ParserManager.parse(Collections.singleton (Source.create(doc)), new UserTask() {
+            if (src == null) {
+                return ;
+            }
+
+            ParserManager.parse(Collections.singleton (src), new UserTask() {
                 @Override
                 public void run(ResultIterator resultIterator) throws Exception {
                     Result res = resultIterator.getParserResult (offset);

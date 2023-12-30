@@ -137,7 +137,11 @@ public class MicronautDataCompletionTask {
     public <T> List<T> query(Document doc, int caretOffset, ItemFactory<T> factory) {
         List<T> items = new ArrayList<>();
         try {
-            ParserManager.parse(Collections.singleton(Source.create(doc)), new UserTask() {
+            Source src = Source.create(doc);
+            if (src == null) {
+                return items;
+            }
+            ParserManager.parse(Collections.singleton(src), new UserTask() {
                 @Override
                 public void run(ResultIterator resultIterator) throws Exception {
                     CompilationController cc = CompilationController.get(resultIterator.getParserResult(caretOffset));
