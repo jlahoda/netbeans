@@ -18,12 +18,14 @@
  */
 package org.netbeans.modules.remote.ide;
 
+import java.awt.Dialog;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import org.netbeans.modules.favorites.api.Favorites;
 import org.netbeans.modules.remote.ide.RemoteManager.RemoteDescription;
 import org.netbeans.modules.remote.ide.fs.RemoteFileSystem;
+import org.openide.*;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
 import org.openide.awt.ActionRegistration;
@@ -43,11 +45,20 @@ public final class ConnectToSsh implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        try {
-            RemoteFileSystem fs = RemoteFileSystem.getRemoteFileSystem(new RemoteDescription("lahvac@localhost", "/tmp/scratch"));
-            Favorites.getDefault().add(fs.getRoot());
-        } catch (IOException ex) {
-            Exceptions.printStackTrace(ex);
-        }
+            SSHConnectionPanel settings = new SSHConnectionPanel();
+            Dialog[] d = new Dialog[1];
+            DialogDescriptor dd = new DialogDescriptor(settings, "SSH Connection Settings", true, DialogDescriptor.OK_CANCEL_OPTION, DialogDescriptor.OK_OPTION, evt -> {
+                if (evt.getSource() == DialogDescriptor.OK_OPTION) {
+                    try {
+                        RemoteFileSystem fs = RemoteFileSystem.getRemoteFileSystem(new RemoteDescription(settings.getSshConnection(), settings.getInstallDir(), settings.getUserdir()));
+                        Favorites.getDefault().add(fs.getRoot());
+                    } catch (IOException ex) {
+                        Exceptions.printStackTrace(ex);
+                    }
+                }
+                d[0].setVisible(false);
+            });
+            d[0] = DialogDisplayer.getDefault().createDialog(dd);
+            d[0].setVisible(true);
     }
 }

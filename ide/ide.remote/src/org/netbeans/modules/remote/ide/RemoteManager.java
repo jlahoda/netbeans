@@ -61,7 +61,7 @@ public class RemoteManager {
 
         connectionOptions.add("ssh");
         connectionOptions.addAll(Arrays.asList(remoteDescription.connectionString().split(" +")));
-        connectionOptions.add("/home/lahvac/src/nb/remote/nbbuild/netbeans/bin/netbeans");
+        connectionOptions.add(remoteDescription.installDir);
         connectionOptions.add("--start-remote-agent=shutdown");
         connectionOptions.add("--nogui");
         connectionOptions.add("--userdir");
@@ -93,22 +93,23 @@ public class RemoteManager {
                                   });
     }
 
-    public record RemoteDescription(String connectionString, String userdir, String encoded) {
+    public record RemoteDescription(String connectionString, String installDir, String userdir, String encoded) {
 
-        public RemoteDescription(String connectionString, String userdir) {
-            this(connectionString, userdir, encode(connectionString, userdir));
+        public RemoteDescription(String connectionString, String installDir, String userdir) {
+            this(connectionString, installDir, userdir, encode(connectionString, installDir, userdir));
         }
 
-        private static String encode(String connectionString, String userdir) {
+        private static String encode(String connectionString, String installDir, String userdir) {
             Map<String, String> values = new HashMap<>();
             values.put("connectionString", connectionString);
+            values.put("installDir", installDir);
             values.put("userdir", userdir);
             return Utils.gson.toJson(values);
         }
 
         public static RemoteDescription createInstance(String encoded) {
             Map<String, String> values = Utils.gson.fromJson(encoded, HashMap.class);
-            return new RemoteDescription(values.get("connectionString"), values.get("userdir"), encoded);
+            return new RemoteDescription(values.get("connectionString"), values.get("installDir"), values.get("userdir"), encoded);
         }
     }
 }

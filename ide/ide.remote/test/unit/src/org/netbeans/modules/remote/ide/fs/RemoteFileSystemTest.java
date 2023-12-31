@@ -57,7 +57,7 @@ public class RemoteFileSystemTest extends NbTestCase {
         File a = new File(test1, "a.txt");  write(a, "aa".getBytes(StandardCharsets.UTF_8));
 
         Socket s = new Socket("localhost", sock.getLocalPort());
-        RemoteFileSystem rfs = new RemoteFileSystem(new RemoteDescription("", ""), s.getOutputStream(), s.getInputStream());
+        RemoteFileSystem rfs = new RemoteFileSystem(new RemoteDescription("", "", ""), s.getOutputStream(), s.getInputStream());
 
         FileObject rwd = rfs.findResource(wd.getAbsolutePath());
         FileObject[] wdChildren = rwd.getChildren(); //TODO: ordering
@@ -138,7 +138,7 @@ public class RemoteFileSystemTest extends NbTestCase {
         File a = new File(test1, "a.txt");  write(a, "aa".getBytes(StandardCharsets.UTF_8));
 
         Socket s = new Socket("localhost", sock.getLocalPort());
-        RemoteFileSystem rfs = new RemoteFileSystem(new RemoteDescription("", ""), s.getOutputStream(), s.getInputStream());
+        RemoteFileSystem rfs = new RemoteFileSystem(new RemoteDescription("", "", ""), s.getOutputStream(), s.getInputStream());
 
         FileObject rwd = rfs.findResource("/home/lahvac/src/jdk/jdk/src/java.base/share/classes/java/lang/");
         FileObject[] wdChildren = rwd.getChildren(); //TODO: ordering
