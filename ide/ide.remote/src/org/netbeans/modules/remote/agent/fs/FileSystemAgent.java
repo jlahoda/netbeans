@@ -43,6 +43,7 @@ import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileStateInvalidException;
 import org.openide.filesystems.FileSystem;
 import org.openide.filesystems.FileUtil;
+import org.openide.loaders.DataObject;
 import org.openide.util.Exceptions;
 import org.openide.util.RequestProcessor;
 import org.openide.util.lookup.ServiceProvider;
@@ -114,14 +115,14 @@ public class FileSystemAgent {
                         break;
                     case LOCK:
                         handlePathRequest(request, path -> {
-                            FileLock lock = path.lock();
-
-                            file2Lock.put(path, lock);
+//                            FileLock lock = path.lock();
+//
+//                            file2Lock.put(path, lock);
                             return "done";
                         });
                         break;
                     case UNLOCK:
-                        handlePathRequest(request, path -> {file2Lock.remove(path).releaseLock(); return "done";});
+                        handlePathRequest(request, path -> {/*file2Lock.remove(path).releaseLock();*/ return "done";});
                         break;
 //                    case READ_ATTRIBUTE:
 //                        handleAttributeRequest(request, (file, data) -> {

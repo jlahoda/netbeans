@@ -48,7 +48,7 @@ public class RemoteFileSystemTest extends NbTestCase {
         super(name);
     }
 
-    public void XtestChildren() throws IOException {
+    public void testChildren() throws IOException {
         clearWorkDir();
 
         File wd = getWorkDir();

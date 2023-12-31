@@ -85,7 +85,7 @@ public class RemoteFileSystem extends AbstractFileSystem implements AbstractFile
 
     @Override
     public boolean isReadOnly() {
-        return true;
+        return false;
     }
 
     private int idx;

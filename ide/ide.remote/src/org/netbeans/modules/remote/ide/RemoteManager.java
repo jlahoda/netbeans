@@ -68,7 +68,8 @@ public class RemoteManager {
         connectionOptions.add(remoteDescription.userdir);
 
         try {
-            Process ssh = new ProcessBuilder(connectionOptions).redirectError(Redirect.INHERIT).start();
+//            Process ssh = new ProcessBuilder(connectionOptions).redirectError(Redirect.INHERIT).start();
+            Process ssh = new ProcessBuilder(connectionOptions).redirectError(Redirect.DISCARD).start();
             remote = new Remote(ssh.getInputStream(), ssh.getOutputStream());
             description2Remote.put(remoteDescription, remote);
             return remote;

@@ -960,7 +960,7 @@ public class DataEditorSupport extends CloneableEditorSupport {
             // XXX This shouldn't be here. But it is due to the 'contract',
             // see javadoc to this method.
             if (fileLock == null || !fileLock.isValid()) {
-                fileLock = takeLock ();
+//                fileLock = takeLock ();
             }
             ERR.fine("markModified: " + fileLock + " for " + fileObject); // NOI18N
             
