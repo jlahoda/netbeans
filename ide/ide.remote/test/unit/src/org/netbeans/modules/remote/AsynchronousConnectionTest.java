@@ -27,6 +27,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.netbeans.junit.NbTestCase;
+import org.netbeans.modules.remote.AsynchronousConnection.ReceiverBuilder;
 import org.netbeans.modules.remote.AsynchronousConnection.Sender;
 import org.openide.util.Pair;
 import org.openide.util.RequestProcessor;
@@ -47,13 +48,14 @@ public class AsynchronousConnectionTest extends NbTestCase {
                 Socket accepted = server.accept();
                 RequestProcessor worker = new RequestProcessor("test-receiver", 1, false, false); //TODO: virtual thread!
                 Random random = new Random();
-                AsynchronousConnection.startReceiver(accepted.getInputStream(), accepted.getOutputStream(), MessageType.class, type -> Integer.class, (type, in) -> {
-                    CompletableFuture<Integer> result = new CompletableFuture<>();
+                new ReceiverBuilder<MessageType>(accepted.getInputStream(), accepted.getOutputStream(), MessageType.class)
+                        .addHandler(MessageType.ECHO, Integer.class, in -> {
+                    CompletableFuture<Object> result = new CompletableFuture<>();
                     worker.post(() -> {
                         result.complete(in);
                     }, random.nextInt(1000));
                     return result;
-                });
+                }).startReceiver();
             } catch (Throwable t) {
                 t.printStackTrace();
             }
@@ -77,10 +79,11 @@ public class AsynchronousConnectionTest extends NbTestCase {
             try {
                 Socket accepted = server.accept();
                 acceptedSocket.set(accepted);
-                AsynchronousConnection.startReceiver(accepted.getInputStream(), accepted.getOutputStream(), MessageType.class, type -> Integer.class, (type, in) -> {
+                new ReceiverBuilder<MessageType>(accepted.getInputStream(), accepted.getOutputStream(), MessageType.class)
+                        .addHandler(MessageType.ECHO, Integer.class, in -> {
                     //stall forever:
                     return new CompletableFuture<>();
-                });
+                }).startReceiver();
             } catch (Throwable t) {
                 t.printStackTrace();
             }

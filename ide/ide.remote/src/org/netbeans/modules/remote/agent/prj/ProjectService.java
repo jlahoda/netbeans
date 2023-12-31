@@ -23,7 +23,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.concurrent.CompletableFuture;
 import org.netbeans.api.project.ProjectManager;
-import org.netbeans.modules.remote.AsynchronousConnection;
+import org.netbeans.modules.remote.AsynchronousConnection.ReceiverBuilder;
 import org.netbeans.modules.remote.Service;
 import org.netbeans.modules.remote.Utils;
 import org.netbeans.modules.remote.ide.prj.ProjectHandler.LoadProjectResponse;
@@ -46,7 +46,8 @@ public class ProjectService implements Service {
 
     @Override
     public void run(InputStream in, OutputStream out) {
-        AsynchronousConnection.startReceiver(in, out, Task.class, task -> PathProjectRequest.class, (task, p) -> {
+        new ReceiverBuilder<Task>(in, out, Task.class)
+            .addHandler(Task.LOAD_PROJECT, PathProjectRequest.class, p -> {
             boolean isProject = false;
             try {
                 FileObject prjDir = Utils.resolveLocalPath(p.path);
@@ -60,7 +61,7 @@ public class ProjectService implements Service {
             result.complete(new LoadProjectResponse(isProject));
 
             return result;
-        });
+        }).startReceiver();
     }
 
 }

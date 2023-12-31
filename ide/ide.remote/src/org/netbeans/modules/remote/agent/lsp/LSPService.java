@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectManager;
-import org.netbeans.modules.remote.AsynchronousConnection;
+import org.netbeans.modules.remote.AsynchronousConnection.ReceiverBuilder;
 import org.netbeans.modules.remote.Service;
 import org.netbeans.modules.remote.StreamMultiplexor;
 import org.netbeans.modules.remote.Streams;
@@ -59,8 +59,8 @@ public class LSPService implements Service {
         AtomicBoolean seenJavaServer = new AtomicBoolean();
 
 
-        AsynchronousConnection.startReceiver(controlChannels.in(), controlChannels.out(), Task.class, task -> GetServerRequest.class, (task, p) -> {
-            System.err.println("request!");
+        new ReceiverBuilder<Task>(controlChannels.in(), controlChannels.out(), Task.class)
+                .addHandler(Task.GET_SERVER, GetServerRequest.class, (p) -> {
             CompletableFuture<Object> result = new CompletableFuture<>();
 
             try {
@@ -87,7 +87,7 @@ public class LSPService implements Service {
             }
 
             return result;
-        });
+        }).startReceiver();
     }
 
     public interface StartJavaServerHack {

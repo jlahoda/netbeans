@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.netbeans.modules.remote.AsynchronousConnection.ReceiverBuilder;
 import org.netbeans.modules.remote.AsynchronousConnection.Sender;
 import org.openide.util.Lookup;
 import org.openide.util.RequestProcessor;
@@ -98,7 +99,8 @@ public class Remote {
         StreamMultiplexor multiplexor = new StreamMultiplexor(in, out);
         Streams streamsForChannel = multiplexor.getStreamsForChannel(0);
         AtomicInteger nextChannel = new AtomicInteger(1);
-        return AsynchronousConnection.startReceiver(streamsForChannel.in(), streamsForChannel.out(), Task.class, t -> RunService.class, (task, value) -> {
+        return new ReceiverBuilder<Task>(streamsForChannel.in(), streamsForChannel.out(), Task.class)
+               .addHandler(Task.RUN_SERVICE, RunService.class, value -> {
             //TODO: asynchronously
             CompletableFuture<Object> result = new CompletableFuture<Object>();
             for (Service s : Lookup.getDefault().lookupAll(Service.class)) {
@@ -111,6 +113,6 @@ public class Remote {
             }
             result.completeExceptionally(new IllegalStateException("Cannot find service name " + value.serviceName));
             return result;
-        });
+        }).startReceiver();
     }
 }
