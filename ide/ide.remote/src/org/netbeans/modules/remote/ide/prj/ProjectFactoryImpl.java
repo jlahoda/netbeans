@@ -19,14 +19,17 @@
 package org.netbeans.modules.remote.ide.prj;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 import org.netbeans.api.project.Project;
 import org.netbeans.modules.remote.ide.RemoteManager;
 import org.netbeans.modules.remote.ide.fs.RemoteFileSystem;
+import org.netbeans.spi.project.ActionProvider;
 import org.netbeans.spi.project.ProjectFactory;
 import org.netbeans.spi.project.ProjectState;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileStateInvalidException;
 import org.openide.util.Lookup;
+import org.openide.util.lookup.Lookups;
 import org.openide.util.lookup.ServiceProvider;
 
 /**
@@ -65,7 +68,7 @@ public class ProjectFactoryImpl implements ProjectFactory {
         //TODO
     }
 
-    public static final class ProjectImpl implements Project {
+    private static final class ProjectImpl implements Project {
 
         private final FileObject projectDirectory;
         private final Lookup lookup;
@@ -73,7 +76,7 @@ public class ProjectFactoryImpl implements ProjectFactory {
 
         public ProjectImpl(FileObject projectDirectory, ProjectHandler handler) {
             this.projectDirectory = projectDirectory;
-            this.lookup = Lookup.EMPTY;
+            this.lookup = Lookups.fixed(new ActionProviderImpl(projectDirectory, handler));
             this.handler = handler;
         }
 
@@ -87,5 +90,42 @@ public class ProjectFactoryImpl implements ProjectFactory {
             return lookup;
         }
 
+    }
+
+    private static final class ActionProviderImpl implements ActionProvider {
+
+        private final FileObject projectDir;
+        private final ProjectHandler handler;
+        private final AtomicReference<String[]> supportedActions = new AtomicReference<>();
+
+        public ActionProviderImpl(FileObject projectDir, ProjectHandler handler) {
+            this.projectDir = projectDir;
+            this.handler = handler;
+        }
+
+        @Override
+        public String[] getSupportedActions() {
+            String[] actions = supportedActions.get();
+
+            if (actions == null) {
+                actions = handler.getSupportedActions(projectDir);
+                supportedActions.compareAndSet(null, actions);
+            }
+
+            return actions;
+        }
+
+        @Override
+        public void invokeAction(String command, Lookup context) throws IllegalArgumentException {
+            FileObject selectedFile = context.lookup(FileObject.class);
+            handler.invokeAction(projectDir, command, selectedFile);
+        }
+
+        @Override
+        public boolean isActionEnabled(String command, Lookup context) throws IllegalArgumentException {
+            FileObject selectedFile = context.lookup(FileObject.class);
+            return handler.isActionEnabled(projectDir, command, selectedFile);
+        }
+        
     }
 }

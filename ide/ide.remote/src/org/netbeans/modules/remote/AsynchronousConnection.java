@@ -130,7 +130,7 @@ public class AsynchronousConnection {
             this.messageTypeClass = messageTypeClass;
         }
 
-        public <P> ReceiverBuilder addHandler(E e, Class<P> messageTypeDataClass, Function<P, CompletableFuture<Object>> handler) {
+        public <P> ReceiverBuilder<E> addHandler(E e, Class<P> messageTypeDataClass, Function<P, CompletableFuture<Object>> handler) {
             if (messageType2Handler.containsKey(e)) {
                 throw new IllegalArgumentException("Cannot redefine handler for: " + e);
             }

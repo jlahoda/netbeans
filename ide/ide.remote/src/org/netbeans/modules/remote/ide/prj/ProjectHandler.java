@@ -48,6 +48,39 @@ public final class ProjectHandler {
         }
     }
 
+    public String[] getSupportedActions(FileObject projectDir) {
+        try {
+            String relativePath = "/" + projectDir.getPath();
+            String[] actions = connection.sendAndReceive(Task.GET_SUPPORTED_ACTIONS, new PathProjectRequest(relativePath), String[].class).get();
+            return actions;
+        } catch (IOException | InterruptedException | ExecutionException ex) {
+            Exceptions.printStackTrace(ex);
+            return new String[0];
+        }
+    }
+
+    public boolean isActionEnabled(FileObject projectDir, String command, FileObject selectedFile) {
+        try {
+            String relativeProjectPath = "/" + projectDir.getPath();
+            String relativeSelectedPath = selectedFile != null ? ("/" + selectedFile.getPath()) : null;
+            boolean enabled = connection.sendAndReceive(Task.IS_ENABLED_ACTIONS, new ContextBasedActionRequest(relativeProjectPath, command, relativeSelectedPath), Boolean.class).get();
+            return enabled;
+        } catch (IOException | InterruptedException | ExecutionException ex) {
+            Exceptions.printStackTrace(ex);
+            return false;
+        }
+    }
+
+    public void invokeAction(FileObject projectDir, String command, FileObject selectedFile) {
+        try {
+            String relativeProjectPath = "/" + projectDir.getPath();
+            String relativeSelectedPath = selectedFile != null ? ("/" + selectedFile.getPath()) : null;
+            connection.sendAndReceive(Task.INVOKE_ACTIONS, new ContextBasedActionRequest(relativeProjectPath, command, relativeSelectedPath), Boolean.class).get();
+        } catch (IOException | InterruptedException | ExecutionException ex) {
+            Exceptions.printStackTrace(ex);
+        }
+    }
+
     public static class PathProjectRequest {
         public String path;
 
@@ -57,6 +90,23 @@ public final class ProjectHandler {
         public PathProjectRequest(String path) {
             this.path = path;
         }
+    }
+
+    public static class ContextBasedActionRequest {
+        public String projectPath;
+        public String action;
+        public String selectedFileObjectPath;
+
+        public ContextBasedActionRequest() {
+        }
+
+        public ContextBasedActionRequest(String projectPath, String action, String selectedFileObjectPath) {
+            this.projectPath = projectPath;
+            this.action = action;
+            this.selectedFileObjectPath = selectedFileObjectPath;
+        }
+
+
     }
 
     public static class LoadProjectResponse {
@@ -71,6 +121,9 @@ public final class ProjectHandler {
     }
 
     public enum Task {
-        LOAD_PROJECT;
+        LOAD_PROJECT,
+        GET_SUPPORTED_ACTIONS,
+        IS_ENABLED_ACTIONS,
+        INVOKE_ACTIONS,
     }
 }
