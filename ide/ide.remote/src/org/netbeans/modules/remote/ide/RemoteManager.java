@@ -66,6 +66,7 @@ public class RemoteManager {
         connectionOptions.add("--nogui");
         connectionOptions.add("--userdir");
         connectionOptions.add(remoteDescription.userdir);
+//        connectionOptions.add("-J-agentlib:jdwp=transport=dt_socket,suspend=y,server=y,address=8000,quiet=y");
 
         try {
 //            Process ssh = new ProcessBuilder(connectionOptions).redirectError(Redirect.INHERIT).start();

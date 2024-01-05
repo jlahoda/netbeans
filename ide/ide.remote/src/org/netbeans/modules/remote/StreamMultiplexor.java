@@ -112,6 +112,11 @@ public class StreamMultiplexor {
             public void close() throws IOException {
                 channelIn.close();
             }
+
+            @Override
+            public void flush() throws IOException {
+                out.flush();
+            }
         });
     }
 
