@@ -114,6 +114,7 @@ public class LanguageClientImpl implements LanguageClient, Endpoint {
 
     private final Map<Object, ProgressHandle> key2Progress = new HashMap<>();
 
+    @Override
     public void notifyProgress(ProgressParams params) {
         Either<WorkDoneProgressNotification, Object> value = params.getValue();
         if (value.isRight()) {
@@ -156,11 +157,21 @@ public class LanguageClientImpl implements LanguageClient, Endpoint {
 
     @Override
     public void publishDiagnostics(PublishDiagnosticsParams pdp) {
-        FileObject file = Utils.fromURI(bindings, pdp.getUri());
-        EditorCookie ec = file != null ? file.getLookup().lookup(EditorCookie.class) : null;
-        Document doc = ec != null ? ec.getDocument() : null;
-        if (doc == null) {
-            return ; //ignore...
+        try {
+            FileObject file = Utils.fromURI(bindings, pdp.getUri());
+            EditorCookie ec = file != null ? file.getLookup().lookup(EditorCookie.class) : null;
+            Document doc = ec != null ? ec.getDocument() : null;
+            if (doc == null) {
+                return ; //ignore...
+            }
+            assert file != null;
+            List<ErrorDescription> diags = pdp.getDiagnostics().stream().map(d -> {
+                LazyFixList fixList = allowCodeActions ? new DiagnosticFixList(pdp.getUri(), d) : ErrorDescriptionFactory.lazyListForFixes(Collections.emptyList());
+                return ErrorDescriptionFactory.createErrorDescription(severityMap.get(d.getSeverity()), d.getMessage(), fixList, file, Utils.getOffset(doc, d.getRange().getStart()), Utils.getOffset(doc, d.getRange().getEnd()));
+            }).collect(Collectors.toList());
+            HintsController.setErrors(doc, LanguageClientImpl.class.getName(), diags);
+        } catch (URISyntaxException | MalformedURLException ex) {
+            LOG.log(Level.FINE, null, ex);
         }
         List<ErrorDescription> diags = pdp.getDiagnostics().stream().map(d -> {
             LazyFixList fixList = allowCodeActions ? new DiagnosticFixList(pdp.getUri(), d) : ErrorDescriptionFactory.lazyListForFixes(Collections.emptyList());
@@ -281,11 +292,13 @@ public class LanguageClientImpl implements LanguageClient, Endpoint {
         return result;
     }
 
+    @Override
     public CompletableFuture<?> request(String method, Object parameter) {
         LOG.log(Level.WARNING, "Received unhandled request: {0}: {1}", new Object[] {method, parameter});
         return CompletableFuture.completedFuture(null);
     }
 
+    @Override
     public void notify(String method, Object parameter) {
         LOG.log(Level.WARNING, "Received unhandled notification: {0}: {1}", new Object[] {method, parameter});
     }
@@ -320,6 +333,7 @@ public class LanguageClientImpl implements LanguageClient, Endpoint {
         }
 
         @Override
+        @SuppressWarnings("ReturnOfCollectionOrArrayField")
         public synchronized List<Fix> getFixes() {
             if (!computing && !computed) {
                 computing = true;
@@ -329,11 +343,17 @@ public class LanguageClientImpl implements LanguageClient, Endpoint {
                                 bindings.getTextDocumentService().codeAction(new CodeActionParams(new TextDocumentIdentifier(fileUri),
                                         diagnostic.getRange(),
                                         new CodeActionContext(Collections.singletonList(diagnostic)))).get();
-                        List<Fix> fixes = commands.stream()
-                                                  .map(cmd -> new CommandBasedFix(cmd))
-                                                  .collect(Collectors.toList());
+
+                        List<Fix> newFixes = Collections.emptyList();
+
+                        if (commands != null) {
+                            newFixes = commands.stream()
+                                    .map(cmd -> new CommandBasedFix(cmd))
+                                    .collect(Collectors.toList());
+                        }
+
                         synchronized (this) {
-                            this.fixes = Collections.unmodifiableList(fixes);
+                            this.fixes = Collections.unmodifiableList(newFixes);
                             this.computed = true;
                             this.computing = false;
                         }
