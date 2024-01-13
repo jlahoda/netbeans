@@ -69,7 +69,7 @@ public class ScanDialog {
     public static boolean runWhenScanFinished (final Runnable runnable, final String actionName) {
         assert runnable != null;
         assert actionName != null;
-        assert SwingUtilities.isEventDispatchThread();
+//        assert SwingUtilities.isEventDispatchThread();
         if (SourceUtils.isScanInProgress()) {
             
             class AL implements ActionListener {

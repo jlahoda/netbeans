@@ -26,30 +26,28 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.Writer;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import javax.swing.SwingUtilities;
 import org.netbeans.api.io.Hyperlink;
 import org.netbeans.api.io.OutputColor;
 import org.netbeans.api.io.ShowOperation;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectManager;
-import org.netbeans.modules.remote.AsynchronousConnection.ReceiverBuilder;
 import org.netbeans.modules.remote.AsynchronousConnection.Sender;
+import org.netbeans.modules.remote.RemoteInvocation;
 import org.netbeans.modules.remote.Service;
 import org.netbeans.modules.remote.StreamMultiplexor;
 import org.netbeans.modules.remote.Streams;
 import org.netbeans.modules.remote.Utils;
-import org.netbeans.modules.remote.ide.prj.ProjectHandler.ContextBasedActionRequest;
 import org.netbeans.modules.remote.ide.prj.ProjectHandler.GetIORequest;
 import org.netbeans.modules.remote.ide.prj.ProjectHandler.IOTask;
-import org.netbeans.modules.remote.ide.prj.ProjectHandler.LoadProjectResponse;
-import org.netbeans.modules.remote.ide.prj.ProjectHandler.PathProjectRequest;
-import org.netbeans.modules.remote.ide.prj.ProjectHandler.Task;
+import org.netbeans.modules.remote.ide.prj.ProjectHandler.ProjectInterface;
 import org.netbeans.spi.io.InputOutputProvider;
 import org.netbeans.spi.project.ActionProvider;
 import org.openide.filesystems.FileObject;
@@ -76,94 +74,82 @@ public class ProjectService implements Service {
         Streams commands = projectMultiplexor.getStreamsForChannel(0);
         Streams ioControl = projectMultiplexor.getStreamsForChannel(1);
         ToClientIOProvider ioProvider = new ToClientIOProvider(projectMultiplexor, ioControl);
-        new ReceiverBuilder<Task>(commands.in(), commands.out(), Task.class)
-            .addHandler(Task.LOAD_PROJECT, PathProjectRequest.class, p -> {
-            boolean isProject = false;
-            try {
-                FileObject prjDir = Utils.resolveLocalPath(p.path);
-                isProject = prjDir != null && ProjectManager.getDefault().findProject(prjDir) != null;
-            } catch (IOException | IllegalArgumentException ex) {
-                Exceptions.printStackTrace(ex);
-            }
-
-            CompletableFuture<Object> result = new CompletableFuture<>();
-
-            result.complete(new LoadProjectResponse(isProject));
-
-            return result;
-        }).addHandler(Task.GET_SUPPORTED_ACTIONS, PathProjectRequest.class, p -> {
-            String[] actions = new String[0];
-            try {
-                FileObject prjDir = Utils.resolveLocalPath(p.path);
-                Project prj = prjDir != null ? ProjectManager.getDefault().findProject(prjDir) : null;
-                if (prj != null) {
-                   ActionProvider ap = prj.getLookup().lookup(ActionProvider.class);
-
-                   if (ap != null) {
-                       actions = ap.getSupportedActions();
-                   }
-                }
-            } catch (IOException | IllegalArgumentException ex) {
-                Exceptions.printStackTrace(ex);
-            }
-
-            CompletableFuture<Object> result = new CompletableFuture<>();
-
-            result.complete(actions);
-
-            return result;
-        }).addHandler(Task.IS_ENABLED_ACTIONS, ContextBasedActionRequest.class, p -> {
-            Boolean enabled = false;
-            try {
-                FileObject prjDir = Utils.resolveLocalPath(p.projectPath);
-                Project prj = prjDir != null ? ProjectManager.getDefault().findProject(prjDir) : null;
-                if (prj != null) {
-                   ActionProvider ap = prj.getLookup().lookup(ActionProvider.class);
-
-                   if (ap != null) {
-                        List<Object> context = new ArrayList<>();
-                        if (p.selectedFileObjectPath != null) {
-                            context.add(Utils.resolveLocalPath(p.selectedFileObjectPath));
-                        }
-                        enabled = ap.isActionEnabled(p.action, Lookups.fixed(context.toArray()));
-                   }
-                }
-            } catch (IOException | IllegalArgumentException ex) {
-                Exceptions.printStackTrace(ex);
-            }
-
-            CompletableFuture<Object> result = new CompletableFuture<>();
-
-            result.complete(enabled);
-
-            return result;
-        }).addHandler(Task.INVOKE_ACTIONS, ContextBasedActionRequest.class, p -> {
-            CompletableFuture<Object> result = new CompletableFuture<>();
-            Lookup inputOutputLookup = Lookups.fixed(ioProvider);
-            Lookups.executeWith(new ProxyLookup(Lookups.exclude(Lookup.getDefault(), InputOutputProvider.class, org.openide.windows.IOProvider.class), inputOutputLookup), () -> {
+        RemoteInvocation.receiver(commands.in(), commands.out(), new ProjectInterface() {
+            @Override
+            public boolean loadProject(String projectDirectoryCandidate) {
                 try {
-                    FileObject prjDir = Utils.resolveLocalPath(p.projectPath);
+                    FileObject prjDir = Utils.resolveLocalPath(projectDirectoryCandidate);
+                    return prjDir != null && ProjectManager.getDefault().findProject(prjDir) != null;
+                } catch (IOException | IllegalArgumentException ex) {
+                    throw RemoteInvocation.sneakyThrows(ex);
+                }
+            }
+
+            @Override
+            public String[] getSupportedActions(String projectDirectory) {
+                try {
+                    FileObject prjDir = Utils.resolveLocalPath(projectDirectory);
+                    Project prj = prjDir != null ? ProjectManager.getDefault().findProject(prjDir) : null;
+                    if (prj != null) {
+                       ActionProvider ap = prj.getLookup().lookup(ActionProvider.class);
+
+                       if (ap != null) {
+                           return ap.getSupportedActions();
+                       }
+                    }
+
+                    return new String[0];
+                } catch (IOException | IllegalArgumentException ex) {
+                    throw RemoteInvocation.sneakyThrows(ex);
+                }
+            }
+
+            @Override
+            public boolean isActionEnabled(String projectDirectory, String command, String lookupSelectedFileObjectPath) {
+                try {
+                    FileObject prjDir = Utils.resolveLocalPath(projectDirectory);
                     Project prj = prjDir != null ? ProjectManager.getDefault().findProject(prjDir) : null;
                     if (prj != null) {
                        ActionProvider ap = prj.getLookup().lookup(ActionProvider.class);
 
                        if (ap != null) {
                             List<Object> context = new ArrayList<>();
-                            if (p.selectedFileObjectPath != null) {
-                                context.add(Utils.resolveLocalPath(p.selectedFileObjectPath));
+                            if (lookupSelectedFileObjectPath != null) {
+                                context.add(Utils.resolveLocalPath(lookupSelectedFileObjectPath));
                             }
-                            ap.invokeAction(p.action, Lookups.fixed(context.toArray()));
+                            return ap.isActionEnabled(command, Lookups.fixed(context.toArray()));
                        }
                     }
+                    return false;
                 } catch (IOException | IllegalArgumentException ex) {
-                    Exceptions.printStackTrace(ex);
+                    throw RemoteInvocation.sneakyThrows(ex);
                 }
+            }
 
+            @Override
+            public void invokeAction(String projectDirectory, String command, String lookupSelectedFileObjectPath) {
+                Lookup inputOutputLookup = Lookups.fixed(ioProvider);
+                Lookups.executeWith(new ProxyLookup(Lookups.exclude(Lookup.getDefault(), InputOutputProvider.class, org.openide.windows.IOProvider.class), inputOutputLookup), () -> {
+                    try {
+                        FileObject prjDir = Utils.resolveLocalPath(projectDirectory);
+                        Project prj = prjDir != null ? ProjectManager.getDefault().findProject(prjDir) : null;
+                        if (prj != null) {
+                           ActionProvider ap = prj.getLookup().lookup(ActionProvider.class);
 
-                result.complete("done");
-            });
-            return result;
-        }).startReceiver();
+                           if (ap != null) {
+                                List<Object> context = new ArrayList<>();
+                                if (lookupSelectedFileObjectPath != null) {
+                                    context.add(Utils.resolveLocalPath(lookupSelectedFileObjectPath));
+                                }
+                                ap.invokeAction(command, Lookups.fixed(context.toArray()));
+                           }
+                        }
+                    } catch (IOException | IllegalArgumentException ex) {
+                        throw RemoteInvocation.sneakyThrows(ex);
+                    }
+                });
+            }
+        });
     }
 
     public static final class ToClientIOProvider implements InputOutputProvider<Integer, PrintWriter, Void, Void> {

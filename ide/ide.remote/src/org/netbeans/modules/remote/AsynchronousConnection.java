@@ -21,6 +21,9 @@ package org.netbeans.modules.remote;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -58,7 +61,7 @@ public class AsynchronousConnection {
                     while (true) {
                         int id = Utils.readInt(in);
                         int size = Utils.readInt(in);
-                        byte[] data = in.readNBytes(size);
+                        byte[] data = in.readNBytes(size + 1);
                         PendingRequest<Object> request;
 
                         synchronized (id2PendingRequest) {
@@ -68,8 +71,13 @@ public class AsynchronousConnection {
                         if (request == null) {
                             LOG.log(Level.SEVERE, "No pending request number {0}", id);
                         } else {
-                            Object value = Utils.gson.fromJson(new String(data, StandardCharsets.UTF_8), request.responseType);
-                            request.pending.complete(value);
+                            String dataText = new String(data, 1, data.length - 1, StandardCharsets.UTF_8);
+                            if (data[0] == 'D') {
+                                Object value = Utils.gson.fromJson(dataText, request.responseType);
+                                request.pending.complete(value);
+                            } else {
+                                request.pending.completeExceptionally(new RuntimeException(dataText));
+                            }
                         }
                     }
                 } catch (EndOfInput ex) {
@@ -103,11 +111,15 @@ public class AsynchronousConnection {
         }
 
         public <R> CompletableFuture<R> sendAndReceive(Enum<?> task, Object request, Class<R> responseType) throws IOException {
+            return sendAndReceive(task, request, (Type) responseType);
+        }
+
+        public <R> CompletableFuture<R> sendAndReceive(Enum<?> task, Object request, Type responseType) throws IOException {
             int id = nextId.getAndIncrement();
             CompletableFuture<R> result = new CompletableFuture<>();
 
             synchronized (id2PendingRequest) {
-                id2PendingRequest.put(id, new PendingRequest<>((CompletableFuture<Object>) result, (Class<Object>) responseType));
+                id2PendingRequest.put(id, new PendingRequest<>((CompletableFuture<Object>) result, responseType));
             }
 
             write(id, task, request);
@@ -115,7 +127,7 @@ public class AsynchronousConnection {
             return result;
         }
 
-        private record PendingRequest<R>(CompletableFuture<R> pending, Class<R> responseType) {}
+        private record PendingRequest<R>(CompletableFuture<R> pending, Type responseType) {}
     }
 
     public static final class ReceiverBuilder<E extends Enum<E>> {
@@ -156,12 +168,23 @@ public class AsynchronousConnection {
                         E kind = Enum.valueOf(messageTypeClass, kindName);
                         Handler<?> handler = messageType2Handler.get(kind);
                         Object dataValue = Utils.gson.fromJson(new String(dataBytes, StandardCharsets.UTF_8), handler.messageTypeDataClass);
-                        handler.run(dataValue).thenAccept(r -> {
-                            byte[] messageBytes = Utils.gson.toJson(r).getBytes(StandardCharsets.UTF_8);
-                            byte[] output = new byte[messageBytes.length + 8];
+                        handler.run(dataValue).handle((result, exception) -> {
+                            byte tagChar;
+                            byte[] messageBytes;
+                            if (exception == null) {
+                                tagChar = 'D';
+                                messageBytes = Utils.gson.toJson(result).getBytes(StandardCharsets.UTF_8);
+                            } else {
+                                StringWriter data = new StringWriter();
+                                exception.printStackTrace(new PrintWriter(data));
+                                tagChar = 'E';
+                                messageBytes = data.toString().getBytes(StandardCharsets.UTF_8);
+                            }
+                            byte[] output = new byte[messageBytes.length + 8 + 1];
                             Utils.writeInt(output, 0, id);
                             Utils.writeInt(output, 4, messageBytes.length);
-                            System.arraycopy(messageBytes, 0, output, 8, messageBytes.length);
+                            output[8] = tagChar;
+                            System.arraycopy(messageBytes, 0, output, 9, messageBytes.length);
                             synchronized (out) {
                                 try {
                                     out.write(output);
@@ -170,6 +193,7 @@ public class AsynchronousConnection {
                                     Exceptions.printStackTrace(ex);
                                 }
                             }
+                            return null;
                         });
                     }
                 } catch (IOException ex) {

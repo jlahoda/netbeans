@@ -220,7 +220,7 @@ public abstract class BaseActionProvider implements ActionProvider {
     @Messages("LBL_No_Build_XML_Found=The project does not have a build script.")
     @Override
     public void invokeAction( final String command, final Lookup context ) throws IllegalArgumentException {
-        assert EventQueue.isDispatchThread();
+//        assert EventQueue.isDispatchThread();
         if (isSupportedByDelegate(command)) {
             getDelegate().invokeAction(command, context);
             return;

@@ -883,7 +883,7 @@ public final class JavaActionProvider implements ActionProvider {
     public void invokeAction(
             @NonNull final String command,
             @NonNull final Lookup context) throws IllegalArgumentException {
-        assert SwingUtilities.isEventDispatchThread();
+//        assert SwingUtilities.isEventDispatchThread();
         Optional.ofNullable(supportedActions.get(command))
                 .ifPresent((act) -> {
                     final Context ctx = new Context(

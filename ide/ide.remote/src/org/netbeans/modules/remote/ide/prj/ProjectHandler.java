@@ -26,13 +26,12 @@ import java.io.Reader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.netbeans.api.io.IOProvider;
 import org.netbeans.api.io.InputOutput;
 import org.netbeans.api.io.OutputWriter;
 import org.netbeans.modules.remote.AsynchronousConnection.ReceiverBuilder;
-import org.netbeans.modules.remote.AsynchronousConnection.Sender;
+import org.netbeans.modules.remote.RemoteInvocation;
 import org.netbeans.modules.remote.StreamMultiplexor;
 import org.netbeans.modules.remote.Streams;
 import org.openide.filesystems.FileObject;
@@ -44,14 +43,14 @@ import org.openide.util.RequestProcessor;
  */
 public final class ProjectHandler {
 
-    private final Sender connection;
+    private final ProjectInterface outgoingProjectInterface;
 
     public ProjectHandler(InputStream in, OutputStream out) {
         StreamMultiplexor projectMultiplexor = new StreamMultiplexor(in, out);
         Streams commands = projectMultiplexor.getStreamsForChannel(0);
         Streams ioControl = projectMultiplexor.getStreamsForChannel(1);
         AtomicInteger nextChannel = new AtomicInteger(2);
-        this.connection = new Sender(commands.in(), commands.out());
+        this.outgoingProjectInterface = RemoteInvocation.caller(commands.in(), commands.out(), ProjectInterface.class);
         Map<Integer, InputOutput> channel2InputOutput = new HashMap<>(); //TODO: clear!!
         new ReceiverBuilder<>(ioControl.in(), ioControl.out(), IOTask.class)
                 .addHandler(IOTask.GET_IO, GetIORequest.class, io -> {
@@ -83,93 +82,26 @@ public final class ProjectHandler {
     }
 
     public boolean loadProject(FileObject folder) {
-        try {
-            String relativePath = "/" + folder.getPath();
-            LoadProjectResponse response = connection.sendAndReceive(Task.LOAD_PROJECT, new PathProjectRequest(relativePath), LoadProjectResponse.class).get();
-            return response.isProject;
-        } catch (IOException | InterruptedException | ExecutionException ex) {
-            Exceptions.printStackTrace(ex);
-            return false;
-        }
+        String relativePath = "/" + folder.getPath();
+        return outgoingProjectInterface.loadProject(relativePath);
     }
 
     public String[] getSupportedActions(FileObject projectDir) {
-        try {
-            String relativePath = "/" + projectDir.getPath();
-            String[] actions = connection.sendAndReceive(Task.GET_SUPPORTED_ACTIONS, new PathProjectRequest(relativePath), String[].class).get();
-            return actions;
-        } catch (IOException | InterruptedException | ExecutionException ex) {
-            Exceptions.printStackTrace(ex);
-            return new String[0];
-        }
+        String relativePath = "/" + projectDir.getPath();
+        return outgoingProjectInterface.getSupportedActions(relativePath);
     }
 
     public boolean isActionEnabled(FileObject projectDir, String command, FileObject selectedFile) {
-        try {
-            String relativeProjectPath = "/" + projectDir.getPath();
-            String relativeSelectedPath = selectedFile != null ? ("/" + selectedFile.getPath()) : null;
-            boolean enabled = connection.sendAndReceive(Task.IS_ENABLED_ACTIONS, new ContextBasedActionRequest(relativeProjectPath, command, relativeSelectedPath), Boolean.class).get();
-            return enabled;
-        } catch (IOException | InterruptedException | ExecutionException ex) {
-            Exceptions.printStackTrace(ex);
-            return false;
-        }
+        String relativeProjectPath = "/" + projectDir.getPath();
+        String relativeSelectedPath = selectedFile != null ? ("/" + selectedFile.getPath()) : null;
+
+        return outgoingProjectInterface.isActionEnabled(relativeProjectPath, command, relativeSelectedPath);
     }
 
     public void invokeAction(FileObject projectDir, String command, FileObject selectedFile) {
-        try {
-            String relativeProjectPath = "/" + projectDir.getPath();
-            String relativeSelectedPath = selectedFile != null ? ("/" + selectedFile.getPath()) : null;
-            connection.sendAndReceive(Task.INVOKE_ACTIONS, new ContextBasedActionRequest(relativeProjectPath, command, relativeSelectedPath), Boolean.class).get();
-        } catch (IOException | InterruptedException | ExecutionException ex) {
-            Exceptions.printStackTrace(ex);
-        }
-    }
-
-    public static class PathProjectRequest {
-        public String path;
-
-        public PathProjectRequest() {
-        }
-
-        public PathProjectRequest(String path) {
-            this.path = path;
-        }
-    }
-
-    public static class ContextBasedActionRequest {
-        public String projectPath;
-        public String action;
-        public String selectedFileObjectPath;
-
-        public ContextBasedActionRequest() {
-        }
-
-        public ContextBasedActionRequest(String projectPath, String action, String selectedFileObjectPath) {
-            this.projectPath = projectPath;
-            this.action = action;
-            this.selectedFileObjectPath = selectedFileObjectPath;
-        }
-
-
-    }
-
-    public static class LoadProjectResponse {
-        public boolean isProject;
-
-        public LoadProjectResponse() {
-        }
-
-        public LoadProjectResponse(boolean isProject) {
-            this.isProject = isProject;
-        }
-    }
-
-    public enum Task {
-        LOAD_PROJECT,
-        GET_SUPPORTED_ACTIONS,
-        IS_ENABLED_ACTIONS,
-        INVOKE_ACTIONS,
+        String relativeProjectPath = "/" + projectDir.getPath();
+        String relativeSelectedPath = selectedFile != null ? ("/" + selectedFile.getPath()) : null;
+        outgoingProjectInterface.invokeAction(relativeProjectPath, command, relativeSelectedPath);
     }
 
     public enum IOTask {
@@ -186,5 +118,12 @@ public final class ProjectHandler {
             this.name = name;
         }
 
+    }
+
+    public interface ProjectInterface {
+        public boolean loadProject(String projectDirectoryCandidate);
+        public String[] getSupportedActions(String projectDirectory);
+        public boolean isActionEnabled(String projectDirectory, String command, String lookupSelectedFileObjectPath);
+        public void invokeAction(String projectDirectory, String command, String lookupSelectedFileObjectPath);
     }
 }
