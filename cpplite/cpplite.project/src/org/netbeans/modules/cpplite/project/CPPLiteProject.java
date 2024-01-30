@@ -96,7 +96,7 @@ public class CPPLiteProject implements Project {
         this.lookup = Lookups.fixed(new LogicalViewProviderImpl(this),
                                     new ActionProviderImpl(this),
                                     new CustomizerProviderImpl(this),
-                                    new CPPLiteCProjectConfigurationProvider(getRootPreferences(projectDirectory)),
+//                                    new CPPLiteCProjectConfigurationProvider(getRootPreferences(projectDirectory)),
                                     new RecommendedTemplatesImpl(),
                                     new PrivilegedTemplatesImpl(),
                                     new ProjectInfo(this),
