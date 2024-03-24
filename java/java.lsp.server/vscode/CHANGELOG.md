@@ -20,6 +20,66 @@
     under the License.
 
 -->
+## Version 21.0.0
+* Improved vulnerability audit results and display 
+* Number of fixes in Maven projects processing 
+* Java TextMate grammar used
+
+## Version 20.0.301
+* Micronaut: 
+  * Micronaut Expression Language added - Syntax highlighting, Code Completion, Go to Declaration
+  * Micronaut Controllers can be based on Repository interfaces to allow data access
+  * Pageable data Repositories added to New from Template multistep wizard
+* Database and OCI:
+  * OCI Vault support for Database applications run in OKE
+  * Copy OCID for OCI resources
+  * Number of bug fixes & improvements
+* Numerous LSP improvements & bug fixes
+* Number of fixes and improvements in project management
+  * Priming build reload issues fixed
+  * Using selected launch config for F5 and code lenses
+  * and others...
+
+## Version 19.0.301
+* LSP: Micronaut Symbols recognized and shown in Find Symbol in VSCode
+  * Open sources from Jar files as read-only from their true locations.
+  * Store database connection properties in temporary file existing only during Debug/Run session of given application
+* Micronaut: project improvements and bug fixes including Micronaut 4 project and annotations processing
+  * Entity classes generation improvements
+* JDK 21 javac support
+
+## Version 19.0.0
+* Performance improvements in Maven projects loading and priming build
+* Navigation for Micronaut URI and Beans in Find Symbol
+* Allow for lazy computation of CodeActions 
+* Database support improvements:
+  * Generating Entity classes from database improved
+  * JDBC properties editing
+  * Display database schema tree improvements
+  * Adding OCI Autonomous database simplified
+  * Allow to reenter DB username and password
+
+## Version 18.0.0
+* Java 8+ launch config renamed to Java+
+
+## Version 17.0.301
+* nb-javac 20 support
+* Gradle support to work on JDK 20
+* Various bug fixes
+
+## Version 17.0.0
+* Various bug fixes
+
+## Version 16.0.301
+* Multistep wizard added to connect to Autonomous DB 
+* Fixes for obtaining projects information
+* Temporary fix: Support extra cluster directories.
+* Support for GraalVM MX projects updated
+
+## Version 16.0.1
+* Gradle 7.6 support to work on JDK 19
+* Proxy autodection and configuration for Maven & Gradle
+
 ## Version 15.0.301
 * Native image CE debugger works on aarch64
 * Organize Imports fixed for clashing star imports

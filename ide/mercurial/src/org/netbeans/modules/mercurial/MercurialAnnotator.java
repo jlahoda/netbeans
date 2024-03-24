@@ -321,7 +321,7 @@ public class MercurialAnnotator extends VCSAnnotator implements PropertyChangeLi
                 actions.add(SystemAction.get(ViewAction.class));
                 actions.add(SystemAction.get(PropertiesAction.class));
             }
-            Utils.setAcceleratorBindings(ACTIONS_PATH_PREFIX, actions.toArray(new Action[actions.size()]));
+            Utils.setAcceleratorBindings(ACTIONS_PATH_PREFIX, actions.toArray(new Action[0]));
         } else {
             Lookup context = ctx.getElements();
             if (noneVersioned){
@@ -355,7 +355,7 @@ public class MercurialAnnotator extends VCSAnnotator implements PropertyChangeLi
                 actions.add(SystemActionBridge.createAction(SystemAction.get(PropertiesAction.class), loc.getString("CTL_PopupMenuItem_Properties"), context)); //NOI18N
             }
         }
-        return actions.toArray(new Action[actions.size()]);
+        return actions.toArray(new Action[0]);
     }
     
     /**
@@ -404,7 +404,7 @@ public class MercurialAnnotator extends VCSAnnotator implements PropertyChangeLi
         name = htmlEncode(name);
         
         String textAnnotation;
-        boolean annotationsVisible = VersioningSupport.getPreferences().getBoolean(VersioningSupport.PREF_BOOLEAN_TEXT_ANNOTATIONS_VISIBLE, false);
+        boolean annotationsVisible = VersioningSupport.isTextAnnotationVisible();
         int status = mostImportantInfo.getStatus();
         
         if (annotationsVisible && mostImportantFile != null && (status & STATUS_TEXT_ANNOTABLE) != 0) {
@@ -508,7 +508,7 @@ public class MercurialAnnotator extends VCSAnnotator implements PropertyChangeLi
         if (mostImportantInfo.getStatus() == FileInformation.STATUS_NOTVERSIONED_EXCLUDED){
             return getAnnotationProvider().EXCLUDED_FILE.getFormat().format(new Object [] { nameHtml, ""}); // NOI18N
         }
-        boolean annotationsVisible = VersioningSupport.getPreferences().getBoolean(VersioningSupport.PREF_BOOLEAN_TEXT_ANNOTATIONS_VISIBLE, false);
+        boolean annotationsVisible = VersioningSupport.isTextAnnotationVisible();
         MessageFormat uptodateFormat = getAnnotationProvider().UP_TO_DATE_FILE.getFormat();
 
         final Set<File> rootFiles = context.getRootFiles();
@@ -689,7 +689,7 @@ public class MercurialAnnotator extends VCSAnnotator implements PropertyChangeLi
     }
 
     private Image addToolTip (Image icon, VCSContext context) {
-        if (!VersioningSupport.getPreferences().getBoolean(VersioningSupport.PREF_BOOLEAN_TEXT_ANNOTATIONS_VISIBLE, false)) {
+        if (!VersioningSupport.isTextAnnotationVisible()) {
             return icon;
         }
         File root = null;

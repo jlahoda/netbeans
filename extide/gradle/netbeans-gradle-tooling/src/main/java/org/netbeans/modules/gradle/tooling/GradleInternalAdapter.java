@@ -111,7 +111,7 @@ public class GradleInternalAdapter {
     }
     
     public ValueAndType findPropertyValueInternal(String propName, Object val) {
-        return safeCall(() -> {
+        return sinceGradleOrDefault("6.4",() -> safeCall(() -> {
             if (val instanceof ProviderInternal) {
                 ProviderInternal provided = (ProviderInternal)val;
                 ValueSupplier.ExecutionTimeValue etv;
@@ -122,14 +122,19 @@ public class GradleInternalAdapter {
                     return new ValueAndType(provided.getType());
                 }
                 if (isFixedValue("property " + propName, etv)) {
-                    return new ValueAndType(provided.getType(), etv.getFixedValue());
+                    Object fixed = etv.getFixedValue();
+                    Class t = provided.getType();
+                    if (t == null && fixed != null) {
+                        t = fixed.getClass();
+                    }
+                    return new ValueAndType(t, fixed);
                 } else {
                     return new ValueAndType(provided.getType());
                 }
             } else {
                 return new ValueAndType(val != null ? val.getClass() : null, val);
             }
-        }, "property " + propName).orElse(null);
+        }, "property " + propName).orElse(null), null);
     }
     
     @SuppressWarnings("unchecked")

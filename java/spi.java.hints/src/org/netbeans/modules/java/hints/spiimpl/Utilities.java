@@ -91,7 +91,6 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
 import java.net.URI;
@@ -129,9 +128,6 @@ import javax.tools.Diagnostic;
 import javax.tools.JavaCompiler.CompilationTask;
 import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
-import net.bytebuddy.dynamic.DynamicType.Loaded;
-import net.bytebuddy.dynamic.DynamicType.Unloaded;
-import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
 import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.java.classpath.ClassPath;
@@ -170,6 +166,15 @@ import org.openide.util.WeakListeners;
 import org.openide.util.lookup.ServiceProvider;
 
 import static com.sun.source.tree.CaseTree.CaseKind.STATEMENT;
+import org.netbeans.api.annotations.common.NullAllowed;
+import org.netbeans.modules.java.hints.providers.spi.HintMetadata;
+import org.netbeans.modules.refactoring.spi.ui.RefactoringUI;
+import org.netbeans.modules.refactoring.spi.ui.UI;
+import org.openide.DialogDisplayer;
+import org.openide.NotifyDescriptor;
+import org.openide.util.NbBundle;
+import org.openide.util.Parameters;
+import org.openide.windows.TopComponent;
 
 /**
  *
@@ -451,7 +456,7 @@ public class Utilities {
                             Element currentElement = trees.getElement(getCurrentPath());
 
                             if (!isError(currentElement)) {
-                                if (currentElement.getKind() == ElementKind.PACKAGE && el.getPackageElement(node.toString()) == null) {
+                                if (currentElement.getKind() == ElementKind.PACKAGE && el.getAllPackageElements(node.toString()).isEmpty()) {
                                     ((JCFieldAccess) node).sym = symtab.errSymbol;
                                     ((JCFieldAccess) node).type = symtab.errType;
                                 } else {
@@ -466,7 +471,7 @@ public class Utilities {
                             Element currentElement = trees.getElement(getCurrentPath());
 
                             if (!isError(currentElement)) {
-                                if (currentElement.getKind() == ElementKind.PACKAGE && el.getPackageElement(node.toString()) == null) {
+                                if (currentElement.getKind() == ElementKind.PACKAGE && el.getAllPackageElements(node.toString()).isEmpty()) {
                                     ((JCIdent) node).sym = symtab.errSymbol;
                                     ((JCIdent) node).type = symtab.errType;
                                 } else {
@@ -1291,18 +1296,6 @@ public class Utilities {
         return true;
     }
 
-    static <T> Loaded<T> load(Unloaded<T> unloaded) {
-        ClassLoadingStrategy<ClassLoader> strategy;
-
-        try {
-            strategy = ClassLoadingStrategy.UsingLookup.of(MethodHandles.lookup());
-        } catch (IllegalStateException ex) {
-            strategy = new ClassLoadingStrategy.ForUnsafeInjection();
-        }
-
-        return unloaded.load(JackpotTrees.class.getClassLoader(), strategy);
-    }
-
     private static class JackpotJavacParser extends NBJavacParser {
 
         private final Context ctx;
@@ -1399,7 +1392,7 @@ public class Utilities {
         }
         
         @Override
-        public com.sun.tools.javac.util.List<JCTree> classOrInterfaceOrRecordBodyDeclaration(com.sun.tools.javac.util.Name className, boolean isInterface, boolean isRecord) {
+        public com.sun.tools.javac.util.List<JCTree> classOrInterfaceOrRecordBodyDeclaration(JCModifiers mods, com.sun.tools.javac.util.Name className, boolean isInterface, boolean isRecord) {
 
             if (token.kind == TokenKind.IDENTIFIER) {
                 if (token.name().startsWith(dollar)) {
@@ -1416,7 +1409,7 @@ public class Utilities {
                 }
             }
 
-            return super.classOrInterfaceOrRecordBodyDeclaration(className, isInterface, isRecord);
+            return super.classOrInterfaceOrRecordBodyDeclaration(mods, className, isInterface, isRecord);
         }
         
         @Override
@@ -1452,7 +1445,7 @@ public class Utilities {
                         JCIdent identTree = F.at(pos).Ident(name);
                         JCConstantCaseLabel labelTree = F.at(pos).ConstantCaseLabel(identTree);
                         return com.sun.tools.javac.util.List.of(
-                                new JackpotTrees.CaseWildcard(name, identTree, STATEMENT, com.sun.tools.javac.util.List.of(labelTree), com.sun.tools.javac.util.List.nil(), null)
+                                new JackpotTrees.CaseWildcard(name, identTree, STATEMENT, com.sun.tools.javac.util.List.of(labelTree), null, com.sun.tools.javac.util.List.nil(), null)
                         );
                     }
                 }
@@ -1532,6 +1525,32 @@ public class Utilities {
             }
         }
 
+        return false;
+    }
+    
+    @NbBundle.Messages({
+        "WARNING_NoRefactoringUI=Cannot start refactoring: no UI implementation is available."
+    })
+    public static void openRefactoringUIOrWarn(@NonNull Map<HintMetadata, Collection<? extends HintDescription>> hintsCollection, @NullAllowed TopComponent parent) {
+        if (openRefactoringUI(hintsCollection, parent)) {
+            return;
+        }
+        NotifyDescriptor d = new NotifyDescriptor.Message(Bundle.WARNING_NoRefactoringUI(), NotifyDescriptor.WARNING_MESSAGE);
+        DialogDisplayer.getDefault().notifyLater(d);
+    }
+    
+    public static boolean openRefactoringUI(@NonNull Map<HintMetadata, Collection<? extends HintDescription>> hintsCollection, @NullAllowed TopComponent parent) {
+        Parameters.notNull("hintsCollection", hintsCollection);
+        if (hintsCollection.isEmpty()) {
+            return true;
+        }
+        for (HintsRefactoringFactory f : Lookup.getDefault().lookupAll(HintsRefactoringFactory.class)) {
+            RefactoringUI ui = f.createRefactoringUI(hintsCollection);
+            if (ui != null) {
+                UI.openRefactoringUI(ui, parent);
+                return true;
+            }
+        }
         return false;
     }
 

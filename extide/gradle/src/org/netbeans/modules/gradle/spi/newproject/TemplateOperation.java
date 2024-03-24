@@ -57,8 +57,10 @@ import org.netbeans.modules.gradle.GradleProjectLoader;
 import org.netbeans.modules.gradle.ProjectTrust;
 import org.netbeans.modules.gradle.api.GradleProjects;
 import org.netbeans.modules.gradle.api.NbGradleProject.Quality;
+import org.netbeans.modules.gradle.spi.GradleSettings;
 import org.openide.loaders.DataFolder;
 import org.openide.loaders.DataObject;
+import org.openide.util.Exceptions;
 import org.openide.util.NbBundle;
 
 /**
@@ -149,8 +151,29 @@ public final class TemplateOperation implements Runnable {
         steps.add(new ConfigureProjectStep(projectDir, configurator));
     }
 
+    /**
+     * Initialize the Gradle wrapper in the target project. Equivalent to
+     * executing <code>gradle wrapper</code>.
+     *
+     * @param target project directory
+     */
     public void addWrapperInit(File target) {
-        steps.add(new InitGradleWrapper(target));
+        steps.add(new InitGradleWrapper(target, null));
+    }
+
+    /**
+     * Initialize the Gradle wrapper in the target project with the requested
+     * version of Gradle. Equivalent to executing
+     * <code>gradle wrapper --gradle-version $version</code>. The version may be
+     * the specific Gradle version required, or one of the labels supported by
+     * the wrapper task, eg. <code>latest</code>.
+     *
+     * @param target project directory
+     * @param version Gradle version or version label
+     * @since 2.34
+     */
+    public void addWrapperInit(File target, String version) {
+        steps.add(new InitGradleWrapper(target, version));
     }
 
     /** *  Begin creation of new project using Gradle's 
@@ -171,7 +194,7 @@ public final class TemplateOperation implements Runnable {
 
     /** Builder to specify additional parameters for the {@link #createGradleInit(java.io.File, java.lang.String)}
      * operation. At the end call {@link #add()} to finish the operation and 
-     * add it to the list of {@link OperationStep}s to perform.
+     * add it to the list of {@link TemplateOperation.OperationStep}s to perform.
      * 
      * @since 2.20
      */
@@ -179,7 +202,7 @@ public final class TemplateOperation implements Runnable {
         InitOperation() {
         }
 
-        /** Add the operation to the list of {@link OperationStep}s to perform.
+        /** Add the operation to the list of {@link TemplateOperation.OperationStep}s to perform.
          * @since 2.20
          */
         public final void add() {
@@ -292,11 +315,15 @@ public final class TemplateOperation implements Runnable {
                     args.add(projectName);
                 }
 
-                pconn.newBuild().withArguments("--offline").forTasks(args.toArray(new String[0])).run(); //NOI18N
+                if (GradleSettings.getDefault().isOffline()) {
+                    pconn.newBuild().withArguments("--offline").forTasks(args.toArray(new String[0])).run(); //NOI18N
+                } else {
+                    pconn.newBuild().forTasks(args.toArray(new String[0])).run();
+                }
             } catch (GradleConnectionException | IllegalStateException ex) {
-                // Well for some reason we were  not able to load Gradle.
-                // Ignoring that for now
+                Exceptions.printStackTrace(ex);
             }
+            gconn.disconnect();
             return Collections.singleton(FileUtil.toFileObject(target));
         }
     }
@@ -443,9 +470,11 @@ public final class TemplateOperation implements Runnable {
     private static final class InitGradleWrapper extends BaseOperationStep {
 
         final File projectDir;
+        final String version;
 
-        public InitGradleWrapper(File projectDir) {
+        public InitGradleWrapper(File projectDir, String version) {
             this.projectDir = projectDir;
+            this.version = version;
         }
 
         @Override
@@ -458,11 +487,22 @@ public final class TemplateOperation implements Runnable {
         public Set<FileObject> execute() {
             GradleConnector gconn = GradleConnector.newConnector();
             try (ProjectConnection pconn = gconn.forProjectDirectory(projectDir).connect()) {
-                pconn.newBuild().withArguments("--offline").forTasks("wrapper").run(); //NOI18N
+                List<String> args = new ArrayList<>();
+                args.add("wrapper"); //NOI18N
+                if (version != null) {
+                    args.add("--gradle-version"); //NOI18N
+                    args.add(version);
+                }
+                if (GradleSettings.getDefault().isOffline()) {
+                    pconn.newBuild().withArguments("--offline").forTasks(args.toArray(new String[0])).run(); //NOI18N
+                } else {
+                    pconn.newBuild().forTasks(args.toArray(new String[0])).run();
+                }
             } catch (GradleConnectionException | IllegalStateException ex) {
                 // Well for some reason we were  not able to load Gradle.
                 // Ignoring that for now
             }
+            gconn.disconnect();
             return null;
         }
 

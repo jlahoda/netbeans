@@ -24,17 +24,18 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import javax.xml.namespace.QName;
-import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.versioning.ComparableVersion;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.PluginManagement;
 import org.apache.maven.project.MavenProject;
-import org.codehaus.plexus.util.IOUtil;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
+import org.eclipse.aether.repository.RemoteRepository;
 import org.netbeans.modules.apisupport.project.api.EditableManifest;
 import org.netbeans.modules.maven.api.Constants;
 import org.netbeans.modules.maven.api.archetype.ProjectInfo;
@@ -103,14 +104,10 @@ final class NBMNativeMWI {
             if (packageName != null) {
                 String path = packageName.replace(".", "/") + "/Bundle.properties";
                 mf.setAttribute("OpenIDE-Module-Localizing-Bundle", path, null);
-                BufferedOutputStream bos = null;
-                try {
-                    bos = new BufferedOutputStream(new FileOutputStream(new File(src, "manifest.mf")));
-                    mf.write(bos);
+                try (OutputStream os = new BufferedOutputStream(new FileOutputStream(new File(src, "manifest.mf")))) {
+                    mf.write(os);
                 } catch (IOException ex) {
                     Exceptions.printStackTrace(ex);
-                } finally {
-                    IOUtil.close(bos);
                 }
                 
             }
@@ -121,20 +118,13 @@ final class NBMNativeMWI {
                 String path = packageName.replace(".", File.separator);
                 File res = new File(src, path);
                 res.mkdirs();
-                OutputStream bos = null;
-                try {
-                    bos = new BufferedOutputStream(new FileOutputStream(new File(res, "Bundle.properties")));
+                try (OutputStream os = new BufferedOutputStream(new FileOutputStream(new File(res, "Bundle.properties")))) {
                     Properties p = new Properties();
-                    p.store(bos, EMPTY_BUNDLE_FILE);
-                    
+                    p.store(os, EMPTY_BUNDLE_FILE);
                 } catch (IOException ex) {
                     Exceptions.printStackTrace(ex);
-                } finally {
-                    IOUtil.close(bos);
                 }
-                
             }
-            
         }
     }
 
@@ -164,17 +154,17 @@ final class NBMNativeMWI {
                 boolean isSnapshot = NbmWizardIterator.SNAPSHOT_VERSION.equals(netbeansDependencyVersion);
                 String snapshotRepoUrl = "https://repository.apache.org/content/repositories/snapshots/";
                 if (parent != null) {
-                    List<ArtifactRepository> repos = parent.getRemoteArtifactRepositories();
+                    List<RemoteRepository> repos = parent.getRemoteProjectRepositories();
                     if (repos != null) {
                         OUTER : 
-                        for (ArtifactRepository repo : repos) {
+                        for (RemoteRepository repo : repos) {
                             if (snapshotRepoUrl.equals(repo.getUrl()) || (snapshotRepoUrl + "/").equals(repo.getUrl()))
                             {
                                 addRepository = false;
                                 break;
                             }
                             if (repo.getMirroredRepositories() != null) {
-                                for (ArtifactRepository mirr : repo.getMirroredRepositories()) {
+                                for (RemoteRepository mirr : repo.getMirroredRepositories()) {
                                     if (snapshotRepoUrl.equals(mirr.getUrl()) || (snapshotRepoUrl + "/").equals(mirr.getUrl()))
                                     {
                                         addRepository = false;
@@ -290,7 +280,7 @@ final class NBMNativeMWI {
                 managedPVersion = null;
                 String source = null;
                 String target = null;
-                pVersion = "3.8.1";
+                pVersion = "3.11.0";
                 if (parent != null) {
                     //TODO do we want to support the case when the plugin is defined in parent pom with inherited=true?
                     PluginManagement pm = parent.getPluginManagement();
@@ -333,7 +323,7 @@ final class NBMNativeMWI {
                 addPlugin = true;
                 managedPVersion = null;
                 String useManifest = null;
-                pVersion = "3.1.2";
+                pVersion = "3.3.0";
                 if (parent != null) {
                     //TODO do we want to support the case when the plugin is defined in parent pom with inherited=true?
                     PluginManagement pm = parent.getPluginManagement();

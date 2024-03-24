@@ -33,8 +33,6 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.EventObject;
 import java.util.HashMap;
@@ -99,8 +97,8 @@ import org.netbeans.swing.etable.ETableColumnModel;
  * a tooltip.  Assume the class this is implemented in is a 
  * JPanel subclass or other Swing container.
  * <br>
- * XXX todo: clean up formatting & edit for style
- * <pre>
+ * XXX todo: clean up formatting &amp; edit for style
+ * <pre>{@code
  * public void initComponents() {
  *   setLayout (new BorderLayout());
  *   TreeModel treeMdl = new FileTreeModel (someDirectory);
@@ -179,7 +177,7 @@ import org.netbeans.swing.etable.ETableColumnModel;
  *          return false;
  *      }
  *   }
- * </pre>
+ * }</pre>
  *
  *
  * @author  Tim Boudreau
@@ -490,7 +488,7 @@ public class Outline extends ETable {
                         }
                     }
                     tempSortMap = tsm;
-                    Collections.sort(rows, c);
+                    rows.sort(c);
                     tempSortMap = null;
                 }
                 int [] res = new int[rows.size()];

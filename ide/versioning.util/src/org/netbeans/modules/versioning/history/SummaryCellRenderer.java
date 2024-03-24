@@ -699,7 +699,7 @@ class SummaryCellRenderer implements ListCellRenderer {
                 }
                 rects.add(rec);
                 rects.remove(0);
-                bounds = rects.toArray(new Rectangle[rects.size()]);
+                bounds = rects.toArray(new Rectangle[0]);
             } catch (BadLocationException ex) {
                 bounds = null;
             }
@@ -787,7 +787,7 @@ class SummaryCellRenderer implements ListCellRenderer {
                     } else {
                         ++idx;
                         sb.append("<font color=\"").append(PATH_COLOR).append("\">").append(path.substring(0, idx)).append("</font>"); //NOI18N
-                        sb.append(path.substring(idx, path.length()));
+                        sb.append(path.substring(idx));
                     }
                 }
                 pathLabel.setText(sb.append("</body></html>").toString()); //NOI18N
@@ -819,7 +819,7 @@ class SummaryCellRenderer implements ListCellRenderer {
         if (original != null && !path.equals(original)) {
             paths.add(original);
         }
-        return paths.toArray(new String[paths.size()]);
+        return paths.toArray(new String[0]);
     }
     
     private class RemainingFilesRenderer extends JPanel implements ListCellRenderer{

@@ -29,6 +29,7 @@ import com.sun.tools.javac.tree.JCTree.JCCatch;
 import com.sun.tools.javac.tree.JCTree.JCClassDecl;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
 import com.sun.tools.javac.tree.JCTree.JCMethodDecl;
+import com.sun.tools.javac.tree.JCTree.JCStringTemplate;
 import com.sun.tools.javac.tree.JCTree.JCVariableDecl;
 import com.sun.tools.javac.tree.TreeMaker;
 import com.sun.tools.javac.util.Context;
@@ -43,6 +44,8 @@ import java.lang.invoke.MethodType;
  */
 public class NBAttr extends Attr {
 
+    public static boolean TEST_DO_SINGLE_FAIL;
+
     public static void preRegister(Context context) {
         context.put(attrKey, new Context.Factory<Attr>() {
             public Attr make(Context c) {
@@ -52,12 +55,24 @@ public class NBAttr extends Attr {
     }
 
     private final CancelService cancelService;
+    private final NBResolve rs;
     private final TreeMaker tm;
 
     public NBAttr(Context context) {
         super(context);
         cancelService = CancelService.instance(context);
+        rs = NBResolve.instance(context);
         tm = TreeMaker.instance(context);
+    }
+
+    @Override
+    public void attribClass(DiagnosticPosition pos, ClassSymbol c) {
+        cancelService.abortIfCanceled();
+        if (TEST_DO_SINGLE_FAIL) {
+            TEST_DO_SINGLE_FAIL = false;
+            throw new AssertionError("Test requested failure");
+        }
+        super.attribClass(pos, c);
     }
 
     @Override
@@ -94,6 +109,24 @@ public class NBAttr extends Attr {
     @Override
     public void visitCatch(JCCatch that) {
         super.visitBlock(tm.Block(0, List.of(that.param, that.body)));
+    }
+
+    @Override
+    public void visitStringTemplate(JCStringTemplate tree) {
+        //workaround for:
+        //a) crash when tree.processor is null
+        //b) crash when the StringTemplate.process method does not exist
+        //should be removed when javac is improved to be more resilient w.r.t. these errors:
+        boolean prevInStringTemplate = rs.inStringTemplate;
+        try {
+            if (tree.processor == null) {
+                tree.processor = tm.Erroneous();
+            }
+            rs.inStringTemplate = true;
+            super.visitStringTemplate(tree);
+        } finally {
+            rs.inStringTemplate = prevInStringTemplate;
+        }
     }
 
     private boolean fullyAttribute;

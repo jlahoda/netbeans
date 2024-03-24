@@ -26,7 +26,9 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.io.PrintWriter;
 import java.io.Serializable;
+import java.io.StringWriter;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -75,6 +77,7 @@ import org.netbeans.modules.gradle.tooling.internal.NbProjectInfo.Report;
 import org.netbeans.modules.gradle.api.execute.GradleCommandLine;
 import org.netbeans.modules.gradle.api.execute.RunUtils;
 import org.netbeans.modules.gradle.cache.ProjectInfoDiskCache;
+import org.netbeans.modules.gradle.execute.GradleNetworkProxySupport;
 import org.netbeans.modules.gradle.spi.GradleSettings;
 import org.openide.util.Cancellable;
 import org.openide.util.NbBundle;
@@ -213,14 +216,23 @@ public class LegacyProjectLoader extends AbstractProjectLoader {
                     LOG.finer(String.format("    %-20s:%s", s, o));
                 }
             }
+            List<Report> errorReports = info.getReports().stream().filter(r -> r.getSeverity() == Report.Severity.ERROR).collect(Collectors.toList());
             if (!info.getProblems().isEmpty()) {
                 errors.openNotification(
                         TIT_LOAD_ISSUES(base.getProjectDir().getName()),
                         TIT_LOAD_ISSUES(base.getProjectDir().getName()),
                         GradleProjectErrorNotifications.bulletedList(info.getProblems()));
             }
+            if (!info.getReports().isEmpty()) {
+                errors.openNotification(
+                        TIT_LOAD_ISSUES(base.getProjectDir().getName()),
+                        TIT_LOAD_ISSUES(base.getProjectDir().getName()),
+                        GradleProjectErrorNotifications.bulletedList(
+                                info.getReports().stream().map(r -> r.getMessage()).collect(Collectors.toList())
+                        ));
+            }
             if (!info.hasException()) {
-                if (!info.getProblems().isEmpty() || !info.getReports().isEmpty()) {
+                if (!info.getProblems().isEmpty() || !errorReports.isEmpty()) {
                     if (LOG.isLoggable(Level.FINE)) {
                         // If we do not have exception, but seen some problems the we mark the quality as SIMPLE
                         Object o = new ArrayList<String>(info.getReports().stream().
@@ -246,7 +258,7 @@ public class LegacyProjectLoader extends AbstractProjectLoader {
                     quality = onlineResult.get() ? Quality.FULL_ONLINE : Quality.FULL;
                 }
             } else {
-                if (info.getProblems().isEmpty() && info.getReports().isEmpty()) {
+                if (info.getProblems().isEmpty() && errorReports.isEmpty()) {
                     String problem = info.getGradleException();
                     String[] lines = problem.split("\n");
                     LOG.log(INFO, "Failed to retrieve project information for: {0}\nReason: {1}", new Object[] {base.getProjectDir(), problem}); //NOI18N
@@ -277,7 +289,7 @@ public class LegacyProjectLoader extends AbstractProjectLoader {
                     for (String s : info.getProblems()) {
                         reps.add(GradleProject.createGradleReport(f == null ? null : f.toPath(), s));
                     }
-                    return ctx.previous.invalidate(info.getProblems().toArray(new GradleReport[0]));
+                    return ctx.previous.invalidate(reps.toArray(new GradleReport[0]));
                 }
             }
         } catch (GradleConnectionException | IllegalStateException ex) {
@@ -316,9 +328,27 @@ public class LegacyProjectLoader extends AbstractProjectLoader {
                 loc = m.group(1);
             }
         }
+        GradleReport.Severity s;
+        if (orig.getSeverity() == null) {
+            s = GradleReport.Severity.ERROR;
+        } else switch (orig.getSeverity()) {
+            case INFO:
+                s = GradleReport.Severity.INFO;
+                break;
+            case WARNING:
+                s = GradleReport.Severity.WARNING;
+                break;
+            case EXCEPTION:
+                s = GradleReport.Severity.EXCEPTION;
+                break;
+            default:
+                s = GradleReport.Severity.ERROR;
+                break;
+        }
         
-        return GradleProject.createGradleReport(orig.getErrorClass(), loc, orig.getLineNumber(), orig.getMessage(),
-                orig.getCause() == null ? null : copyReport(orig.getCause()));
+        String[] lines = orig.getDetail() == null ? null : orig.getDetail().split("\n");
+        return GradleProject.createGradleReport(s, orig.getErrorClass(), loc, orig.getLineNumber(), orig.getMessage(),
+                orig.getCause() == null ? null : copyReport(orig.getCause()), lines);
     }
     
     private static List<GradleReport> causesToProblems(Throwable ex) {
@@ -326,6 +356,11 @@ public class LegacyProjectLoader extends AbstractProjectLoader {
         Throwable th = ex;
         while (th != null) {
             problems.add(GradleProject.createGradleReport(null, th.getMessage()));
+            ex = th;
+            th = th.getCause();
+            if (ex == th) {
+                break;
+            }
         }
         return problems;
     }
@@ -353,42 +388,32 @@ public class LegacyProjectLoader extends AbstractProjectLoader {
         if (!(t instanceof GradleConnectionException)) {
             return causesToProblems(t);
         }
-        return Collections.singletonList(createReport(t.getCause()));
+        return Collections.singletonList(createReport(script, t.getCause(), new boolean[1]));
     }
-    
-    /**
-     * Accessor for the 'location' property on LocationAwareException
-     */
-    private static Method locationAccessor;
-
-    /**
-     * Accessor for the 'lineNumber' property on LocationAwareException
-     */
-    private static Method lineNumberAccessor;
     
     private static String getLocation(Throwable locationAwareEx) {
         try {
-            if (locationAccessor == null) {
-                locationAccessor = locationAwareEx.getClass().getMethod("getLocation"); // NOI18N
-            }
+            Method locationAccessor = locationAwareEx.getClass().getMethod("getLocation"); // NOI18N
             return (String)locationAccessor.invoke(locationAwareEx);
         } catch (ReflectiveOperationException ex) {
             LOG.log(Level.FINE,"Error getting location", ex);
-            return null;
+        } catch (IllegalArgumentException iae) {
+            LOG.log(Level.FINE, "This probably should not happen: " + locationAwareEx.getClass().getName(), iae);
         }
+        return null;
     }
 
     private static int getLineNumber(Throwable locationAwareEx) {
         try {
-            if (lineNumberAccessor == null) {
-                lineNumberAccessor = locationAwareEx.getClass().getMethod("getLineNumber"); // NOI18N
-            }
+            Method lineNumberAccessor = locationAwareEx.getClass().getMethod("getLineNumber"); // NOI18N
             Integer i = (Integer)lineNumberAccessor.invoke(locationAwareEx);
             return i != null ? i : -1;
         } catch (ReflectiveOperationException ex) {
             LOG.log(Level.FINE,"Error getting line number", ex);
-            return -1;
+        } catch (IllegalArgumentException iae) {
+            LOG.log(Level.FINE, "This probably should not happen: " + locationAwareEx.getClass().getName(), iae);
         }
+        return -1;
     }
 
     /**
@@ -403,7 +428,11 @@ public class LegacyProjectLoader extends AbstractProjectLoader {
      * @param e the throwable
      * @return head of {@link GradleRepor} chain.
      */
-    private static GradleReport createReport(Throwable e) {
+    private static GradleReport createReport(File p, Throwable e, boolean[] user) {
+        return createReport(p, e, true, user);
+    }
+    
+    private static GradleReport createReport(File p, Throwable e, boolean top, boolean[] user) {
         if (e == null) {
             return null;
         }
@@ -414,6 +443,7 @@ public class LegacyProjectLoader extends AbstractProjectLoader {
         GradleReport nested = null;
         
         if (e.getClass().getName().endsWith("LocationAwareException")) { // NOI18N
+            user[0] = true;
             String rawLoc = getLocation(e);
             if (rawLoc != null) {
                 Matcher m = FILE_PATH_FROM_LOCATION.matcher(rawLoc);
@@ -424,10 +454,30 @@ public class LegacyProjectLoader extends AbstractProjectLoader {
         } else {
             reported = e;
         }
-        if (reported.getCause() != null && reported.getCause() != reported) {
-            nested = createReport(reported.getCause());
+        String cn = e.getClass().getName();
+        if (cn.contains("GradleScriptException") || cn.contains("ResolutionException")) {
+            user[0] = true;
         }
-        return GradleProject.createGradleReport(reported.getClass().getName(), loc, line, reported.getMessage(), nested);
+        if (reported.getCause() != null && reported.getCause() != reported) {
+            nested = createReport(p, reported.getCause(), false, user);
+        }
+        String m = reported.getMessage();
+        if (m == null) {
+            m = reported.getClass().getSimpleName();
+        }
+        String[] traceLines = null;
+        if (top) {
+            LOG.log(Level.WARNING, "Loading of script {0} threw an exception {2}", new Object[] { p, reported.getClass().getName() } );
+            // need to log the exception at severity INFO so it does not appear as a red problem in Notifications.
+            LOG.log(Level.INFO, "Stacktrace from gradle daemon:", reported);
+            StringWriter sw = new StringWriter();
+            try (PrintWriter pw = new PrintWriter(sw)) {
+                reported.printStackTrace(pw);
+            }
+            String[] l = sw.toString().split("\n");
+            traceLines = Arrays.copyOf(l, Math.min(l.length, 100));
+        }
+        return GradleProject.createGradleReport(GradleReport.Severity.ERROR, reported.getClass().getName(), loc, line, m, nested, user[0] ? null : traceLines);
     }
 
     private static BuildActionExecuter<NbProjectInfo> createInfoAction(ProjectConnection pconn, GradleCommandLine cmd, CancellationToken token, ProgressListener pl) {
@@ -454,6 +504,9 @@ public class LegacyProjectLoader extends AbstractProjectLoader {
         return ret;
     }
 
+    @NbBundle.Messages({
+        "ERR_UserAbort=Project analysis aborted by the user."
+    })
     private static NbProjectInfo retrieveProjectInfo(NbGradleProjectImpl projectImpl, GoOnline goOnline, ProjectConnection pconn, GradleCommandLine cmd, CancellationToken token, ProgressListener pl, AtomicBoolean wasOnline) throws GradleConnectionException, IllegalStateException {
         NbProjectInfo ret;
 
@@ -489,8 +542,26 @@ public class LegacyProjectLoader extends AbstractProjectLoader {
                 }
             }
         }
+
+        BuildActionExecuter<NbProjectInfo> action = createInfoAction(pconn, online, token, pl);        
+        // since we're going online, check the network settings:
+        GradleNetworkProxySupport support = projectImpl.getLookup().lookup(GradleNetworkProxySupport.class);
+        if (support != null) {
+            try {
+                GradleNetworkProxySupport.ProxyResult result = support.checkProxySettings().get();
+                switch (result.getStatus()) {
+                    case ABORT:
+                        LOG.log(Level.FINE, "User cancelled the project load");
+                        throw new IllegalStateException(Bundle.ERR_UserAbort());
+                }
+                action = result.configure(action);
+            } catch (InterruptedException ex) {
+                throw new IllegalStateException(ex);
+            } catch (ExecutionException ex) {
+                throw new IllegalStateException(ex);
+            }
+        }
         
-        BuildActionExecuter<NbProjectInfo> action = createInfoAction(pconn, online, token, pl);
         wasOnline.set(true);
         return runInfoAction(action);
     }

@@ -947,7 +947,7 @@ public class QueryController implements org.netbeans.modules.bugtracking.spi.Que
             int idx = p.indexOf("="); // NOI18N
             if(idx > -1) {
                 String parameter = p.substring(0, idx);
-                String value = p.substring(idx + 1, p.length());
+                String value = p.substring(idx + 1);
 
                 ParameterValue pv = new ParameterValue(value, value);
                 List<ParameterValue> values = normalizedParams.get(parameter);
@@ -972,7 +972,7 @@ public class QueryController implements org.netbeans.modules.bugtracking.spi.Que
                     versionPV = e.getValue();
                 } else {
                     List<ParameterValue> pvs = e.getValue();
-                    qp.setValues(pvs.toArray(new ParameterValue[pvs.size()]));
+                    qp.setValues(pvs.toArray(new ParameterValue[0]));
                 }
             }
         }
@@ -982,7 +982,7 @@ public class QueryController implements org.netbeans.modules.bugtracking.spi.Que
                 
     private void setDependentParameter(QueryParameter qp, List<ParameterValue> values) {
         if(values != null) {
-            qp.setValues(values.toArray(new ParameterValue[values.size()]));
+            qp.setValues(values.toArray(new ParameterValue[0]));
         }
     }
 
