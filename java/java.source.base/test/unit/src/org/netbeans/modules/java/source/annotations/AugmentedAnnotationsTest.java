@@ -19,6 +19,8 @@
 package org.netbeans.modules.java.source.annotations;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,6 +40,7 @@ import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertTrue;
 import org.netbeans.api.java.lexer.JavaTokenId;
+import org.netbeans.api.java.source.ClasspathInfo.PathKind;
 import org.netbeans.api.java.source.CompilationInfo;
 import org.netbeans.api.java.source.JavaSource;
 import org.netbeans.api.java.source.JavaSource.Phase;
@@ -49,13 +52,39 @@ import org.openide.cookies.EditorCookie;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.loaders.DataObject;
-import org.openide.util.lookup.ServiceProvider;
 
 /**
  *
  * @author lahvac
  */
 public class AugmentedAnnotationsTest extends NbTestCase {
+
+    private static final String JAVA_BASE_AUGMENTED = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                                                      "<root>\n" +
+                                                      "  <item name=\"java.lang.Class java.lang.String toString()\">\n" +
+                                                      "    <annotation name=\"test.Test\">\n" +
+                                                      "      <val name=\"clazz\" val=\"java.util.List.class\" />\n" +
+                                                      "      <val name=\"string\" val=\"test-value1\" />\n" +
+                                                      "      <val name=\"clazz-array\" val=\"{java.util.List.class, java.util.ArrayList.class}\" />\n" +
+                                                      "      <val name=\"string-array\" val=\"{value1, value2}\" />\n" +
+                                                      "    </annotation>\n" +
+                                                      "  </item>\n" +
+                                                      "  <item name=\"java.lang.Class java.lang.Class&lt;?&gt; forName(java.lang.String) 0\">\n" +
+                                                      "    <annotation name=\"test.Test\">\n" +
+                                                      "      <val name=\"string\" val=\"test-value2\" />\n" +
+                                                      "    </annotation>\n" +
+                                                      "  </item>\n" +
+                                                      "  <item name=\"java.lang.Class java.lang.reflect.Method getMethod(java.lang.String, java.lang.Class&lt;?&gt;...) 0\">\n" +
+                                                      "    <annotation name=\"test.Test\">\n" +
+                                                      "      <val name=\"string\" val=\"test-value3\" />\n" +
+                                                      "    </annotation>\n" +
+                                                      "  </item>\n" +
+                                                      "  <item name=\"java.lang.StringBuilder StringBuilder(int) 0\">\n" +
+                                                      "    <annotation name=\"test.Test\">\n" +
+                                                      "      <val name=\"string\" val=\"test-value4\" />\n" +
+                                                      "    </annotation>\n" +
+                                                      "  </item>\n" +
+                                                      "</root>";
 
     public AugmentedAnnotationsTest(String testName) {
         super(testName);
@@ -187,21 +216,19 @@ public class AugmentedAnnotationsTest extends NbTestCase {
 
         assertNotNull(tTest);
 
-        CacheBasedAnnotationDescriptionProvider.overrideCacheDirForTests = FileUtil.createFolder(sourceRoot, "../annotations-cache");
-
         assertTrue(AugmentedAnnotations.attachAnnotation(info, tTest, "@test.NonNull"));
+        assertEquals("@test.NonNull()\n",
+                     serializeAugmentedAnnotations(tTest));
 
-        FileObject annotationsXML = sourceRoot.getFileObject("../annotations-cache/test/annotations.xml");
-
-        assertNotNull(annotationsXML);
+        String augmentedAnnotations = new String(AugmentedAnnotations.getAugmentedAnnotations(sourceRoot), StandardCharsets.UTF_8);
 
         assertEquals("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-                     "<root>\n" +
+                     "<annotations xmlns=\"http://www.netbeans.org/ns/external-annotations-java/1\">\n" +
                      "    <item name=\"test.Test\">\n" +
                      "        <annotation name=\"test.NonNull\"/>\n" +
                      "    </item>\n" +
-                     "</root>\n",
-                     annotationsXML.asText("UTF-8"));
+                     "</annotations>\n",
+                     augmentedAnnotations);
     }
 
     public void testAddAnnotation2() throws Exception {
@@ -214,23 +241,21 @@ public class AugmentedAnnotationsTest extends NbTestCase {
 
         assertNotNull(tTest);
 
-        CacheBasedAnnotationDescriptionProvider.overrideCacheDirForTests = FileUtil.createFolder(sourceRoot, "../annotations-cache");
-
         assertTrue(AugmentedAnnotations.attachAnnotation(info, tTest, "@test.Language(value=\"java\")"));
+        assertEquals("@test.Language(value=String:java)\n",
+                     serializeAugmentedAnnotations(tTest));
 
-        FileObject annotationsXML = sourceRoot.getFileObject("../annotations-cache/test/annotations.xml");
-
-        assertNotNull(annotationsXML);
+        String augmentedAnnotations = new String(AugmentedAnnotations.getAugmentedAnnotations(sourceRoot), StandardCharsets.UTF_8);
 
         assertEquals("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-                     "<root>\n" +
+                     "<annotations xmlns=\"http://www.netbeans.org/ns/external-annotations-java/1\">\n" +
                      "    <item name=\"test.Test\">\n" +
                      "        <annotation name=\"test.Language\">\n" +
                      "            <val name=\"value\" val=\"java\"/>\n" +
                      "        </annotation>\n" +
                      "    </item>\n" +
-                     "</root>\n",
-                     annotationsXML.asText("UTF-8"));
+                     "</annotations>\n",
+                     augmentedAnnotations);
     }
 
     @Override
@@ -240,8 +265,6 @@ public class AugmentedAnnotationsTest extends NbTestCase {
         clearWorkDir();
 
         FileUtil.refreshFor(File.listRoots());
-
-        dataDir = getDataDir();
     }
 
     protected void prepareTest(String fileName, String code) throws Exception {
@@ -279,6 +302,15 @@ public class AugmentedAnnotationsTest extends NbTestCase {
         info = SourceUtilsTestUtil.getCompilationInfo(js, Phase.RESOLVED);
 
         assertNotNull(info);
+
+        setAugmentedAnnotations(JAVA_BASE_AUGMENTED);
+    }
+
+    private void setAugmentedAnnotations(String annotations) throws IOException {
+        FileObject jlObject = info.getClasspathInfo().getClassPath(PathKind.MODULE_BOOT).findResource("java/lang/Object.class");
+        FileObject root = info.getClasspathInfo().getClassPath(PathKind.MODULE_BOOT).findOwnerRoot(jlObject);
+
+        AugmentedAnnotations.setAugmentedAnnotations(root, annotations.getBytes(StandardCharsets.UTF_8));
     }
 
     protected FileObject sourceRoot;
@@ -353,15 +385,4 @@ public class AugmentedAnnotationsTest extends NbTestCase {
         return result.toString();
     }
 
-    private static File dataDir;
-
-    @ServiceProvider(service=AnnotationsDescriptionProvider.class, position=10)
-    public static final class TestAnnotationsDescriptionProvider implements AnnotationsDescriptionProvider {
-
-        @Override
-        public FileObject annotationDescriptionForRoot(FileObject root) {
-            return dataDir != null ? FileUtil.toFileObject(dataDir) : null;
-        }
-
-    }
 }

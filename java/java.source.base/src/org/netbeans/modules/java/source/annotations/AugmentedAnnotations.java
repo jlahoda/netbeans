@@ -29,6 +29,8 @@ import com.sun.source.tree.VariableTree;
 import com.sun.source.util.SourcePositions;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
@@ -72,6 +74,7 @@ import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectUtils;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
+import org.openide.modules.Places;
 import org.openide.util.Exceptions;
 import org.openide.xml.XMLUtil;
 import org.w3c.dom.Document;
@@ -185,8 +188,6 @@ public class AugmentedAnnotations {
 
         writeAugmentElementAnnotationsRoot(info, root, annotations);
 
-        userAnnotations2DOMCache.remove(root);
-
         return true;
     }
 
@@ -202,18 +203,18 @@ public class AugmentedAnnotations {
             parsed = ProjectUtils.getAuxiliaryConfiguration(prj).getConfigurationFragment("annotations", AugmentedAnnotations.NS, true);
         }
         if (parsed == null) {
-            byte[] annotations = (byte[]) elementRoot.getAttribute(AugmentedAnnotations.class.getName());
-            if (annotations != null) {
-                try {
+            try {
+                byte[] annotations = (byte[]) getAugmentedAnnotations(elementRoot);
+                if (annotations != null) {
                     InputSource input = new InputSource(new ByteArrayInputStream(annotations));
                     parsed = XMLUtil.parse(input, false, true, /*XXX*/null, null).getDocumentElement();
-                } catch (IOException | SAXException ex) {
-                    LOG.log(Level.WARNING, null, ex);
                 }
+            } catch (IOException | SAXException ex) {
+                LOG.log(Level.WARNING, null, ex);
             }
         }
         if (parsed == null) {
-            parsed = XMLUtil.createDocument("annotations", null, null, null).createElementNS(AugmentedAnnotations.NS, "annotations");
+            parsed = XMLUtil.createDocument("annotations", NS, null, null).getDocumentElement();
         }
         ParsedAnnotationsXML result = new ParsedAnnotationsXML(parsed);
         userAnnotations2DOMCache.put(elementRoot, new SoftReference<>(result));
@@ -227,11 +228,32 @@ public class AugmentedAnnotations {
             return ;
         }
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            XMLUtil.write(annotations.getOwnerDocument(), out, NS);
-            elementRoot.setAttribute(AugmentedAnnotations.class.getName(), out.toByteArray());
+            XMLUtil.write(annotations.getOwnerDocument(), out, "UTF-8");
+            setAugmentedAnnotations(elementRoot, out.toByteArray());
         } catch (IOException ex) {
             Exceptions.printStackTrace(ex);
         }
+    }
+
+    static byte[] getAugmentedAnnotations(FileObject elementRoot) throws IOException {
+        return (byte[]) augmentedDataHolder().getAttribute(AugmentedAnnotations.class.getName() + "-" + elementRoot.toURI());
+    }
+
+    static void setAugmentedAnnotations(FileObject elementRoot, byte[] data) throws IOException {
+        augmentedDataHolder().setAttribute(AugmentedAnnotations.class.getName() + "-" + elementRoot.toURI(), data);
+        userAnnotations2DOMCache.remove(elementRoot);
+    }
+
+    private static FileObject augmentedDataHolder() {
+        File c = Places.getCacheSubfile("var/cache/javaAugmentedAnnotations");
+        if (!c.exists()) {
+            try {
+                return FileUtil.createData(c);
+            } catch (IOException ex) {
+                Exceptions.printStackTrace(ex);
+            }
+        }
+        return FileUtil.toFileObject(c);
     }
 
     private static class AttributeDescription {
