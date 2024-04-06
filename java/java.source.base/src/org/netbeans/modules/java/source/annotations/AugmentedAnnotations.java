@@ -84,10 +84,6 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-/**
- *
- * @author lahvac
- */
 public class AugmentedAnnotations {
 
     private static final Logger LOG = Logger.getLogger(AugmentedAnnotations.class.getName());

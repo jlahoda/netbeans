@@ -59,8 +59,8 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
-import javax.lang.model.element.AnnotationMirror;
 
+import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
@@ -922,7 +922,17 @@ public final class ElementUtilities {
         }
         return null;
     }
-    
+
+    /**
+     * Get any annotations which with the given {@code Element} has been annotated,
+     * as if by calling {@link Element#getAnnotationMirrors()}, and add any externally
+     * defined annotations for the {@code Element}.
+     *
+     * @param e the {@code Element} for which the annotations should be retrieved
+     * @return the annotations with which the given {@code Element} has been
+     *         annotated and any externally attached annotations.
+     * @since 2.67
+     */
     public List<? extends AnnotationMirror> getAugmentedAnnotationMirrors(Element e) {
         return AugmentedAnnotations.getAugmentedAnnotationMirrors(info, e);
     }

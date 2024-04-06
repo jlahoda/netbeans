@@ -23,10 +23,6 @@ import org.junit.Test;
 import org.netbeans.modules.java.hints.test.api.HintTest;
 import org.netbeans.modules.java.source.annotations.AugmentedAnnotations;
 
-/**
- *
- * @author lahvac
- */
 public class MagicConstantHintTest {
 
     @Test

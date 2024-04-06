@@ -53,10 +53,6 @@ import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.loaders.DataObject;
 
-/**
- *
- * @author lahvac
- */
 public class AugmentedAnnotationsTest extends NbTestCase {
 
     private static final String JAVA_BASE_AUGMENTED = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +

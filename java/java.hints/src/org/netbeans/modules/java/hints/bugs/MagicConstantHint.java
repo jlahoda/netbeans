@@ -46,10 +46,6 @@ import org.netbeans.spi.java.hints.TriggerTreeKind;
 import org.openide.util.NbBundle.Messages;
 import org.openide.util.NbCollections;
 
-/**
- *
- * @author lahvac
- */
 @Hint(displayName="Magic Constant", description="Verifies magic constants", category="bugs")
 public class MagicConstantHint {
 

@@ -535,10 +535,6 @@ public class NPECheck {
         return def;
     }
     
-    public interface AnnotationMirrorGetter {
-        public Iterable<? extends AnnotationMirror> getAnnotationMirrors(CompilationInfo info, Element el);
-    }
-        
     private static final class VisitorImpl extends CancellableTreeScanner<State, Void> {
         
         private final HintContext ctx;
