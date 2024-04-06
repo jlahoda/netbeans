@@ -36,6 +36,7 @@ import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -92,6 +93,8 @@ public class AugmentedAnnotations {
     private static final Logger LOG = Logger.getLogger(AugmentedAnnotations.class.getName());
     public static final String NS = "http://www.netbeans.org/ns/external-annotations-java/1";
 
+    private static byte[] augmentedAnnotationsOverride = null;
+
     //package->encoded element+DOM
     private static final Map<FileObject, Reference<ParsedAnnotationsXML>> hardCodedAnnotations2DOMCache = new WeakHashMap<>();
     //root->encoded element+DOM
@@ -114,7 +117,7 @@ public class AugmentedAnnotations {
         List<AnnotationMirror> augmented = new ArrayList<AnnotationMirror>(e.getAnnotationMirrors());
 
         augmented.addAll(mirror(info, externalAnnotation));
-        
+
         return augmented;
     }
 
@@ -236,12 +239,19 @@ public class AugmentedAnnotations {
     }
 
     static byte[] getAugmentedAnnotations(FileObject elementRoot) throws IOException {
+        if (augmentedAnnotationsOverride != null) {
+            return augmentedAnnotationsOverride;
+        }
         return (byte[]) augmentedDataHolder().getAttribute(AugmentedAnnotations.class.getName() + "-" + elementRoot.toURI());
     }
 
     static void setAugmentedAnnotations(FileObject elementRoot, byte[] data) throws IOException {
         augmentedDataHolder().setAttribute(AugmentedAnnotations.class.getName() + "-" + elementRoot.toURI(), data);
         userAnnotations2DOMCache.remove(elementRoot);
+    }
+
+    public static void setAugmentedAnnotationsForTests(String annotations) {
+        augmentedAnnotationsOverride = annotations.getBytes(StandardCharsets.UTF_8);
     }
 
     private static FileObject augmentedDataHolder() {
@@ -447,7 +457,7 @@ public class AugmentedAnnotations {
         if (topLevel == null) {
             return null;
         }
-        
+
         String fqn = topLevel.getQualifiedName().toString().replace('.', '/');
         FileObject found = info.getClasspathInfo().getClassPath(PathKind.BOOT).findResource(fqn + ".class");
 
@@ -562,7 +572,7 @@ public class AugmentedAnnotations {
         }
 
     }
-    
+
     private static final class FakeDeclaredType implements DeclaredType {
 
         private final TypeElement forType;
@@ -570,7 +580,7 @@ public class AugmentedAnnotations {
         public FakeDeclaredType(TypeElement forType) {
             this.forType = forType;
         }
-        
+
         @Override
         public Element asElement() {
             return forType;
@@ -615,7 +625,7 @@ public class AugmentedAnnotations {
         public <A extends Annotation> A[] getAnnotationsByType(Class<A> annotationType) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
-        
+
     }
 
     private static final class FakeAttributeElement implements ExecutableElement {

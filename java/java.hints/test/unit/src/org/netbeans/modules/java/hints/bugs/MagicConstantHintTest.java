@@ -19,13 +19,9 @@
 package org.netbeans.modules.java.hints.bugs;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import org.junit.Test;
 import org.netbeans.modules.java.hints.test.api.HintTest;
-import org.netbeans.modules.java.source.annotations.AnnotationsDescriptionProvider;
-import org.openide.filesystems.FileObject;
-import org.openide.filesystems.FileUtil;
-import org.openide.util.lookup.ServiceProvider;
+import org.netbeans.modules.java.source.annotations.AugmentedAnnotations;
 
 /**
  *
@@ -35,8 +31,7 @@ public class MagicConstantHintTest {
 
     @Test
     public void testFlagsFromClass() throws Exception {
-        writeAnnotations("test",
-                         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+        writeAnnotations("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                          "<root>\n" +
                          "<item name=\"test.Test void test(int) 0\">" +
                          "<annotation name=\"org.intellij.lang.annotations.MagicConstant\">" +
@@ -68,8 +63,7 @@ public class MagicConstantHintTest {
 
     @Test
     public void testIntValues() throws Exception {
-        writeAnnotations("test",
-                         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+        writeAnnotations("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                          "<root>\n" +
                          "<item name=\"test.Test void test(int) 0\">" +
                          "<annotation name=\"org.intellij.lang.annotations.MagicConstant\">" +
@@ -101,8 +95,7 @@ public class MagicConstantHintTest {
 
     @Test
     public void testConstructorAndValuesFromClass() throws Exception {
-        writeAnnotations("test",
-                         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+        writeAnnotations("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                          "<root>\n" +
                          "<item name=\"test.Test Test(int) 0\">" +
                          "<annotation name=\"org.intellij.lang.annotations.MagicConstant\">" +
@@ -139,34 +132,8 @@ public class MagicConstantHintTest {
                 .assertWarnings();
     }
 
-    private static void writeAnnotations(String packageName, String content) throws IOException {
-        FileObject annotations = FileUtil.createData(FileUtil.createMemoryFileSystem().getRoot(), packageName.replace('.', '/') + "/annotations.xml");
-        OutputStream out = annotations.getOutputStream();
-
-        out.write(content.getBytes("UTF-8"));
-        out.close();
-
-        annotationRoot = annotations.getFileSystem().getRoot();
+    private static void writeAnnotations(String content) throws IOException {
+        AugmentedAnnotations.setAugmentedAnnotationsForTests(content);
     }
 
-    private static FileObject annotationRoot;
-
-    static {
-        try {
-            //init proper lookup
-            HintTest.create();
-        } catch (Exception ex) {
-            throw new IllegalStateException(ex);
-        }
-    }
-
-    @ServiceProvider(service=AnnotationsDescriptionProvider.class, position=10)
-    public static final class TestAnnotationsDescriptionProvider implements AnnotationsDescriptionProvider {
-
-        @Override
-        public FileObject annotationDescriptionForRoot(FileObject root) {
-            return annotationRoot;
-        }
-
-    }
 }
