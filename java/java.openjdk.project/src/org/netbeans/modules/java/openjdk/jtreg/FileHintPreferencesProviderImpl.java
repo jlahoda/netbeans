@@ -39,11 +39,11 @@ public class FileHintPreferencesProviderImpl implements FileHintPreferencesProvi
 
         Preferences testPreferences = NbPreferences.forModule(FileHintPreferencesProvider.class).node("jtreg");
         Preferences unusedHintNode = testPreferences.node("org.netbeans.modules.java.hints.bugs.Unused");
-        if ("undefined".equals(unusedHintNode.get("enabled", "undefined"))) {
+        if ("undefined".equals(unusedHintNode.get("detect.unused.package.private", "undefined"))) {
             //unused elements are common in tests, and often not bugs/problematic
             //better disable the unused element hint in tests, to avoid too many false positives
             //(note semantic highlighting should still mark them):
-            unusedHintNode.putBoolean("enabled", false);
+            unusedHintNode.putBoolean("detect.unused.package.private", false);
         }
 
         return testPreferences;
