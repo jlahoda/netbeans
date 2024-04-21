@@ -59,11 +59,16 @@ public class ProfileTest extends NbTestCase {
         assertEquals(Profile.JAKARTA_EE_9_1_FULL, Profile.fromPropertiesString("JAKARTA_EE_9_1_FULL"));
         assertEquals(Profile.JAKARTA_EE_9_1_WEB, Profile.fromPropertiesString("9.1-web"));
         assertEquals(Profile.JAKARTA_EE_9_1_WEB, Profile.fromPropertiesString("JAKARTA_EE_9_1_WEB"));
-        assertEquals(Profile.JAKARTA_EE_10_FULL, Profile.fromPropertiesString("10.0"));
+        assertEquals(Profile.JAKARTA_EE_10_FULL, Profile.fromPropertiesString("10"));
         assertEquals(Profile.JAKARTA_EE_10_FULL, Profile.fromPropertiesString("JAKARTA_EE_10_FULL"));
-        assertEquals(Profile.JAKARTA_EE_10_WEB, Profile.fromPropertiesString("10.0-web"));
+        assertEquals(Profile.JAKARTA_EE_10_WEB, Profile.fromPropertiesString("10-web"));
         assertEquals(Profile.JAKARTA_EE_10_WEB, Profile.fromPropertiesString("JAKARTA_EE_10_WEB"));
+        assertEquals(Profile.JAKARTA_EE_11_FULL, Profile.fromPropertiesString("11"));
+        assertEquals(Profile.JAKARTA_EE_11_FULL, Profile.fromPropertiesString("JAKARTA_EE_11_FULL"));
+        assertEquals(Profile.JAKARTA_EE_11_WEB, Profile.fromPropertiesString("11-web"));
+        assertEquals(Profile.JAKARTA_EE_11_WEB, Profile.fromPropertiesString("JAKARTA_EE_11_WEB"));
         assertNull(Profile.fromPropertiesString("something"));
+        assertNull(Profile.fromPropertiesString(null));
     }
 
     public void testIsHigherJavaEEVersionJavaEE5() {
@@ -85,6 +90,8 @@ public class ProfileTest extends NbTestCase {
         assertTrue(Profile.JAKARTA_EE_9_1_WEB.isAtLeast(Profile.JAVA_EE_5));
         assertTrue(Profile.JAKARTA_EE_10_WEB.isAtLeast(Profile.JAVA_EE_5));
         assertTrue(Profile.JAKARTA_EE_10_FULL.isAtLeast(Profile.JAVA_EE_5));
+        assertTrue(Profile.JAKARTA_EE_11_WEB.isAtLeast(Profile.JAVA_EE_5));
+        assertTrue(Profile.JAKARTA_EE_11_FULL.isAtLeast(Profile.JAVA_EE_5));
     }
 
     public void testIsHigherJavaEEVersionJavaEE6full() {
@@ -106,6 +113,8 @@ public class ProfileTest extends NbTestCase {
         assertTrue(Profile.JAKARTA_EE_9_1_WEB.isAtLeast(Profile.JAVA_EE_6_WEB));
         assertTrue(Profile.JAKARTA_EE_10_WEB.isAtLeast(Profile.JAVA_EE_6_WEB));
         assertTrue(Profile.JAKARTA_EE_10_FULL.isAtLeast(Profile.JAVA_EE_6_WEB));
+        assertTrue(Profile.JAKARTA_EE_11_WEB.isAtLeast(Profile.JAVA_EE_6_WEB));
+        assertTrue(Profile.JAKARTA_EE_11_FULL.isAtLeast(Profile.JAVA_EE_6_WEB));
     }
 
     public void testIsHigherJavaEEVersionJavaEE7full() {
@@ -127,6 +136,8 @@ public class ProfileTest extends NbTestCase {
         assertTrue(Profile.JAKARTA_EE_9_1_WEB.isAtLeast(Profile.JAVA_EE_7_WEB));
         assertTrue(Profile.JAKARTA_EE_10_WEB.isAtLeast(Profile.JAVA_EE_7_WEB));
         assertTrue(Profile.JAKARTA_EE_10_FULL.isAtLeast(Profile.JAVA_EE_7_WEB));
+        assertTrue(Profile.JAKARTA_EE_11_WEB.isAtLeast(Profile.JAVA_EE_7_WEB));
+        assertTrue(Profile.JAKARTA_EE_11_FULL.isAtLeast(Profile.JAVA_EE_7_WEB));
     }
 
     public void testIsHigherJavaEEVersionJavaEE8full() {
@@ -148,6 +159,8 @@ public class ProfileTest extends NbTestCase {
         assertTrue(Profile.JAKARTA_EE_9_1_WEB.isAtLeast(Profile.JAVA_EE_8_WEB));
         assertTrue(Profile.JAKARTA_EE_10_WEB.isAtLeast(Profile.JAVA_EE_8_WEB));
         assertTrue(Profile.JAKARTA_EE_10_FULL.isAtLeast(Profile.JAVA_EE_8_WEB));
+        assertTrue(Profile.JAKARTA_EE_11_WEB.isAtLeast(Profile.JAVA_EE_8_WEB));
+        assertTrue(Profile.JAKARTA_EE_11_FULL.isAtLeast(Profile.JAVA_EE_8_WEB));
     }
 
     public void testIsHigherJavaEEVersionJakartaEE8full() {
@@ -169,6 +182,8 @@ public class ProfileTest extends NbTestCase {
         assertTrue(Profile.JAKARTA_EE_9_1_WEB.isAtLeast(Profile.JAKARTA_EE_8_WEB));
         assertTrue(Profile.JAKARTA_EE_10_WEB.isAtLeast(Profile.JAKARTA_EE_8_WEB));
         assertTrue(Profile.JAKARTA_EE_10_FULL.isAtLeast(Profile.JAKARTA_EE_8_WEB));
+        assertTrue(Profile.JAKARTA_EE_11_WEB.isAtLeast(Profile.JAKARTA_EE_8_WEB));
+        assertTrue(Profile.JAKARTA_EE_11_FULL.isAtLeast(Profile.JAKARTA_EE_8_WEB));
     }
 
     public void testIsHigherJavaEEVersionJakartaEE9full() {
@@ -190,6 +205,8 @@ public class ProfileTest extends NbTestCase {
         assertTrue(Profile.JAKARTA_EE_9_1_FULL.isAtLeast(Profile.JAKARTA_EE_9_WEB));
         assertTrue(Profile.JAKARTA_EE_10_WEB.isAtLeast(Profile.JAKARTA_EE_9_WEB));
         assertTrue(Profile.JAKARTA_EE_10_FULL.isAtLeast(Profile.JAKARTA_EE_9_WEB));
+        assertTrue(Profile.JAKARTA_EE_11_WEB.isAtLeast(Profile.JAKARTA_EE_9_WEB));
+        assertTrue(Profile.JAKARTA_EE_11_FULL.isAtLeast(Profile.JAKARTA_EE_9_WEB));
     }
     
     public void testIsHigherJavaEEVersionJakartaEE91full() {
@@ -211,6 +228,8 @@ public class ProfileTest extends NbTestCase {
         assertTrue(Profile.JAKARTA_EE_9_1_FULL.isAtLeast(Profile.JAKARTA_EE_9_1_WEB));
         assertTrue(Profile.JAKARTA_EE_10_WEB.isAtLeast(Profile.JAKARTA_EE_9_1_WEB));
         assertTrue(Profile.JAKARTA_EE_10_FULL.isAtLeast(Profile.JAKARTA_EE_9_1_WEB));
+        assertTrue(Profile.JAKARTA_EE_11_WEB.isAtLeast(Profile.JAKARTA_EE_9_1_WEB));
+        assertTrue(Profile.JAKARTA_EE_11_FULL.isAtLeast(Profile.JAKARTA_EE_9_1_WEB));
     }
     
         public void testIsHigherJavaEEVersionJakartaEE10full() {
@@ -228,9 +247,17 @@ public class ProfileTest extends NbTestCase {
         assertFalse(Profile.JAKARTA_EE_8_FULL.isAtLeast(Profile.JAKARTA_EE_10_WEB));
         assertFalse(Profile.JAKARTA_EE_9_WEB.isAtLeast(Profile.JAKARTA_EE_10_WEB));
         assertFalse(Profile.JAKARTA_EE_9_FULL.isAtLeast(Profile.JAKARTA_EE_10_WEB));
-        assertTrue(Profile.JAKARTA_EE_9_1_WEB.isAtLeast(Profile.JAKARTA_EE_10_WEB));
-        assertTrue(Profile.JAKARTA_EE_9_1_FULL.isAtLeast(Profile.JAKARTA_EE_10_WEB));
+        assertFalse(Profile.JAKARTA_EE_9_1_WEB.isAtLeast(Profile.JAKARTA_EE_10_WEB));
+        assertFalse(Profile.JAKARTA_EE_9_1_FULL.isAtLeast(Profile.JAKARTA_EE_10_WEB));
         assertTrue(Profile.JAKARTA_EE_10_WEB.isAtLeast(Profile.JAKARTA_EE_10_WEB));
         assertTrue(Profile.JAKARTA_EE_10_FULL.isAtLeast(Profile.JAKARTA_EE_10_WEB));
+        assertTrue(Profile.JAKARTA_EE_11_WEB.isAtLeast(Profile.JAKARTA_EE_10_WEB));
+        assertTrue(Profile.JAKARTA_EE_11_FULL.isAtLeast(Profile.JAKARTA_EE_10_WEB));
+    }
+
+    public void testAllEnumsHaveDisplayNames() {
+        for (Profile profile : Profile.values()) {
+            profile.getDisplayName();
+        }
     }
 }

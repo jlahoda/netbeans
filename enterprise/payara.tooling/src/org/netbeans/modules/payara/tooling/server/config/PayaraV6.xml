@@ -31,6 +31,10 @@ under the License.
         <platform version="15"/>
         <platform version="16"/>
         <platform version="17"/>
+        <platform version="18"/>
+        <platform version="19"/>
+        <platform version="20"/>
+        <platform version="21"/>
     </java>
     <javaee version="10.0.0">
         <profile version="9.0.0" type="web"/>
@@ -88,7 +92,7 @@ under the License.
             </fileset>
         </classpath>
         <javadocs>
-            <link url="https://repo1.maven.org/maven2/org/glassfish/jersey/jersey-documentation/3.1.0/jersey-documentation-3.1.0-docbook.zip"/>
+            <link url="https://repo.maven.apache.org/maven2/org/glassfish/jersey/jersey-documentation/3.1.0/jersey-documentation-3.1.0-docbook.zip"/>
         </javadocs>
         <sources>
         </sources>

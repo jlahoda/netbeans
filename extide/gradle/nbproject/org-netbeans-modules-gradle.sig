@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 2.32
+#Version 2.40
 
 CLSS public abstract interface java.io.Serializable
 
@@ -79,9 +79,11 @@ innr public final static !enum PropertyKind
 innr public final static Property
 meth public java.lang.Iterable<org.netbeans.modules.gradle.api.BuildPropertiesSupport$Property> items(org.netbeans.modules.gradle.api.BuildPropertiesSupport$Property,java.lang.String)
 meth public java.util.Collection<java.lang.String> keys(org.netbeans.modules.gradle.api.BuildPropertiesSupport$Property)
+ anno 0 org.netbeans.api.annotations.common.NonNull()
 meth public org.netbeans.modules.gradle.api.BuildPropertiesSupport$Property findExtensionProperty(java.lang.String,java.lang.String)
 meth public org.netbeans.modules.gradle.api.BuildPropertiesSupport$Property findTaskProperty(java.lang.String,java.lang.String)
 meth public org.netbeans.modules.gradle.api.BuildPropertiesSupport$Property get(org.netbeans.modules.gradle.api.BuildPropertiesSupport$Property,java.lang.String,java.lang.String)
+ anno 0 org.netbeans.api.annotations.common.CheckForNull()
 meth public static org.netbeans.modules.gradle.api.BuildPropertiesSupport get(org.netbeans.api.project.Project)
 supr java.lang.Object
 hfds impls
@@ -274,6 +276,7 @@ meth public static java.util.Map<java.lang.String,org.netbeans.api.project.Proje
 supr java.lang.Object
 
 CLSS public final org.netbeans.modules.gradle.api.GradleReport
+innr public final static !enum Severity
 meth public boolean equals(java.lang.Object)
 meth public int getLine()
 meth public int hashCode()
@@ -284,10 +287,22 @@ meth public java.lang.String getLocation()
 meth public java.lang.String getMessage()
  anno 0 org.netbeans.api.annotations.common.NonNull()
 meth public java.lang.String toString()
+meth public java.lang.String[] getDetails()
 meth public org.netbeans.modules.gradle.api.GradleReport getCause()
  anno 0 org.netbeans.api.annotations.common.CheckForNull()
+meth public org.netbeans.modules.gradle.api.GradleReport$Severity getSeverity()
 supr java.lang.Object
-hfds causedBy,errorClass,line,location,message
+hfds causedBy,details,errorClass,line,location,message,severity
+
+CLSS public final static !enum org.netbeans.modules.gradle.api.GradleReport$Severity
+ outer org.netbeans.modules.gradle.api.GradleReport
+fld public final static org.netbeans.modules.gradle.api.GradleReport$Severity ERROR
+fld public final static org.netbeans.modules.gradle.api.GradleReport$Severity EXCEPTION
+fld public final static org.netbeans.modules.gradle.api.GradleReport$Severity INFO
+fld public final static org.netbeans.modules.gradle.api.GradleReport$Severity WARNING
+meth public static org.netbeans.modules.gradle.api.GradleReport$Severity valueOf(java.lang.String)
+meth public static org.netbeans.modules.gradle.api.GradleReport$Severity[] values()
+supr java.lang.Enum<org.netbeans.modules.gradle.api.GradleReport$Severity>
 
 CLSS public final org.netbeans.modules.gradle.api.GradleTask
 intf java.io.Serializable
@@ -570,7 +585,7 @@ meth public static java.net.URI getWrapperDistributionURI(java.io.File) throws j
 meth public static org.netbeans.modules.gradle.api.execute.GradleDistributionManager get()
 meth public static org.netbeans.modules.gradle.api.execute.GradleDistributionManager get(java.io.File)
 supr java.lang.Object
-hfds CACHE,DIST_VERSION_PATTERN,DOWNLOAD_URI,JDK_COMPAT,MINIMUM_SUPPORTED_VERSION,RP,VERSION_BLACKLIST,gradleUserHome
+hfds CACHE,DIST_VERSION_PATTERN,DOWNLOAD_URI,JDK_COMPAT,LAST_KNOWN_GRADLE,MINIMUM_SUPPORTED_VERSION,RP,VERSION_BLACKLIST,gradleUserHome
 hcls DownloadTask,GradleVersionRange
 
 CLSS public final org.netbeans.modules.gradle.api.execute.GradleDistributionManager$GradleDistribution
@@ -778,12 +793,14 @@ fld public final static java.lang.String PROP_GRADLE_DISTRIBUTION = "gradleHome"
 fld public final static java.lang.String PROP_GRADLE_EXEC_RULE = "gradleExecutionRule"
 fld public final static java.lang.String PROP_GRADLE_USER_HOME = "gradleUserHome"
 fld public final static java.lang.String PROP_GRADLE_VERSION = "gradleVersion"
+ anno 0 java.lang.Deprecated()
 fld public final static java.lang.String PROP_HIDE_EMPTY_CONF = "hideEmptyConfiguration"
 fld public final static java.lang.String PROP_LAZY_OPEN_GROUPS = "lazyOpen"
  anno 0 java.lang.Deprecated()
 fld public final static java.lang.String PROP_LOG_LEVEL = "logLevel"
 fld public final static java.lang.String PROP_OPT_CONFIGURE_ON_DEMAND = "configureOnDemand"
 fld public final static java.lang.String PROP_OPT_NO_REBUILD = "noRebuild"
+ anno 0 java.lang.Deprecated()
 fld public final static java.lang.String PROP_OPT_OFFLINE = "offline"
 fld public final static java.lang.String PROP_OPT_USE_CONFIG_CACHE = "useConfigCache"
 fld public final static java.lang.String PROP_PREFER_MAVEN = "preferMaven"
@@ -791,10 +808,12 @@ fld public final static java.lang.String PROP_PREFER_WRAPPER = "preferWrapper"
 fld public final static java.lang.String PROP_REUSE_EDITOR_ON_STACKTRACE = "reuseEditorOnStackTace"
 fld public final static java.lang.String PROP_REUSE_OUTPUT_TABS = "reuseOutputTabs"
 fld public final static java.lang.String PROP_SILENT_INSTALL = "silentInstall"
+ anno 0 java.lang.Deprecated()
 fld public final static java.lang.String PROP_SKIP_CHECK = "skipCheck"
 fld public final static java.lang.String PROP_SKIP_TEST = "skipTest"
 fld public final static java.lang.String PROP_STACKTRACE = "stacktrace"
 fld public final static java.lang.String PROP_START_DAEMON_ON_START = "startDaemonOnStart"
+ anno 0 java.lang.Deprecated()
 fld public final static java.lang.String PROP_USE_CUSTOM_GRADLE = "useCustomGradle"
 innr public final static !enum DownloadLibsRule
 innr public final static !enum DownloadMiscRule
@@ -815,7 +834,9 @@ meth public boolean isPreferMaven()
 meth public boolean isReuseEditorOnStackTace()
 meth public boolean isReuseOutputTabs()
 meth public boolean isSilentInstall()
+ anno 0 java.lang.Deprecated()
 meth public boolean isStartDaemonOnStart()
+ anno 0 java.lang.Deprecated()
 meth public boolean isWrapperPreferred()
 meth public boolean skipCheck()
 meth public boolean skipTest()
@@ -823,6 +844,7 @@ meth public boolean useCustomGradle()
 meth public java.io.File getGradleUserHome()
 meth public java.lang.String getDistributionHome()
 meth public java.lang.String getGradleVersion()
+ anno 0 java.lang.Deprecated()
 meth public java.util.prefs.Preferences getPreferences()
 meth public org.netbeans.modules.gradle.api.execute.GradleCommandLine$LogLevel getDefaultLogLevel()
 meth public org.netbeans.modules.gradle.api.execute.GradleCommandLine$StackTrace getDefaultStackTrace()
@@ -845,6 +867,7 @@ meth public void setDownloadSources(org.netbeans.modules.gradle.spi.GradleSettin
 meth public void setGradleExecutionRule(org.netbeans.modules.gradle.spi.GradleSettings$GradleExecutionRule)
 meth public void setGradleUserHome(java.io.File)
 meth public void setGradleVersion(java.lang.String)
+ anno 0 java.lang.Deprecated()
 meth public void setHideEmptyConfigurations(boolean)
 meth public void setNoRebuild(boolean)
  anno 0 java.lang.Deprecated()
@@ -855,14 +878,16 @@ meth public void setPreferMaven(boolean)
 meth public void setReuseEditorOnStackTrace(boolean)
 meth public void setReuseOutputTabs(boolean)
 meth public void setSilentInstall(boolean)
+ anno 0 java.lang.Deprecated()
 meth public void setSkipCheck(boolean)
 meth public void setSkipTest(boolean)
 meth public void setStartDaemonOnStart(boolean)
+ anno 0 java.lang.Deprecated()
 meth public void setUseConfigCache(boolean)
 meth public void setUseCustomGradle(boolean)
 meth public void setWrapperPreferred(boolean)
 supr java.lang.Object
-hfds INSTANCE,preferences
+hfds INSTANCE,LOG,preferences
 
 CLSS public final static !enum org.netbeans.modules.gradle.spi.GradleSettings$DownloadLibsRule
  outer org.netbeans.modules.gradle.spi.GradleSettings
@@ -1060,6 +1085,7 @@ meth public org.netbeans.modules.gradle.spi.newproject.TemplateOperation$InitOpe
 meth public void addConfigureProject(java.io.File,org.netbeans.modules.gradle.spi.newproject.TemplateOperation$ProjectConfigurator)
 meth public void addProjectPreload(java.io.File)
 meth public void addWrapperInit(java.io.File)
+meth public void addWrapperInit(java.io.File,java.lang.String)
 meth public void copyFromFile(java.lang.String,java.io.File,java.util.Map<java.lang.String,?>)
 meth public void copyFromTemplate(java.lang.String,java.io.File,java.util.Map<java.lang.String,?>)
 meth public void createFolder(java.io.File)
@@ -1074,7 +1100,9 @@ hcls BaseOperationStep,ConfigureProjectStep,CopyFromFileTemplate,CopyFromTemplat
 CLSS public abstract org.netbeans.modules.gradle.spi.newproject.TemplateOperation$InitOperation
  outer org.netbeans.modules.gradle.spi.newproject.TemplateOperation
 meth public abstract org.netbeans.modules.gradle.spi.newproject.TemplateOperation$InitOperation basePackage(java.lang.String)
+meth public abstract org.netbeans.modules.gradle.spi.newproject.TemplateOperation$InitOperation comments(java.lang.Boolean)
 meth public abstract org.netbeans.modules.gradle.spi.newproject.TemplateOperation$InitOperation dsl(java.lang.String)
+meth public abstract org.netbeans.modules.gradle.spi.newproject.TemplateOperation$InitOperation javaVersion(java.lang.String)
 meth public abstract org.netbeans.modules.gradle.spi.newproject.TemplateOperation$InitOperation projectName(java.lang.String)
 meth public abstract org.netbeans.modules.gradle.spi.newproject.TemplateOperation$InitOperation testFramework(java.lang.String)
 meth public final void add()

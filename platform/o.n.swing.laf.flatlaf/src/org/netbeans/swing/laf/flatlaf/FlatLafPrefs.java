@@ -18,6 +18,7 @@
  */
 package org.netbeans.swing.laf.flatlaf;
 
+import com.formdev.flatlaf.util.SystemInfo;
 import java.awt.Color;
 import java.util.prefs.Preferences;
 import org.openide.util.NbPreferences;
@@ -34,8 +35,11 @@ class FlatLafPrefs {
     private static final String MENU_BAR_EMBEDDED = "menuBarEmbedded";
     private static final String UNDERLINE_MENU_SELECTION = "underlineMenuSelection";
     private static final String ALWAYS_SHOW_MNEMONICS = "alwaysShowMnemonics";
+    private static final String SHOW_FILECHOOSER_FAVORITES = "showFileChooserFavorites";
 
     private static final Preferences prefs = NbPreferences.forModule(FlatLafPrefs.class);
+
+    private static final boolean DEF_USE_WINDOW_DECORATIONS = SystemInfo.isWindows_10_orLater;
 
     static Color getAccentColor() {
         return parseColor(prefs.get(ACCENT_COLOR, null));
@@ -60,11 +64,11 @@ class FlatLafPrefs {
     }
 
     static boolean isUseWindowDecorations() {
-        return prefs.getBoolean(USE_WINDOW_DECORATIONS, true);
+        return prefs.getBoolean(USE_WINDOW_DECORATIONS, DEF_USE_WINDOW_DECORATIONS);
     }
 
     static void setUseWindowDecorations(boolean value) {
-        putBoolean(USE_WINDOW_DECORATIONS, value, true);
+        putBoolean(USE_WINDOW_DECORATIONS, value, DEF_USE_WINDOW_DECORATIONS);
     }
 
     static boolean isUnifiedTitleBar() {
@@ -97,6 +101,14 @@ class FlatLafPrefs {
 
     static void setAlwaysShowMnemonics(boolean value) {
         putBoolean(ALWAYS_SHOW_MNEMONICS, value, false);
+    }
+
+    static boolean isShowFileChooserFavorites() {
+        return prefs.getBoolean(SHOW_FILECHOOSER_FAVORITES, false);
+    }
+
+    static void setShowFileChooserFavorites(boolean value) {
+        putBoolean(SHOW_FILECHOOSER_FAVORITES, value, false);
     }
 
     private static void putBoolean(String key, boolean value, boolean def) {

@@ -470,6 +470,7 @@ public class Parser extends AbstractParser {
 
         if (env.dumpOnError) {
             e.printStackTrace(env.getErr());
+            env.getErr().flush();
         }
     }
 
@@ -1412,6 +1413,7 @@ loop:
 
         function.setFlag(FunctionNode.IS_METHOD);
         function.setFlag(FunctionNode.IS_CLASS_CONSTRUCTOR);
+        function.setFlag(FunctionNode.IS_GENERATED);
         if (subclass) {
             function.setFlag(FunctionNode.IS_SUBCLASS_CONSTRUCTOR);
             function.setFlag(FunctionNode.HAS_DIRECT_SUPER);
@@ -3628,13 +3630,15 @@ loop:
 
             lhs = new CallNode(callLine, callToken, finish, lhs, arguments, false);
         } else if (type == IMPORT && this.isAtLeastES11()) {
-            final String name2 = type.getName();
-            next();
-            IdentNode identNode = new IdentNode(token, finish, name2);
+            if (lookaheadFunctionCall()) {
+                final String name2 = type.getName();
+                next();
+                IdentNode identNode = new IdentNode(token, finish, name2);
 
-            final List<Expression> arguments = optimizeList(argumentList());
+                final List<Expression> arguments = optimizeList(argumentList());
 
-            lhs = new CallNode(callLine, callToken, finish, identNode, arguments, false);
+                lhs = new CallNode(callLine, callToken, finish, identNode, arguments, false);
+            }
         }
 
 loop:
@@ -3735,6 +3739,7 @@ loop:
         next();
 
         if (type == PERIOD && isAtLeastES6()) {
+            IdentNode newTokenIdentifier = new IdentNode(newToken, finish, "new");
             next();
             if (type == IDENT && "target".equals(getValue())) {
                 if (lc.getCurrentFunction().isProgram()) {
@@ -3742,7 +3747,7 @@ loop:
                 }
                 next();
                 markNewTarget(lc);
-                return new IdentNode(newToken, finish, "new.target");
+                return new AccessNode(newToken, finish, newTokenIdentifier, "target", false);
             } else {
                 throw error(AbstractParser.message("expected.target"), token);
             }
@@ -3780,6 +3785,49 @@ loop:
         final CallNode callNode = new CallNode(callLine, constructor.getToken(), finish, constructor, optimizeList(arguments), true);
 
         return new UnaryNode(newToken, callNode);
+    }
+
+    private Expression importMetaExpression() {
+        if(isAtLeastES11()) {
+            if(lookaheadMetaProperty()) {
+                final long importToken = token;
+                next(); // consume the import
+                IdentNode importNode = new IdentNode(importToken, finish, "import");
+                next(); // consume the period
+                next(); // consume the meta
+                return new AccessNode(importToken, finish, importNode, "meta", false);
+            }
+        }
+        return null;
+    }
+
+    private boolean lookaheadMetaProperty() {
+        int lookAheadPos = 1;
+        OUTER: for (;; lookAheadPos++) {
+            TokenType t = T(k + lookAheadPos);
+            switch (t) {
+            case COMMENT:
+            case EOL:
+                continue;
+            default:
+                if(t != PERIOD) {
+                    return false;
+                } else {
+                    break OUTER;
+                }
+            }
+        }
+        lookAheadPos++;
+        for (;; lookAheadPos++) {
+            TokenType t = T(k + lookAheadPos);
+            switch (t) {
+            case COMMENT:
+            case EOL:
+                continue;
+            default:
+                return t == IDENT && "meta".equals(getValue(getToken(k + lookAheadPos)));
+            }
+        }
     }
 
     /**
@@ -3861,6 +3909,10 @@ loop:
             } else {
                 // fall through
             }
+
+        case IMPORT:
+            lhs = importMetaExpression();
+            break;
 
         default:
             if (isAtLeastES7() && type == IDENT && ASYNC_IDENT.equals((String) getValue(token))
@@ -5438,28 +5490,22 @@ loop:
         // FIXME this decorator handling is not described in spec
         // yet certain frameworks uses it this way
         List<Expression> decorators = new ArrayList<>();
+
         loop: while (type != EOF) {
-            switch (type) {
-            case EOF:
+            if (type == EOF) {
                 break loop;
-            case IMPORT:
+            } else if (type == IMPORT && lookaheadNotFunctionCallNotPropertyAccess()) {
                 importDeclaration();
                 decorators.clear();
-                break;
-            case EXPORT:
+            } else if (type == EXPORT) {
                 exportDeclaration(decorators);
                 decorators.clear();
-                break;
-            case AT:
-                if (isAtLeastES7()) {
-                    decorators.addAll(decoratorList());
-                    break;
-                }
-            default:
+            } else if (type == AT && isAtLeastES7()) {
+                decorators.addAll(decoratorList());
+            } else {
                 // StatementListItem
                 statement(true, false, false, false, decorators);
                 decorators.clear();
-                break;
             }
         }
     }
@@ -5549,6 +5595,30 @@ loop:
             }
         }
         endOfLine();
+    }
+
+    private boolean lookaheadNotFunctionCallNotPropertyAccess() {
+        for (int i = 1;; i++) {
+            TokenType t = T(k + i);
+            switch (t) {
+            case COMMENT:
+                continue;
+            default:
+                return t != TokenType.LPAREN && t != TokenType.PERIOD;
+            }
+        }
+    }
+
+    private boolean lookaheadFunctionCall() {
+        for (int i = 1;; i++) {
+            TokenType t = T(k + i);
+            switch (t) {
+            case COMMENT:
+                continue;
+            default:
+                return t == TokenType.LPAREN;
+            }
+        }
     }
 
     /**

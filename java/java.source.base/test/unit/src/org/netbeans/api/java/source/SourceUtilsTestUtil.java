@@ -27,7 +27,6 @@ import java.net.URL;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.swing.event.ChangeListener;
 import javax.swing.text.Document;
@@ -55,10 +54,10 @@ import org.netbeans.spi.editor.document.DocumentFactory;
 import org.netbeans.spi.editor.mimelookup.MimeDataProvider;
 import org.netbeans.spi.java.classpath.ClassPathProvider;
 import org.netbeans.spi.java.classpath.support.ClassPathSupport;
+import org.netbeans.spi.java.queries.CompilerOptionsQueryImplementation;
 import org.netbeans.spi.java.queries.SourceForBinaryQueryImplementation;
 import org.netbeans.spi.java.queries.SourceLevelQueryImplementation;
 import org.openide.filesystems.FileObject;
-import org.openide.filesystems.FileStateInvalidException;
 import org.openide.filesystems.FileSystem;
 import org.openide.filesystems.FileUtil;
 import org.openide.filesystems.LocalFileSystem;
@@ -181,6 +180,7 @@ public final class SourceUtilsTestUtil extends ProxyLookup {
         SourceUtilsTestUtil.class.getClassLoader().setDefaultAssertionStatus(true);
         System.setProperty("org.openide.util.Lookup", SourceUtilsTestUtil.class.getName());
         Assert.assertEquals(SourceUtilsTestUtil.class, Lookup.getDefault().getClass());
+        SourceUtilsTestUtil2.disableMultiFileSourceRoots();
     }
     
     public static void prepareTest(FileObject sourceRoot, FileObject buildRoot, FileObject cache) throws Exception {
@@ -195,14 +195,15 @@ public final class SourceUtilsTestUtil extends ProxyLookup {
         if (extraLookupContent == null)
             prepareTest(new String[0], new Object[0]);
         
-        Object[] lookupContent = new Object[extraLookupContent.length + 4];
+        Object[] lookupContent = new Object[extraLookupContent.length + 5];
         
-        System.arraycopy(extraLookupContent, 0, lookupContent, 4, extraLookupContent.length);
+        System.arraycopy(extraLookupContent, 0, lookupContent, 5, extraLookupContent.length);
         
         lookupContent[0] = new TestProxyClassPathProvider(sourceCP, buildRoot, classPathElements);
         lookupContent[1] = new TestSourceForBinaryQuery(sourceCP, buildRoot);
         lookupContent[2] = new TestSourceLevelQueryImplementation();
-        lookupContent[3] = JavaDataLoader.findObject(JavaDataLoader.class, true);
+        lookupContent[3] = new TestCompilerOptionsQueryImplementation();
+        lookupContent[4] = JavaDataLoader.findObject(JavaDataLoader.class, true);
         
         setLookup(lookupContent, SourceUtilsTestUtil.class.getClassLoader());
 
@@ -213,6 +214,12 @@ public final class SourceUtilsTestUtil extends ProxyLookup {
     
     public static void setSourceLevel(FileObject file, String level) {
         file2SourceLevel.put(file, level);
+    }
+
+    private static Map<FileObject,  List<String>> file2CompilerOptions = new WeakHashMap<FileObject, List<String>>();
+
+    public static void setCompilerOptions(FileObject file, List<String> options) {
+        file2CompilerOptions.put(file, options);
     }
 
     /**This method assures that all java classes under sourceRoot are compiled,
@@ -334,6 +341,28 @@ public final class SourceUtilsTestUtil extends ProxyLookup {
                 return level;
         }
         
+    }
+
+    public static class TestCompilerOptionsQueryImplementation implements CompilerOptionsQueryImplementation {
+
+        @Override
+        public Result getOptions(FileObject file) {
+            List<String> options = file2CompilerOptions.get(file);
+            if (options != null) {
+                return new Result() {
+                    @Override
+                    public List<? extends String> getArguments() {
+                        return options;
+                    }
+                    @Override
+                    public void addChangeListener(ChangeListener listener) {}
+                    @Override
+                    public void removeChangeListener(ChangeListener listener) {}
+                };
+            }
+            return null;
+        }
+
     }
 
     /**Copied from org.netbeans.api.project.

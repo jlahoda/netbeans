@@ -135,6 +135,9 @@ public class APTUtils implements ChangeListener, PropertyChangeListener {
         this.root = root;
         bootPath = ClassPath.getClassPath(root, ClassPath.BOOT);
         compilePath = ClassPath.getClassPath(root, ClassPath.COMPILE);
+        if (compilePath != null) {
+            compilePath.addPropertyChangeListener(this);
+        }
         processorPath = new AtomicReference<>(ClassPath.getClassPath(root, JavaClassPathConstants.PROCESSOR_PATH));
         processorModulePath = new AtomicReference<>(ClassPath.getClassPath(root, JavaClassPathConstants.MODULE_PROCESSOR_PATH));
         aptOptions = AnnotationProcessingQuery.getAnnotationProcessingOptions(root);
@@ -309,12 +312,16 @@ public class APTUtils implements ChangeListener, PropertyChangeListener {
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
         if (ClassPath.PROP_ROOTS.equals(evt.getPropertyName())) {
-            classLoaderCache = null;
-            ROOT_CHANGE_RP.execute(()-> {
-                if (verifyProcessorPath(root, usedRoots, PROCESSOR_MODULE_PATH) || verifyProcessorPath(root, usedRoots, PROCESSOR_PATH)) {
-                    slidingRefresh.schedule(SLIDING_WINDOW);
-                }
-            });
+            if (evt.getSource() == compilePath) {
+                stateChanged(null);
+            } else {
+                classLoaderCache = null;
+                ROOT_CHANGE_RP.execute(()-> {
+                    if (verifyProcessorPath(root, usedRoots, PROCESSOR_MODULE_PATH) || verifyProcessorPath(root, usedRoots, PROCESSOR_PATH)) {
+                        slidingRefresh.schedule(SLIDING_WINDOW);
+                    }
+                });
+            }
         }
     }
 
@@ -351,7 +358,13 @@ public class APTUtils implements ChangeListener, PropertyChangeListener {
             pp = ClassPath.getClassPath(root, JavaClassPathConstants.PROCESSOR_PATH);
             if (pp != null && processorPath.compareAndSet(null, pp)) {
                 bootPath = ClassPath.getClassPath(root, ClassPath.BOOT);
+                if (compilePath != null) {
+                    compilePath.removePropertyChangeListener(this);
+                }
                 compilePath = ClassPath.getClassPath(root, ClassPath.COMPILE);
+                if (compilePath != null) {
+                    compilePath.addPropertyChangeListener(this);
+                }
                 listenOnProcessorPath(pp, this);
                 classLoaderCache = null;
             }
@@ -368,7 +381,7 @@ public class APTUtils implements ChangeListener, PropertyChangeListener {
         for (String name : processorNames) {
             try {
                 Class<?> clazz = Class.forName(name, true, cl);
-                Object instance = clazz.newInstance();
+                Object instance = clazz.getDeclaredConstructor().newInstance();
                 if (instance instanceof Processor) {
                     result.add(new ErrorToleratingProcessor((Processor) instance));
                 }
@@ -945,7 +958,8 @@ public class APTUtils implements ChangeListener, PropertyChangeListener {
 
         private final Processor delegate;
         private ProcessingEnvironment processingEnv;
-        private boolean valid = true;
+        private boolean initFailed = false;
+        private boolean processFailed = false;
 
         public ErrorToleratingProcessor(Processor delegate) {
             this.delegate = delegate;
@@ -953,38 +967,60 @@ public class APTUtils implements ChangeListener, PropertyChangeListener {
 
         @Override
         public Set<String> getSupportedOptions() {
+            if (initFailed) {
+                return Collections.emptySet();
+            }
             return delegate.getSupportedOptions();
         }
 
         @Override
         public Set<String> getSupportedAnnotationTypes() {
+            if (initFailed) {
+                return Collections.emptySet();
+            }
             return delegate.getSupportedAnnotationTypes();
         }
 
         @Override
         public SourceVersion getSupportedSourceVersion() {
+            if (initFailed) {
+                return SourceVersion.latest();
+            }
             return delegate.getSupportedSourceVersion();
         }
 
         @Override
         public void init(ProcessingEnvironment processingEnv) {
-            delegate.init(processingEnv);
+            try {
+                delegate.init(processingEnv);
+            } catch (ClientCodeException | ThreadDeath | Abort err) {
+                initFailed = true;
+                throw err;
+            } catch (Throwable t) {
+                initFailed = true;
+                StringBuilder exception = new StringBuilder();
+                exception.append(t.getMessage()).append("\n");
+                for (StackTraceElement ste : t.getStackTrace()) {
+                    exception.append(ste).append("\n");
+                }
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, Bundle.ERR_ProcessorException(delegate.getClass().getName(), exception.toString()));
+            }
             this.processingEnv = processingEnv;
         }
 
         @Override
         @Messages("ERR_ProcessorException=Annotation processor {0} failed with an exception: {1}")
         public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-            if (!valid) {
+            if (initFailed || processFailed) {
                 return false;
             }
             try {
                 return delegate.process(annotations, roundEnv);
             } catch (ClientCodeException | ThreadDeath | Abort err) {
-                valid = false;
+                processFailed = true;
                 throw err;
             } catch (Throwable t) {
-                valid = false;
+                processFailed = true;
                 Element el = roundEnv.getRootElements().isEmpty() ? null : roundEnv.getRootElements().iterator().next();
                 StringBuilder exception = new StringBuilder();
                 exception.append(t.getMessage()).append("\n");
@@ -998,9 +1034,11 @@ public class APTUtils implements ChangeListener, PropertyChangeListener {
 
         @Override
         public Iterable<? extends Completion> getCompletions(Element element, AnnotationMirror annotation, ExecutableElement member, String userText) {
+            if (initFailed) {
+                return Collections.emptySet();
+            }
             return delegate.getCompletions(element, annotation, member, userText);
         }
 
     }
-
 }

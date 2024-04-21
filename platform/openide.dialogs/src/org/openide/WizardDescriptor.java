@@ -2058,7 +2058,7 @@ public class WizardDescriptor extends DialogDescriptor {
          */
         @SuppressWarnings("unchecked") // exists so that other code does not have to do it
         public ArrayIterator(List<Panel<Data>> panels) {
-            this.panels = panels.toArray(new Panel[panels.size()]);
+            this.panels = panels.toArray(new Panel[0]);
             index = 0;
         }
 
@@ -3180,6 +3180,7 @@ public class WizardDescriptor extends DialogDescriptor {
         public FixedHeightPane () {
             super ();
             setEditable(false);
+            setFocusable(false);
             putClientProperty( JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
             HTMLEditorKit htmlkit = new HTMLEditorKit();
             // override the Swing default CSS to make the HTMLEditorKit use the

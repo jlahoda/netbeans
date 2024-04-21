@@ -394,7 +394,7 @@ public class TomcatProperties {
         JavaPlatformManager jpm = JavaPlatformManager.getDefault();
         JavaPlatform[] installedPlatforms = jpm.getPlatforms(null, new Specification("J2SE", null)); // NOI18N
         for (int i = 0; i < installedPlatforms.length; i++) {
-            String platformName = (String)installedPlatforms[i].getProperties().get(PLAT_PROP_ANT_NAME);
+            String platformName = installedPlatforms[i].getProperties().get(PLAT_PROP_ANT_NAME);
             if (platformName != null && platformName.equals(currentJvm)) {
                 return installedPlatforms[i];
             }
@@ -404,7 +404,7 @@ public class TomcatProperties {
     }
     
     public void setJavaPlatform(JavaPlatform javaPlatform) {
-        ip.setProperty(PROP_JAVA_PLATFORM, (String)javaPlatform.getProperties().get(PLAT_PROP_ANT_NAME));
+        ip.setProperty(PROP_JAVA_PLATFORM, javaPlatform.getProperties().get(PLAT_PROP_ANT_NAME));
     }
     
     public String getJavaOpts() {
@@ -737,6 +737,8 @@ public class TomcatProperties {
                     String eeDocs;
                     switch (tm.getTomcatVersion()) {
                         case TOMCAT_110:
+                           eeDocs = "docs/jakartaee11-doc-api.jar";
+                           break;
                         case TOMCAT_101:
                            eeDocs = "docs/jakartaee10-doc-api.jar";
                            break;

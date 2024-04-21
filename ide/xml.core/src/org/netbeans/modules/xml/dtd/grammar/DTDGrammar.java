@@ -100,7 +100,7 @@ class DTDGrammar implements ExtendedGrammarQuery {
         if ("quot".startsWith(prefix)) list.add(new MyEntityReference("quot"));
         if ("amp".startsWith(prefix)) list.add(new MyEntityReference("amp"));
         
-        Collections.sort(list, new Comparator() {
+        list.sort(new Comparator() {
             public int compare(Object o1, Object o2) {
                 return ((MyEntityReference)o1).getNodeName().compareTo(((MyEntityReference)o2).getNodeName());
             }
@@ -195,7 +195,7 @@ class DTDGrammar implements ExtendedGrammarQuery {
                 String prefix = ctx.getCurrentPrefix();
                 elements = new TreeSet<>();
                 while (en.hasMoreElements()) {
-                    String next = (String) en.nextElement();
+                    String next = en.nextElement();
                     if (next.startsWith(prefix)) {
                         elements.add(next);
                     }

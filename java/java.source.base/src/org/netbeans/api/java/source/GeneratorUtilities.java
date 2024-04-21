@@ -1101,8 +1101,12 @@ public final class GeneratorUtilities {
                 case METHOD:
                 case ENUM_CONSTANT:
                 case FIELD:
-                    StringBuilder name = new StringBuilder(((TypeElement)e.getEnclosingElement()).getQualifiedName()).append('.').append(e.getSimpleName());
-                    if (!staticImportNames.add(name.toString()))
+                    String name = new StringBuilder(((TypeElement)e.getEnclosingElement()).getQualifiedName()).append('.').append(e.getSimpleName()).toString();
+                    // skip default static imports
+                    if ("java.lang.StringTemplate.STR".equals(name)) {
+                        break;
+                    }
+                    if (!staticImportNames.add(name))
                         break;
                 default:
                     elementsToImport.add(e);
@@ -1327,7 +1331,7 @@ public final class GeneratorUtilities {
 
         // sort the elements to import
         ImportsComparator comparator = new ImportsComparator(cs);
-        Collections.sort(elementsToImport, comparator);
+        elementsToImport.sort(comparator);
         
         // merge the elements to import with the existing import statemetns
         TreeMaker make = copy.getTreeMaker();

@@ -270,7 +270,7 @@ public class JavaKit extends NbEditorKit {
                 value.add(action);
             }
         }
-        return value.toArray(new Action[value.size()]);
+        return value.toArray(new Action[0]);
     }
 
     @Override
@@ -561,11 +561,13 @@ public class JavaKit extends NbEditorKit {
             switch(insertedChar) {
                 case '(':
                 case '[':
+                case '{':
                     if (TypingCompletion.isCompletionSettingEnabled())
                         TypingCompletion.completeOpeningBracket(context);
                     break;
                 case ')':
                 case ']':
+                case '}':
                     if (TypingCompletion.isCompletionSettingEnabled())
                         caretPosition = TypingCompletion.skipClosingBracket(context);
                     break;

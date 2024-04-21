@@ -44,15 +44,6 @@ public class PHP81CodeCompletionTest extends PHPCodeCompletionTestBase {
         );
     }
 
-    private String getTestDirName() {
-        String name = getName();
-        int indexOf = name.indexOf("_");
-        if (indexOf != -1) {
-            name = name.substring(0, indexOf);
-        }
-        return name;
-    }
-
     private String getTestPath(String fileName) {
         return String.format("testfiles/completion/lib/php81/%s/%s.php", getTestDirName(), fileName);
     }
@@ -1117,6 +1108,18 @@ public class PHP81CodeCompletionTest extends PHPCodeCompletionTestBase {
         checkCompletion("enumsUnionAndBackedMembers", "Union::^cases();");
     }
 
+    public void testEnumCasesTyping01() throws Exception {
+        checkCompletion("enumCasesTyping01", "    case CASE_C = self::^");
+    }
+
+    public void testEnumCasesTyping02() throws Exception {
+        checkCompletion("enumCasesTyping02", "    case CASE_C = self::CASE_A^");
+    }
+
+    public void testEnumCasesTyping03() throws Exception {
+        checkCompletion("enumCasesTyping03", "    case CASE_C = self::^;");
+    }
+
     // GH-5100
     public void testEnumsSpecialVariablesWithinInstanceContextGH5100_01() throws Exception {
         checkCompletion("enumsSpecialVariablesWithinInstanceContextGH5100", "        $this->^publicEnumMethod();");
@@ -1132,6 +1135,10 @@ public class PHP81CodeCompletionTest extends PHPCodeCompletionTestBase {
 
     public void testEnumsSpecialVariablesWithinInstanceContextGH5100_04() throws Exception {
         checkCompletion("enumsSpecialVariablesWithinInstanceContextGH5100", "        stat^ic::class;");
+    }
+
+    public void testEnumsAliasedName_01() throws Exception {
+        checkCompletion("enumsAliasedName", "Aliased^ // test");
     }
 
     public void testFirstClassCallableSyntax_01() throws Exception {

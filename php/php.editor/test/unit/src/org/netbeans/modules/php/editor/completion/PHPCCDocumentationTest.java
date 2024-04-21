@@ -48,6 +48,14 @@ public class PHPCCDocumentationTest extends PHPCodeCompletionTestBase {
         checkCompletionDocumentation("testfiles/completion/documentation/arrayReturnType.php", "functionNam^e();", false, "");
     }
 
+    public void testArrayReturnTypeWithTab_01() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/arrayReturnType.php", "withTabSpace01^();", false, "");
+    }
+
+    public void testArrayReturnTypeWithTab_02() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/arrayReturnType.php", "withTabSpace02^();", false, "");
+    }
+
     public void testFieldWithDesc() throws Exception {
         checkCompletionDocumentation("testfiles/completion/documentation/fieldVar.php", "$c->fieldWithDes^c;", false, "");
     }
@@ -350,6 +358,300 @@ public class PHPCCDocumentationTest extends PHPCodeCompletionTestBase {
 
     public void testIssueGH5355_02() throws Exception {
         checkCompletionDocumentation("testfiles/completion/documentation/issueGH5355.php", "testFunctio^n(null);", false, "");
+    }
+
+    public void testIssueGH5881_01a() throws Exception {
+        checkCompletionOnlyDocumentation("testfiles/completion/documentation/issueGH5881.php", "$prop1 = $test->pr^op_aa_bbb;");
+    }
+
+    public void testIssueGH5881_01b() throws Exception {
+        checkCompletionOnlyDocumentation("testfiles/completion/documentation/issueGH5881.php", "$prop1 = $test->prop_aa^_bbb;");
+    }
+
+    public void testIssueGH5881_01c() throws Exception {
+        checkCompletionOnlyDocumentation("testfiles/completion/documentation/issueGH5881.php", "$prop1 = $test->prop_aa_bb^b;");
+    }
+
+    public void testIssueGH5881_01d() throws Exception {
+        checkCompletionOnlyDocumentation("testfiles/completion/documentation/issueGH5881.php", "$prop1 = $test->^prop_aa_bbb;");
+    }
+
+    public void testIssueGH5881_02a() throws Exception {
+        checkCompletionOnlyDocumentation("testfiles/completion/documentation/issueGH5881.php", "$prop2 = $test->pr^op_aa_bb_cc;");
+    }
+
+    public void testIssueGH5881_02b() throws Exception {
+        checkCompletionOnlyDocumentation("testfiles/completion/documentation/issueGH5881.php", "$prop2 = $test->prop_aa^_bb_cc;");
+    }
+
+    public void testIssueGH5881_02c() throws Exception {
+        checkCompletionOnlyDocumentation("testfiles/completion/documentation/issueGH5881.php", "$prop2 = $test->prop_aa_bb^_cc;");
+    }
+
+    public void testIssueGH5881_02d() throws Exception {
+        checkCompletionOnlyDocumentation("testfiles/completion/documentation/issueGH5881.php", "$prop2 = $test->prop_aa_bb_cc^;");
+    }
+
+    public void testIssueGH5881_02e() throws Exception {
+        checkCompletionOnlyDocumentation("testfiles/completion/documentation/issueGH5881.php", "$prop2 = $test->^prop_aa_bb_cc;");
+    }
+
+    public void testIssueGH5881_03a() throws Exception {
+        checkCompletionOnlyDocumentation("testfiles/completion/documentation/issueGH5881.php", "$test->meth^od_aa_bbb();");
+    }
+
+    public void testIssueGH5881_03b() throws Exception {
+        checkCompletionOnlyDocumentation("testfiles/completion/documentation/issueGH5881.php", "$test->method_aa^_bbb();");
+    }
+
+    public void testIssueGH5881_03c() throws Exception {
+        checkCompletionOnlyDocumentation("testfiles/completion/documentation/issueGH5881.php", "$test->method_aa_bb^b();");
+    }
+
+    public void testIssueGH5881_03d() throws Exception {
+        checkCompletionOnlyDocumentation("testfiles/completion/documentation/issueGH5881.php", "$test->^method_aa_bbb();");
+    }
+
+    public void testIssueGH5881_04a() throws Exception {
+        checkCompletionOnlyDocumentation("testfiles/completion/documentation/issueGH5881.php", "$test->me^thod_aa_bb_cc();");
+    }
+
+    public void testIssueGH5881_04b() throws Exception {
+        checkCompletionOnlyDocumentation("testfiles/completion/documentation/issueGH5881.php", "$test->method_aa^_bb_cc();");
+    }
+
+    public void testIssueGH5881_04c() throws Exception {
+        checkCompletionOnlyDocumentation("testfiles/completion/documentation/issueGH5881.php", "$test->method_aa_bb^_cc();");
+    }
+
+    public void testIssueGH5881_04d() throws Exception {
+        checkCompletionOnlyDocumentation("testfiles/completion/documentation/issueGH5881.php", "$test->method_aa_bb_cc^();");
+    }
+
+    public void testIssueGH5881_04e() throws Exception {
+        checkCompletionOnlyDocumentation("testfiles/completion/documentation/issueGH5881.php", "$test->method_aa_bb_cc^();");
+    }
+
+    public void testGuessingNullReturnType_01() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/guessingNullReturnType.php", "$this->testGuessingNullMetho^d(null);", false, "");
+    }
+
+    public void testGuessingNullReturnType_02() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/guessingNullReturnType.php", "testGuessingNullFunctio^n(null);", false, "");
+    }
+
+    public void testNullConstant_01() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/nullConstant.php", "$a = TEST_CON^ST;", false, "");
+    }
+
+    public void testNullConstant_02() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/nullConstant.php", "$b = TestConst::TEST_CLASS_CON^ST;", false, "");
+    }
+
+    public void testDeprecatedTypedFields_01() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/deprecatedTypedFields/deprecatedTypedFields.php", "$this->typedFiel^d;", false, "");
+    }
+
+    public void testDeprecatedTypedFields_02() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/deprecatedTypedFields/deprecatedTypedFields.php", "$this->multiField1^;", false, "");
+    }
+
+    public void testDeprecatedTypedFields_03() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/deprecatedTypedFields/deprecatedTypedFields.php", "$this->multiField2^;", false, "");
+    }
+
+    public void testDeprecatedTypedFields_04() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/deprecatedTypedFields/deprecatedTypedFields.php", "$this->nullableTypeFi^eld;", false, "");
+    }
+
+    public void testDeprecatedTypedFields_05() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/deprecatedTypedFields/deprecatedTypedFields.php", "$this->unionType^Field;", false, "");
+    }
+
+    public void testDeprecatedTypedFields_06() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/deprecatedTypedFields/deprecatedTypedFields.php", "$this->intersectionType^Field;", false, "");
+    }
+
+    // TODO: dnf types are not fixed yet
+//    public void testDeprecatedTypedFields_07() throws Exception {
+//        checkCompletionDocumentation("testfiles/completion/documentation/deprecatedTypedFields/deprecatedTypedFields.php", "$this->dnfTypeFi^eld;", false, "");
+//    }
+
+    public void testDeprecatedStaticTypedFields_01() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/deprecatedTypedFields/deprecatedTypedFields.php", "self::$typedStaticFiel^d;", false, "");
+    }
+
+    public void testDeprecatedStaticTypedFields_02() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/deprecatedTypedFields/deprecatedTypedFields.php", "self::$multiStaticField1^;", false, "");
+    }
+
+    public void testDeprecatedStaticTypedFields_03() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/deprecatedTypedFields/deprecatedTypedFields.php", "self::$multiStaticField2^;", false, "");
+    }
+
+    public void testDeprecatedStaticTypedFields_04() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/deprecatedTypedFields/deprecatedTypedFields.php", "self::$nullableTypeStatic^Field;", false, "");
+    }
+
+    public void testDeprecatedStaticTypedFields_05() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/deprecatedTypedFields/deprecatedTypedFields.php", "self::$unionTypeStaticFiel^d;", false, "");
+    }
+
+    public void testDeprecatedStaticTypedFields_06() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/deprecatedTypedFields/deprecatedTypedFields.php", "self::$intersectionTypeStat^icField;", false, "");
+    }
+
+    // TODO: dnf types are not fixed yet
+//    public void testDeprecatedStaticTypedFields_07() throws Exception {
+//        checkCompletionDocumentation("testfiles/completion/documentation/deprecatedTypedFields/deprecatedTypedFields.php", "self::$dnfTypeStaticFi^eld;", false, "");
+//    }
+
+    public void testDeprecatedTypedTraitFields_01() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/deprecatedTypedFields/deprecatedTypedFields.php", "$this->typedFiel^d; // trait", false, "");
+    }
+
+    public void testDeprecatedTypedTraitFields_02() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/deprecatedTypedFields/deprecatedTypedFields.php", "$this->multiField1^; // trait", false, "");
+    }
+
+    public void testDeprecatedTypedTraitFields_03() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/deprecatedTypedFields/deprecatedTypedFields.php", "$this->multiField2^; // trait", false, "");
+    }
+
+    public void testDeprecatedTypedTraitFields_04() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/deprecatedTypedFields/deprecatedTypedFields.php", "$this->nullableTypeFi^eld; // trait", false, "");
+    }
+
+    public void testDeprecatedTypedTraitFields_05() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/deprecatedTypedFields/deprecatedTypedFields.php", "$this->unionType^Field; // trait", false, "");
+    }
+
+    public void testDeprecatedTypedTraitFields_06() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/deprecatedTypedFields/deprecatedTypedFields.php", "$this->intersectionType^Field; // trait", false, "");
+    }
+
+    public void testDeprecatedStaticTypedTraitFields_01() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/deprecatedTypedFields/deprecatedTypedFields.php", "self::$typedStaticFiel^d; // trait", false, "");
+    }
+
+    public void testDeprecatedStaticTypedTraitFields_02() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/deprecatedTypedFields/deprecatedTypedFields.php", "self::$multiStaticField1^; // trait", false, "");
+    }
+
+    public void testDeprecatedStaticTypedTraitFields_03() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/deprecatedTypedFields/deprecatedTypedFields.php", "self::$multiStaticField2^; // trait", false, "");
+    }
+
+    public void testDeprecatedStaticTypedTraitFields_04() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/deprecatedTypedFields/deprecatedTypedFields.php", "self::$nullableTypeStatic^Field; // trait", false, "");
+    }
+
+    public void testDeprecatedStaticTypedTraitFields_05() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/deprecatedTypedFields/deprecatedTypedFields.php", "self::$unionTypeStaticFiel^d; // trait", false, "");
+    }
+
+    public void testDeprecatedStaticTypedTraitFields_06() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/deprecatedTypedFields/deprecatedTypedFields.php", "self::$intersectionTypeStat^icField; // trait", false, "");
+    }
+
+    public void testDNFTypesPropertyTag() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/php82/dnfTypes.php", "$this->prop^erty;", false, "");
+    }
+
+    public void testDNFTypesMethodTag() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/php82/dnfTypes.php", "$this->methodTa^g($param1, $param2);", false, "");
+    }
+
+    public void testDNFTypesStaticMethodTag() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/php82/dnfTypes.php", "self::staticMethodTa^g($param1, $param2);", false, "");
+    }
+
+    public void testDNFTypesMethod() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/php82/dnfTypes.php", "$this->methodTe^st(null);", false, "");
+    }
+
+    public void testDNFTypesPhpdocMethod() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/php82/dnfTypes.php", "$this->phpdocMethodTe^st(null);", false, "");
+    }
+
+    public void testDNFTypesInheritdocMethod() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/php82/dnfTypes.php", "$this->inheritdocMetho^d(null);", false, "");
+    }
+
+    public void testDNFTypesStaticMethod() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/php82/dnfTypes.php", "self::staticMethodTes^t(null);", false, "");
+    }
+
+    public void testDNFTypesPhpdocStaticMethod() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/php82/dnfTypes.php", "self::phpdocStaticMethodTe^st(null);", false, "");
+    }
+
+    public void testDNFTypesField() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/php82/dnfTypes.php", "$this->privateFiel^d;", false, "");
+    }
+
+    public void testDNFTypesPhpdocField() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/php82/dnfTypes.php", "$this->phpdocFie^ld;", false, "");
+    }
+
+    public void testDNFTypesStaticField() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/php82/dnfTypes.php", "static::$privateStaticFi^eld;", false, "");
+    }
+
+    public void testDNFTypesPhpdocStaticField() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/php82/dnfTypes.php", "static::$phpdocStaticFiel^d;", false, "");
+    }
+
+    public void testFunctionGuessingArrayReturnType_01() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/functionGuessingArrayReturnType.php", "testArrayReturn^Type();", false, "");
+    }
+
+    public void testFunctionGuessingArrayReturnType_02() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/functionGuessingArrayReturnType.php", "testArrayReturnTypeWithUnion^Type();", false, "");
+    }
+
+    public void testEnumCase_01() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/php81/enumCases.php", "EnumCase::CASE_A^;", false, "");
+    }
+
+    public void testEnumCase_02() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/php81/enumCases.php", "EnumCase::CASE_B^;", false, "");
+    }
+
+    public void testBackedEnumCaseString_01() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/php81/enumCases.php", "BackeEnumCaseString::CASE_A^;", false, "");
+    }
+
+    public void testBackedEnumCaseString_02() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/php81/enumCases.php", "BackeEnumCaseString::CASE_B^;", false, "");
+    }
+
+    public void testBackedEnumCaseString_03() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/php81/enumCases.php", "BackeEnumCaseString::CASE_C^;", false, "");
+    }
+
+    public void testBackedEnumCaseInt_01() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/php81/enumCases.php", "BackeEnumCaseInt::CASE_A^;", false, "");
+    }
+
+    public void testBackedEnumCaseInt_02() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/php81/enumCases.php", "BackeEnumCaseInt::CASE_B^;", false, "");
+    }
+
+    public void testBackedEnumCaseInt_03() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/php81/enumCases.php", "BackeEnumCaseInt::CASE_C^;", false, "");
+    }
+
+    public void testPhpDocAndMethodInDifferentBlocks() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/phpDocAndFunctionInDifferentBlocks.php", "$instance->method2^(1)", false, "");
+    }
+
+    public void testPhpDocAndFunctionInDifferentBlocks_01() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/phpDocAndFunctionInDifferentBlocks.php", "func1^(1)", false, "");
+    }
+
+    public void testPhpDocAndFunctionInDifferentBlocks_02() throws Exception {
+        checkCompletionDocumentation("testfiles/completion/documentation/phpDocAndFunctionInDifferentBlocks.php", "func2^(1)", false, "");
     }
 
     @Override

@@ -1,4 +1,4 @@
-/*
+ /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,37 +18,42 @@
  */
 package org.netbeans.modules.languages.hcl.ast;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 /**
  *
  * @author Laszlo Kishalmi
  */
-public abstract class HCLContainer extends HCLElement {
-    final List<HCLElement> elements = new LinkedList<>();
+public sealed abstract class HCLContainer implements HCLElement permits HCLBlock, HCLDocument {
 
-    final List<HCLBlock> blocks = new LinkedList<>();
-    final List<HCLAttribute> attributes = new LinkedList<>();
+    protected final List<HCLElement> elements;
+    private final List<HCLBlock> blocks;
+    private final List<HCLAttribute> attributes;
 
-    public void add(HCLBlock block) {
-        block.parent = this;
-        elements.add(block);
-        blocks.add(block);
+    protected HCLContainer(List<HCLElement> elements) {
+        this.elements = List.copyOf(elements);
+        this.blocks = elements.stream().filter(HCLBlock.class::isInstance).map(HCLBlock.class::cast).toList();
+        this.attributes = elements.stream().filter(HCLAttribute.class::isInstance).map(HCLAttribute.class::cast).toList();
     }
 
-    public void add(HCLAttribute attr) {
-        attr.parent = this;
-        elements.add(attr);
-        attributes.add(attr);
+    public boolean hasBlock() {
+        return !blocks.isEmpty();
     }
 
-    public Collection<? extends HCLBlock> getBlocks() {
-        return Collections.unmodifiableCollection(blocks);
+    public boolean hasAttribute() {
+        return !attributes.isEmpty();
+    }
+
+    public List<HCLBlock> blocks() {
+        return blocks;
+    }
+
+    public List<HCLAttribute> attributes() {
+        return attributes;
+    }
+    
+    @Override
+    public List<? extends HCLElement> elements() {
+        return elements;
     }
 }

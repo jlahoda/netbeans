@@ -18,15 +18,32 @@
  */
 package org.netbeans.modules.languages.hcl.ast;
 
+import java.util.List;
+import java.util.Objects;
+
 /**
  *
  * @author Laszlo Kishalmi
  */
-public class HCLDocument extends HCLContainer {
+public final class HCLDocument extends HCLContainer {
+
+    public HCLDocument(List<HCLElement> elements) {
+        super(elements);
+    }
+
+    @Override
+    public String toString() {
+        return "HCLDocument[elements=" + elements + "]";
+    }
 
 
     @Override
-    public String id() {
-        return "<hcl>";
+    public boolean equals(Object obj) {
+        return obj instanceof HCLDocument that ? Objects.equals(this.elements, that.elements) : false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(elements);
     }
 }

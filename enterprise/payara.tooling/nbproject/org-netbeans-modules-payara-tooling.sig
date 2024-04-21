@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 2.14
+#Version 2.18
 
 CLSS public abstract interface java.io.Closeable
 intf java.lang.AutoCloseable
@@ -1325,16 +1325,16 @@ supr java.lang.Object
 hfds artifactId,groupId,version
 
 CLSS public org.netbeans.modules.payara.tooling.data.PayaraPlatformVersion
-fld public final static java.lang.String DEFAULT_REPOSITORY_URL = "https://repo1.maven.org/maven2/"
+fld public final static java.lang.String DEFAULT_REPOSITORY_URL = "https://repo.maven.apache.org/maven2/"
 fld public final static org.netbeans.modules.payara.tooling.data.PayaraPlatformVersionAPI EMPTY
 intf java.lang.Comparable<org.netbeans.modules.payara.tooling.data.PayaraPlatformVersionAPI>
 intf org.netbeans.modules.payara.tooling.data.PayaraPlatformVersionAPI
 meth public boolean equals(org.netbeans.modules.payara.tooling.data.PayaraPlatformVersionAPI)
 meth public boolean equalsMajorMinor(org.netbeans.modules.payara.tooling.data.PayaraPlatformVersionAPI)
+meth public boolean isEE10Supported()
 meth public boolean isEE7Supported()
 meth public boolean isEE8Supported()
 meth public boolean isEE9Supported()
-meth public boolean isEE10Supported()
 meth public boolean isMinimumSupportedVersion()
 meth public int compareTo(org.netbeans.modules.payara.tooling.data.PayaraPlatformVersionAPI)
 meth public java.lang.String getDirectUrl()
@@ -1366,10 +1366,10 @@ fld public final static char SEPARATOR = '.'
 fld public final static java.lang.String SEPARATOR_PATTERN = "\u005c."
 meth public abstract boolean equals(org.netbeans.modules.payara.tooling.data.PayaraPlatformVersionAPI)
 meth public abstract boolean equalsMajorMinor(org.netbeans.modules.payara.tooling.data.PayaraPlatformVersionAPI)
+meth public abstract boolean isEE10Supported()
 meth public abstract boolean isEE7Supported()
 meth public abstract boolean isEE8Supported()
 meth public abstract boolean isEE9Supported()
-meth public abstract boolean isEE10Supported()
 meth public abstract boolean isMinimumSupportedVersion()
 meth public abstract java.lang.String getDirectUrl()
 meth public abstract java.lang.String getIndirectUrl()
@@ -1514,10 +1514,10 @@ meth public boolean equals(org.netbeans.modules.payara.tooling.data.PayaraPlatfo
 meth public boolean equals(org.netbeans.modules.payara.tooling.data.PayaraVersion)
 meth public boolean equalsMajorMinor(org.netbeans.modules.payara.tooling.data.PayaraPlatformVersionAPI)
 meth public boolean equalsMajorMinor(org.netbeans.modules.payara.tooling.data.PayaraVersion)
+meth public boolean isEE10Supported()
 meth public boolean isEE7Supported()
 meth public boolean isEE8Supported()
 meth public boolean isEE9Supported()
-meth public boolean isEE10Supported()
 meth public boolean isMinimumSupportedVersion()
 meth public java.lang.String getDirectUrl()
 meth public java.lang.String getIndirectUrl()

@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.13
+#Version 1.17
 
 CLSS public abstract interface com.formdev.flatlaf.FlatClientProperties
 fld public final static java.lang.String BUTTON_TYPE = "JButton.buttonType"
@@ -12,6 +12,7 @@ fld public final static java.lang.String BUTTON_TYPE_TOOLBAR_BUTTON = "toolBarBu
 fld public final static java.lang.String COMPONENT_FOCUS_OWNER = "JComponent.focusOwner"
 fld public final static java.lang.String COMPONENT_ROUND_RECT = "JComponent.roundRect"
 fld public final static java.lang.String COMPONENT_TITLE_BAR_CAPTION = "JComponent.titleBarCaption"
+fld public final static java.lang.String GLASS_PANE_FULL_HEIGHT = "JRootPane.glassPaneFullHeight"
 fld public final static java.lang.String MENU_BAR_EMBEDDED = "JRootPane.menuBarEmbedded"
 fld public final static java.lang.String MINIMUM_HEIGHT = "JComponent.minimumHeight"
 fld public final static java.lang.String MINIMUM_WIDTH = "JComponent.minimumWidth"
@@ -19,8 +20,10 @@ fld public final static java.lang.String OUTLINE = "JComponent.outline"
 fld public final static java.lang.String OUTLINE_ERROR = "error"
 fld public final static java.lang.String OUTLINE_WARNING = "warning"
 fld public final static java.lang.String PLACEHOLDER_TEXT = "JTextField.placeholderText"
+fld public final static java.lang.String POPUP_BORDER_CORNER_RADIUS = "Popup.borderCornerRadius"
 fld public final static java.lang.String POPUP_DROP_SHADOW_PAINTED = "Popup.dropShadowPainted"
 fld public final static java.lang.String POPUP_FORCE_HEAVY_WEIGHT = "Popup.forceHeavyWeight"
+fld public final static java.lang.String POPUP_ROUNDED_BORDER_WIDTH = "Popup.roundedBorderWidth"
 fld public final static java.lang.String PROGRESS_BAR_LARGE_HEIGHT = "JProgressBar.largeHeight"
 fld public final static java.lang.String PROGRESS_BAR_SQUARE = "JProgressBar.square"
 fld public final static java.lang.String SCROLL_BAR_SHOW_BUTTONS = "JScrollBar.showButtons"
@@ -65,6 +68,11 @@ fld public final static java.lang.String TABBED_PANE_TAB_CLOSE_TOOLTIPTEXT = "JT
 fld public final static java.lang.String TABBED_PANE_TAB_HEIGHT = "JTabbedPane.tabHeight"
 fld public final static java.lang.String TABBED_PANE_TAB_ICON_PLACEMENT = "JTabbedPane.tabIconPlacement"
 fld public final static java.lang.String TABBED_PANE_TAB_INSETS = "JTabbedPane.tabInsets"
+fld public final static java.lang.String TABBED_PANE_TAB_ROTATION = "JTabbedPane.tabRotation"
+fld public final static java.lang.String TABBED_PANE_TAB_ROTATION_AUTO = "auto"
+fld public final static java.lang.String TABBED_PANE_TAB_ROTATION_LEFT = "left"
+fld public final static java.lang.String TABBED_PANE_TAB_ROTATION_NONE = "none"
+fld public final static java.lang.String TABBED_PANE_TAB_ROTATION_RIGHT = "right"
 fld public final static java.lang.String TABBED_PANE_TAB_TYPE = "JTabbedPane.tabType"
 fld public final static java.lang.String TABBED_PANE_TAB_TYPE_CARD = "card"
 fld public final static java.lang.String TABBED_PANE_TAB_TYPE_UNDERLINED = "underlined"
@@ -94,6 +102,8 @@ fld public final static java.lang.String TITLE_BAR_SHOW_TITLE = "JRootPane.title
 fld public final static java.lang.String TREE_PAINT_SELECTION = "JTree.paintSelection"
 fld public final static java.lang.String TREE_WIDE_SELECTION = "JTree.wideSelection"
 fld public final static java.lang.String USE_WINDOW_DECORATIONS = "JRootPane.useWindowDecorations"
+fld public final static java.lang.String WINDOW_STYLE = "Window.style"
+fld public final static java.lang.String WINDOW_STYLE_SMALL = "small"
 meth public static <%0 extends java.lang.Object> {%%0} clientProperty(javax.swing.JComponent,java.lang.String,{%%0},java.lang.Class<{%%0}>)
 meth public static boolean clientPropertyBoolean(javax.swing.JComponent,java.lang.String,boolean)
 meth public static boolean clientPropertyEquals(javax.swing.JComponent,java.lang.String,java.lang.Object)
@@ -237,7 +247,7 @@ meth public void setExtraDefaults(java.util.Map<java.lang.String,java.lang.Strin
 meth public void uninitialize()
 meth public void unregisterUIDefaultsGetter(java.util.function.Function<java.lang.Object,java.lang.Object>)
 supr javax.swing.plaf.basic.BasicLookAndFeel
-hfds DESKTOPFONTHINTS,aquaLoaded,customDefaultsSources,desktopPropertyListener,desktopPropertyName,desktopPropertyName2,extraDefaults,getUIMethod,getUIMethodInitialized,globalExtraDefaults,mnemonicHandler,oldPopupFactory,postInitialization,preferredFontFamily,preferredLightFontFamily,preferredMonospacedFontFamily,preferredSemiboldFontFamily,subMenuUsabilityHelperInstalled,systemColorGetter,uiDefaultsGetters,updateUIPending
+hfds DESKTOPFONTHINTS,aquaLoaded,customDefaultsSources,desktopPropertyListener,desktopPropertyName,desktopPropertyName2,extraDefaults,globalExtraDefaults,mnemonicHandler,oldPopupFactory,postInitialization,preferredFontFamily,preferredLightFontFamily,preferredMonospacedFontFamily,preferredSemiboldFontFamily,subMenuUsabilityHelperInstalled,systemColorGetter,uiDefaultsGetters,updateUIPending
 hcls ActiveFont,FlatUIDefaults,ImageIconUIResource
 
 CLSS public abstract interface static com.formdev.flatlaf.FlatLaf$DisabledIconProvider
@@ -278,6 +288,8 @@ fld public final static java.lang.String UI_SCALE_ALLOW_SCALE_DOWN = "flatlaf.ui
 fld public final static java.lang.String UI_SCALE_ENABLED = "flatlaf.uiScale.enabled"
 fld public final static java.lang.String UPDATE_UI_ON_SYSTEM_FONT_CHANGE = "flatlaf.updateUIOnSystemFontChange"
 fld public final static java.lang.String USE_JETBRAINS_CUSTOM_DECORATIONS = "flatlaf.useJetBrainsCustomDecorations"
+ anno 0 java.lang.Deprecated()
+fld public final static java.lang.String USE_NATIVE_LIBRARY = "flatlaf.useNativeLibrary"
 fld public final static java.lang.String USE_TEXT_Y_CORRECTION = "flatlaf.useTextYCorrection"
 fld public final static java.lang.String USE_UBUNTU_FONT = "flatlaf.useUbuntuFont"
 fld public final static java.lang.String USE_WINDOW_DECORATIONS = "flatlaf.useWindowDecorations"
@@ -296,7 +308,7 @@ meth public static boolean setup(java.io.InputStream)
 meth public static com.formdev.flatlaf.FlatLaf createLaf(com.formdev.flatlaf.IntelliJTheme)
 meth public static com.formdev.flatlaf.FlatLaf createLaf(java.io.InputStream) throws java.io.IOException
 supr java.lang.Object
-hfds checkboxDuplicateColors,checkboxKeyMapping,colors,icons,isMaterialUILite,namedColors,ui,uiKeyCopying,uiKeyInverseMapping,uiKeyMapping
+hfds checkboxDuplicateColors,checkboxKeyMapping,colors,icons,isMaterialUILite,namedColors,ui,uiKeyCopying,uiKeyDoNotOverride,uiKeyExcludes,uiKeyInverseMapping,uiKeyMapping
 
 CLSS public static com.formdev.flatlaf.IntelliJTheme$ThemeLaf
  outer com.formdev.flatlaf.IntelliJTheme

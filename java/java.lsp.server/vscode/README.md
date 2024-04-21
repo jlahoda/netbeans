@@ -20,10 +20,14 @@
     under the License.
 
 -->
+[![Visual Studio Marketplace](https://img.shields.io/visual-studio-marketplace/v/ASF.apache-netbeans-java)](https://marketplace.visualstudio.com/items?itemName=ASF.apache-netbeans-java)
+[![Visual Studio Marketplace Installs](https://img.shields.io/visual-studio-marketplace/i/ASF.apache-netbeans-java)](https://marketplace.visualstudio.com/items?itemName=ASF.apache-netbeans-java)
+[![Build Status](https://ci-builds.apache.org/job/Netbeans/view/vscode/job/netbeans-vscode/badge/icon)](https://ci-builds.apache.org/job/Netbeans/view/vscode/job/netbeans-vscode/)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/apache/netbeans/blob/master/LICENSE)
 
-This is a technology preview of [Apache NetBeans](http://netbeans.org)
-based extension for VS Code. Use it to get all the _goodies of NetBeans_
-via the VS Code user interface! Runs on __JDK11__ and all newer versions.
+**Version 21.9.9 is 22.0 Early Access version.**
+
+This is [Apache NetBeans](http://netbeans.org) Language Server extension for VS Code. Use it to get all the _goodies of NetBeans_ via the VS Code user interface! Runs on __JDK11__ and all newer versions.
 
 Apache NetBeans Language Server brings full featured Java development (edit-compile-debug & test cycle) for Maven and Gradle projects to VSCode. As well as other features.
 ## Getting Started
@@ -42,7 +46,7 @@ When running this extension on GraalVM, as its runtime JDK, behind proxy it requ
 * __Java: New Project...__ allows creation of new Maven or Gradle project 
 * __Java: New from Template...__ add various files to currently selected open project. Files are:
     * Java - broad selection of various predefined Java classes
-    * Unit tests - JUnit and TestNB templates for test suites and test cases
+    * Unit tests - JUnit and TestNG templates for test suites and test cases
     * HTML5/JavaScript - Templates for JS, HTML, CSS,... files
     * Other - various templates for JSON, YAML, properties, ... files
 * __Java: Compile Workspace__ - invoke Maven or Gradle build

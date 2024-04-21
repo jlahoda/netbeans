@@ -94,6 +94,7 @@ public final class FmtOptions {
     public static final String BLANK_LINES_AFTER_NAMESPACE = "blankLinesAfterNamespace"; //NOI18N
     public static final String BLANK_LINES_BEFORE_USE = "blankLinesBeforeUse"; //NOI18N
     public static final String BLANK_LINES_BEFORE_USE_TRAIT = "blankLinesBeforeUseTrait"; //NOI18N
+    public static final String BLANK_LINES_AFTER_USE_TRAIT = "blankLinesAfterUseTrait"; //NOI18N
     public static final String BLANK_LINES_AFTER_USE = "blankLinesAfterUse"; //NOI18N
     public static final String BLANK_LINES_BETWEEN_USE_TYPES = "blankLinesBetweenUseType"; //NOI18N
     public static final String BLANK_LINES_BEFORE_CLASS = "blankLinesBeforeClass"; //NOI18N
@@ -135,6 +136,7 @@ public final class FmtOptions {
     public static final String SPACE_AROUND_STRING_CONCAT_OPS = "spaceAroundStringConcatOps"; //NOI18N
     public static final String SPACE_AROUND_ASSIGN_OPS = "spaceAroundAssignOps"; //NOI18N
     public static final String SPACE_AROUND_KEY_VALUE_OPS = "spaceAroundKeyValueOps"; //NOI18N
+    public static final String SPACE_AROUND_SCOPE_RESOLUTION_OPS = "spaceAroundScopeResolutionOps"; //NOI18N
     public static final String SPACE_AROUND_OBJECT_OPS = "spaceAroundObjectOps"; //NOI18N
     public static final String SPACE_AROUND_NULLSAFE_OBJECT_OPS = "spaceAroundNullsafeObjectOps"; //NOI18N
     public static final String SPACE_AROUND_DECLARE_EQUAL = "spaceAroundDeclareEqual"; //NOI18N
@@ -193,6 +195,7 @@ public final class FmtOptions {
     public static final String ALIGN_MULTILINE_ARRAY_INIT = "alignMultilineArrayInit"; //NOI18N
     public static final String GROUP_ALIGNMENT_ASSIGNMENT = "groupAlignmentAssignment"; //NOI18N
     public static final String GROUP_ALIGNMENT_ARRAY_INIT = "groupAlignmentArrayInit"; //NOI18N
+    public static final String GROUP_ALIGNMENT_MATCH_ARM_ARROW = "groupAlignmentMatchArmArrow"; //NOI18N
     public static final String WRAP_GROUP_USE_LIST = "wrapGroupUseList"; //NOI18N
     public static final String WRAP_EXTENDS_IMPLEMENTS_KEYWORD = "wrapExtendsImplementsKeyword"; //NOI18N
     public static final String WRAP_EXTENDS_IMPLEMENTS_LIST = "wrapExtendsImplementsList"; //NOI18N
@@ -226,6 +229,8 @@ public final class FmtOptions {
     public static final String PREFER_GROUP_USES = "preferGroupUses"; // NOI18N
     public static final String START_USE_WITH_NAMESPACE_SEPARATOR = "startUseWithNamespaceSeparator"; //NOI18N
     public static final String ALIASES_CAPITALS_OF_NAMESPACES = "aliasesCapitalsOfNamespacesNames"; //NOI18N
+    public static final String PUT_IN_PSR12_ORDER = "putInPSR12Order"; //NOI18N
+    public static final String USES_KEEP_EXISTING_TYPE_ORDER = "usesKeepExistingTypeOrder"; //NOI18N
     public static CodeStyleProducer codeStyleProducer;
 
     private FmtOptions() {
@@ -287,6 +292,7 @@ public final class FmtOptions {
             {BLANK_LINES_AFTER_NAMESPACE, "1"}, //NOI18N
             {BLANK_LINES_BEFORE_USE, "1"}, //NOI18N
             {BLANK_LINES_BEFORE_USE_TRAIT, "1"}, //NOI18N
+            {BLANK_LINES_AFTER_USE_TRAIT, "1"}, //NOI18N
             {BLANK_LINES_AFTER_USE, "1"}, //NOI18N
             {BLANK_LINES_BETWEEN_USE_TYPES, "0"}, //NOI18N
             {BLANK_LINES_BEFORE_CLASS, "1"}, //NOI18N
@@ -329,6 +335,7 @@ public final class FmtOptions {
             {SPACE_AROUND_STRING_CONCAT_OPS, TRUE},
             {SPACE_AROUND_KEY_VALUE_OPS, TRUE},
             {SPACE_AROUND_ASSIGN_OPS, TRUE},
+            {SPACE_AROUND_SCOPE_RESOLUTION_OPS, FALSE},
             {SPACE_AROUND_OBJECT_OPS, FALSE},
             {SPACE_AROUND_NULLSAFE_OBJECT_OPS, FALSE},
             {SPACE_AROUND_DECLARE_EQUAL, FALSE},
@@ -386,6 +393,7 @@ public final class FmtOptions {
             {PLACE_NEW_LINE_AFTER_MODIFIERS, FALSE}, //NOI18N
 
             {GROUP_ALIGNMENT_ARRAY_INIT, FALSE},
+            {GROUP_ALIGNMENT_MATCH_ARM_ARROW, FALSE},
             {GROUP_ALIGNMENT_ASSIGNMENT, FALSE},
             {WRAP_GROUP_USE_LIST, WRAP_ALWAYS},
             {WRAP_EXTENDS_IMPLEMENTS_KEYWORD, WRAP_NEVER}, //NOI18N
@@ -419,7 +427,9 @@ public final class FmtOptions {
             {PREFER_MULTIPLE_USE_STATEMENTS_COMBINED, FALSE},
             {PREFER_GROUP_USES, FALSE},
             {START_USE_WITH_NAMESPACE_SEPARATOR, FALSE},
-            {ALIASES_CAPITALS_OF_NAMESPACES, FALSE}
+            {ALIASES_CAPITALS_OF_NAMESPACES, FALSE},
+            {PUT_IN_PSR12_ORDER, FALSE},
+            {USES_KEEP_EXISTING_TYPE_ORDER, TRUE},
         };
 
         defaults = new HashMap<>();
@@ -625,8 +635,8 @@ public final class FmtOptions {
             @Override
             public PreferencesCustomizer create(Preferences preferences) {
                 try {
-                    return new CategorySupport(preferences, id, panelClass.newInstance(), previewText, forcedOptions);
-                } catch (InstantiationException | IllegalAccessException e) {
+                    return new CategorySupport(preferences, id, panelClass.getDeclaredConstructor().newInstance(), previewText, forcedOptions);
+                } catch (ReflectiveOperationException e) {
                     LOGGER.log(Level.WARNING, "Exception during creating formatter customiezer", e);
                     return null;
                 }
@@ -912,7 +922,7 @@ public final class FmtOptions {
             for (Preferences p : delegates) {
                 keys.addAll(Arrays.asList(p.keys()));
             }
-            return keys.toArray(new String[keys.size()]);
+            return keys.toArray(new String[0]);
         }
 
         @Override

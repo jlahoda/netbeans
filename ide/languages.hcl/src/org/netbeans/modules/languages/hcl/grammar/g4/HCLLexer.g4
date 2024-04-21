@@ -86,6 +86,11 @@ QUESTION
    : Question
    ;
 
+// Used from Terraform 1.8 in provider exported function names
+SCOPE
+   : Colon Colon
+   ;
+
 COLON
    : Colon
    ;
@@ -123,8 +128,8 @@ ELLIPSIS
    ;
 
 LEGACY_INDEX
-    : Dot DecDigit+
-    ;
+   : Dot DecDigit+
+   ;
 
 DOT
    : Dot
@@ -158,8 +163,12 @@ OR
     : Or
     ;
 
-BOOL_LIT
-    : BoolLiteral
+TRUE
+    : True
+    ;
+
+FALSE
+    : False
     ;
 
 NULL
@@ -186,7 +195,7 @@ WS
 // Sending NewLine to the hidden channel makes the parser simpler,
 // though some rules cannot be enforced by it.
 NL
-    : Vws + -> channel(HIDDEN)
+    : Vws -> channel(HIDDEN)
     ;
 
 ERRCHAR

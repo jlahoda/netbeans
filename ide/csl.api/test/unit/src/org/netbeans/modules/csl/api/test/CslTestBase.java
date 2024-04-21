@@ -2146,13 +2146,6 @@ public abstract class CslTestBase extends NbTestCase {
         ParserManager.parse(Collections.singleton(testSource), new UserTask() {
             public @Override void run(ResultIterator resultIterator) throws Exception {
 
-                // FoldingScanner#folds calls source.getDocument(false) and receive non null values on JDK 8.
-                // On JDK 11+ however the document is null which leads to test failures in FoldingTest#testPHPTags.
-                // This is likely a race condition which is more likely to occur on JDK 11+ since the test can be
-                // brute forced to passing on linux if restarted often enough. 
-                // This fixes it by making sure the document is open before folds are computed
-                assertNotNull(resultIterator.getSnapshot().getSource().getDocument(true));
-                
                 StructureScanner analyzer = getStructureScanner();
                 assertNotNull("getStructureScanner must be implemented", analyzer);
 
@@ -2257,7 +2250,7 @@ public abstract class CslTestBase extends NbTestCase {
             if (children != null && children.size() > 0) {
                 List<? extends StructureItem> c = new ArrayList<StructureItem>(children);
                 // Sort children to make tests more stable
-                Collections.sort(c, new Comparator<StructureItem>() {
+                c.sort(new Comparator<StructureItem>() {
                     public int compare(StructureItem s1, StructureItem s2) {
                         String s1Name = s1.getName();
                         String s2Name = s2.getName();
@@ -2663,7 +2656,7 @@ public abstract class CslTestBase extends NbTestCase {
         sb.append("\n");
 
         // Sort to make test more stable
-        Collections.sort(proposals, new Comparator<CompletionProposal>() {
+        proposals.sort(new Comparator<CompletionProposal>() {
 
             public int compare(CompletionProposal p1, CompletionProposal p2) {
                 // Smart items first
@@ -3571,10 +3564,10 @@ public abstract class CslTestBase extends NbTestCase {
 
         // Sort nodes
         for (List<Object> list : starts.values()) {
-            Collections.sort(list, FORWARDS_COMPARATOR);
+            list.sort(FORWARDS_COMPARATOR);
         }
         for (List<Object> list : ends.values()) {
-            Collections.sort(list, BACKWARDS_COMPARATOR);
+            list.sort(BACKWARDS_COMPARATOR);
         }
 
         // Include 0-0 nodes first
@@ -4024,10 +4017,10 @@ public abstract class CslTestBase extends NbTestCase {
 
         // Sort nodes
         for (List<Object> list : starts.values()) {
-            Collections.sort(list, FORWARDS_COMPARATOR);
+            list.sort(FORWARDS_COMPARATOR);
         }
         for (List<Object> list : ends.values()) {
-            Collections.sort(list, BACKWARDS_COMPARATOR);
+            list.sort(BACKWARDS_COMPARATOR);
         }
 
         // TODO - include information here about nodes without correct positions
@@ -4152,7 +4145,7 @@ public abstract class CslTestBase extends NbTestCase {
                     sb.append("\n");
                 }
                 if (descsOnLine != null) {
-                    Collections.sort(descsOnLine, new Comparator<Hint>() {
+                    descsOnLine.sort(new Comparator<Hint>() {
                         public int compare(Hint arg0, Hint arg1) {
                             return arg0.getDescription().compareTo(arg1.getDescription());
                         }

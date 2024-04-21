@@ -294,8 +294,8 @@ public final class TypeMirrorHandle<T extends TypeMirror> {
                         return null;
                     resolvedTypeArguments.add(resolved);
                 }
-                DeclaredType dt = outer != null ? info.getTypes().getDeclaredType((DeclaredType)outer, te, resolvedTypeArguments.toArray(new TypeMirror[resolvedTypeArguments.size()]))
-                        : info.getTypes().getDeclaredType(te, resolvedTypeArguments.toArray(new TypeMirror[resolvedTypeArguments.size()]));
+                DeclaredType dt = outer != null ? info.getTypes().getDeclaredType((DeclaredType)outer, te, resolvedTypeArguments.toArray(new TypeMirror[0]))
+                        : info.getTypes().getDeclaredType(te, resolvedTypeArguments.toArray(new TypeMirror[0]));
                 t.supertype((Type)dt); //initialize supertype_field
                 t.interfaces((Type)dt); //initialize interfaces_field
                 PlaceholderType pt = map.get(this);
@@ -417,10 +417,10 @@ public final class TypeMirrorHandle<T extends TypeMirror> {
         private Type delegate = null;
         
         public PlaceholderType() {
-            this(TypeMetadata.EMPTY);
+            this(com.sun.tools.javac.util.List.nil());
         }       
 
-        public PlaceholderType(TypeMetadata md) {
+        public PlaceholderType(com.sun.tools.javac.util.List<TypeMetadata> md) {
             super(null, md);
         }       
 
@@ -430,7 +430,7 @@ public final class TypeMirrorHandle<T extends TypeMirror> {
         }
 
         @Override
-        public Type cloneWithMetadata(TypeMetadata md) {
+        public Type cloneWithMetadata(com.sun.tools.javac.util.List<TypeMetadata> md) {
             PlaceholderType out = new PlaceholderType(md);
             out.delegate = delegate;
             return out;

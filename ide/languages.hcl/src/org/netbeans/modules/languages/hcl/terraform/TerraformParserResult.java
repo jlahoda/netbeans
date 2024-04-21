@@ -23,13 +23,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.netbeans.modules.csl.api.Severity;
-import org.netbeans.modules.csl.spi.DefaultError;
 import org.netbeans.modules.languages.hcl.HCLParserResult;
+import org.netbeans.modules.languages.hcl.ast.HCLAttribute;
 import org.netbeans.modules.languages.hcl.ast.HCLBlock;
+import org.netbeans.modules.languages.hcl.ast.HCLContainer;
 import org.netbeans.modules.languages.hcl.ast.HCLDocument;
 import org.netbeans.modules.languages.hcl.ast.HCLIdentifier;
-import org.netbeans.modules.languages.hcl.ast.SourceRef;
+import org.netbeans.modules.languages.hcl.SourceRef;
+import org.netbeans.modules.languages.hcl.ast.HCLTreeWalker;
 import org.netbeans.modules.parsing.api.Snapshot;
 import org.openide.util.NbBundle.Messages;
 
@@ -39,15 +40,21 @@ import org.openide.util.NbBundle.Messages;
  */
 public class TerraformParserResult extends HCLParserResult {
 
+    private final Map<String, HCLBlock> definedBlocks = new HashMap<>();
+    
+    public enum BlockType {
 
-    enum BlockType {
-
+        CHECK("check", 2),
         DATA("data", 3),
+        IMPORT("import", 1),
         LOCALS("locals", 1),
         MODULE("module", 2),
+        MOVED("moved", 1),
         OUTPUT("output", 2),
         PROVIDER("provider", 2),
+        REMOVED("removed", 1),
         RESOURCE("resource", 3),
+        RUN("run", 2),
         TERRAFORM("terraform", 1),
         VARIABLE("variable", 2);
 
@@ -75,6 +82,7 @@ public class TerraformParserResult extends HCLParserResult {
         super(snapshot);
     }
 
+
     @Override
     @Messages({
         "# {0} - Block type name",
@@ -83,31 +91,69 @@ public class TerraformParserResult extends HCLParserResult {
         "# {0} - Block type name",
         "UNKNOWN_BLOCK=Unknown block: {0}",
         "# {0} - Block ID",
-        "DUPLICATE_BLOCK=Duplicate Block Definition: {0}"
+        "DUPLICATE_BLOCK=Duplicate Block Definition: {0}",
+        "# {0} - Attribute name",
+        "DUPLICATE_ATTRIBUTE=Attribute {0} has already defined",
+        "# {0} - Attribute name",
+        "UNEXPECTED_DOCUMENT_ATTRIBUTE=No attributes expected at Terraform document level.",
+
     })
-    protected void processDocument(HCLDocument doc) {
-        Set<String> defined = new HashSet<>();
-        for (HCLBlock block : doc.getBlocks()) {
-            List<HCLIdentifier> decl = block.getDeclaration();
+    protected void processDocument(HCLDocument doc, SourceRef references) {
+        HCLTreeWalker.breadthFirst(doc, this::duplicateAttributeVisitor);
+        HCLTreeWalker.breadthFirst(doc, this::checkBlockDeclarationVisitor);
+    }
+
+    private boolean checkBlockDeclarationVisitor(HCLTreeWalker.Step step) {
+        if (step.node() instanceof HCLBlock block) {
+            List<HCLIdentifier> decl = block.declaration();
             HCLIdentifier type = decl.get(0);
 
             BlockType bt = BlockType.get(type.id());
-            SourceRef src = type.getSourceRef().get();
             if (bt != null) {
                 if (decl.size() != bt.definitionLength) {
-                    DefaultError error = new DefaultError(null, Bundle.INVALID_BLOCK_DECLARATION(bt.type, bt.definitionLength - 1), null, getFileObject(), src.startOffset , src.endOffset, Severity.ERROR);
-                    errors.add(error);
+                    addError(type, Bundle.INVALID_BLOCK_DECLARATION(bt.type, bt.definitionLength - 1));
                 } else {
-                    if ((bt.definitionLength > 1) && !defined.add(block.id())) {
-                        errors.add(new DefaultError(null, Bundle.DUPLICATE_BLOCK(block.id()), null, getFileObject(), src.startOffset , src.endOffset, Severity.ERROR));
+                    if (definedBlocks.put(block.id(), block) != null) {
+                        switch (bt) {
+                            case CHECK:
+                            case DATA:
+                            case MODULE:
+                            case OUTPUT:
+                            case RESOURCE:
+                            case RUN:
+                            case VARIABLE:
+                                addError(decl.get(bt.definitionLength - 1), Bundle.DUPLICATE_BLOCK(block.id()));
+                        }
                     }
                 }
             } else {
-                DefaultError error = new DefaultError(null, Bundle.UNKNOWN_BLOCK(type.id()), null, getFileObject(), src.startOffset , src.endOffset, Severity.ERROR);
-                errors.add(error);
+                addError(type, Bundle.UNKNOWN_BLOCK(type.id()));
             }
-
         }
+        // Here we just check the first level of blocks, won't go deeper int the tree
+        return false;
     }
+    
+    private boolean duplicateAttributeVisitor(HCLTreeWalker.Step step) {
+        if (step.node() instanceof HCLDocument doc) {
+            for (HCLAttribute attr : doc.attributes()) {
+                addError(attr, Bundle.UNEXPECTED_DOCUMENT_ATTRIBUTE(attr.id()));
+            }
+            return true;
+        }
+        if (step.node() instanceof HCLContainer c) {
+            if (c.hasAttribute()) {
+                Set<String> defined = new HashSet<>();
+                for (HCLAttribute attr : c.attributes()) {
+                    if (!defined.add(attr.id())) {
+                        addError(attr.name(), Bundle.DUPLICATE_ATTRIBUTE(attr.id()));
+                    }                        
+                }
+            }
+            return false;
+        }
+        return true;            
+    }
+    
 
 }

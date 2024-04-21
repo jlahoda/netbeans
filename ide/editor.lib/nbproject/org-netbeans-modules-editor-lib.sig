@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 4.26.0
+#Version 4.30.0
 
 CLSS public abstract java.awt.Component
 cons protected init()
@@ -3946,6 +3946,7 @@ innr public final static Entry
 meth public static boolean hasNext()
 meth public static boolean hasPrev()
 meth public static java.lang.String dump()
+ anno 0 java.lang.Deprecated()
 meth public static void addEntry(javax.swing.text.JTextComponent,int)
 meth public static void checkAddEntry()
 meth public static void checkAddEntry(javax.swing.text.JTextComponent)
@@ -4707,6 +4708,7 @@ meth public static int getRowStart(org.netbeans.editor.BaseDocument,int,int) thr
  anno 0 java.lang.Deprecated()
 meth public static int getRowStartFromLineOffset(org.netbeans.editor.BaseDocument,int)
  anno 0 java.lang.Deprecated()
+meth public static int getVisualColumn(org.netbeans.api.editor.document.LineDocument,int) throws javax.swing.text.BadLocationException
 meth public static int getVisualColumn(org.netbeans.editor.BaseDocument,int) throws javax.swing.text.BadLocationException
 meth public static int getWordEnd(javax.swing.text.JTextComponent,int) throws javax.swing.text.BadLocationException
  anno 0 java.lang.Deprecated()

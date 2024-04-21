@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.java.project.JavaProjectConstants;
 import org.netbeans.api.java.queries.UnitTestForSourceQuery;
@@ -95,7 +96,7 @@ public class DefaultReplaceTokenProvider implements ReplaceTokenProvider, Action
             files.add(method.getFile());
         }
 
-        return files.toArray(new FileObject[files.size()]);
+        return files.toArray(new FileObject[0]);
     }
 
     @Override public Map<String, String> createReplacements(String actionName, Lookup lookup) {
@@ -359,13 +360,9 @@ public class DefaultReplaceTokenProvider implements ReplaceTokenProvider, Action
     }
 
     private boolean isIntegrationTestTarget(Lookup lookup) {
-        final SingleMethod targetMethod = lookup.lookup(SingleMethod.class); //JavaDataObject
-        if (targetMethod != null) {
-            return isIntegrationTestFile(targetMethod.getFile());
-        } 
-        final Collection<? extends FileObject> targetFiles = lookup.lookupAll(FileObject.class);
-        if (targetFiles != null) {
-            return targetFiles.stream().allMatch(file -> isIntegrationTestFile(file));
+        FileObject[] targetFiles = extractFileObjectsfromLookup(lookup);
+        if (targetFiles.length > 0) {
+            return Stream.of(targetFiles).allMatch(file -> isIntegrationTestFile(file));
         }
         return false;
     }

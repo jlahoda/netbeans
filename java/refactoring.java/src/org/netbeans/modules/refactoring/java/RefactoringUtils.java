@@ -55,6 +55,7 @@ import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectUtils;
 import org.netbeans.api.project.SourceGroup;
 import org.netbeans.api.project.ui.OpenProjects;
+import org.netbeans.modules.java.file.launcher.api.SourceLauncher;
 import org.netbeans.modules.refactoring.java.plugins.LocalVarScanner;
 import org.netbeans.spi.java.classpath.support.ClassPathSupport;
 import org.openide.cookies.EditorCookie;
@@ -288,7 +289,7 @@ public class RefactoringUtils {
         }
         Project p = FileOwnerQuery.getOwner(file);
         if (p == null) {
-            return false;
+            return SourceLauncher.isSourceLauncherFile(file);
         }
         return isOpenProject(p);
     }
@@ -695,11 +696,11 @@ public class RefactoringUtils {
             }
         }
 
-        ClassPath rcp = ClassPathSupport.createClassPath(dependentSourceRoots.toArray(new URL[dependentSourceRoots.size()]));
+        ClassPath rcp = ClassPathSupport.createClassPath(dependentSourceRoots.toArray(new URL[0]));
         if (compile == null) {
             compile = nullPath;
         }
-        compile = merge(compile, ClassPathSupport.createClassPath(dependentCompileRoots.toArray(new URL[dependentCompileRoots.size()])));
+        compile = merge(compile, ClassPathSupport.createClassPath(dependentCompileRoots.toArray(new URL[0])));
         if (boot == null) {
             boot = JavaPlatform.getDefault().getBootstrapLibraries();
         }
@@ -1092,7 +1093,7 @@ public class RefactoringUtils {
                 }
             }
         }
-        return ClassPathSupport.createClassPath(roots.toArray(new URL[roots.size()]));
+        return ClassPathSupport.createClassPath(roots.toArray(new URL[0]));
     }
 
     public static boolean isFromEditor(EditorCookie ec) {
