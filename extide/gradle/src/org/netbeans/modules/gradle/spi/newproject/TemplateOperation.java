@@ -51,19 +51,26 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.gradle.tooling.BuildLauncher;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectManager;
 import org.netbeans.modules.gradle.GradleProjectLoader;
 import org.netbeans.modules.gradle.ProjectTrust;
 import org.netbeans.modules.gradle.api.GradleProjects;
 import org.netbeans.modules.gradle.api.NbGradleProject.Quality;
+import org.netbeans.modules.gradle.execute.EscapeProcessingOutputStream;
+import org.netbeans.modules.gradle.execute.GradlePlainEscapeProcessor;
+import org.netbeans.modules.gradle.spi.GradleSettings;
 import org.openide.loaders.DataFolder;
 import org.openide.loaders.DataObject;
 import org.openide.util.Exceptions;
 import org.openide.util.NbBundle;
+import org.openide.windows.IOProvider;
+import org.openide.windows.InputOutput;
 
 /**
- *
+ * Steps, that a New Gradle Project Wizard can perform.
+ * 
  * @author Laszlo Kishalmi
  */
 public final class TemplateOperation implements Runnable {
@@ -235,6 +242,21 @@ public final class TemplateOperation implements Runnable {
          * @since 2.20
          */
         public abstract InitOperation projectName(String name);
+
+        /** Specify the Java version the project would be compiled, tested,
+         * and executed with.
+         * @param version the Java version to be used
+         * @return this builder to chain the calls.
+         * @since 2.40
+         */
+        public abstract InitOperation javaVersion(String version);
+
+        /** Specify whether create comments in the generated files.
+         * @param comments set {@code false} to generate more compact project files.
+         * @return this builder to chain the calls.
+         * @since 2.40
+         */
+        public abstract InitOperation comments(Boolean comments);
     }
 
     private final class InitStep extends InitOperation implements OperationStep {
@@ -244,6 +266,8 @@ public final class TemplateOperation implements Runnable {
         private String testFramework;
         private String basePackage;
         private String projectName;
+        private String javaVersion;
+        private Boolean comments;
 
         InitStep(File target, String type) {
             this.target = target;
@@ -286,6 +310,7 @@ public final class TemplateOperation implements Runnable {
         public Set<FileObject> execute() {
             GradleConnector gconn = GradleConnector.newConnector();
             target.mkdirs();
+            InputOutput io = IOProvider.getDefault().getIO(projectName + " (init)", true);
             try (ProjectConnection pconn = gconn.forProjectDirectory(target).connect()) {
                 List<String> args = new ArrayList<>();
                 args.add("init");
@@ -314,12 +339,53 @@ public final class TemplateOperation implements Runnable {
                     args.add(projectName);
                 }
 
-                pconn.newBuild().withArguments("--offline").forTasks(args.toArray(new String[0])).run(); //NOI18N
+                // --java-version 21
+                if (javaVersion != null) {
+                    args.add("--java-version");
+                    args.add(javaVersion);
+                }
+
+                if (comments != null) {
+                    args.add(comments ? "--comments" : "--no-comments");
+                }
+
+                // gradle init is non-interactive inside the IDE
+                args.add("--use-defaults");
+
+                try (
+                        var out = new EscapeProcessingOutputStream(new GradlePlainEscapeProcessor(io, false));
+                        var err = new EscapeProcessingOutputStream(new GradlePlainEscapeProcessor(io, false))
+                ) {
+                    BuildLauncher gradleInit = pconn.newBuild().forTasks(args.toArray(new String[0]));
+                    if (GradleSettings.getDefault().isOffline()) {
+                        gradleInit = gradleInit.withArguments("--offline");
+                    }
+                    gradleInit.setStandardOutput(out);
+                    gradleInit.setStandardError(err);
+                    gradleInit.run();
+
+                } catch (IOException iox) {
+                }
             } catch (GradleConnectionException | IllegalStateException ex) {
                 Exceptions.printStackTrace(ex);
+            } finally {
+                if (io.getOut() != null) io.getOut().close();
+                if (io.getErr() != null) io.getErr().close();
             }
             gconn.disconnect();
             return Collections.singleton(FileUtil.toFileObject(target));
+        }
+
+        @Override
+        public InitOperation javaVersion(String version) {
+            this.javaVersion = version;
+            return this;
+        }
+
+        @Override
+        public InitOperation comments(Boolean comments) {
+            this.comments = comments;
+            return this;
         }
     }
 
@@ -341,6 +407,10 @@ public final class TemplateOperation implements Runnable {
 
     public void addProjectPreload(File projectDir) {
         steps.add(new PreloadProject(projectDir));
+    }
+
+    public void addProjectPreload(File projectDir, List<String> important) {
+        steps.add(new PreloadProject(projectDir, important));
     }
 
     private abstract static class BaseOperationStep implements OperationStep {
@@ -415,9 +485,15 @@ public final class TemplateOperation implements Runnable {
     private static final class PreloadProject extends BaseOperationStep {
 
         final File dir;
+        final List<String> importantFiles;
 
         public PreloadProject(File dir) {
+            this(dir, List.of());
+        }
+
+        public PreloadProject(File dir, List<String> importantFiles) {
             this.dir = dir;
+            this.importantFiles = importantFiles;
         }
 
         @Override
@@ -452,7 +528,15 @@ public final class TemplateOperation implements Runnable {
                                 loader.loadProject(Quality.FULL_ONLINE, null, true, false);
                             }
                         }
-                        return Collections.singleton(projectDir);
+                        Set<FileObject> ret = new LinkedHashSet<>();
+                        ret.add(projectDir);
+                        for (String f : importantFiles) {
+                            FileObject fo = projectDir.getFileObject(f);
+                            if (fo != null) {
+                                ret.add(fo);
+                            }
+                        }
+                        return ret;
                     }
                 } catch (IOException | IllegalArgumentException ex) {
                 }
@@ -488,7 +572,11 @@ public final class TemplateOperation implements Runnable {
                     args.add("--gradle-version"); //NOI18N
                     args.add(version);
                 }
-                pconn.newBuild().withArguments("--offline").forTasks(args.toArray(new String[0])).run(); //NOI18N
+                if (GradleSettings.getDefault().isOffline()) {
+                    pconn.newBuild().withArguments("--offline").forTasks(args.toArray(new String[0])).run(); //NOI18N
+                } else {
+                    pconn.newBuild().forTasks(args.toArray(new String[0])).run();
+                }
             } catch (GradleConnectionException | IllegalStateException ex) {
                 // Well for some reason we were  not able to load Gradle.
                 // Ignoring that for now

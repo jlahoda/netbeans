@@ -32,6 +32,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.WeakHashMap;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import org.netbeans.api.java.classpath.ClassPath;
@@ -41,18 +44,23 @@ import org.netbeans.api.java.lexer.JavaTokenId;
 import org.netbeans.api.java.platform.JavaPlatformManager;
 import org.netbeans.api.lexer.TokenHierarchy;
 import org.netbeans.api.lexer.TokenSequence;
+import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.api.queries.FileEncodingQuery;
 import org.netbeans.modules.java.file.launcher.SingleSourceFileUtil;
 import org.netbeans.modules.java.file.launcher.spi.SingleFileOptionsQueryImplementation;
 import org.netbeans.spi.java.classpath.ClassPathFactory;
 import org.netbeans.spi.java.classpath.ClassPathImplementation;
+
 import static org.netbeans.spi.java.classpath.ClassPathImplementation.PROP_RESOURCES;
+
 import org.netbeans.spi.java.classpath.ClassPathProvider;
+import org.netbeans.spi.java.classpath.FilteringPathResourceImplementation;
 import org.netbeans.spi.java.classpath.PathResourceImplementation;
 import org.netbeans.spi.java.classpath.support.ClassPathSupport;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
-import org.openide.util.Exceptions;
+import org.openide.filesystems.URLMapper;
+import org.openide.util.NbBundle.Messages;
 import org.openide.util.lookup.ServiceProvider;
 import org.openide.util.lookup.ServiceProviders;
 
@@ -62,7 +70,9 @@ import org.openide.util.lookup.ServiceProviders;
 })
 public class MultiSourceRootProvider implements ClassPathProvider {
 
-    public static boolean DISABLE_MULTI_SOURCE_ROOT = false;
+    private static final Logger LOG = Logger.getLogger(MultiSourceRootProvider.class.getName());
+
+    public static boolean DISABLE_MULTI_SOURCE_ROOT = Boolean.getBoolean("java.disable.multi.source.root");
 
     //TODO: the cache will probably be never cleared, as the ClassPath/value refers to the key(?)
     private Map<FileObject, ClassPath> file2SourceCP = new WeakHashMap<>();
@@ -89,7 +99,7 @@ public class MultiSourceRootProvider implements ClassPathProvider {
     }
 
     private ClassPath getSourcePath(FileObject file) {
-        if (DISABLE_MULTI_SOURCE_ROOT) return null;
+        if (!SingleSourceFileUtil.isSupportedFile(file)) return null;
         synchronized (this) {
             //XXX: what happens if there's a Java file in user's home???
             if (file.isValid() && file.isData() && "text/x-java".equals(file.getMIMEType())) {
@@ -116,12 +126,14 @@ public class MultiSourceRootProvider implements ClassPathProvider {
                         }
 
                         return root2SourceCP.computeIfAbsent(root, r -> {
-                            ClassPath srcCP = ClassPathSupport.createClassPath(r);
-                            GlobalPathRegistry.getDefault().register(ClassPath.SOURCE, new ClassPath[] {srcCP});
+                            ClassPath srcCP = ClassPathSupport.createClassPath(Arrays.asList(new RootPathResourceImplementation(r)));
+                            if (registerRoot(r)) {
+                                GlobalPathRegistry.getDefault().register(ClassPath.SOURCE, new ClassPath[] {srcCP});
+                            }
                             return srcCP;
                         });
                     } catch (IOException ex) {
-                        Exceptions.printStackTrace(ex);
+                        LOG.log(Level.FINE, "Failed to read sourcefile " + file, ex);
                     }
                     return null;
                 });
@@ -234,6 +246,13 @@ public class MultiSourceRootProvider implements ClassPathProvider {
         }
     }
 
+    @Messages({
+        "SETTING_AutoRegisterAsRoot=false"
+    })
+    private static boolean registerRoot(FileObject root) {
+        return "true".equals(Bundle.SETTING_AutoRegisterAsRoot());
+    }
+
     private static final class AttributeBasedClassPathImplementation implements ChangeListener, ClassPathImplementation {
         private final PropertyChangeSupport pcs = new PropertyChangeSupport(this);
         private final SingleFileOptionsQueryImplementation.Result delegate;
@@ -299,4 +318,54 @@ public class MultiSourceRootProvider implements ClassPathProvider {
 
     }
 
+    private static final class RootPathResourceImplementation implements FilteringPathResourceImplementation {
+
+        private final URL root;
+        private final URL[] roots;
+        private final AtomicReference<String> lastCheckedAsIncluded = new AtomicReference<>();
+
+        public RootPathResourceImplementation(FileObject root) {
+            this.root = root.toURL();
+            this.roots = new URL[] {this.root};
+        }
+        
+        @Override
+        public boolean includes(URL root, String resource) {
+            if (!resource.endsWith("/")) {
+                int lastSlash = resource.lastIndexOf('/');
+                if (lastSlash != (-1)) {
+                    resource = resource.substring(0, lastSlash + 1);
+                }
+            }
+            if (resource.equals(lastCheckedAsIncluded.get())) {
+                return true;
+            }
+            FileObject fo = URLMapper.findFileObject(root);
+            fo = fo != null ? fo.getFileObject(resource) : null;
+            boolean included = fo == null || FileOwnerQuery.getOwner(fo) == null;
+            if (included) {
+                lastCheckedAsIncluded.set(resource);
+            }
+            return included;
+        }
+
+        @Override
+        public URL[] getRoots() {
+            return roots;
+        }
+
+        @Override
+        public ClassPathImplementation getContent() {
+            return null;
+        }
+
+        @Override
+        public void addPropertyChangeListener(PropertyChangeListener listener) {
+        }
+
+        @Override
+        public void removePropertyChangeListener(PropertyChangeListener listener) {
+        }
+        
+    }
 }
