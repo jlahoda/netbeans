@@ -18,82 +18,67 @@
  */
 package org.netbeans.modules.remote.ide.lsp;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import org.netbeans.api.project.Project;
 import org.netbeans.modules.lsp.client.spi.LanguageServerProvider.LanguageServerDescription;
-import org.netbeans.modules.remote.AsynchronousConnection.Sender;
+import org.netbeans.modules.remote.RemoteInvocation;
 import org.netbeans.modules.remote.StreamMultiplexor;
 import org.netbeans.modules.remote.Streams;
-import org.openide.util.Exceptions;
 import org.openide.util.Lookup;
 
 /**
  *
  */
-public class LSPHandler {
+public class LSPHandlerWrapper {
     private final StreamMultiplexor mainConnection;
-    private final Sender connection;
+    private final LSPHandler handler;
     private final Map<Integer, LanguageServerDescription> serverId2Description = new HashMap<>();
 
-    public LSPHandler(InputStream in, OutputStream out) {
+    public LSPHandlerWrapper(InputStream in, OutputStream out) {
         this.mainConnection = new StreamMultiplexor(in, out);
         Streams controlChannels = mainConnection.getStreamsForChannel(0);
-        this.connection = new Sender(controlChannels.in(), controlChannels.out());
+        this.handler = RemoteInvocation.caller(controlChannels.in(), controlChannels.out(), LSPHandler.class);
     }
 
-    public LanguageServerDescription getServer(Lookup context) {
+    public LanguageServerDescription getServer(Lookup context, String mimePath) {
         Project prj = context.lookup(Project.class);
 
         if (prj == null) {
             return null;
         }
 
-        try {
-            String relativePath = "/" + prj.getProjectDirectory().getPath();
-            GetServerResponse response = connection.sendAndReceive(Task.GET_SERVER, new GetServerRequest(relativePath), GetServerResponse.class).get();
-            return serverId2Description.computeIfAbsent(response.serverId, id -> {
-                Streams streams = mainConnection.getStreamsForChannel(response.dataChannelId);
-                return LanguageServerDescription.create(streams.in(), streams.out(), null);
-            });
-        } catch (IOException | InterruptedException | ExecutionException ex) {
-            Exceptions.printStackTrace(ex);
+        String projectPath = "/" + prj.getProjectDirectory().getPath();
+        ServerDescription serverDescription = handler.startServer(projectPath, mimePath);
+
+        if (serverDescription == null) {
             return null;
         }
+
+        return serverId2Description.computeIfAbsent(serverDescription.serverId, id -> {
+            Streams streams = mainConnection.getStreamsForChannel(serverDescription.channelId);
+            return LanguageServerDescription.create(streams.in(), streams.out(), null);
+        });
     }
 
-    public static class GetServerRequest {
-        public String projectPath;
-
-        public GetServerRequest() {
-        }
-
-        public GetServerRequest(String projectPath) {
-            this.projectPath = projectPath;
-        }
-
+    public interface LSPHandler {
+        public ServerDescription startServer(String projectPath, String mimePath);
     }
 
-    public static class GetServerResponse {
+    public static class ServerDescription {
         public int serverId;
-        public int dataChannelId;
+        public int channelId;
 
-        public GetServerResponse() {
+        public ServerDescription() {
         }
 
-        public GetServerResponse(int serverId, int dataChannelId) {
+        public ServerDescription(int serverId, int channelId) {
             this.serverId = serverId;
-            this.dataChannelId = dataChannelId;
+            this.channelId = channelId;
         }
 
-    }
-
-    public enum Task {
-        GET_SERVER;
     }
 
 }

@@ -237,7 +237,26 @@ public class RemoteFileSystem extends AbstractFileSystem implements AbstractFile
                 return new URLStreamHandler() {
                     @Override
                     protected URLConnection openConnection(URL u) throws IOException {
-                        throw new UnsupportedOperationException("Not supported yet.");
+                        FileObject file = URLMapper.findFileObject(u);
+
+                        if (file == null) {
+                            return null;
+                        }
+
+                        return new URLConnection(u) {
+                            @Override
+                            public void connect() throws IOException {
+                                this.connected = true;
+                            }
+                            @Override
+                            public InputStream getInputStream() throws IOException {
+                                return file.getInputStream();
+                            }
+                            @Override
+                            public OutputStream getOutputStream() throws IOException {
+                                return file.getOutputStream();
+                            }
+                        };
                     }
                 };
             }

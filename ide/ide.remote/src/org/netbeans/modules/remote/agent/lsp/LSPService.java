@@ -21,21 +21,20 @@ package org.netbeans.modules.remote.agent.lsp;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.io.UncheckedIOException;
+import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectManager;
-import org.netbeans.modules.remote.AsynchronousConnection.ReceiverBuilder;
+import org.netbeans.modules.remote.RemoteInvocation;
 import org.netbeans.modules.remote.Service;
 import org.netbeans.modules.remote.StreamMultiplexor;
 import org.netbeans.modules.remote.Streams;
 import org.netbeans.modules.remote.Utils;
-import org.netbeans.modules.remote.ide.lsp.LSPHandler.GetServerRequest;
-import org.netbeans.modules.remote.ide.lsp.LSPHandler.GetServerResponse;
-import org.netbeans.modules.remote.ide.lsp.LSPHandler.Task;
+import org.netbeans.modules.remote.ide.lsp.LSPHandlerWrapper.LSPHandler;
+import org.netbeans.modules.remote.ide.lsp.LSPHandlerWrapper.ServerDescription;
 import org.openide.filesystems.FileObject;
-import org.openide.util.Exceptions;
 import org.openide.util.Lookup;
 import org.openide.util.lookup.ServiceProvider;
 
@@ -54,40 +53,46 @@ public class LSPService implements Service {
     public void run(InputStream in, OutputStream out) {
         StreamMultiplexor mainConnection = new StreamMultiplexor(in, out);
         Streams controlChannels = mainConnection.getStreamsForChannel(0);
-        AtomicInteger nextChannel = new AtomicInteger(2);
         AtomicInteger nextLanguageServer = new AtomicInteger(2);
-        AtomicBoolean seenJavaServer = new AtomicBoolean();
+        AtomicInteger nextChannel = new AtomicInteger(2);
 
+        RemoteInvocation.receiver(controlChannels.in(), controlChannels.out(), new LSPHandler() {
+            private final Map<Project, ServerDescription> project2JavaDescriptions = new WeakHashMap<>();
+            @Override
+            public ServerDescription startServer(String projectPath, String mimePath) {
+                try {
+                    FileObject prjDir = Utils.resolveLocalPath(projectPath);
+                    Project prj = prjDir != null ? ProjectManager.getDefault().findProject(prjDir) : null;
 
-        new ReceiverBuilder<Task>(controlChannels.in(), controlChannels.out(), Task.class)
-                .addHandler(Task.GET_SERVER, GetServerRequest.class, (p) -> {
-            CompletableFuture<Object> result = new CompletableFuture<>();
-
-            try {
-                FileObject prjDir = Utils.resolveLocalPath(p.projectPath);
-                Project prj = prjDir != null ? ProjectManager.getDefault().findProject(prjDir) : null;
-
-                if (prj != null) {
-                    if (!seenJavaServer.get()) {
-                        Streams javaChannel = mainConnection.getStreamsForChannel(2);
-                        Lookup.getDefault().lookup(StartJavaServerHack.class).start(javaChannel.in(), javaChannel.out());
-                        seenJavaServer.set(true);
+                    if (prj == null) {
+                        return null;
                     }
-                    result.complete(new GetServerResponse(2, 2));
-                }
-//                for (LanguageServerProvider provider : Lookup.getDefault().lookupAll(LanguageServerProvider.class)) {
-//                    //TODO: multiple servers!
-//                    provider.startServer(Lookups.fixed(prj));
-//                }
-//                result.complete(new LoadProjectResponse(isProject));
-            } catch (IOException ex) {
-                ex.printStackTrace();
-                Exceptions.printStackTrace(ex);
-                result.completeExceptionally(ex);
-            }
 
-            return result;
-        }).startReceiver();
+                    if ("text/x-java".equals(mimePath)) {
+                        return project2JavaDescriptions.computeIfAbsent(prj, p -> {
+                            try {
+                                int serverNumber = nextLanguageServer.incrementAndGet();
+                                int channelNumber = nextChannel.incrementAndGet();
+                                Streams javaChannel = mainConnection.getStreamsForChannel(channelNumber);
+
+                                Lookup.getDefault().lookup(StartJavaServerHack.class).start(javaChannel.in(), javaChannel.out());
+                                return new ServerDescription(serverNumber, channelNumber);
+                            } catch (IOException ex) {
+                                throw new UncheckedIOException(ex);
+                            }
+                        });
+                    }
+                    return null;
+//                    for (LanguageServerProvider provider : Lookup.getDefault().lookupAll(LanguageServerProvider.class)) {
+//                        //TODO: multiple servers!
+//                        provider.startServer(Lookups.fixed(prj));
+//                    }
+//                    result.complete(new LoadProjectResponse(isProject));
+                } catch (IOException ex) {
+                    throw new UncheckedIOException(ex);
+                }
+            }
+        });
     }
 
     public interface StartJavaServerHack {

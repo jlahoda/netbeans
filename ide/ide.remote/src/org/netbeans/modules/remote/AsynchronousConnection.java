@@ -168,7 +168,14 @@ public class AsynchronousConnection {
                         E kind = Enum.valueOf(messageTypeClass, kindName);
                         Handler<?> handler = messageType2Handler.get(kind);
                         Object dataValue = Utils.gson.fromJson(new String(dataBytes, StandardCharsets.UTF_8), handler.messageTypeDataClass);
-                        handler.run(dataValue).handle((result, exception) -> {
+                        CompletableFuture<?> future;
+                        try {
+                            future = handler.run(dataValue);
+                        } catch (Throwable t) {
+                            future = new CompletableFuture<>();
+                            future.completeExceptionally(t);
+                        }
+                        future.handle((result, exception) -> {
                             byte tagChar;
                             byte[] messageBytes;
                             if (exception == null) {

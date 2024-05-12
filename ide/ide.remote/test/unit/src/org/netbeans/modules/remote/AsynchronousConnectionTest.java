@@ -134,6 +134,33 @@ public class AsynchronousConnectionTest extends NbTestCase {
         }
     }
 
+    public void testRunFails() throws Throwable {
+        var server = new ServerSocket(0);
+        var acceptedSocket = new AtomicReference<Socket>();
+        var connectThread = new Thread(() -> {
+            try {
+                Socket accepted = server.accept();
+                acceptedSocket.set(accepted);
+                new ReceiverBuilder<MessageType>(accepted.getInputStream(), accepted.getOutputStream(), MessageType.class)
+                        .addHandler(MessageType.ECHO, Integer.class, in -> {
+                    throw new UnsupportedOperationException();
+                }).startReceiver();
+            } catch (Throwable t) {
+                t.printStackTrace();
+            }
+        });
+        connectThread.start();
+        var clientSocket = new Socket(server.getInetAddress(), server.getLocalPort());
+        var sender = new Sender(clientSocket.getInputStream(), clientSocket.getOutputStream());
+        CompletableFuture<Integer> result = sender.sendAndReceive(MessageType.ECHO, 1, Integer.class);
+        try {
+            result.get();
+            fail("Should throw an exception!");
+        } catch (ExecutionException ex) {
+            //TODO: check?
+        }
+    }
+
     public enum MessageType {
         ECHO;
     }

@@ -480,6 +480,8 @@ metabuild.hash=${metabuild.hash}</echo>
     <mkdir dir="${netbeans.dest.dir}/bin" />
     <copy file="../nb/ide.launcher/unix/netbeans" todir="${netbeans.dest.dir}/bin" />
     <chmod file="${netbeans.dest.dir}/bin/netbeans" perm="ugo+rx"/>
+    <copy file="../nb/ide.launcher/unix/netbeans.remote" todir="${netbeans.dest.dir}/bin" />
+    <chmod file="${netbeans.dest.dir}/bin/netbeans.remote" perm="ugo+rx"/>
     <!-- if anybody knows better place for icons, let me know: jtulach@netbeans.org -->
 
     <mkdir dir="${netbeans.dest.dir}/etc" />
