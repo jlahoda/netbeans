@@ -29,9 +29,11 @@ import org.netbeans.spi.project.ProjectState;
 import org.netbeans.spi.project.ui.LogicalViewProvider;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileStateInvalidException;
+import org.openide.nodes.FilterNode;
 import org.openide.nodes.Node;
 import org.openide.util.Lookup;
 import org.openide.util.lookup.Lookups;
+import org.openide.util.lookup.ProxyLookup;
 import org.openide.util.lookup.ServiceProvider;
 
 /**
@@ -79,7 +81,7 @@ public class ProjectFactoryImpl implements ProjectFactory {
         public ProjectImpl(FileObject projectDirectory, ProjectHandler handler) {
             this.projectDirectory = projectDirectory;
             this.lookup = Lookups.fixed(new ActionProviderImpl(projectDirectory, handler),
-                                        new LogicalViewProviderImpl(projectDirectory, handler));
+                                        new LogicalViewProviderImpl(this, handler));
             this.handler = handler;
         }
 
@@ -134,18 +136,19 @@ public class ProjectFactoryImpl implements ProjectFactory {
 
     private static final class LogicalViewProviderImpl implements LogicalViewProvider {
 
-        private final FileObject projectDir;
+        private final Project project;
         private final ProjectHandler handler;
 
-        public LogicalViewProviderImpl(FileObject projectDir, ProjectHandler handler) {
-            this.projectDir = projectDir;
+        public LogicalViewProviderImpl(Project project, ProjectHandler handler) {
+            this.project = project;
             this.handler = handler;
         }
 
         @Override
         public Node createLogicalView() {
-            String relativePath = "/" + projectDir.getPath();
-            return handler.getNodeContext().create("projectNodes", relativePath);
+            String relativePath = "/" + project.getProjectDirectory().getPath();
+            Node delegate = handler.getNodeContext().create("projectNodes", relativePath);
+            return new FilterNode(delegate, null, new ProxyLookup(Lookups.fixed(project), delegate.getLookup()));
         }
 
         @Override

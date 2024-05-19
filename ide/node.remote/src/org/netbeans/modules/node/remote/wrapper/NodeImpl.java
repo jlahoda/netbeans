@@ -21,6 +21,7 @@ package org.netbeans.modules.node.remote.wrapper;
 import java.awt.Image;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.netbeans.modules.node.remote.TreeItem;
 import org.netbeans.modules.node.remote.TreeItem.CollapsibleState;
 import org.netbeans.modules.node.remote.api.NodeChangeType;
@@ -44,20 +45,20 @@ class NodeImpl extends AbstractNode {
         super(new ChildrenImpl(context, id));
         this.context = context;
         this.id = id;
-        context.register(id, this);
         NodeChangesParams params = new NodeChangesParams();
         params.setNodeId(id);
         params.setTypes(EnumSet.allOf(NodeChangeType.class));
         context.getService().changes(params);
     }
-    private NodeImpl(NodeContext context, int id) {
+
+    NodeImpl(NodeContext context, int id) {
         this(context, id, true);
         refreshProperties();
     }
 
     //XXX: ideally, this should be lazy, especially for the root node
     NodeImpl(NodeContext context, TreeItem item) {
-        this(context, item.id);
+        this(context, item.id, true);
         setTreeItem(item);
     }
 
@@ -106,6 +107,7 @@ class NodeImpl extends AbstractNode {
 
         private final NodeContext context;
         private final int id;
+        private final AtomicBoolean childrenVisible = new AtomicBoolean();
 
         public ChildrenImpl(NodeContext context, int id) {
             super(true);
@@ -115,20 +117,23 @@ class NodeImpl extends AbstractNode {
 
         @Override
         protected void addNotify() {
+            childrenVisible.set(true);
             refreshKeys();
         }
 
         @Override
         protected Node[] createNodes(Integer key) {
             return new Node[] {
-                new NodeImpl(context, key)
+                context.getNode(key)
             };
         }
 
         private void refreshKeys() {
-            context.getService().getChildren(new NodeOperationParams(id)).thenAccept(children -> {
-                setKeys(Arrays.stream(children).mapToObj(id -> id).toList());
-            });
+            if (childrenVisible.get()) {
+                context.getService().getChildren(new NodeOperationParams(id)).thenAccept(children -> {
+                    setKeys(Arrays.stream(children).mapToObj(id -> id).toList());
+                });
+            }
         }
     }
 

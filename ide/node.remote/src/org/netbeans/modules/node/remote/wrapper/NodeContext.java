@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -48,8 +49,8 @@ public class NodeContext {
     private final Map<Integer, NodeImpl> id2Node = new HashMap<>();
     private final Map<URI, Image> uri2Image = new HashMap<>();
 
-    synchronized void register(int id, NodeImpl node) {
-        id2Node.put(id, node);
+    synchronized Node getNode(int id) {
+        return id2Node.computeIfAbsent(id, i -> new NodeImpl(this, i));
     }
 
     public NodeCallback createCallback() {
@@ -64,12 +65,7 @@ public class NodeContext {
                     }
 
                     for (NodeImpl node : allNodes) {
-                        if (params.getTypes().contains(NodeChangeType.CHILDREN)) {
-                            node.refreshChildren();
-                        }
-                        if (params.getTypes().contains(NodeChangeType.PROPERTY) || params.getTypes().contains(NodeChangeType.SELF)) {
-                            node.refreshProperties();
-                        }
+                        refreshNode(node, params.getTypes());
                     }
                     return ;
                 }
@@ -82,10 +78,15 @@ public class NodeContext {
                     System.err.println("cannot find node id: " + params.getNodeId());
                     return ;
                 }
-                if (params.getTypes().contains(NodeChangeType.CHILDREN)) {
+                refreshNode(node, params.getTypes());
+            }
+
+            private void refreshNode(NodeImpl node, Set<NodeChangeType> types) {
+                if (types == null || types.contains(NodeChangeType.CHILDREN)) {
                     node.refreshChildren();
                 }
-                if (params.getTypes().contains(NodeChangeType.PROPERTY) || params.getTypes().contains(NodeChangeType.SELF)) {
+                if (types == null || types.contains(NodeChangeType.PROPERTY) ||
+                    types.contains(NodeChangeType.SELF)) {
                     node.refreshProperties();
                 }
             }
@@ -98,9 +99,11 @@ public class NodeContext {
 
     public Node create(String explorerKind, Object key) {
         try {
-            //TODO: lazy!!
             TreeItem item = getService().explorerManager(new CreateExplorerParams(explorerKind, key)).get();
-            return new NodeImpl(this, item);
+
+            synchronized (this) {
+                return id2Node.computeIfAbsent(item.id, i -> new NodeImpl(this, item));
+            }
         } catch (InterruptedException | ExecutionException ex) {
             throw new IllegalStateException(ex);
         }
