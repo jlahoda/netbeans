@@ -34,11 +34,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import javax.swing.SwingUtilities;
+import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.netbeans.api.io.Hyperlink;
 import org.netbeans.api.io.OutputColor;
 import org.netbeans.api.io.ShowOperation;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectManager;
+import org.netbeans.modules.node.remote.LspTreeViewServiceImpl;
+import org.netbeans.modules.node.remote.NodeCallback;
+import org.netbeans.modules.node.remote.api.TreeViewService;
 import org.netbeans.modules.remote.AsynchronousConnection.Sender;
 import org.netbeans.modules.remote.RemoteInvocation;
 import org.netbeans.modules.remote.Service;
@@ -73,6 +77,7 @@ public class ProjectService implements Service {
         StreamMultiplexor projectMultiplexor = new StreamMultiplexor(in, out);
         Streams commands = projectMultiplexor.getStreamsForChannel(0);
         Streams ioControl = projectMultiplexor.getStreamsForChannel(1);
+        Streams projectView = projectMultiplexor.getStreamsForChannel(2);
         ToClientIOProvider ioProvider = new ToClientIOProvider(projectMultiplexor, ioControl);
         RemoteInvocation.receiver(commands.in(), commands.out(), new ProjectInterface() {
             @Override
@@ -150,6 +155,10 @@ public class ProjectService implements Service {
                 });
             }
         });
+        LspTreeViewServiceImpl service = new LspTreeViewServiceImpl();
+        Launcher<NodeCallback> launcher = new Launcher.Builder<NodeCallback>().setLocalService(service).setRemoteInterface(NodeCallback.class).setInput(projectView.in()).setOutput(projectView.out()).create();
+        service.setCallback(launcher.getRemoteProxy());
+        launcher.startListening();
     }
 
     public static final class ToClientIOProvider implements InputOutputProvider<Integer, PrintWriter, Void, Void> {

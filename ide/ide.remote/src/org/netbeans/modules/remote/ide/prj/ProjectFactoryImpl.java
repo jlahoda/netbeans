@@ -26,8 +26,10 @@ import org.netbeans.modules.remote.ide.fs.RemoteFileSystem;
 import org.netbeans.spi.project.ActionProvider;
 import org.netbeans.spi.project.ProjectFactory;
 import org.netbeans.spi.project.ProjectState;
+import org.netbeans.spi.project.ui.LogicalViewProvider;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileStateInvalidException;
+import org.openide.nodes.Node;
 import org.openide.util.Lookup;
 import org.openide.util.lookup.Lookups;
 import org.openide.util.lookup.ServiceProvider;
@@ -76,7 +78,8 @@ public class ProjectFactoryImpl implements ProjectFactory {
 
         public ProjectImpl(FileObject projectDirectory, ProjectHandler handler) {
             this.projectDirectory = projectDirectory;
-            this.lookup = Lookups.fixed(new ActionProviderImpl(projectDirectory, handler));
+            this.lookup = Lookups.fixed(new ActionProviderImpl(projectDirectory, handler),
+                                        new LogicalViewProviderImpl(projectDirectory, handler));
             this.handler = handler;
         }
 
@@ -127,5 +130,28 @@ public class ProjectFactoryImpl implements ProjectFactory {
             return handler.isActionEnabled(projectDir, command, selectedFile);
         }
         
+    }
+
+    private static final class LogicalViewProviderImpl implements LogicalViewProvider {
+
+        private final FileObject projectDir;
+        private final ProjectHandler handler;
+
+        public LogicalViewProviderImpl(FileObject projectDir, ProjectHandler handler) {
+            this.projectDir = projectDir;
+            this.handler = handler;
+        }
+
+        @Override
+        public Node createLogicalView() {
+            String relativePath = "/" + projectDir.getPath();
+            return handler.getNodeContext().create("projectNodes", relativePath);
+        }
+
+        @Override
+        public Node findPath(Node root, Object target) {
+            return null;
+        }
+
     }
 }

@@ -27,9 +27,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.netbeans.api.io.IOProvider;
 import org.netbeans.api.io.InputOutput;
 import org.netbeans.api.io.OutputWriter;
+import org.netbeans.modules.node.remote.api.TreeViewService;
+import org.netbeans.modules.node.remote.wrapper.NodeContext;
 import org.netbeans.modules.remote.AsynchronousConnection.ReceiverBuilder;
 import org.netbeans.modules.remote.RemoteInvocation;
 import org.netbeans.modules.remote.StreamMultiplexor;
@@ -43,12 +46,14 @@ import org.openide.util.RequestProcessor;
  */
 public final class ProjectHandler {
 
+    private final NodeContext nodeContext;
     private final ProjectInterface outgoingProjectInterface;
 
     public ProjectHandler(InputStream in, OutputStream out) {
         StreamMultiplexor projectMultiplexor = new StreamMultiplexor(in, out);
         Streams commands = projectMultiplexor.getStreamsForChannel(0);
         Streams ioControl = projectMultiplexor.getStreamsForChannel(1);
+        Streams projectView = projectMultiplexor.getStreamsForChannel(2);
         AtomicInteger nextChannel = new AtomicInteger(2);
         this.outgoingProjectInterface = RemoteInvocation.caller(commands.in(), commands.out(), ProjectInterface.class);
         Map<Integer, InputOutput> channel2InputOutput = new HashMap<>(); //TODO: clear!!
@@ -79,6 +84,10 @@ public final class ProjectHandler {
                     result.complete(channel);
                     return result;
                 }).startReceiver();
+        nodeContext = new NodeContext();
+        Launcher<TreeViewService> launcher = new Launcher.Builder<TreeViewService>().setLocalService(nodeContext.createCallback()).setRemoteInterface(TreeViewService.class).setInput(projectView.in()).setOutput(projectView.out()).create();
+        nodeContext.setService(launcher.getRemoteProxy());
+        launcher.startListening();
     }
 
     public boolean loadProject(FileObject folder) {
@@ -102,6 +111,10 @@ public final class ProjectHandler {
         String relativeProjectPath = "/" + projectDir.getPath();
         String relativeSelectedPath = selectedFile != null ? ("/" + selectedFile.getPath()) : null;
         outgoingProjectInterface.invokeAction(relativeProjectPath, command, relativeSelectedPath);
+    }
+
+    public NodeContext getNodeContext() {
+        return nodeContext;
     }
 
     public enum IOTask {
