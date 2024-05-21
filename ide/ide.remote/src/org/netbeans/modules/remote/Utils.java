@@ -76,5 +76,9 @@ public class Utils {
         return FileUtil.toFileObject(new File(path));
     }
 
+    public static String file2Path(FileObject file) {
+        return "/" + file.getPath();
+    }
+
     public static class EndOfInput extends IOException {}
 }

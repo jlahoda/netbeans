@@ -22,6 +22,7 @@ import java.awt.Image;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.HashMap;
@@ -36,6 +37,7 @@ import org.netbeans.modules.node.remote.NodeCallback;
 import org.netbeans.modules.node.remote.TreeItem;
 import org.netbeans.modules.node.remote.TreeItem.IconDescriptor;
 import org.netbeans.modules.node.remote.api.CreateExplorerParams;
+import org.netbeans.modules.node.remote.api.FindPathParams;
 import org.netbeans.modules.node.remote.api.GetResourceParams;
 import org.netbeans.modules.node.remote.api.NodeChangeType;
 import org.netbeans.modules.node.remote.api.NodeChangedParams;
@@ -109,6 +111,41 @@ public class NodeContext {
         }
     }
 
+    public Node findPath(Node root, Object target) {
+        try {
+            NodeId id = root.getLookup().lookup(NodeId.class);
+
+            if (id == null) {
+                return null;
+            }
+
+            int[] path = getService().findPath(new FindPathParams(id.id, target)).get();
+
+            if (path[0] != id.id) {
+                System.err.println("different root!!!");
+                return null;
+            }
+
+            Node found = root;
+
+            OUTER: for (int i = 1; i < path.length; i++) {
+                for (Node child : found.getChildren().getNodes(true)) {
+                    NodeId currentNodeId = child.getLookup().lookup(NodeId.class);
+                    if (currentNodeId != null && currentNodeId.id == path[i]) {
+                        found = child;
+                        continue OUTER;
+                    }
+                }
+
+                return null; //not found
+            }
+
+            return found;
+        } catch (InterruptedException | ExecutionException ex) {
+            throw new IllegalStateException(ex);
+        }
+    }
+
     TreeViewService getService() {
         TreeViewService s = service.get();
 
@@ -146,5 +183,14 @@ public class NodeContext {
                 return null;
             }
         });
+    }
+
+    public static final class NodeId {
+        public final int id;
+
+        public NodeId(int id) {
+            this.id = id;
+        }
+
     }
 }

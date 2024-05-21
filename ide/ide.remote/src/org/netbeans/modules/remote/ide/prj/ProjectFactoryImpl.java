@@ -21,6 +21,7 @@ package org.netbeans.modules.remote.ide.prj;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.netbeans.api.project.Project;
+import org.netbeans.modules.remote.Utils;
 import org.netbeans.modules.remote.ide.RemoteManager;
 import org.netbeans.modules.remote.ide.fs.RemoteFileSystem;
 import org.netbeans.spi.project.ActionProvider;
@@ -138,6 +139,7 @@ public class ProjectFactoryImpl implements ProjectFactory {
 
         private final Project project;
         private final ProjectHandler handler;
+        private Node baseRoot;
 
         public LogicalViewProviderImpl(Project project, ProjectHandler handler) {
             this.project = project;
@@ -145,16 +147,22 @@ public class ProjectFactoryImpl implements ProjectFactory {
         }
 
         @Override
-        public Node createLogicalView() {
-            String relativePath = "/" + project.getProjectDirectory().getPath();
-            Node delegate = handler.getNodeContext().create("projectNodes", relativePath);
-            return new FilterNode(delegate, null, new ProxyLookup(Lookups.fixed(project), delegate.getLookup()));
+        public synchronized Node createLogicalView() {
+            if (baseRoot == null) {
+                String relativePath = "/" + project.getProjectDirectory().getPath();
+
+                baseRoot = handler.getNodeContext().create("projectNodes", relativePath);
+            }
+
+            return new FilterNode(baseRoot, null, new ProxyLookup(Lookups.fixed(project), baseRoot.getLookup()));
         }
 
         @Override
         public Node findPath(Node root, Object target) {
+            if (target instanceof FileObject file) {
+                return handler.getNodeContext().findPath(root, Utils.file2Path(file));
+            }
             return null;
         }
-
     }
 }

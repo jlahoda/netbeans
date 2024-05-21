@@ -21,15 +21,21 @@ package org.netbeans.modules.node.remote.wrapper;
 import java.awt.Image;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.netbeans.modules.node.remote.TreeItem;
 import org.netbeans.modules.node.remote.TreeItem.CollapsibleState;
 import org.netbeans.modules.node.remote.api.NodeChangeType;
 import org.netbeans.modules.node.remote.api.NodeChangesParams;
 import org.netbeans.modules.node.remote.api.NodeOperationParams;
+import org.netbeans.modules.node.remote.wrapper.NodeContext.NodeId;
 import org.openide.nodes.AbstractNode;
 import org.openide.nodes.Children;
 import org.openide.nodes.Node;
+import org.openide.util.Exceptions;
+import org.openide.util.lookup.Lookups;
 
 /**
  *
@@ -42,7 +48,7 @@ class NodeImpl extends AbstractNode {
     private Image icon;
 
     private NodeImpl(NodeContext context, int id, boolean internal) {
-        super(new ChildrenImpl(context, id));
+        super(new ChildrenImpl(context, id), Lookups.fixed(new NodeId(id)));
         this.context = context;
         this.id = id;
         NodeChangesParams params = new NodeChangesParams();
@@ -103,11 +109,16 @@ class NodeImpl extends AbstractNode {
         ((ChildrenImpl) getChildren()).refreshKeys();
     }
 
+    public int getId() {
+        return id;
+    }
+
     private static final class ChildrenImpl extends Children.Keys<Integer> {
 
         private final NodeContext context;
         private final int id;
         private final AtomicBoolean childrenVisible = new AtomicBoolean();
+        private final AtomicReference<CompletableFuture<?>> pendingChildren = new AtomicReference<CompletableFuture<?>>();
 
         public ChildrenImpl(NodeContext context, int id) {
             super(true);
@@ -117,8 +128,9 @@ class NodeImpl extends AbstractNode {
 
         @Override
         protected void addNotify() {
-            childrenVisible.set(true);
-            refreshKeys();
+            if (!childrenVisible.getAndSet(true)) {
+                refreshKeys();
+            }
         }
 
         @Override
@@ -130,10 +142,29 @@ class NodeImpl extends AbstractNode {
 
         private void refreshKeys() {
             if (childrenVisible.get()) {
-                context.getService().getChildren(new NodeOperationParams(id)).thenAccept(children -> {
+               final CompletableFuture<?> childrenFuture = context.getService().getChildren(new NodeOperationParams(id)).thenAccept(children -> {
                     setKeys(Arrays.stream(children).mapToObj(id -> id).toList());
                 });
+                pendingChildren.set(childrenFuture);
+                childrenFuture.thenAccept(__ -> {
+                    pendingChildren.compareAndSet(childrenFuture, null);
+                });
             }
+        }
+
+        public Node[] getNodes(boolean optimalResult) {
+            if (optimalResult) {
+                addNotify();
+                CompletableFuture<?> pending = pendingChildren.get();
+                if (pending != null) {
+                    try {
+                        pending.get();
+                    } catch (InterruptedException | ExecutionException ex) {
+                        Exceptions.printStackTrace(ex);
+                    }
+                }
+            }
+            return super.getNodes(optimalResult);
         }
     }
 

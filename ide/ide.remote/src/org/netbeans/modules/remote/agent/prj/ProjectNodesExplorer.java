@@ -82,55 +82,12 @@ public class ProjectNodesExplorer implements ExplorerManagerFactory, PathFinder/
 
     @Override
     public Node findPath(Node root, Object target) {
-        FileObject file = null;
-
-        if (target instanceof FileObject) {
-            file = (FileObject)target;
-        } else {
-            URI uri = null;
-            if (target instanceof String) {
-                uri = URI.create(target.toString());
-            } else if (target instanceof URI) {
-                uri = (URI)target;
-            }
-            if (uri == null) {
-                return null;
-            }
-            try {
-                file = URLMapper.findFileObject(uri.toURL());
-            } catch (MalformedURLException ex) {
-                Exceptions.printStackTrace(ex);
-                return null;
-            }
-        }
-        if (file == null) {
-            return null;
-        }
-        Project p = FileOwnerQuery.getOwner(file);
-        if (p == null) {
-            return null;
-        }
-        Node[] projectChildren = root.getChildren().getNodes(true);
-        if (projectChildren.length == 0) {
-            // this is mega-ugly, but the project's node initializes lazily somehow and
-            // sometimes does not return proper children on first query.
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException ex) {
-                Exceptions.printStackTrace(ex);
-            }
-            projectChildren = root.getChildren().getNodes(true);
-        }
-        for (Node n : projectChildren) {
-            Project nodeProject = n.getLookup().lookup(Project.class);
-            if (nodeProject != p) {
-                continue;
-            }
-            org.netbeans.spi.project.ui.PathFinder ppf = p.getLookup().lookup(org.netbeans.spi.project.ui.PathFinder.class);
-            if (ppf == null) {
-                continue;
-            }
-            return ppf.findPath(n, file);
+        Project p = root.getLookup().lookup(Project.class);
+        LogicalViewProvider lvp = p != null ? p.getLookup().lookup(LogicalViewProvider.class) : null;
+        FileObject targetFile;
+        if (lvp != null && target instanceof String path && (targetFile = Utils.resolveLocalPath(path)) != null) {
+            Node n = lvp.findPath(root, targetFile);
+            return n;
         }
         return null;
     }
