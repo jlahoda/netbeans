@@ -50,7 +50,7 @@ public final class ConnectToSsh implements ActionListener {
             DialogDescriptor dd = new DialogDescriptor(settings, "SSH Connection Settings", true, DialogDescriptor.OK_CANCEL_OPTION, DialogDescriptor.OK_OPTION, evt -> {
                 if (evt.getSource() == DialogDescriptor.OK_OPTION) {
                     try {
-                        RemoteFileSystem fs = RemoteFileSystem.getRemoteFileSystem(new RemoteDescription(settings.getSshConnection(), settings.getInstallDir(), settings.getUserdir()));
+                        RemoteFileSystem fs = RemoteFileSystem.getRemoteFileSystem(new RemoteDescription(settings.getSshConnection(), settings.getInstallDir(), settings.getUserdir(), settings.getAdditionalOptions()));
                         Favorites.getDefault().add(fs.getRoot());
                     } catch (IOException ex) {
                         Exceptions.printStackTrace(ex);

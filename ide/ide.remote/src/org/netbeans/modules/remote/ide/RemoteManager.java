@@ -66,6 +66,7 @@ public class RemoteManager {
         connectionOptions.add("--nogui");
         connectionOptions.add("--userdir");
         connectionOptions.add(remoteDescription.userdir);
+        connectionOptions.addAll(Arrays.asList(remoteDescription.additionalOptions().split(" +")));
 //        connectionOptions.add("-J-agentlib:jdwp=transport=dt_socket,suspend=y,server=y,address=8000,quiet=y");
 
         try {
@@ -94,23 +95,24 @@ public class RemoteManager {
                                   });
     }
 
-    public record RemoteDescription(String connectionString, String installDir, String userdir, String encoded) {
+    public record RemoteDescription(String connectionString, String installDir, String userdir, String additionalOptions, String encoded) {
 
-        public RemoteDescription(String connectionString, String installDir, String userdir) {
-            this(connectionString, installDir, userdir, encode(connectionString, installDir, userdir));
+        public RemoteDescription(String connectionString, String installDir, String userdir,String additionalOptions) {
+            this(connectionString, installDir, userdir, additionalOptions, encode(connectionString, installDir, additionalOptions, userdir));
         }
 
-        private static String encode(String connectionString, String installDir, String userdir) {
+        private static String encode(String connectionString, String installDir, String additionalOptions, String userdir) {
             Map<String, String> values = new HashMap<>();
             values.put("connectionString", connectionString);
             values.put("installDir", installDir);
             values.put("userdir", userdir);
+            values.put("additionalOptions", additionalOptions);
             return Utils.gson.toJson(values);
         }
 
         public static RemoteDescription createInstance(String encoded) {
             Map<String, String> values = Utils.gson.fromJson(encoded, HashMap.class);
-            return new RemoteDescription(values.get("connectionString"), values.get("installDir"), values.get("userdir"), encoded);
+            return new RemoteDescription(values.get("connectionString"), values.get("installDir"), values.get("userdir"), values.get("additionalOptions"), encoded);
         }
     }
 }

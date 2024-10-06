@@ -48,6 +48,8 @@ public class SSHConnectionPanel extends javax.swing.JPanel {
         installDir = new javax.swing.JTextField();
         jLabel3 = new javax.swing.JLabel();
         userdir = new javax.swing.JTextField();
+        jLabel4 = new javax.swing.JLabel();
+        additionalOptions = new javax.swing.JTextField();
 
         org.openide.awt.Mnemonics.setLocalizedText(jLabel1, org.openide.util.NbBundle.getMessage(SSHConnectionPanel.class, "SSHConnectionPanel.jLabel1.text")); // NOI18N
 
@@ -61,6 +63,10 @@ public class SSHConnectionPanel extends javax.swing.JPanel {
 
         userdir.setText(org.openide.util.NbBundle.getMessage(SSHConnectionPanel.class, "SSHConnectionPanel.userdir.text")); // NOI18N
 
+        org.openide.awt.Mnemonics.setLocalizedText(jLabel4, org.openide.util.NbBundle.getMessage(SSHConnectionPanel.class, "SSHConnectionPanel.jLabel4.text")); // NOI18N
+
+        additionalOptions.setText(org.openide.util.NbBundle.getMessage(SSHConnectionPanel.class, "SSHConnectionPanel.additionalOptions.text")); // NOI18N
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
@@ -68,14 +74,20 @@ public class SSHConnectionPanel extends javax.swing.JPanel {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel2)
-                    .addComponent(jLabel3)
-                    .addComponent(jLabel1))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(sshConnection)
-                    .addComponent(installDir)
-                    .addComponent(userdir, javax.swing.GroupLayout.DEFAULT_SIZE, 244, Short.MAX_VALUE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel2)
+                            .addComponent(jLabel3)
+                            .addComponent(jLabel1))
+                        .addGap(55, 55, 55)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(installDir, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 207, Short.MAX_VALUE)
+                            .addComponent(userdir)
+                            .addComponent(sshConnection)))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jLabel4)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(additionalOptions)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -93,16 +105,22 @@ public class SSHConnectionPanel extends javax.swing.JPanel {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel3)
                     .addComponent(userdir, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel4)
+                    .addComponent(additionalOptions, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(18, Short.MAX_VALUE))
         );
     }// </editor-fold>//GEN-END:initComponents
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JTextField additionalOptions;
     private javax.swing.JTextField installDir;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
     private javax.swing.JTextField sshConnection;
     private javax.swing.JTextField userdir;
     // End of variables declaration//GEN-END:variables
@@ -117,6 +135,10 @@ public class SSHConnectionPanel extends javax.swing.JPanel {
 
     public String getUserdir() {
         return userdir.getText();
+    }
+
+    public String getAdditionalOptions() {
+        return additionalOptions.getText();
     }
 
 }
