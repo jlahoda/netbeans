@@ -49,7 +49,7 @@ public final class ProjectHandler {
     private final NodeContext nodeContext;
     private final ProjectInterface outgoingProjectInterface;
 
-    public ProjectHandler(InputStream in, OutputStream out) {
+    public ProjectHandler(InputStream in, OutputStream out, FileObject resourceRoot) {
         StreamMultiplexor projectMultiplexor = new StreamMultiplexor(in, out);
         Streams commands = projectMultiplexor.getStreamsForChannel(0);
         Streams ioControl = projectMultiplexor.getStreamsForChannel(1);
@@ -84,7 +84,7 @@ public final class ProjectHandler {
                     result.complete(channel);
                     return result;
                 }).startReceiver();
-        nodeContext = new NodeContext();
+        nodeContext = new NodeContext(resourceRoot);
         Launcher<TreeViewService> launcher = new Launcher.Builder<TreeViewService>().setLocalService(nodeContext.createCallback()).setRemoteInterface(TreeViewService.class).setInput(projectView.in()).setOutput(projectView.out()).create();
         nodeContext.setService(launcher.getRemoteProxy());
         launcher.startListening();

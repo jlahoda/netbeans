@@ -42,14 +42,20 @@ import org.netbeans.modules.node.remote.api.GetResourceParams;
 import org.netbeans.modules.node.remote.api.NodeChangeType;
 import org.netbeans.modules.node.remote.api.NodeChangedParams;
 import org.netbeans.modules.node.remote.api.TreeViewService;
+import org.openide.filesystems.FileObject;
 import org.openide.nodes.Node;
 import org.openide.util.Exceptions;
 
 public class NodeContext {
 
+    private final FileObject resourceRoot;
     private final AtomicReference<TreeViewService> service = new AtomicReference<>();
     private final Map<Integer, NodeImpl> id2Node = new HashMap<>();
     private final Map<URI, Image> uri2Image = new HashMap<>();
+
+    public NodeContext(FileObject resourceRoot) {
+        this.resourceRoot = resourceRoot;
+    }
 
     synchronized Node getNode(int id) {
         return id2Node.computeIfAbsent(id, i -> new NodeImpl(this, i));
@@ -183,6 +189,10 @@ public class NodeContext {
                 return null;
             }
         });
+    }
+
+    FileObject resolvePath(String path) {
+        return resourceRoot.getFileObject(path);
     }
 
     public static final class NodeId {

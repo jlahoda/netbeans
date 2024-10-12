@@ -56,7 +56,14 @@ public class ProjectFactoryImpl implements ProjectFactory {
     public Project loadProject(FileObject projectDirectory, ProjectState state) throws IOException {
         if (projectDirectory.getFileSystem() instanceof RemoteFileSystem) {
             RemoteFileSystem rfs = (RemoteFileSystem) projectDirectory.getFileSystem();
-            ProjectHandler handler = RemoteManager.getDefault().getService(rfs.getRemoteDescription(), "prj", streams -> new ProjectHandler(streams.in(), streams.out()));
+            FileObject rootSearch = projectDirectory;
+
+            while (!rootSearch.isRoot()) {
+                rootSearch = rootSearch.getParent();
+            }
+
+            FileObject root = rootSearch;
+            ProjectHandler handler = RemoteManager.getDefault().getService(rfs.getRemoteDescription(), "prj", streams -> new ProjectHandler(streams.in(), streams.out(), root));
 
             boolean isProject = handler.loadProject(projectDirectory);
 
