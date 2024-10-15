@@ -81,6 +81,7 @@ import org.openide.nodes.NodeReorderEvent;
 import org.openide.nodes.Sheet;
 import org.openide.util.ImageUtilities;
 import org.openide.util.Lookup;
+import org.openide.util.Pair;
 import org.openide.util.RequestProcessor;
 import org.openide.util.lookup.Lookups;
 import org.openide.util.lookup.ProxyLookup;
@@ -100,7 +101,7 @@ public class TreeNodeRegistryImpl implements TreeNodeRegistry {
     private static final String ICONS_PREFIX = "//icons/"; // NOI18N
     private static final String URLPREFIX_LSPCACHE = PROTO_LSPCACHE + ":" + ICONS_PREFIX; // NOI18N
 
-    private final Map<String, TreeViewProvider> providers = new HashMap<>();
+    private final Map<Pair<String, Object>, TreeViewProvider> providers = new HashMap<>();
     private final Map<Integer, TreeViewProvider> node2Provider = new HashMap<>();
     private final Map<Image, ImageDataOrIndex> images = new WeakHashMap<>();
     private final Map<URI, ImageDataOrIndex> imageData = new WeakHashMap<>();
@@ -170,7 +171,7 @@ public class TreeNodeRegistryImpl implements TreeNodeRegistry {
     public CompletionStage<TreeViewProvider> createProvider(String id, Object context) {
         LOG.log(Level.FINER, "Asked for {0}", id);
         synchronized (this) {
-            TreeViewProvider p = providers.get(id);
+            TreeViewProvider p = providers.get(Pair.of(id, context));
             if (p != null) {
                 return CompletableFuture.completedFuture(p);
             }
@@ -190,7 +191,7 @@ public class TreeNodeRegistryImpl implements TreeNodeRegistry {
             CompletionStage<ExplorerManager> em = f.createManager(id, Lookups.fixed(context));
             if (em != null) {
                 LOG.log(Level.FINER, "Creating provider from factory {0}", f);
-                return em.thenApply(em2 -> registerManager(em2, id, ctxLookup, confirmDelete));
+                return em.thenApply(em2 -> registerManager(em2, id, context, ctxLookup, confirmDelete));
             }
         }
         CompletableFuture<TreeViewProvider> f = new CompletableFuture<>();
@@ -233,8 +234,8 @@ public class TreeNodeRegistryImpl implements TreeNodeRegistry {
         }
     }
 
-    private synchronized TreeViewProvider registerManager(ExplorerManager em, String id, Lookup ctxLookup, boolean confirmDelete) {
-        TreeViewProvider p = providers.get(id);
+    private synchronized TreeViewProvider registerManager(ExplorerManager em, String id, Object context, Lookup ctxLookup, boolean confirmDelete) {
+        TreeViewProvider p = providers.get(Pair.of(id, context));
         if (p != null) {
             return p;
         } 
@@ -290,7 +291,7 @@ public class TreeNodeRegistryImpl implements TreeNodeRegistry {
                 }
             }
         };
-        providers.put(id, tvp);
+        providers.put(Pair.of(id, context), tvp);
         return tvp;
     }
 
@@ -516,7 +517,7 @@ public class TreeNodeRegistryImpl implements TreeNodeRegistry {
         /**
          * Tracks attachments to individual property sheets and node properties.
          */
-        private List<Runnable> propDisposes;
+//        private List<Runnable> propDisposes;
         
         public L(int id, Node node) {
             this.id = id;
@@ -562,8 +563,8 @@ public class TreeNodeRegistryImpl implements TreeNodeRegistry {
         }
         
         private synchronized void unregisterSheetListeners() {
-            propDisposes.forEach(Runnable::run);
-            propDisposes.clear();
+//            propDisposes.forEach(Runnable::run);
+//            propDisposes.clear();
         }
         
         private synchronized void refreshPropertySets() {
@@ -572,7 +573,7 @@ public class TreeNodeRegistryImpl implements TreeNodeRegistry {
                 if (ps instanceof Sheet.Set) {
                     Sheet.Set ss = (Sheet.Set)ps;
                     ss.addPropertyChangeListener(this);
-                    propDisposes.add(() -> ss.removePropertyChangeListener(this));
+//                    propDisposes.add(() -> ss.removePropertyChangeListener(this));
                 }
             }
         }

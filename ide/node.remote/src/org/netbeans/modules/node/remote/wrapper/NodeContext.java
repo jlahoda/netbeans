@@ -127,6 +127,11 @@ public class NodeContext {
 
             int[] path = getService().findPath(new FindPathParams(id.id, target)).get();
 
+            if (path == null) {
+                //not found:
+                return null;
+            }
+
             if (path[0] != id.id) {
                 System.err.println("different root!!!");
                 return null;
