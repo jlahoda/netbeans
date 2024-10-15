@@ -52,38 +52,8 @@ public final class ProjectHandler {
     public ProjectHandler(InputStream in, OutputStream out, FileObject resourceRoot) {
         StreamMultiplexor projectMultiplexor = new StreamMultiplexor(in, out);
         Streams commands = projectMultiplexor.getStreamsForChannel(0);
-        Streams ioControl = projectMultiplexor.getStreamsForChannel(1);
-        Streams projectView = projectMultiplexor.getStreamsForChannel(2);
-        AtomicInteger nextChannel = new AtomicInteger(2);
+        Streams projectView = projectMultiplexor.getStreamsForChannel(1);
         this.outgoingProjectInterface = RemoteInvocation.caller(commands.in(), commands.out(), ProjectInterface.class);
-        Map<Integer, InputOutput> channel2InputOutput = new HashMap<>(); //TODO: clear!!
-        new ReceiverBuilder<>(ioControl.in(), ioControl.out(), IOTask.class)
-                .addHandler(IOTask.GET_IO, GetIORequest.class, io -> {
-                    InputOutput inputOutput = IOProvider.getDefault().getIO(io.name, true);
-                    int channel = nextChannel.getAndIncrement();
-                    channel2InputOutput.put(channel, inputOutput);
-                    Streams streams = projectMultiplexor.getStreamsForChannel(channel);
-                    new RequestProcessor(ProjectHandler.class.getName(), 1, false, false).post(() -> {
-                        try {
-                            Reader ioIn = new InputStreamReader(streams.in()); //TODO: encoding!(?)
-                            OutputWriter ioOut = inputOutput.getOut();
-                            int r;
-                            StringBuilder wrote = new StringBuilder();
-                            while ((r = ioIn.read()) != (-1)) {
-                                ioOut.write(r);
-                                wrote.append((char) r);
-                                if (r == '\n') {
-                                    ioOut.flush();
-                                }
-                            }
-                        } catch (IOException ex) {
-                            Exceptions.printStackTrace(ex);
-                        }
-                    });
-                    CompletableFuture<Object> result = new CompletableFuture<>();
-                    result.complete(channel);
-                    return result;
-                }).startReceiver();
         nodeContext = new NodeContext(resourceRoot);
         Launcher<TreeViewService> launcher = new Launcher.Builder<TreeViewService>().setLocalService(nodeContext.createCallback()).setRemoteInterface(TreeViewService.class).setInput(projectView.in()).setOutput(projectView.out()).create();
         nodeContext.setService(launcher.getRemoteProxy());
@@ -115,22 +85,6 @@ public final class ProjectHandler {
 
     public NodeContext getNodeContext() {
         return nodeContext;
-    }
-
-    public enum IOTask {
-        GET_IO,
-    }
-
-    public static class GetIORequest {
-        public String name;
-
-        public GetIORequest() {
-        }
-
-        public GetIORequest(String name) {
-            this.name = name;
-        }
-
     }
 
     public interface ProjectInterface {

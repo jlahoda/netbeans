@@ -28,8 +28,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.netbeans.modules.remote.AsynchronousConnection.ReceiverBuilder;
 import org.netbeans.modules.remote.AsynchronousConnection.Sender;
+import org.netbeans.modules.remote.agent.io.ToClientIOProvider;
+import org.netbeans.modules.remote.ide.fs.io.IOHandler;
+import org.netbeans.spi.io.InputOutputProvider;
 import org.openide.util.Lookup;
 import org.openide.util.RequestProcessor;
+import org.openide.util.lookup.Lookups;
+import org.openide.util.lookup.ProxyLookup;
 
 /**
  * TODO: test exceptional states!!
@@ -41,12 +46,14 @@ public class Remote {
     //TODO: state - connecting, failed, connected, etc.
     private final StreamMultiplexor multiplexor;
     private final Sender asynchronousSendAndReceive;
-    private final AtomicInteger channel = new AtomicInteger(1);
+    private final AtomicInteger channel = new AtomicInteger(2);
 
     public Remote(InputStream in, OutputStream out) {
         this.multiplexor = new StreamMultiplexor(in, out);
-        Streams streamsForChannel = multiplexor.getStreamsForChannel(0);
-        asynchronousSendAndReceive = new Sender(streamsForChannel.in(), streamsForChannel.out());
+        Streams controlChannel = multiplexor.getStreamsForChannel(0);
+        Streams ioChannel = multiplexor.getStreamsForChannel(1);
+        asynchronousSendAndReceive = new Sender(controlChannel.in(), controlChannel.out());
+        IOHandler.run(ioChannel);
     }
 
     public Streams runService(String serviceName) throws IOException, ExecutionException {
@@ -97,22 +104,30 @@ public class Remote {
 
     public static RequestProcessor.Task runAgent(InputStream in, OutputStream out) {
         StreamMultiplexor multiplexor = new StreamMultiplexor(in, out);
-        Streams streamsForChannel = multiplexor.getStreamsForChannel(0);
-        AtomicInteger nextChannel = new AtomicInteger(1);
-        return new ReceiverBuilder<Task>(streamsForChannel.in(), streamsForChannel.out(), Task.class)
-               .addHandler(Task.RUN_SERVICE, RunService.class, value -> {
-            //TODO: asynchronously
-            CompletableFuture<Object> result = new CompletableFuture<Object>();
-            for (Service s : Lookup.getDefault().lookupAll(Service.class)) {
-                if (value.serviceName.equals(s.name())) {
-                    Streams thisServiceStreams = multiplexor.getStreamsForChannel(nextChannel.getAndIncrement());
-                    s.run(thisServiceStreams.in(), thisServiceStreams.out());
-                    result.complete(new ServiceRan());
-                    return result;
+        Streams controlChannel = multiplexor.getStreamsForChannel(0);
+        Streams ioChannel = multiplexor.getStreamsForChannel(1);
+        ToClientIOProvider ioProvider = new ToClientIOProvider(ioChannel);
+        AtomicInteger nextChannel = new AtomicInteger(2);
+        RequestProcessor.Task[] agentTask = new RequestProcessor.Task[1];
+        Lookup inputOutputLookup = Lookups.fixed(ioProvider);
+        ProxyLookup lookupWithContext = new ProxyLookup(Lookups.exclude(Lookup.getDefault(), InputOutputProvider.class, org.openide.windows.IOProvider.class), inputOutputLookup);
+        Lookups.executeWith(lookupWithContext, () -> {
+            agentTask[0] = new ReceiverBuilder<Task>(controlChannel.in(), controlChannel.out(), Task.class)
+                   .addHandler(Task.RUN_SERVICE, RunService.class, value -> {
+                //TODO: asynchronously
+                CompletableFuture<Object> result = new CompletableFuture<Object>();
+                for (Service s : Lookup.getDefault().lookupAll(Service.class)) {
+                    if (value.serviceName.equals(s.name())) {
+                        Streams thisServiceStreams = multiplexor.getStreamsForChannel(nextChannel.getAndIncrement());
+                        s.run(thisServiceStreams.in(), thisServiceStreams.out());
+                        result.complete(new ServiceRan());
+                        return result;
+                    }
                 }
-            }
-            result.completeExceptionally(new IllegalStateException("Cannot find service name " + value.serviceName));
-            return result;
-        }).startReceiver();
+                result.completeExceptionally(new IllegalStateException("Cannot find service name " + value.serviceName));
+                return result;
+            }).startReceiver();
+        });
+        return agentTask[0];
     }
 }
