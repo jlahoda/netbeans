@@ -5201,6 +5201,54 @@ public class FormatingTest extends NbTestCase {
                 + "}\n";
         reformat(doc, content, golden);
 
+        content ="""
+                package hierbas.del.litoral;
+
+                public class Test{
+                /**{@return foo bar method} */    String bar() { 
+                        return null; 
+                    }
+                }""";
+        golden ="""
+                package hierbas.del.litoral;
+
+                public class Test {
+
+                    /**
+                     * {@return foo bar method}
+                     */
+                    String bar() {
+                        return null;
+                    }
+                }
+                """;
+        reformat(doc, content, golden);    
+        
+        content ="""
+                 package hierbas.del.litoral;
+                 
+                 public class Test{
+                 /** bar method description {@return foo bar method} */    String bar() { 
+                         return null; 
+                     }
+                 }
+                 """;
+        golden ="""
+                package hierbas.del.litoral;
+                
+                public class Test {
+                
+                    /**
+                     * bar method description
+                     * {@return foo bar method}
+                     */
+                    String bar() {
+                        return null;
+                    }
+                }
+                """;
+        reformat(doc, content, golden);
+        
         content =
                 "package hierbas.del.litoral;\n"
                 + "\n"
@@ -6753,32 +6801,6 @@ public class FormatingTest extends NbTestCase {
         reformat(doc, content, golden);
     }
   
-    public void testStringTemplate() throws Exception {
-        testFile = new File(getWorkDir(), "Test.java");
-        TestUtilities.copyStringToFile(testFile, "");
-        FileObject testSourceFO = FileUtil.toFileObject(testFile);
-        DataObject testSourceDO = DataObject.find(testSourceFO);
-        EditorCookie ec = (EditorCookie) testSourceDO.getCookie(EditorCookie.class);
-        final Document doc = ec.openDocument();
-        doc.putProperty(Language.class, JavaTokenId.language());
-        String content
-                = "\n"
-                + "class Test {\n\n"
-                + "    private String t() {\n"
-                + "        return STR.\"a\\{1 + 2}b\";\n"
-                + "    }\n"
-                + "}\n";
-
-        String golden
-                = "\n"
-                + "class Test {\n\n"
-                + "    private String t() {\n"
-                + "        return STR.\"a\\{1 + 2}b\";\n"
-                + "    }\n"
-                + "}\n";
-        reformat(doc, content, golden);
-    }
-
     private void reformat(Document doc, String content, String golden) throws Exception {
         reformat(doc, content, golden, 0, content.length());
     }

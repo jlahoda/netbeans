@@ -96,7 +96,7 @@ public final class GradleInitWizard {
                 case SCALA_TEST -> Bundle.LBL_TFW_SCALA_TEST();
                 case SPOCK -> Bundle.LBL_TFW_SPOCK();
                 case TESTNG -> Bundle.LBL_TFW_TESTNG();
-                case XCTEST -> Bundle.LBL_TFW_XCTEST();
+                case XCTEST-> Bundle.LBL_TFW_XCTEST();
             };
         }
     }

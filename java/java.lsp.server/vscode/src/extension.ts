@@ -45,7 +45,7 @@ import {
 import * as net from 'net';
 import * as fs from 'fs';
 import * as path from 'path';
-import { ChildProcess } from 'child_process';
+import { spawnSync, ChildProcess } from 'child_process';
 import * as vscode from 'vscode';
 import * as ls from 'vscode-languageserver-protocol';
 import * as launcher from './nbcode';
@@ -60,16 +60,26 @@ import { initializeRunConfiguration, runConfigurationProvider, runConfigurationN
 import { dBConfigurationProvider, onDidTerminateSession } from './dbConfigurationProvider';
 import { InputStep, MultiStepInput } from './utils';
 import { PropertiesView } from './propertiesView/propertiesView';
+import * as configuration from './jdk/configuration';
+import * as jdk from './jdk/jdk';
+import { validateJDKCompatibility } from './jdk/validation/validation';
+import * as sshGuide from './panels/SshGuidePanel';
+import * as runImageGuide from './panels/RunImageGuidePanel';
+import { shouldHideGuideFor } from './panels/guidesUtil';
 
 const API_VERSION : string = "1.0";
 export const COMMAND_PREFIX : string = "nbls";
 const DATABASE: string = 'Database';
 const listeners = new Map<string, string[]>();
-let client: Promise<NbLanguageClient>;
+export let client: Promise<NbLanguageClient>;
+export let clientRuntimeJDK : string | null = null;
+export const MINIMAL_JDK_VERSION = 17;
+
 let testAdapter: NbTestAdapter | undefined;
 let nbProcess : ChildProcess | null = null;
 let debugPort: number = -1;
 let consoleLog: boolean = !!process.env['ENABLE_CONSOLE_LOG'];
+let specifiedJDKWarned : string[] = [];
 
 export class NbLanguageClient extends LanguageClient {
     private _treeViewService: TreeViewService;
@@ -182,6 +192,8 @@ function findJDK(onChange: (path : string | null) => void): void {
     }
 
     let currentJdk = find();
+    let projectJdk : string | undefined = getProjectJDKHome();
+    validateJDKCompatibility(projectJdk);
     let timeout: NodeJS.Timeout | undefined = undefined;
     workspace.onDidChangeConfiguration(params => {
         if (timeout) {
@@ -204,10 +216,12 @@ function findJDK(onChange: (path : string | null) => void): void {
             let newJdk = find();
             let newD = isDarkColorTheme();
             let newJavaEnabled = isJavaSupportEnabled();
-            if (newJdk !== currentJdk || newD != nowDark || newJavaEnabled != nowJavaEnabled) {
+            let newProjectJDK : string | undefined = getProjectJDKHome();
+            if (newJdk !== currentJdk || newD != nowDark || newJavaEnabled != nowJavaEnabled || newProjectJDK != projectJdk) {
                 nowDark = newD;
                 nowJavaEnabled = newJavaEnabled;
                 currentJdk = newJdk;
+                projectJdk = newProjectJDK;
                 onChange(currentJdk);
             }
         }, 0);
@@ -270,6 +284,10 @@ function wrapCommandWithProgress(lsCommand : string, title : string, log? : vsco
     return window.withProgress({ location: ProgressLocation.Window }, p => {
         return new Promise(async (resolve, reject) => {
             let c : LanguageClient = await client;
+            const docsTosave : Thenable<boolean>[]= vscode.workspace.textDocuments.
+                filter(d => fs.existsSync(d.uri.fsPath)).
+                map(d => d.save());
+            await Promise.all(docsTosave);
             const commands = await vscode.commands.getCommands();
             if (commands.includes(lsCommand)) {
                 p.report({ message: title });
@@ -299,6 +317,7 @@ function wrapCommandWithProgress(lsCommand : string, title : string, log? : vsco
                     if (log) {
                         handleLog(log, `command ${lsCommand} executed with error: ${JSON.stringify(err)}`);
                     }
+                    reject(err && typeof err.message === 'string' ? err.message : "Error");
                 }
             } else {
                 reject(`cannot run ${lsCommand}; client is ${c}`);
@@ -345,7 +364,59 @@ function shouldEnableConflictingJavaSupport() : boolean | undefined {
     return r;
 }
 
-export function activate(context: ExtensionContext): VSNetBeansAPI {
+function getValueAfterPrefix(input: string | undefined, prefix: string): string {
+    if (input === undefined) {
+        return "";
+    }
+    const parts = input.split(' ');
+    for (let i = 0; i < parts.length; i++) {
+        if (parts[i].startsWith(prefix)) {
+            return parts[i].substring(prefix.length);
+        }
+    }
+    return '';
+}
+
+export function activate(context: ExtensionContext): VSNetBeansAPI {    
+    const provider = new StringContentProvider();
+    const scheme = 'in-memory';
+    const providerRegistration = vscode.workspace.registerTextDocumentContentProvider(scheme, provider);
+
+    context.subscriptions.push(vscode.commands.registerCommand('cloud.assets.policy.create', async function (viewItem) {
+            const POLICIES_PREVIEW = 'Open a preview of the OCI policies';
+            const POLICIES_UPLOAD = 'Upload the OCI Policies to OCI';
+            const selected: any = await window.showQuickPick([POLICIES_PREVIEW, POLICIES_UPLOAD], { placeHolder: 'Select a target for the OCI policies' });
+            if (selected == POLICIES_UPLOAD) {
+                await vscode.commands.executeCommand('nbls.cloud.assets.policy.upload');
+                return;
+            } 
+
+            const content = await vscode.commands.executeCommand('nbls.cloud.assets.policy.create.local') as string;
+            const document = vscode.Uri.parse(`${scheme}:policies.txt?${encodeURIComponent(content)}`);
+            vscode.workspace.openTextDocument(document).then(doc => {
+                vscode.window.showTextDocument(doc, { preview: false });
+            });
+        })
+    );
+    context.subscriptions.push(vscode.commands.registerCommand('cloud.assets.config.create', async function (viewItem) {
+            const CONFIG_LOCAL = 'Open a preview of the config in the editor';
+            const CONFIG_TO_DEVOPS_CM = 'Upload the config to a ConfigMap artifact whithin an OCI DevOps Project';
+            const CONFIG_TO_OKE_CM = 'Upload the config to a ConfigMap artifact whithin OKE cluster';
+            const selected: any = await window.showQuickPick([CONFIG_LOCAL, CONFIG_TO_OKE_CM, CONFIG_TO_DEVOPS_CM], { placeHolder: 'Select a target for the config' });
+            if (selected == CONFIG_TO_DEVOPS_CM) {
+                await commands.executeCommand('nbls.cloud.assets.configmap.devops.upload');
+                return;
+            } else if (selected == CONFIG_TO_OKE_CM) {
+                await commands.executeCommand('nbls.cloud.assets.configmap.upload');
+                return;               
+            }
+            const content = await vscode.commands.executeCommand('nbls.cloud.assets.config.create.local') as string;
+            const document = vscode.Uri.parse(`${scheme}:application.properties?${encodeURIComponent(content)}`);
+            vscode.workspace.openTextDocument(document).then(doc => {
+                vscode.window.showTextDocument(doc, { preview: false });
+            });
+        })
+    );
     let log = vscode.window.createOutputChannel("Apache NetBeans Language Server");
 
     var clientResolve : (x : NbLanguageClient) => void;
@@ -355,6 +426,10 @@ export function activate(context: ExtensionContext): VSNetBeansAPI {
     client = new InitialPromise((resolve, reject) => {
         clientResolve = resolve;
         clientReject = reject;
+    });
+    // we need to call refresh here as @OnStart in NBLS is called before the workspace projects are opened.
+    client.then(() => {
+        vscode.commands.executeCommand('nbls.cloud.assets.refresh');
     });
 
     function checkConflict(): void {
@@ -395,7 +470,51 @@ export function activate(context: ExtensionContext): VSNetBeansAPI {
     checkConflict();
 
     // find acceptable JDK and launch the Java part
-    findJDK((specifiedJDK) => {
+    findJDK(async (specifiedJDK) => {
+        const osExeSuffix = process.platform === 'win32' ? '.exe' : '';
+        let jdkOK : boolean = true;
+        let javaExecPath : string;
+        if (!specifiedJDK) {
+            javaExecPath = 'java';
+        } else {
+            javaExecPath = path.resolve(specifiedJDK, 'bin', 'java');
+            jdkOK = fs.existsSync(path.resolve(specifiedJDK, 'bin', `java${osExeSuffix}`)) && fs.existsSync(path.resolve(specifiedJDK, 'bin', `javac${osExeSuffix}`));
+        }
+        if (jdkOK) {
+            log.appendLine(`Verifying java: ${javaExecPath}`);
+            // let the shell interpret PATH and .exe extension
+            let javaCheck = spawnSync(`${javaExecPath} -version`, { shell : true });
+            if (javaCheck.error || javaCheck.status) {
+                jdkOK = false;
+            } else {
+                javaCheck.stderr.toString().split('\n').find(l => {
+                    // yes, versions like 1.8 (up to 9) will be interpreted as 1, which is OK for < comparison
+                    let re = /.* version \"([0-9]+)\.[^"]+\".*/.exec(l);
+                    if (re) {
+                        let versionNumber = Number(re[1]);
+                        if (versionNumber < MINIMAL_JDK_VERSION) {
+                            jdkOK = false;
+                        }
+                    }
+                });
+            }
+        }
+        let warnedJDKs : string[] = specifiedJDKWarned; 
+        if (!jdkOK && !warnedJDKs.includes(specifiedJDK || '')) {
+            const msg = specifiedJDK ? 
+                `The current path to JDK "${specifiedJDK}" may be invalid. A valid JDK ${MINIMAL_JDK_VERSION}+ is required by Apache NetBeans Language Server to run.
+                You should configure a proper JDK for Apache NetBeans and/or other technologies. Do you want to run JDK configuration now?` :
+                `A valid JDK ${MINIMAL_JDK_VERSION}+ is required by Apache NetBeans Language Server to run, but none was found. You should configure a proper JDK for Apache NetBeans and/or other technologies. ` +
+                'Do you want to run JDK configuration now?';
+            const Y = "Yes";
+            const N = "No";
+            if (await vscode.window.showErrorMessage(msg, Y, N) == Y) {
+                vscode.commands.executeCommand('nbls.jdk.configuration');
+                return;
+            } else {
+                warnedJDKs.push(specifiedJDK || '');
+            }
+        }
         let currentClusters = findClusters(context.extensionPath).sort();
         const dsSorter = (a: TextDocumentFilter, b: TextDocumentFilter) => {
             return (a.language || '').localeCompare(b.language || '')
@@ -450,12 +569,17 @@ export function activate(context: ExtensionContext): VSNetBeansAPI {
 	});
 
     // register commands
-    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.workspace.new', async (ctx) => {
+    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.workspace.new', async (ctx, template) => {
         let c : LanguageClient = await client;
         const commands = await vscode.commands.getCommands();
         if (commands.includes(COMMAND_PREFIX + '.new.from.template')) {
-            // first give the context, then the open-file hint in the case the context is not specific enough
-            const res = await vscode.commands.executeCommand(COMMAND_PREFIX + '.new.from.template', contextUri(ctx)?.toString(), vscode.window.activeTextEditor?.document?.uri?.toString());
+            // first give the template (if present), then the context, and then the open-file hint in the case the context is not specific enough
+            const params = [];
+            if (typeof template === 'string') {
+                params.push(template);
+            }
+            params.push(contextUri(ctx)?.toString(), vscode.window.activeTextEditor?.document?.uri?.toString());
+            const res = await vscode.commands.executeCommand(COMMAND_PREFIX + '.new.from.template', ...params);
 
             if (typeof res === 'string') {
                 let newFile = vscode.Uri.parse(res as string);
@@ -560,6 +684,9 @@ export function activate(context: ExtensionContext): VSNetBeansAPI {
     context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.project.clean', (args) => {
         wrapProjectActionWithProgress('clean', undefined, 'Cleaning...', log, true, args);
     }));
+    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.project.buildPushImage', () => {
+        wrapCommandWithProgress(COMMAND_PREFIX + '.cloud.assets.buildPushImage', 'Building and pushing container image', log, true);
+    }));
     context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.open.type', () => {
         wrapCommandWithProgress(COMMAND_PREFIX + '.quick.open', 'Opening type...', log, true).then(() => {
             commands.executeCommand('workbench.action.focusActiveEditorGroup');
@@ -612,6 +739,10 @@ export function activate(context: ExtensionContext): VSNetBeansAPI {
         if (edit) {
             const wsEdit = await (await client).protocol2CodeConverter.asWorkspaceEdit(edit as ls.WorkspaceEdit);
             await workspace.applyEdit(wsEdit);
+            for (const entry of wsEdit.entries()) {
+                const file = vscode.Uri.parse(entry[0].fsPath);
+                await vscode.window.showTextDocument(file, { preview: false });
+            }
             await commands.executeCommand('workbench.action.focusActiveEditorGroup');
         }
     }));
@@ -659,7 +790,7 @@ export function activate(context: ExtensionContext): VSNetBeansAPI {
                 name: "Java Single Debug",
                 request: "launch"
             };
-            if (!methodName) {
+            if (methodName) {
                 debugConfig['methodName'] = methodName;
             }
             if (launchConfiguration == '') {
@@ -730,9 +861,13 @@ export function activate(context: ExtensionContext): VSNetBeansAPI {
             }
         }
     }));
-    context.subscriptions.push(commands.registerCommand('nbls.workspace.symbols', async (query) => {
+    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.workspace.symbols', async (query) => {
         const c = await client;
-        return (await c.sendRequest<SymbolInformation[]>("workspace/symbol", { "query": query })) ?? [];
+        return (await c.sendRequest<SymbolInformation[]>('workspace/symbol', { 'query': query })) ?? [];
+    }));
+    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.workspace.symbol.resolve', async (symbol) => {
+        const c = await client;
+        return (await c.sendRequest<SymbolInformation>('workspaceSymbol/resolve', symbol)) ?? null;
     }));
     context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.java.complete.abstract.methods', async () => {
         const active = vscode.window.activeTextEditor;
@@ -744,7 +879,7 @@ export function activate(context: ExtensionContext): VSNetBeansAPI {
     context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.startup.condition', async () => {
         return client;
     }));
-    context.subscriptions.push(commands.registerCommand('nbls.addEventListener', (eventName, listener) => {
+    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.addEventListener', (eventName, listener) => {
         let ls = listeners.get(eventName);
         if (!ls) {
             ls = [];
@@ -752,25 +887,79 @@ export function activate(context: ExtensionContext): VSNetBeansAPI {
         }
         ls.push(listener);
     }));
-    context.subscriptions.push(commands.registerCommand('nbls.node.properties.edit',
+    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.node.properties.edit',
         async (node) => await PropertiesView.createOrShow(context, node, (await client).findTreeViewService())));
 
     context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.cloud.ocid.copy',
         async (node) => {
-            const ocid : string = await commands.executeCommand(COMMAND_PREFIX + '.cloud.ocid.get', node.id);
+            const ocid = getValueAfterPrefix(node.contextValue, 'ocid:');
             vscode.env.clipboard.writeText(ocid);
+        }
+    ));
+
+    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.cloud.publicIp.copy',
+        async (node) => {
+            const publicIp = getValueAfterPrefix(node.contextValue, 'publicIp:');
+            vscode.env.clipboard.writeText(publicIp);
+        }
+    ));
+
+    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.cloud.imageUrl.copy',
+        async (node) => {
+            const imageUrl = getValueAfterPrefix(node.contextValue, 'imageUrl:');
+            vscode.env.clipboard.writeText("docker pull " + imageUrl);
+        }
+    ));
+
+    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.cloud.computeInstance.ssh',
+        async (node) => {
+            const publicIp = getValueAfterPrefix(node.contextValue, 'publicIp:');
+            const ocid = getValueAfterPrefix(node.contextValue, 'ocid:');
+
+            if (!shouldHideGuideFor(sshGuide.viewType, ocid)) {
+                sshGuide.SshGuidePanel.createOrShow(context, {
+                    publicIp,
+                    ocid
+                });
+            }
+
+            openSSHSession("opc", publicIp, node.label);
+        }
+    ));
+
+    context.subscriptions.push(commands.registerCommand(COMMAND_PREFIX + '.cloud.container.docker',
+        async (node) => {
+            const publicIp = getValueAfterPrefix(node.contextValue, 'publicIp:');
+            const imageUrl = getValueAfterPrefix(node.contextValue, 'imageUrl:');
+            const ocid = getValueAfterPrefix(node.contextValue, 'ocid:');
+            const isRepositoryPrivate = "false" === getValueAfterPrefix(node.parent.contextValue, "repositoryPublic:");
+            const registryUrl = imageUrl.split('/')[0];
+
+            if (!shouldHideGuideFor(runImageGuide.viewType, ocid)){
+                runImageGuide.RunImageGuidePanel.createOrShow(context, {
+                    publicIp,
+                    ocid,
+                    isRepositoryPrivate,
+                    registryUrl
+                });
+            }
+
+            runDockerSSH("opc", publicIp, imageUrl, isRepositoryPrivate);
         }
     ));
 
     const archiveFileProvider = <vscode.TextDocumentContentProvider> {
         provideTextDocumentContent: async (uri: vscode.Uri, token: vscode.CancellationToken): Promise<string> => {
-            return await commands.executeCommand('nbls.get.archive.file.content', uri.toString());
+            return await commands.executeCommand(COMMAND_PREFIX + '.get.archive.file.content', uri.toString());
         }
     };
     context.subscriptions.push(workspace.registerTextDocumentContentProvider('jar', archiveFileProvider));
     context.subscriptions.push(workspace.registerTextDocumentContentProvider('nbjrt', archiveFileProvider));
 
     launchConfigurations.updateLaunchConfig();
+
+    configuration.initialize(context);
+    jdk.initialize(context);
 
     // register completions:
     launchConfigurations.registerCompletion(context);
@@ -802,6 +991,7 @@ function activateWithJDK(specifiedJDK: string | null, context: ExtensionContext,
     client = new Promise<NbLanguageClient>((clientOK, clientErr) => {
         setClient = [
             function (c : NbLanguageClient) {
+                clientRuntimeJDK = specifiedJDK;
                 clientOK(c);
                 if (clientResolve) {
                     clientResolve(c);
@@ -834,6 +1024,82 @@ function activateWithJDK(specifiedJDK: string | null, context: ExtensionContext,
     }
 }
 
+function runCommandInTerminal(command: string, name: string) {
+    const isWindows = process.platform === 'win32';
+
+    const defaultShell = isWindows
+      ? process.env.ComSpec || 'cmd.exe'
+      : process.env.SHELL || '/bin/bash';
+
+    const pauseCommand = 'echo "Press any key to close..."; node -e "process.stdin.setRawMode(true); process.stdin.resume(); process.stdin.on(\'data\', process.exit.bind(process, 0));"';
+    const commandWithPause = `${command} 2>&1; ${pauseCommand}`;
+    const terminal = vscode.window.createTerminal({
+      name: name,
+      shellPath: defaultShell,
+      shellArgs: isWindows ? ['/c', commandWithPause] : ['-c', commandWithPause],
+    });
+    terminal.show();
+}
+
+function openSSHSession(username: string, host: string, name?: string) {
+    let sessionName;
+    if (name === undefined) {
+        sessionName =`${username}@${host}`;
+    } else {
+        sessionName = name;
+    }
+
+    const sshCommand = `ssh ${username}@${host}`;
+
+    runCommandInTerminal(sshCommand, `SSH: ${username}@${host}`);
+}
+
+interface ConfigFiles {
+    applicationProperties : string | null;
+    bootstrapProperties: string | null;
+}
+
+async function runDockerSSH(username: string, host: string, dockerImage: string, isRepositoryPrivate: boolean) {
+    const configFiles: ConfigFiles = await vscode.commands.executeCommand('nbls.config.file.path') as ConfigFiles;
+    const { applicationProperties, bootstrapProperties } = configFiles;
+
+    const applicationPropertiesRemotePath = `/home/${username}/application.properties`;
+    const bootstrapPropertiesRemotePath = `/home/${username}/bootstrap.properties`;
+    const bearerTokenRemotePath = `/home/${username}/token.txt`;
+    const applicationPropertiesContainerPath = "/home/app/application.properties";
+    const bootstrapPropertiesContainerPath = "/home/app/bootstrap.properties";
+    const ocirServer = dockerImage.split('/')[0];
+
+    let sshCommand = "";
+    let mountVolume = "";
+    let micronautConfigFilesEnv = "";
+    if (isRepositoryPrivate) {
+        const bearerTokenFile = await commands.executeCommand(COMMAND_PREFIX + '.cloud.assets.createBearerToken', ocirServer);
+        sshCommand = `scp "${bearerTokenFile}" ${username}@${host}:${bearerTokenRemotePath} && `;
+    }
+
+    if (bootstrapProperties) {
+        sshCommand += `scp "${bootstrapProperties}" ${username}@${host}:${bootstrapPropertiesRemotePath} && `;
+        mountVolume = `-v ${bootstrapPropertiesRemotePath}:${bootstrapPropertiesContainerPath}:Z `;
+        micronautConfigFilesEnv = `${bootstrapPropertiesContainerPath}`;
+    }
+
+    if (applicationProperties) {
+        sshCommand += `scp "${applicationProperties}" ${username}@${host}:${applicationPropertiesRemotePath} && `;
+        mountVolume += ` -v ${applicationPropertiesRemotePath}:${applicationPropertiesContainerPath}:Z`;
+        micronautConfigFilesEnv += `${bootstrapProperties ? "," : ""}${applicationPropertiesContainerPath}`;
+    } 
+
+    let dockerPullCommand = "";
+    if (isRepositoryPrivate) {
+        dockerPullCommand = `cat ${bearerTokenRemotePath} | docker login --username=BEARER_TOKEN --password-stdin ${ocirServer} && `;
+    }
+    dockerPullCommand += `docker pull ${dockerImage} && `;
+
+    sshCommand += `ssh ${username}@${host} "${dockerPullCommand} docker run -p 8080:8080 ${mountVolume} -e MICRONAUT_CONFIG_FILES=${micronautConfigFilesEnv} -it ${dockerImage}"`;
+
+    runCommandInTerminal(sshCommand, `Container: ${username}@${host}`)
+}
 
 function killNbProcess(notifyKill : boolean, log : vscode.OutputChannel, specProcess?: ChildProcess) : Promise<void> {
     const p = nbProcess;
@@ -897,6 +1163,10 @@ function isJavaSupportEnabled() : boolean {
     return workspace.getConfiguration('netbeans')?.get('javaSupport.enabled') as boolean;
 }
 
+function getProjectJDKHome() : string {
+    return workspace.getConfiguration('netbeans')?.get('project.jdkhome') as string;
+}
+
 function doActivateWithJDK(specifiedJDK: string | null, context: ExtensionContext, log : vscode.OutputChannel, notifyKill: boolean,
     setClient : [(c : NbLanguageClient) => void, (err : any) => void]
 ): void {
@@ -931,7 +1201,7 @@ function doActivateWithJDK(specifiedJDK: string | null, context: ExtensionContex
         storagePath : userdir,
         jdkHome : specifiedJDK,
         verbose: beVerbose
-    };
+    };    
     let launchMsg = `Launching Apache NetBeans Language Server with ${specifiedJDK ? specifiedJDK : 'default system JDK'} and userdir ${userdir}`;
     handleLog(log, launchMsg);
     vscode.window.setStatusBarMessage(launchMsg, 2000);
@@ -1057,7 +1327,9 @@ function doActivateWithJDK(specifiedJDK: string | null, context: ExtensionContex
                 'netbeans.hints',
                 'netbeans.format',
                 'netbeans.java.imports',
-                'java+.runConfig.vmOptions'
+                'netbeans.project.jdkhome',
+                'java+.runConfig.vmOptions',
+                'java+.runConfig.cwd'
             ],
             fileEvents: [
                 workspace.createFileSystemWatcher('**/*.java')
@@ -1122,12 +1394,25 @@ function doActivateWithJDK(specifiedJDK: string | null, context: ExtensionContex
                 // don't ask why vscode mangles URIs this way; in addition, it uses lowercase drive letter ???
                 return `file:///${re[1].toLowerCase()}%3A/${re[2]}`;
             });
+            let ok = true;
             for (let ed of workspace.textDocuments) {
-                if (uriList.includes(ed.uri.toString())) {
-                    return ed.save();
+                let uri = ed.uri.toString();
+
+                if (uriList.includes(uri)) {
+                    ed.save();
+                    continue;
+                } 
+                if (uri.startsWith("file:///")) {
+                    // make file:/// just file:/
+                    uri = "file:/" + uri.substring(8);
+                    if (uriList.includes(uri)) {
+                        ed.save();
+                        continue;
+                    }
                 }
+                ok = false;
             }
-            return false;
+            return ok;
         });
         c.onRequest(InputBoxRequest.type, async param => {
             return await window.showInputBox({ title: param.title, prompt: param.prompt, value: param.value, password: param.password });
@@ -1218,10 +1503,13 @@ function doActivateWithJDK(specifiedJDK: string | null, context: ExtensionContex
             }
         });
         c.onNotification(TelemetryEventNotification.type, (param) => {
-            const ls = listeners.get(param);
-            if (ls) {
-                for (const listener of ls) {
-                    commands.executeCommand(listener);
+            const names = param.name !== 'SCAN_START_EVT' && param.name !== 'SCAN_END_EVT' ? [param.name] : [param.name, param.properties];
+            for (const name of names) {
+                const ls = listeners.get(name);
+                if (ls) {
+                    for (const listener of ls) {
+                        commands.executeCommand(listener);
+                    }
                 }
             }
         });
@@ -1239,7 +1527,46 @@ function doActivateWithJDK(specifiedJDK: string | null, context: ExtensionContex
         if (enableJava) {
             c.findTreeViewService().createView('cloud.resources', undefined, { canSelectMany : false });
         }
+        c.findTreeViewService().createView('cloud.assets', undefined, { canSelectMany : false, showCollapseAll: false , providerInitializer : (customizable) =>
+            customizable.addItemDecorator(new CloudAssetsDecorator())});
     }).catch(setClient[1]);
+
+    class CloudAssetsDecorator implements TreeItemDecorator<Visualizer> {
+        decorateChildren(element: Visualizer, children: Visualizer[]): Visualizer[] {
+            return children;
+        }
+
+        async decorateTreeItem(vis : Visualizer, item : vscode.TreeItem) : Promise<vscode.TreeItem> {
+            const refName = getValueAfterPrefix(item.contextValue, "cloudAssetsReferenceName:");
+            if (refName !== undefined && refName !== null && refName.length > 0) {
+                item.description = refName;
+                return item;
+            }
+            const imageCount = getValueAfterPrefix(item.contextValue, "imageCount:");
+            const repositoryPublic: Boolean = "true" === getValueAfterPrefix(item.contextValue, "repositoryPublic:");
+            if (imageCount !== undefined && imageCount !== null && imageCount.length > 0) {
+                if (repositoryPublic) {
+                    item.description = imageCount + " (public)";
+                } else {
+                    item.description = imageCount + " (private)";
+                }
+                return item;
+            }
+            const lifecycleState: String = getValueAfterPrefix(item.contextValue, "lifecycleState:");
+            if (lifecycleState) {
+                item.description = lifecycleState === "PENDING_DELETION" ? '(pending deletion)' : undefined;
+            }
+            const clusterNamespace = getValueAfterPrefix(item.contextValue, "clusterNamespace:");
+            if (clusterNamespace) {
+                item.description = clusterNamespace;
+                return item;
+            }
+            return item;
+        }
+
+        dispose() {
+        }
+    }
 
     class Decorator implements TreeItemDecorator<Visualizer> {
         private provider : CustomizableTreeDataProvider<Visualizer>;
@@ -1662,3 +1989,24 @@ class NetBeansConfigurationNativeResolver implements vscode.DebugConfigurationPr
         return config;
     }
 }
+
+
+class StringContentProvider implements vscode.TextDocumentContentProvider {
+    private _onDidChange = new vscode.EventEmitter<vscode.Uri>(); // Properly declare and initialize
+
+    // Constructor is not necessary if only initializing _onDidChange
+
+    // This function must return a string as the content of the document
+    provideTextDocumentContent(uri: vscode.Uri): string {
+        // Return the content for the given URI
+        // Here, using the query part of the URI to store and retrieve the content
+        return uri.query;
+    }
+
+    // Allow listeners to subscribe to content changes
+    get onDidChange(): vscode.Event<vscode.Uri> {
+        return this._onDidChange.event;
+    }
+
+}
+

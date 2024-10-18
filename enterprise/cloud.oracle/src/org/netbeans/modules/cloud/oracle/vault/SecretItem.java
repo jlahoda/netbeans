@@ -18,6 +18,7 @@
  */
 package org.netbeans.modules.cloud.oracle.vault;
 
+import java.util.Date;
 import org.netbeans.modules.cloud.oracle.items.OCID;
 import org.netbeans.modules.cloud.oracle.items.OCIItem;
 
@@ -26,19 +27,20 @@ import org.netbeans.modules.cloud.oracle.items.OCIItem;
  * @author Jan Horvath
  */
 public class SecretItem extends OCIItem {
-    String compartmentId;
+    
+    private String lifecycleState;
+    private Date deletionTime;
 
-    public SecretItem(OCID id, String name, String compartmentId) {
-        super(id, name);
-        this.compartmentId = compartmentId;
+    public SecretItem(OCID id, String compartmentId, String name, String lifecycleState, Date deletionTime, String tenancyId, String regionCode) {
+        super(id, compartmentId, name, tenancyId, regionCode);
+        this.lifecycleState = lifecycleState;
+        this.deletionTime = deletionTime;
     }
 
-    public SecretItem() {
+    public SecretItem() { 
         super();
-    }
-
-    public String getCompartmentId() {
-        return compartmentId;
+        this.lifecycleState = null;
+        this.deletionTime = null;
     }
     
     @Override
@@ -46,4 +48,19 @@ public class SecretItem extends OCIItem {
         return Integer.MAX_VALUE;
     }
     
+    public Date getDeletionTime() {
+        return this.deletionTime;
+    }
+    
+    void setDeletionTime(Date deletionTime) {
+        this.deletionTime = deletionTime;
+    }
+    
+    public String getLifecycleState() {
+        return this.lifecycleState;
+    }
+    
+    void setLifecycleState(String lifecycleState) {
+        this.lifecycleState = lifecycleState;
+    }
 }

@@ -1362,11 +1362,15 @@ public class ServerTest extends NbTestCase {
         File src = new File(getWorkDir(), "Test.java");
         src.getParentFile().mkdirs();
         String code = "/**\n" +
-                      " * This is a test class with Javadoc.\n" +
+                      " * This is a class level Javadoc.\n" +
                       " */\n" +
                       "public class Test {\n" +
-                      "    public static void main(String[] args) {\n" +
-                      "        Test t = new Test();\n" +
+                      "/**\n"+
+                      "This is constructor level Javadoc\n"+
+                      "**/\n"+
+                      "Test(int i){}\n"+ 
+                      "    public static void main(String[] args) {\n"+
+                      "        Test t = new Test(10000);\n" +
                       "    }\n" +
                       "}\n";
         try (Writer w = new FileWriter(src)) {
@@ -1401,18 +1405,35 @@ public class ServerTest extends NbTestCase {
         InitializeResult result = server.initialize(new InitializeParams()).get();
         assertTrue(result.getCapabilities().getHoverProvider().isLeft() && result.getCapabilities().getHoverProvider().getLeft());
         server.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(toURI(src), "java", 0, code)));
-        Hover hover = server.getTextDocumentService().hover(new HoverParams(new TextDocumentIdentifier(toURI(src)), new Position(5, 10))).get();
-        assertNotNull(hover);
-        assertTrue(hover.getContents().isRight());
-        MarkupContent content = hover.getContents().getRight();
-        assertNotNull(content);
-        assertEquals(content.getKind(), "markdown");
-        assertEquals(content.getValue(), "```\n" +
+        Hover hoverClass = server.getTextDocumentService().hover(new HoverParams(new TextDocumentIdentifier(toURI(src)), new Position(9, 10))).get();
+        Hover hoverConstructor = server.getTextDocumentService().hover(new HoverParams(new TextDocumentIdentifier(toURI(src)), new Position(9, 23))).get();
+        Hover hoverIntegerArgument = server.getTextDocumentService().hover(new HoverParams(new TextDocumentIdentifier(toURI(src)), new Position(9, 26))).get();
+        assertNotNull(hoverClass);
+        assertNotNull(hoverConstructor);
+        assertNull(hoverIntegerArgument);
+        assertTrue(hoverConstructor.getContents().isRight());
+        assertTrue(hoverClass.getContents().isRight());
+        MarkupContent classContent = hoverClass.getContents().getRight();
+        MarkupContent constructorContent = hoverConstructor.getContents().getRight();
+        assertNotNull(classContent);
+        assertNotNull(constructorContent);
+        assertEquals(classContent.getKind(), "markdown");
+        assertEquals(constructorContent.getKind(), "markdown");
+        assertEquals(classContent.getValue(), "```\n" +
                 "public class Test\n" +
                 "extends Object\n" +
                 "```\n" +
                 "\n" +
-                "This is a test class with Javadoc.\n" +
+                "This is a class level Javadoc.\n" +
+                "\n");
+        assertEquals(constructorContent.getValue(),
+                "**Test**\n"+
+                "\n"+
+                "```\n" +
+                "Test(int i)\n" +
+                "```\n" +
+                "\n" +
+                "This is constructor level Javadoc\n" +
                 "\n");
     }
 
@@ -1712,6 +1733,7 @@ public class ServerTest extends NbTestCase {
             w.write(code);
         }
         List<Diagnostic>[] diags = new List[1];
+        AtomicBoolean checkForDiags = new AtomicBoolean(false);
         CountDownLatch indexingComplete = new CountDownLatch(1);
         Launcher<LanguageServer> serverLauncher = createClientLauncherWithLogging(new TestCodeLanguageClient() {
             @Override
@@ -1723,9 +1745,11 @@ public class ServerTest extends NbTestCase {
         
             @Override
             public void publishDiagnostics(PublishDiagnosticsParams params) {
-                synchronized (diags) {
-                    diags[0] = params.getDiagnostics();
-                    diags.notifyAll();
+                if (checkForDiags.get()) {
+                    synchronized (diags) {
+                        diags[0] = params.getDiagnostics();
+                        diags.notifyAll();
+                    }
                 }
             }
         }, client.getInputStream(), client.getOutputStream());
@@ -1738,6 +1762,7 @@ public class ServerTest extends NbTestCase {
         InitializeResult result = server.initialize(initParams).get();
         indexingComplete.await();
         String uri = toURI(src);
+        checkForDiags.set(true);
         server.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(uri, "java", 0, code)));
 
         Diagnostic unresolvable = assertDiags(diags, "Error:2:8-2:12").get(0);
@@ -1944,11 +1969,12 @@ public class ServerTest extends NbTestCase {
             }
             return ws.getKind() + ":" + ws.getName() + ":" + ws.getContainerName() + ":" + (ws.getLocation().isLeft() ? toString(ws.getLocation().getLeft()) : toString(ws.getLocation().getRight()));
         }).collect(Collectors.toList());
-        assertEquals(Arrays.asList("Constructor:Test():Test:Test.java:0:7-0:7",
-                                   "Method:testMethod():Test:Test.java:2:4-2:38",
+        Collections.sort(actual);
+        assertEquals(Arrays.asList("Class:Test:null:?CLASS#Test",
+                                   "Class:TestNested:Test:?CLASS#Test$TestNested",
+                                   "Constructor:Test():Test:Test.java:0:7-0:7",
                                    "Constructor:TestNested():Test.TestNested:Test.java:1:18-1:18",
-                                   "Class:Test:null:?CLASS#Test",
-                                   "Class:TestNested:Test:?CLASS#Test$TestNested"),
+                                   "Method:testMethod():Test:Test.java:2:4-2:38"),
                      actual);
     }
 
@@ -5107,7 +5133,7 @@ public class ServerTest extends NbTestCase {
         server.getTextDocumentService().didChange(new DidChangeTextDocumentParams(id, Arrays.asList(new TextDocumentContentChangeEvent(new Range(new Position(0, 19), new Position(0, 19)), 0, "alue=\"\""))));
         completion = server.getTextDocumentService().completion(new CompletionParams(new TextDocumentIdentifier(toURI(src)), new Position(0, 25))).get();
         actualItems = completion.getRight().getItems().stream().map(ci -> ci.getKind() + ":" + ci.getLabel()).collect(Collectors.toList());
-        assertTrue(actualItems.contains("Text:\"empty-statement\""));
+        assertTrue(actualItems.contains("Value:\"empty-statement\""));
     }
 
     interface Validator<T> {
@@ -5784,6 +5810,95 @@ public class ServerTest extends NbTestCase {
 
         assertEquals(1, mm3.size());
         assertEquals(1, mm4.size());
+    }
+
+    public void testErrorBasedCodeActionFiltering() throws Exception {
+        File src = new File(getWorkDir(), "Test.java");
+        src.getParentFile().mkdirs();
+        String code = "public class Test {\n" +
+                      "    public void test() {\n" +
+                      "        System.err.println(0 << 0);\n" +
+                      "    }\n" +
+                      "}\n";
+        try (Writer w = new FileWriter(src)) {
+            w.write(code);
+        }
+
+        List<Diagnostic>[] diags = new List[1];
+        Launcher<LanguageServer> serverLauncher = createClientLauncherWithLogging(new LspClient() {
+            private int publishedDiagnosticsCount;
+            @Override
+            public void telemetryEvent(Object arg0) {
+            }
+
+            @Override
+            public void publishDiagnostics(PublishDiagnosticsParams params) {
+                synchronized (diags) {
+                    if (publishedDiagnosticsCount++ == 1) {
+                        diags[0] = params.getDiagnostics();
+                        diags.notifyAll();
+                    }
+                }
+            }
+
+            @Override
+            public void showMessage(MessageParams arg0) {
+            }
+
+            @Override
+            public CompletableFuture<MessageActionItem> showMessageRequest(ShowMessageRequestParams arg0) {
+                return CompletableFuture.completedFuture(new MessageActionItem(arg0.getActions().get(0).getTitle()));
+            }
+
+            @Override
+            public void logMessage(MessageParams arg0) {
+                throw new UnsupportedOperationException("Not supported yet.");
+            }
+
+            @Override
+            public CompletableFuture<ApplyWorkspaceEditResponse> applyEdit(ApplyWorkspaceEditParams params) {
+                throw new UnsupportedOperationException("Not supported yet.");
+            }
+
+        }, client.getInputStream(), client.getOutputStream());
+        serverLauncher.startListening();
+        LanguageServer server = serverLauncher.getRemoteProxy();
+        server.initialize(new InitializeParams()).get();
+        String uri = src.toURI().toString();
+        server.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(uri, "java", 0, code)));
+        synchronized (diags) {
+            while (diags[0] == null) {
+                try {
+                    diags.wait();
+                } catch (InterruptedException ex) {
+                }
+            }
+        }
+        VersionedTextDocumentIdentifier id = new VersionedTextDocumentIdentifier(src.toURI().toString(), 1);
+        Set<String> presentKinds;
+        List<Either<Command, CodeAction>> codeActions;
+        codeActions = server.getTextDocumentService().codeAction(new CodeActionParams(id, new Range(new Position(2, 32), new Position(2, 32)), new CodeActionContext(Collections.emptyList(), null))).get();
+        presentKinds = codeActions.stream().map(d -> d.getRight().getKind()).collect(Collectors.toSet());
+        assertEquals(new HashSet<>(Arrays.asList(CodeActionKind.RefactorRewrite, CodeActionKind.QuickFix)), presentKinds);
+        codeActions = server.getTextDocumentService().codeAction(new CodeActionParams(id, new Range(new Position(2, 32), new Position(2, 32)), new CodeActionContext(Collections.emptyList(), Arrays.asList(CodeActionKind.RefactorRewrite)))).get();
+        presentKinds = codeActions.stream().map(d -> d.getRight().getKind()).collect(Collectors.toSet());
+        assertEquals(new HashSet<>(Arrays.asList(CodeActionKind.RefactorRewrite)), presentKinds);
+        codeActions = server.getTextDocumentService().codeAction(new CodeActionParams(id, new Range(new Position(2, 32), new Position(2, 32)), new CodeActionContext(Collections.emptyList(), Arrays.asList(CodeActionKind.Refactor)))).get();
+        presentKinds = codeActions.stream().map(d -> d.getRight().getKind()).collect(Collectors.toSet());
+        assertEquals(new HashSet<>(Arrays.asList(CodeActionKind.RefactorRewrite)), presentKinds);
+        codeActions = server.getTextDocumentService().codeAction(new CodeActionParams(id, new Range(new Position(2, 32), new Position(2, 32)), new CodeActionContext(Collections.emptyList(), Arrays.asList(CodeActionKind.QuickFix)))).get();
+        presentKinds = codeActions.stream().map(d -> d.getRight().getKind()).collect(Collectors.toSet());
+        assertEquals(new HashSet<>(Arrays.asList(CodeActionKind.QuickFix)), presentKinds);
+        codeActions = server.getTextDocumentService().codeAction(new CodeActionParams(id, new Range(new Position(2, 32), new Position(2, 32)), new CodeActionContext(Collections.emptyList(), Arrays.asList(CodeActionKind.RefactorExtract)))).get();
+        presentKinds = codeActions.stream().map(d -> d.getRight().getKind()).collect(Collectors.toSet());
+        assertEquals(new HashSet<>(Arrays.asList()), presentKinds);
+        codeActions = server.getTextDocumentService().codeAction(new CodeActionParams(id, new Range(new Position(2, 27), new Position(2, 33)), new CodeActionContext(Collections.emptyList(), Arrays.asList(CodeActionKind.RefactorExtract)))).get();
+        presentKinds = codeActions.stream().map(d -> d.getRight().getKind()).collect(Collectors.toSet());
+        assertEquals(new HashSet<>(Arrays.asList(CodeActionKind.RefactorExtract)), presentKinds);
+        //verify surround-with hints are correctly filtered:
+        codeActions = server.getTextDocumentService().codeAction(new CodeActionParams(id, new Range(new Position(2, 0), new Position(3, 0)), new CodeActionContext(Collections.emptyList(), Arrays.asList(CodeActionKind.RefactorExtract)))).get();
+        presentKinds = codeActions.stream().map(d -> d.getRight().getKind()).collect(Collectors.toSet());
+        assertEquals(new HashSet<>(Arrays.asList(CodeActionKind.RefactorExtract)), presentKinds);
     }
 
     static {

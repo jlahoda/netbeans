@@ -23,6 +23,7 @@ import org.netbeans.modules.gradle.NbGradleProjectImpl;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
@@ -57,6 +58,8 @@ import org.netbeans.api.project.ProjectManager;
 import org.netbeans.modules.gradle.GradleProjectLoader;
 import org.netbeans.modules.gradle.ProjectTrust;
 import org.netbeans.modules.gradle.api.GradleProjects;
+import org.netbeans.modules.gradle.api.NbGradleProject;
+import org.netbeans.modules.gradle.api.NbGradleProject.LoadOptions;
 import org.netbeans.modules.gradle.api.NbGradleProject.Quality;
 import org.netbeans.modules.gradle.execute.EscapeProcessingOutputStream;
 import org.netbeans.modules.gradle.execute.GradlePlainEscapeProcessor;
@@ -353,8 +356,8 @@ public final class TemplateOperation implements Runnable {
                 args.add("--use-defaults");
 
                 try (
-                        var out = new EscapeProcessingOutputStream(new GradlePlainEscapeProcessor(io, false));
-                        var err = new EscapeProcessingOutputStream(new GradlePlainEscapeProcessor(io, false))
+                        OutputStream out = new EscapeProcessingOutputStream(new GradlePlainEscapeProcessor(io, false));
+                        OutputStream err = new EscapeProcessingOutputStream(new GradlePlainEscapeProcessor(io, false))
                 ) {
                     BuildLauncher gradleInit = pconn.newBuild().forTasks(args.toArray(new String[0]));
                     if (GradleSettings.getDefault().isOffline()) {
@@ -478,7 +481,7 @@ public final class TemplateOperation implements Runnable {
                 } catch (IOException ex) {
                 }
             }
-            return Collections.<FileObject>emptySet();
+            return Set.of();
         }
 
     }
@@ -525,7 +528,7 @@ public final class TemplateOperation implements Runnable {
                             //Just load the project into the cache.
                             GradleProjectLoader loader = nbProject.getLookup().lookup(GradleProjectLoader.class);
                             if (loader != null) {
-                                loader.loadProject(Quality.FULL_ONLINE, null, true, false);
+                                loader.loadProject(NbGradleProject.loadOptions(Quality.FULL_ONLINE).setIgnoreCache(true));
                             }
                         }
                         Set<FileObject> ret = new LinkedHashSet<>();
@@ -642,7 +645,7 @@ public final class TemplateOperation implements Runnable {
                     } catch (IOException | ScriptException ex) {
                         throw new IOException(ex.getMessage(), ex);
                     }
-                    return important ? Collections.singleton(fo) : null;
+                    return important ? Set.of(fo) : null;
                 } catch (IOException ex) {}
             } catch (IOException ex) {}
             return null;
@@ -679,7 +682,7 @@ public final class TemplateOperation implements Runnable {
                     DataFolder targetFolder = DataFolder.findFolder(targetParent);
                     DataObject o = DataObject.find(template);
                     DataObject newData = o.createFromTemplate(targetFolder, targetName, tokens);
-                    return important ? Collections.singleton(newData.getPrimaryFile()) : null;
+                    return important ? Set.of(newData.getPrimaryFile()) : null;
                 } catch (IOException ex) {
 
                 }

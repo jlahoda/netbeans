@@ -44,7 +44,6 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-import java.util.zip.ZipError;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
@@ -75,6 +74,7 @@ import org.apache.maven.index.updater.ResourceFetcher;
 import org.apache.maven.search.api.SearchRequest;
 import org.apache.maven.search.api.request.FieldQuery;
 import org.apache.maven.search.api.request.Paging;
+import org.apache.maven.search.api.transport.Java11HttpClientTransport;
 import org.apache.maven.search.backend.smo.SmoSearchBackend;
 import org.apache.maven.search.backend.smo.SmoSearchBackendFactory;
 import org.apache.maven.settings.Proxy;
@@ -102,7 +102,6 @@ import org.codehaus.plexus.classworlds.realm.ClassRealm;
 import org.codehaus.plexus.component.repository.ComponentDescriptor;
 import org.codehaus.plexus.component.repository.ComponentRequirement;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
-import org.codehaus.plexus.util.FileUtils;
 import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.annotations.common.NullAllowed;
 import org.netbeans.modules.maven.embedder.EmbedderFactory;
@@ -182,8 +181,8 @@ public class NexusRepositoryIndexerImpl implements RepositoryIndexerImplementati
      * For remote repo download and indexing tasks.
      */
     private static final RequestProcessor RP_REMOTE = new RequestProcessor("maven-remote-indexing");
-    
-    private final SmoSearchBackend smo = SmoSearchBackendFactory.createDefault();
+
+    private SmoSearchBackend smo = null;
 
     @Override
     public boolean handlesRepository(RepositoryInfo repo) {
@@ -361,7 +360,7 @@ public class NexusRepositoryIndexerImpl implements RepositoryIndexerImplementati
                 );
             } else {
                 creators = List.of(
-                    info.getId().equals(smo.getRepositoryId())
+                    info.getId().equals(getSMO().getRepositoryId())
                             ? new MinimalArtifactInfoRemoteIndexCreator()
                             : new MinimalArtifactInfoIndexCreator(),
                     new NotifyingIndexCreator()
@@ -418,14 +417,14 @@ public class NexusRepositoryIndexerImpl implements RepositoryIndexerImplementati
         
         int MAX_MAX_CLAUSE = 1<<11;  // conservative maximum for too general queries, like "c:*class*"
 
-        if (q instanceof BooleanQuery) {
-            List<BooleanClause> list = ((BooleanQuery)q).clauses();
+        if (q instanceof BooleanQuery booleanQuery) {
+            List<BooleanClause> list = booleanQuery.clauses();
             if (list.size() == 1) {
                 Query q1 = list.get(0).getQuery();
-                if (q1 instanceof PrefixQuery && "u".equals(((PrefixQuery)q1).getPrefix().field())) {
+                if (q1 instanceof PrefixQuery pq && "u".equals(pq.getPrefix().field())) {
                     // increase for queries like "+u:org.netbeans.modules|*" to succeed
                     MAX_MAX_CLAUSE = 1<<16;
-                } else if (q1 instanceof TermQuery && "p".equals(((TermQuery) q1).getTerm().field())) {
+                } else if (q1 instanceof TermQuery tq && "p".equals(tq.getTerm().field())) {
                     // +p:nbm also produces several thousand hits
                     MAX_MAX_CLAUSE = 1<<16;
                 }
@@ -525,9 +524,7 @@ public class NexusRepositoryIndexerImpl implements RepositoryIndexerImplementati
                     }
                     // MINDEXER-42: cannot use WagonHelper.getWagonResourceFetcher
                     Wagon wagon = embedder.lookup(Wagon.class, protocol);
-                    if (wagon instanceof HttpWagon) { //#216401
-                        HttpWagon httpwagon = (HttpWagon) wagon;
-                        //#215343
+                    if (wagon instanceof HttpWagon httpwagon) { //#215343
                         Properties p = new Properties();
                         p.setProperty("User-Agent", "netBeans/" + System.getProperty("netbeans.buildnumber"));
                         httpwagon.setHttpHeaders(p);
@@ -613,7 +610,7 @@ public class NexusRepositoryIndexerImpl implements RepositoryIndexerImplementati
                     try {
                         // Ensure no stale cache files are left
                         removeGroupCache(repo);
-                        scan(indexingContext, null, repoListener, updateLocal);
+                        scanLocalRepo(indexingContext, null, repoListener, updateLocal);
                         storeGroupCache(repo, indexingContext);
                     } finally {
                         repoListener.close();
@@ -796,34 +793,34 @@ public class NexusRepositoryIndexerImpl implements RepositoryIndexerImplementati
      * @see DefaultScannerListener
      * @see #artifactDiscovered(ArtifactContext, IndexingContext)
      */
-    private void scan(IndexingContext context, String fromPath, ArtifactScanningListener listener, boolean update) throws IOException {
+    private void scanLocalRepo(IndexingContext context, String fromPath, ArtifactScanningListener listener, boolean update) throws IOException {
 
         File repositoryDirectory = context.getRepository();
         if (repositoryDirectory == null) {
             return;  // nothing to scan
         }
- 
+
         if (!repositoryDirectory.exists()) {
             throw new IOException( "Repository directory " + repositoryDirectory + " does not exist" );
         }
- 
+
         // always use cache directory when reindexing
-        File tmpDir = new File(Places.getCacheDirectory(), "tmp-" + context.getRepositoryId());
-        if (!tmpDir.mkdirs()) {
-            throw new IOException( "Cannot create temporary directory: " + tmpDir );
+        Path tmpDir = Places.getCacheDirectory().toPath().resolve("tmp-" + context.getRepositoryId());
+        if (Files.exists(tmpDir)) {
+            removeDir(tmpDir);
         }
-        File tmpFile = new File(tmpDir, context.getId() + "-tmp"); // TODO: purpose of file?
- 
+        Files.createDirectory(tmpDir);
+
         IndexingContext tmpContext = null;
         try {
-            FSDirectory directory = FSDirectory.open(tmpDir.toPath());
+            FSDirectory directory = FSDirectory.open(tmpDir);
             if (update) {
                 IndexUtils.copyDirectory(context.getIndexDirectory(), directory);
             }
             tmpContext = new DefaultIndexingContext( context.getId() + "-tmp",
                                                      context.getRepositoryId(),
                                                      context.getRepository(),
-                                                     tmpDir,
+                                                     tmpDir.toFile(),
                                                      context.getRepositoryUrl(),
                                                      context.getIndexUpdateUrl(),
                                                      context.getIndexCreators(),
@@ -840,10 +837,7 @@ public class NexusRepositoryIndexerImpl implements RepositoryIndexerImplementati
             if (tmpContext != null) {
                 tmpContext.close( true );
             }
-            if (tmpFile.exists()) {
-                tmpFile.delete();
-            }
-            FileUtils.deleteDirectory(tmpDir);
+            removeDir(tmpDir);
         }
     }    
 
@@ -891,10 +885,8 @@ public class NexusRepositoryIndexerImpl implements RepositoryIndexerImplementati
                             BooleanQuery bq = new BooleanQuery.Builder()
                                     .add(new BooleanClause(new PrefixQuery(new Term(ArtifactInfo.UINFO, id)), BooleanClause.Occur.MUST))
                                     .build();
-                            IteratorSearchResponse response = repeatedPagedSearch(bq, indexingContext, MAX_RESULT_COUNT);
-                            add = response == null || response.getTotalHitsCount() == 0;
-                            if (response != null) {
-                                response.close();
+                            try (IteratorSearchResponse response = repeatedPagedSearch(bq, indexingContext, MAX_RESULT_COUNT)) {
+                                add = response == null || response.getTotalHitsCount() == 0;
                             }
                         }
                         if (add) {
@@ -908,17 +900,16 @@ public class NexusRepositoryIndexerImpl implements RepositoryIndexerImplementati
                     }
 
                 }
-                try {
-                    indexer.addArtifactsToIndex(artifactContexts, indexingContext);
-                    storeGroupCache(repo, indexingContext);
-                } catch (ZipError err) {
-                    LOGGER.log(Level.INFO, "#230581 concurrent access to local repository file. Skipping..", err);
-                }
+                indexer.addArtifactsToIndex(artifactContexts, indexingContext);
+                storeGroupCache(repo, indexingContext);
 
                 return null;
             });
         } catch (MutexException ex) {
-            Exceptions.printStackTrace(ex);
+            List<Artifact> sample = artifacts.stream().limit(5).toList();
+            LOGGER.log(Level.WARNING,
+                "Unable to update index with artifact(s): " + sample
+                        + (artifacts.size() > sample.size() ? (" +" + (artifacts.size() - sample.size()) + " more") : ""), ex);
         } catch (NullPointerException x) {
             LOGGER.log(Level.INFO, "#201057", x);
         }
@@ -1214,7 +1205,7 @@ public class NexusRepositoryIndexerImpl implements RepositoryIndexerImplementati
     public ResultImplementation<NBVersionInfo> findVersionsByClass(final String className, List<RepositoryInfo> repos) {
 
         Optional<RepositoryInfo> central = repos.stream()
-                .filter(repo -> repo.getId().equals(smo.getRepositoryId()))
+                .filter(repo -> repo.getId().equals(getSMO().getRepositoryId()))
                 .findFirst();
 
         // remote index contains no class data -> use web service
@@ -1227,7 +1218,7 @@ public class NexusRepositoryIndexerImpl implements RepositoryIndexerImplementati
                             org.apache.maven.search.api.MAVEN.FQ_CLASS_NAME
                           : org.apache.maven.search.api.MAVEN.CLASS_NAME, className));
 
-            return new CompositeResult<>(findVersionsByClass(className, otherRepos), new SMORequestResult(smo, request));
+            return new CompositeResult<>(findVersionsByClass(className, otherRepos), new SMORequestResult(getSMO(), request));
         } else {
             ResultImpl<NBVersionInfo> result = new ResultImpl<>((ResultImpl<NBVersionInfo> result1) -> {
                 findVersionsByClass(className, result1, result1.getSkipped(), false);
@@ -1383,7 +1374,7 @@ public class NexusRepositoryIndexerImpl implements RepositoryIndexerImplementati
     public ResultImplementation<NBVersionInfo> findBySHA1(final String sha1, List<RepositoryInfo> repos) {
 
         Optional<RepositoryInfo> central = repos.stream()
-            .filter(repo -> repo.getId().equals(smo.getRepositoryId()))
+            .filter(repo -> repo.getId().equals(getSMO().getRepositoryId()))
             .findFirst();
 
         // remote index contains no sh1 data -> use web service
@@ -1394,7 +1385,7 @@ public class NexusRepositoryIndexerImpl implements RepositoryIndexerImplementati
             SearchRequest request = new SearchRequest(new Paging(8), 
                     FieldQuery.fieldQuery(org.apache.maven.search.api.MAVEN.SHA1, sha1));
 
-            return new CompositeResult<>(findBySHA1(sha1, otherRepos), new SMORequestResult(smo, request));
+            return new CompositeResult<>(findBySHA1(sha1, otherRepos), new SMORequestResult(getSMO(), request));
         } else {
             ResultImpl<NBVersionInfo> result = new ResultImpl<>((ResultImpl<NBVersionInfo> result1) -> {
                 findBySHA1(sha1, result1, result1.getSkipped(), false);
@@ -1748,30 +1739,22 @@ public class NexusRepositoryIndexerImpl implements RepositoryIndexerImplementati
     }
     
     private static Query setBooleanRewrite (final Query q) {
-        if (q instanceof MultiTermQuery) {
-            ((MultiTermQuery)q).setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_REWRITE);
-        } else if (q instanceof BooleanQuery) {
-            for (BooleanClause c : ((BooleanQuery)q).clauses()) {
+        if (q instanceof MultiTermQuery multiTermQuery) {
+            multiTermQuery.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_REWRITE);
+        } else if (q instanceof BooleanQuery booleanQuery) {
+            for (BooleanClause c : booleanQuery.clauses()) {
                 setBooleanRewrite(c.getQuery());
             }
         }
         return q;
     }
 
-    private static class SkippedAction implements RepoAction {
-
-        private final ResultImpl<?> result;
-
-        private SkippedAction(ResultImpl<?> result) {
-            this.result = result;
-        }
-        
+    private record SkippedAction(ResultImpl<?> result) implements RepoAction {
         @Override
         public void run(RepositoryInfo repo, IndexingContext context) throws IOException {
             //indexing context is always null here..
             result.addSkipped(repo);
         }
-        
     }
 
     private static class NoJavadocSourceFilter implements ArtifactInfoFilter {
@@ -1846,21 +1829,24 @@ public class NexusRepositoryIndexerImpl implements RepositoryIndexerImplementati
         });
     }
 
+    private synchronized SmoSearchBackend getSMO() {
+        if (smo == null) {
+            smo = SmoSearchBackendFactory.create(
+                    SmoSearchBackendFactory.DEFAULT_BACKEND_ID,
+                    SmoSearchBackendFactory.DEFAULT_REPOSITORY_ID,
+                    SmoSearchBackendFactory.DEFAULT_SMO_URI,
+                    new Java11HttpClientTransport(SMORequestResult.REQUEST_TIMEOUT)
+            );
+        }
+        return smo;
+    }
+
     // somewhat based on maven-indexer impl (in WagonHelper) prior to removal in maven-indexer 7.0.0
-    private static class WagonFetcher implements ResourceFetcher {
+    private record WagonFetcher(Wagon wagon, TransferListener listener, AuthenticationInfo authenticationInfo, ProxyInfo proxyInfo) implements ResourceFetcher {
 
-        private final TransferListener listener;
-        private final AuthenticationInfo authenticationInfo;
-        private final ProxyInfo proxyInfo;
-        private final Wagon wagon;
-
-        public WagonFetcher(Wagon wagon, TransferListener listener, AuthenticationInfo authenticationInfo, ProxyInfo proxyInfo) {
+        public WagonFetcher {
             Objects.requireNonNull(wagon);
             Objects.requireNonNull(listener);
-            this.wagon = wagon;
-            this.listener = listener;
-            this.authenticationInfo = authenticationInfo;
-            this.proxyInfo = proxyInfo;
         }
 
         @Override

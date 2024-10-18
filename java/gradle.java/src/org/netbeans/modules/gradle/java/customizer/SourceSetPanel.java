@@ -82,21 +82,26 @@ public class SourceSetPanel extends javax.swing.JPanel {
     /**
      * Creates new form SourceSetPanel
      */
+    @Messages({
+        "# {0} - platform home",
+        "LBL_BrokenPlatform=<html><font color='!nb.errorForeground'>Broken Platform at {0}</font>"
+    })
     public SourceSetPanel(GradleJavaSourceSet sourceSet, File relativeTo) {
         this.sourceSet = sourceSet;
         relativeRoot = relativeTo.toPath();
         initComponents();
         
         File javaHome = sourceSet.getCompilerJavaHome(GradleJavaSourceSet.SourceType.JAVA);
-        JavaPlatform platform =JavaPlatform.getDefault();
-        if (javaHome != null) {
-            platform = JavaToolchainSupport.getDefault().platformByHome(javaHome);
-        }
-        jtPlatform.setText(platform.getDisplayName());
-        
-        if (platform.isValid()) {
+        JavaPlatform platform = javaHome != null
+                ? JavaToolchainSupport.getDefault().platformByHome(javaHome)
+                : JavaPlatform.getDefault();
+
+        if (platform != null && platform.isValid()) {
+            jtPlatform.setText(platform.getDisplayName());
             FileObject home = platform.getInstallFolders().iterator().next();
             jtPlatform.setToolTipText(home.getPath());
+        } else {
+            jtPlatform.setText(Bundle.LBL_BrokenPlatform(javaHome));
         }
         
         if (sourceSet.getSourcesCompatibility().equals(sourceSet.getTargetCompatibility())) {
@@ -264,7 +269,7 @@ public class SourceSetPanel extends javax.swing.JPanel {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(layout.createSequentialGroup()
-                                .addComponent(tfSourceLevel, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(tfSourceLevel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(0, 0, Short.MAX_VALUE))
                             .addComponent(jtPlatform))))
                 .addContainerGap())

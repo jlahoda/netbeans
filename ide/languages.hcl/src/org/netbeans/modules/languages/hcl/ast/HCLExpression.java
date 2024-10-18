@@ -36,17 +36,18 @@ public sealed interface HCLExpression extends HCLElement permits
         HCLConditionalOperation,
         HCLForExpression,
         HCLFunction,
+        HCLIdentifier,
         HCLLiteral,
         HCLResolveOperation,
         HCLTemplate,
         HCLVariable {
 
-    public static HCLExpression parse(String expr) {
-        HCLLexer lexer = new HCLLexer(CharStreams.fromString(expr));
-        HCLParser parser = new HCLParser(new CommonTokenStream(lexer));
-        return new HCLExpressionFactory().process(parser.expression());
+
+    public static String asString(HCLExpression expr) {
+        return expr != null ? expr.asString() : "";
     }
 
+    @Override
     default List<? extends HCLExpression> elements() {
         return Collections.emptyList();
     }

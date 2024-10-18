@@ -32,6 +32,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -169,6 +170,12 @@ public final class WorkspaceServiceImpl implements WorkspaceService, LanguageCli
 
     private final Gson gson = new Gson();
     private final LspServerState server;
+    private final Workspace workspace = new Workspace() {
+        @Override
+        public List<FileObject> getClientWorkspaceFolders() {
+            return WorkspaceServiceImpl.this.getClientWorkspaceFolders();
+        }
+    };
     private NbCodeLanguageClient client;
 
     /**
@@ -1051,7 +1058,7 @@ public final class WorkspaceServiceImpl implements WorkspaceService, LanguageCli
                         js.runWhenScanFinished(cc -> {
                             WORKER.post(() -> {
                                 try {
-                                    List<WorkspaceSymbol> symbols = new ArrayList<>();
+                                    Set<WorkspaceSymbol> symbols = new HashSet<>();
                                     SearchType searchType = getSearchType(queryFin, exactFin, false, null, null);
 
                                     // CSL Part
@@ -1063,15 +1070,21 @@ public final class WorkspaceServiceImpl implements WorkspaceService, LanguageCli
                                                 descriptors = provider.getSymbols(project, queryFin, Utils.searchType2QueryKind(searchType), null);
                                                 for (IndexSearcher.Descriptor desc : descriptors) {
                                                     FileObject fo = desc.getFileObject();
-                                                    org.netbeans.modules.csl.api.ElementHandle element = desc.getElement();
                                                     if (fo != null) {
-                                                        Position pos = Utils.createPosition(fo, desc.getOffset());
-                                                        WorkspaceSymbol symbol = new WorkspaceSymbol(
+                                                        org.netbeans.modules.csl.api.ElementHandle element = desc.getElement();
+                                                        Position pos = desc.getOffset() > 0 ? Utils.createPosition(fo, desc.getOffset()) : new Position(0, 0);
+                                                        String uri = null;
+                                                        if (element instanceof org.netbeans.modules.csl.api.ElementHandle.UrlHandle) {
+                                                            uri = ((org.netbeans.modules.csl.api.ElementHandle.UrlHandle) element).getUrl();
+                                                        }
+                                                        if (uri == null) {
+                                                            uri = Utils.toUri(fo);
+                                                        }
+                                                        symbols.add(new WorkspaceSymbol(
                                                                 desc.getSimpleName(),
                                                                 Utils.cslElementKind2SymbolKind(element.getKind()),
-                                                                Either.forLeft(new Location(Utils.toUri(fo), new Range(pos, pos))),
-                                                                desc.getContextName());
-                                                        symbols.add(symbol);
+                                                                Either.forLeft(new Location(uri, new Range(pos, pos))),
+                                                                desc.getContextName()));
                                                     }
                                                 }
                                             }
@@ -1205,7 +1218,7 @@ public final class WorkspaceServiceImpl implements WorkspaceService, LanguageCli
                                             symbols.add(symbol);
                                         }
                                     }
-                                    result.complete(Either.forRight(symbols));
+                                    result.complete(Either.forRight(new ArrayList<>(symbols)));
                                 } catch (Throwable t) {
                                     result.completeExceptionally(t);
                                 }
@@ -1238,8 +1251,9 @@ public final class WorkspaceServiceImpl implements WorkspaceService, LanguageCli
                 if (root == null) {
                     throw new IllegalStateException("Unable to find root: " + rootUri);
                 }
-                ElementHandle typeHandle = ElementHandleAccessor.getInstance().create(ElementKind.valueOf(sourceUri.substring(qIdx + 1, hIdx)), sourceUri.substring(hIdx + 1));
-                CompletableFuture<ElementOpen.Location> location = ElementOpen.getLocation(ClasspathInfo.create(root), typeHandle, typeHandle.getQualifiedName().replace('.', '/') + ".class");
+                String[] signatures = URLDecoder.decode(sourceUri.substring(hIdx + 1)).split(":");
+                ElementHandle<?> handle = ElementHandleAccessor.getInstance().create(ElementKind.valueOf(sourceUri.substring(qIdx + 1, hIdx)), signatures);
+                CompletableFuture<ElementOpen.Location> location = ElementOpen.getLocation(ClasspathInfo.create(root), handle, signatures[0].replace('.', '/') + ".class");
                 location.exceptionally(ex -> {
                     result.completeExceptionally(ex);
                     return null;
@@ -1248,15 +1262,16 @@ public final class WorkspaceServiceImpl implements WorkspaceService, LanguageCli
                         ShowDocumentParams sdp = new ShowDocumentParams(Utils.toUri(loc.getFileObject()));
                         Position position = Utils.createPosition(loc.getFileObject(), loc.getStartOffset());
                         sdp.setSelection(new Range(position, position));
+                        sdp.setTakeFocus(true);
                         client.showDocument(sdp).thenAccept(res -> {
                             if (res.isSuccess()) {
                                 result.complete(null);
                             } else {
-                                result.completeExceptionally(new IllegalStateException("Cannot open source for: " + typeHandle.getQualifiedName()));
+                                result.completeExceptionally(new IllegalStateException("Cannot open source for: " + workspaceSymbol.getName()));
                             }
                         });
                     } else if (!result.isCompletedExceptionally()) {
-                        result.completeExceptionally(new IllegalStateException("Cannot find source for: " + typeHandle.getQualifiedName()));
+                        result.completeExceptionally(new IllegalStateException("Cannot find source for: " + workspaceSymbol.getName()));
                     }
                 });
             }
@@ -1332,7 +1347,9 @@ public final class WorkspaceServiceImpl implements WorkspaceService, LanguageCli
         String fullConfigPrefix = client.getNbCodeCapabilities().getConfigurationPrefix();
         String configPrefix = fullConfigPrefix.substring(0, fullConfigPrefix.length() - 1);
         server.openedProjects().thenAccept(projects -> {
+            // PENDING: invent a pluggable mechanism for this, this does not scale and the typecast to serviceImpl is ugly
             ((TextDocumentServiceImpl)server.getTextDocumentService()).updateJavaHintPreferences(((JsonObject) params.getSettings()).getAsJsonObject(configPrefix).getAsJsonObject(NETBEANS_JAVA_HINTS));
+            ((TextDocumentServiceImpl)server.getTextDocumentService()).updateProjectJDKHome(((JsonObject) params.getSettings()).getAsJsonObject(configPrefix).getAsJsonObject("project").getAsJsonPrimitive("jdkhome"));
             if (projects != null && projects.length > 0) {
                 updateJavaFormatPreferences(projects[0].getProjectDirectory(), ((JsonObject) params.getSettings()).getAsJsonObject(configPrefix).getAsJsonObject("format"));
                 updateJavaImportPreferences(projects[0].getProjectDirectory(), ((JsonObject) params.getSettings()).getAsJsonObject(configPrefix).getAsJsonObject("java").getAsJsonObject("imports"));
@@ -1342,15 +1359,18 @@ public final class WorkspaceServiceImpl implements WorkspaceService, LanguageCli
         String altConfigPrefix = fullAltConfigPrefix.substring(0, fullAltConfigPrefix.length() - 1);
         boolean modified = false;
         String newVMOptions = "";
+        String newWorkingDirectory = null;
         JsonObject javaPlus = ((JsonObject) params.getSettings()).getAsJsonObject(altConfigPrefix);
         if (javaPlus != null) {
             JsonObject runConfig = javaPlus.getAsJsonObject("runConfig");
             if (runConfig != null) {
                 newVMOptions = runConfig.getAsJsonPrimitive("vmOptions").getAsString();
+                JsonPrimitive cwd = runConfig.getAsJsonPrimitive("cwd");
+                newWorkingDirectory = cwd != null ? cwd.getAsString() : null;
             }
         }
         for (SingleFileOptionsQueryImpl query : Lookup.getDefault().lookupAll(SingleFileOptionsQueryImpl.class)) {
-            modified |= query.setConfiguration(client, newVMOptions);
+            modified |= query.setConfiguration(workspace, newVMOptions, newWorkingDirectory);
         }
         if (modified) {
             ((TextDocumentServiceImpl)server.getTextDocumentService()).reRunDiagnostics();
@@ -1482,6 +1502,10 @@ public final class WorkspaceServiceImpl implements WorkspaceService, LanguageCli
     @Override
     public void connect(LanguageClient client) {
         this.client = (NbCodeLanguageClient)client;
+    }
+
+    public Workspace getWorkspace() {
+        return workspace;
     }
 
     private static final class CommandProgress extends ActionProgress {
