@@ -22,10 +22,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectManager;
+import org.netbeans.api.project.ProjectUtils;
+import org.netbeans.api.project.Sources;
 import org.netbeans.modules.node.remote.LspTreeViewServiceImpl;
 import org.netbeans.modules.node.remote.NodeCallback;
 import org.netbeans.modules.remote.RemoteInvocation;
@@ -123,6 +126,23 @@ public class ProjectService implements Service {
                             ap.invokeAction(command, Lookups.fixed(context.toArray()));
                        }
                     }
+                } catch (IOException | IllegalArgumentException ex) {
+                    throw RemoteInvocation.sneakyThrows(ex);
+                }
+            }
+
+            @Override
+            public String[] getGenericSourceGroups(String projectDirectory) {
+                try {
+                    FileObject prjDir = Utils.resolveLocalPath(projectDirectory);
+                    Project prj = prjDir != null ? ProjectManager.getDefault().findProject(prjDir) : null;
+                    if (prj != null) {
+                        return Arrays.stream(ProjectUtils.getSources(prj).getSourceGroups(Sources.TYPE_GENERIC))
+                                     .map(sg -> sg.getRootFolder())
+                                     .map(root -> "/" + root.getPath())
+                                     .toArray(String[]::new);
+                    }
+                    return new String[0];
                 } catch (IOException | IllegalArgumentException ex) {
                     throw RemoteInvocation.sneakyThrows(ex);
                 }

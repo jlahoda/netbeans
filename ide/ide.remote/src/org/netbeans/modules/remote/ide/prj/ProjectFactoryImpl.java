@@ -19,20 +19,35 @@
 package org.netbeans.modules.remote.ide.prj;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import javax.swing.event.ChangeListener;
+import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.api.project.Project;
+import org.netbeans.api.project.SourceGroup;
+import org.netbeans.api.project.Sources;
 import org.netbeans.modules.remote.Utils;
 import org.netbeans.modules.remote.ide.RemoteManager;
 import org.netbeans.modules.remote.ide.fs.RemoteFileSystem;
 import org.netbeans.spi.project.ActionProvider;
 import org.netbeans.spi.project.ProjectFactory;
 import org.netbeans.spi.project.ProjectState;
+import org.netbeans.spi.project.support.GenericSources;
 import org.netbeans.spi.project.ui.LogicalViewProvider;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileStateInvalidException;
+import org.openide.filesystems.FileUtil;
 import org.openide.nodes.FilterNode;
 import org.openide.nodes.Node;
+import org.openide.util.ChangeSupport;
 import org.openide.util.Lookup;
+import org.openide.util.NbBundle.Messages;
+import org.openide.util.RequestProcessor;
 import org.openide.util.lookup.Lookups;
 import org.openide.util.lookup.ProxyLookup;
 import org.openide.util.lookup.ServiceProvider;
@@ -42,6 +57,8 @@ import org.openide.util.lookup.ServiceProvider;
  */
 @ServiceProvider(service=ProjectFactory.class, position=0)
 public class ProjectFactoryImpl implements ProjectFactory {
+
+    private static final RequestProcessor WORKER = new RequestProcessor(ProjectFactoryImpl.class.getName(), 1, false, false);
 
     @Override
     public boolean isProject(FileObject projectDirectory) {
@@ -89,7 +106,8 @@ public class ProjectFactoryImpl implements ProjectFactory {
         public ProjectImpl(FileObject projectDirectory, ProjectHandler handler) {
             this.projectDirectory = projectDirectory;
             this.lookup = Lookups.fixed(new ActionProviderImpl(projectDirectory, handler),
-                                        new LogicalViewProviderImpl(this, handler));
+                                        new LogicalViewProviderImpl(this, handler),
+                                        new SourcesImpl(this, handler));
             this.handler = handler;
         }
 
@@ -170,6 +188,84 @@ public class ProjectFactoryImpl implements ProjectFactory {
                 return handler.getNodeContext().findPath(root, Utils.file2Path(file));
             }
             return null;
+        }
+    }
+
+    @Messages("DN_GenericSourceGroup=Generic Source Group")
+    private static final class SourcesImpl implements Sources {
+
+        private static final SourceGroup[] NO_SOURCE_GROUPS = new SourceGroup[0];
+        private final Map<String, SourceGroup[]> type2SourceGroups = new HashMap<>();
+        private final ChangeSupport cs = new ChangeSupport(this);
+        private final Project prj;
+        private final ProjectHandler handler;
+
+        public SourcesImpl(Project prj, ProjectHandler handler) {
+            this.prj = prj;
+            this.handler = handler;
+            type2SourceGroups.put(TYPE_GENERIC, new SourceGroup[] {GenericSources.group(prj, prj.getProjectDirectory(), "src", Bundle.DN_GenericSourceGroup(), null, null)});
+            WORKER.post(() -> updateSourceGroups());
+        }
+
+        @Override
+        public SourceGroup[] getSourceGroups(String type) {
+            SourceGroup[] result;
+
+            synchronized (this) {
+                result = type2SourceGroups.getOrDefault(type, NO_SOURCE_GROUPS);
+            }
+
+            return result.clone();
+        }
+
+        @Override
+        public void addChangeListener(ChangeListener listener) {
+            cs.addChangeListener(listener);
+        }
+
+        @Override
+        public void removeChangeListener(ChangeListener listener) {
+            cs.removeChangeListener(listener);
+        }
+
+        private void updateSourceGroups() {
+            FileObject[] genericSourceGroups = handler.getGenericSourceGroups(prj.getProjectDirectory());
+            Set<FileObject> newExternal = new HashSet<>();
+            Set<FileObject> removedExternal = new HashSet<>();
+            Map<FileObject, SourceGroup> root2SG = Arrays.stream(type2SourceGroups.get(TYPE_GENERIC)).collect(Collectors.toMap(sg -> sg.getRootFolder(), sg -> sg));
+            SourceGroup[] newSourceGroups = new SourceGroup[genericSourceGroups.length];
+
+            for (int i = 0; i < genericSourceGroups.length; i++) {
+                boolean external = !(FileUtil.isParentOf(prj.getProjectDirectory(), genericSourceGroups[i]) || prj.getProjectDirectory().equals(genericSourceGroups[i]));
+                SourceGroup existing = root2SG.get(genericSourceGroups[i]);
+
+                if (existing == null) {
+                    existing = GenericSources.group(prj, genericSourceGroups[i], "src", Bundle.DN_GenericSourceGroup(), null, null);
+
+                    if (external) {
+                        newExternal.add(genericSourceGroups[i]);
+                    }
+                } else if (external) {
+                    removedExternal.add(genericSourceGroups[i]);
+                }
+
+                newSourceGroups[i] = existing;
+            }
+
+            synchronized (this) {
+                type2SourceGroups.put(TYPE_GENERIC, newSourceGroups);
+            }
+
+            for (FileObject newExt : newExternal) {
+                System.err.println("marking external owner: " + newExt);
+                FileOwnerQuery.markExternalOwner(newExt, prj, FileOwnerQuery.EXTERNAL_ALGORITHM_TRANSIENT);
+            }
+
+            for (FileObject removedExt : removedExternal) {
+                FileOwnerQuery.markExternalOwner(removedExt, null, FileOwnerQuery.EXTERNAL_ALGORITHM_TRANSIENT);
+            }
+
+            cs.fireChange();
         }
     }
 }

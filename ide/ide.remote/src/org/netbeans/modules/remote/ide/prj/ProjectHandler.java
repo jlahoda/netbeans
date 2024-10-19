@@ -87,10 +87,29 @@ public final class ProjectHandler {
         return nodeContext;
     }
 
+    public FileObject[] getGenericSourceGroups(FileObject projectDir) {
+        String relativeProjectPath = "/" + projectDir.getPath();
+        String[] genericSGPaths = outgoingProjectInterface.getGenericSourceGroups(relativeProjectPath);
+        FileObject[] genericSGRoots = new FileObject[genericSGPaths.length];
+
+        FileObject root = projectDir;
+
+        while (!root.isRoot()) {
+            root = root.getParent();
+        }
+
+        for (int i = 0; i < genericSGPaths.length; i++) {
+            genericSGRoots[i] = root.getFileObject(genericSGPaths[i].substring(1));
+        }
+
+        return genericSGRoots;
+    }
+
     public interface ProjectInterface {
         public boolean loadProject(String projectDirectoryCandidate);
         public String[] getSupportedActions(String projectDirectory);
         public boolean isActionEnabled(String projectDirectory, String command, String lookupSelectedFileObjectPath);
         public void invokeAction(String projectDirectory, String command, String lookupSelectedFileObjectPath);
+        public String[] getGenericSourceGroups(String projectDirectory);
     }
 }
