@@ -27,6 +27,7 @@ public final class AskEditorQuestions {
     }
 
     public static boolean askReloadDocument(String localizedMessage) {
+        if (true) return true; //XXX: force auto-reload
         String ask = NbBundle.getMessage(AskEditorQuestions.class, "ASK_OnReload"); // NOI18N
         if ("yes".equals(ask)) { // NOI18N
             return true;

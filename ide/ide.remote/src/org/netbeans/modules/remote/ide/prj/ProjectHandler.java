@@ -37,6 +37,7 @@ import org.netbeans.modules.remote.AsynchronousConnection.ReceiverBuilder;
 import org.netbeans.modules.remote.RemoteInvocation;
 import org.netbeans.modules.remote.StreamMultiplexor;
 import org.netbeans.modules.remote.Streams;
+import org.netbeans.modules.remote.Utils;
 import org.openide.filesystems.FileObject;
 import org.openide.util.Exceptions;
 import org.openide.util.RequestProcessor;
@@ -99,7 +100,7 @@ public final class ProjectHandler {
         }
 
         for (int i = 0; i < genericSGPaths.length; i++) {
-            genericSGRoots[i] = root.getFileObject(genericSGPaths[i].substring(1));
+            genericSGRoots[i] = Utils.resolveRemotePath(root, genericSGPaths[i]);
         }
 
         return genericSGRoots;

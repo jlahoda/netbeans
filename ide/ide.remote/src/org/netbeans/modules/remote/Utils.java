@@ -24,8 +24,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.prefs.Preferences;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
+import org.openide.util.NbPreferences;
 
 /**
  *
@@ -78,6 +80,14 @@ public class Utils {
 
     public static String file2Path(FileObject file) {
         return "/" + file.getPath();
+    }
+
+    public static FileObject resolveRemotePath(FileObject remoteRoot, String path) {
+        return remoteRoot.getFileObject(path.substring(1));
+    }
+
+    public static Preferences getPreferences() {
+        return NbPreferences.forModule(Utils.class);
     }
 
     public static class EndOfInput extends IOException {}

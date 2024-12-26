@@ -21,7 +21,7 @@ package org.netbeans.modules.remote;
 import java.net.ServerSocket;
 import java.net.Socket;
 import org.netbeans.junit.NbTestCase;
-import org.netbeans.modules.remote.ide.RemoteManager.RemoteDescription;
+import org.netbeans.modules.remote.ide.RemoteManager.SshRemoteDescription;
 import org.netbeans.modules.remote.ide.fs.RemoteFileSystem;
 
 /**
@@ -48,7 +48,7 @@ public class RemoteTest extends NbTestCase {
         var clientSocket = new Socket(server.getInetAddress(), server.getLocalPort());
         var remote = new Remote(clientSocket.getInputStream(), clientSocket.getOutputStream());
         Streams fsStreams = remote.runService("fs");
-        RemoteFileSystem fs = new RemoteFileSystem(new RemoteDescription("", "", "", ""), fsStreams.out(), fsStreams.in());
+        RemoteFileSystem fs = new RemoteFileSystem(new SshRemoteDescription("", "", "", ""), fsStreams.out(), fsStreams.in());
         assertTrue(fs.getRoot().getChildren().length > 0);
     }
 

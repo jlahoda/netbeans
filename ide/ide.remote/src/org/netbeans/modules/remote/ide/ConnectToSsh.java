@@ -23,7 +23,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import org.netbeans.modules.favorites.api.Favorites;
-import org.netbeans.modules.remote.ide.RemoteManager.RemoteDescription;
+import org.netbeans.modules.remote.ide.RemoteManager.SshRemoteDescription;
 import org.netbeans.modules.remote.ide.fs.RemoteFileSystem;
 import org.openide.*;
 import org.openide.awt.ActionID;
@@ -50,7 +50,7 @@ public final class ConnectToSsh implements ActionListener {
             DialogDescriptor dd = new DialogDescriptor(settings, "SSH Connection Settings", true, DialogDescriptor.OK_CANCEL_OPTION, DialogDescriptor.OK_OPTION, evt -> {
                 if (evt.getSource() == DialogDescriptor.OK_OPTION) {
                     try {
-                        RemoteFileSystem fs = RemoteFileSystem.getRemoteFileSystem(new RemoteDescription(settings.getSshConnection(), settings.getInstallDir(), settings.getUserdir(), settings.getAdditionalOptions()));
+                        RemoteFileSystem fs = RemoteFileSystem.getRemoteFileSystem(new SshRemoteDescription(settings.getSshConnection(), settings.getInstallDir(), settings.getUserdir(), settings.getAdditionalOptions()));
                         Favorites.getDefault().add(fs.getRoot());
                     } catch (IOException ex) {
                         Exceptions.printStackTrace(ex);

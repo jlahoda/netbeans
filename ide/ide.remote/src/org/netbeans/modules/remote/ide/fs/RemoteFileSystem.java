@@ -40,6 +40,8 @@ import java.util.Map;
 import org.netbeans.modules.remote.Utils;
 import org.netbeans.modules.remote.ide.RemoteManager;
 import org.netbeans.modules.remote.ide.RemoteManager.RemoteDescription;
+import org.netbeans.modules.remote.ide.RemoteManager.Running;
+import org.netbeans.modules.remote.ide.RemoteManager.SshRemoteDescription;
 import org.netbeans.modules.remote.ide.fs.FSProtokol.Request;
 import org.netbeans.modules.remote.ide.fs.FSProtokol.RequestKind;
 import org.netbeans.modules.remote.ide.fs.FSProtokol.Response;
@@ -57,6 +59,9 @@ import org.openide.util.lookup.ServiceProvider;
  * @author lahvac
  */
 public class RemoteFileSystem extends AbstractFileSystem implements AbstractFileSystem.List, AbstractFileSystem.Info, AbstractFileSystem.Attr {
+
+    private static final String PROTOCOL_SSH = "remote-ssh";
+    private static final String PROTOCOL_SOCKET = "remote-socket";
 
     public static RemoteFileSystem getRemoteFileSystem(RemoteDescription remoteDescription) {
         return RemoteManager.getDefault().getService(remoteDescription, "fs", streams -> new RemoteFileSystem(remoteDescription, streams.out(), streams.in()));
@@ -80,7 +85,7 @@ public class RemoteFileSystem extends AbstractFileSystem implements AbstractFile
 
     @Override
     public String getDisplayName() {
-        return "Remote FileSystem (" + remoteDescription.connectionString() + ")";
+        return "Remote FileSystem (" + remoteDescription.shortName() + ")";
     }
 
     @Override
@@ -202,7 +207,17 @@ public class RemoteFileSystem extends AbstractFileSystem implements AbstractFile
             try {
                 if (fo.getFileSystem() instanceof RemoteFileSystem) {
                     RemoteFileSystem rfs = (RemoteFileSystem) fo.getFileSystem();
-                    return new URL("ssh://" + rfs.remoteDescriptionEncoded + "/" + fo.getPath());
+                    String protocol;
+
+                    if (rfs.remoteDescription instanceof SshRemoteDescription) {
+                        protocol = PROTOCOL_SSH;
+                    } else if (rfs.remoteDescription instanceof Running) {
+                        protocol = PROTOCOL_SOCKET;
+                    } else {
+                        throw new IllegalStateException("Unknown remote description class: " + rfs.remoteDescription.getClass());
+                    }
+
+                    return new URL(protocol + "://" + rfs.remoteDescriptionEncoded + "/" + fo.getPath());
                 }
             } catch (FileStateInvalidException | MalformedURLException ex) {
                 Exceptions.printStackTrace(ex);
@@ -214,11 +229,25 @@ public class RemoteFileSystem extends AbstractFileSystem implements AbstractFile
         public FileObject[] getFileObjects(URL url) {
             String urlString = url.toString();
 
-            if (urlString.startsWith("ssh://")) {
-                int slashPos = urlString.indexOf('/', 6);
-                String encoded = urlString.substring(6, slashPos);
-                RemoteDescription remoteDescription = RemoteDescription.createInstance(URLDecoder.decode(encoded, StandardCharsets.UTF_8));
+            if (urlString.startsWith(PROTOCOL_SSH + "://")) {
+                int slashPos = urlString.indexOf('/', PROTOCOL_SSH.length() + 3);
+                String encoded = urlString.substring(PROTOCOL_SSH.length() + 3, slashPos);
+                RemoteDescription remoteDescription = SshRemoteDescription.createInstance(URLDecoder.decode(encoded, StandardCharsets.UTF_8));
                 RemoteFileSystem rfs = getRemoteFileSystem(remoteDescription);
+
+                return new FileObject[] {
+                    rfs.findResource(urlString.substring(slashPos + 1))
+                };
+            }
+            if (urlString.startsWith(PROTOCOL_SOCKET + "://")) {
+                int slashPos = urlString.indexOf('/', PROTOCOL_SOCKET.length() + 3);
+                String encoded = urlString.substring(PROTOCOL_SOCKET.length() + 3, slashPos);
+                RemoteDescription remoteDescription = Running.createInstance(URLDecoder.decode(encoded, StandardCharsets.UTF_8));
+                RemoteFileSystem rfs = getRemoteFileSystem(remoteDescription);
+
+                if (rfs == null) {
+                    return null;
+                }
 
                 return new FileObject[] {
                     rfs.findResource(urlString.substring(slashPos + 1))
@@ -233,7 +262,7 @@ public class RemoteFileSystem extends AbstractFileSystem implements AbstractFile
     public static final class URLHandlerProviderImpl implements URLStreamHandlerFactory {
         @Override
         public URLStreamHandler createURLStreamHandler(String protocol) {
-            if ("ssh".equals(protocol)) {
+            if (PROTOCOL_SSH.equals(protocol) || PROTOCOL_SOCKET.equals(protocol)) {
                 return new URLStreamHandler() {
                     @Override
                     protected URLConnection openConnection(URL u) throws IOException {

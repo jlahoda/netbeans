@@ -18,6 +18,9 @@
  */
 package org.netbeans.modules.remote.agent;
 
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
 import org.netbeans.api.sendopts.CommandException;
 import org.netbeans.modules.remote.Remote;
 
@@ -26,14 +29,23 @@ import org.netbeans.spi.sendopts.ArgsProcessor;
 import org.netbeans.spi.sendopts.Description;
 import org.netbeans.spi.sendopts.Env;
 import org.openide.*;
+import org.openide.util.Exceptions;
 import org.openide.util.NbBundle.Messages;
+import org.openide.util.RequestProcessor;
 
 public final class ArgsProcessorImpl implements ArgsProcessor {
+
+    private static final RequestProcessor WORKER = new RequestProcessor(ArgsProcessorImpl.class.getName(), 1, false, false); //TODO: virtual!
 
     @Arg(longName="start-remote-agent", defaultValue = "")
     @Description(shortDescription="#DESC_StartRemoteAgent")
     @Messages("DESC_StartRemoteAgent=Starts remote agent")
     public String remoteAgent;
+
+    @Arg(longName="remote-agent-listen", defaultValue = "")
+    @Description(shortDescription="#DESC_RemoteAgentListen")
+    @Messages("DESC_RemoteAgentListen=Listen for remote agent connections")
+    public String remoteAgentListen;
 
     @Override
     public void process(Env env) throws CommandException {
@@ -42,6 +54,20 @@ public final class ArgsProcessorImpl implements ArgsProcessor {
             if ("shutdown".equals(remoteAgent)) {
                 LifecycleManager.getDefault().exit();
             }
+        }
+        if (remoteAgentListen != null) {
+            WORKER.post(() -> {
+                try {
+                    ServerSocket server = new ServerSocket(Integer.parseInt(remoteAgentListen));
+                    System.err.println("Listening for remote agent connections on: " + remoteAgentListen);
+                    while (true) {
+                        Socket socket = server.accept();
+                        Remote.runAgent(socket.getInputStream(), socket.getOutputStream());
+                    }
+                } catch (IOException ex) {
+                    Exceptions.printStackTrace(ex);
+                }
+            });
         }
     }
 }
