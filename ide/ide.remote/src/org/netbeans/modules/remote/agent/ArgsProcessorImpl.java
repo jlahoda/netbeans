@@ -19,6 +19,7 @@
 package org.netbeans.modules.remote.agent;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import org.netbeans.api.sendopts.CommandException;
@@ -58,7 +59,7 @@ public final class ArgsProcessorImpl implements ArgsProcessor {
         if (remoteAgentListen != null) {
             WORKER.post(() -> {
                 try {
-                    ServerSocket server = new ServerSocket(Integer.parseInt(remoteAgentListen));
+                    ServerSocket server = new ServerSocket(Integer.parseInt(remoteAgentListen), 1, InetAddress.getLocalHost());
                     System.err.println("Listening for remote agent connections on: " + remoteAgentListen);
                     while (true) {
                         Socket socket = server.accept();

@@ -73,7 +73,7 @@ public class RunningConnectionPanel extends javax.swing.JPanel {
                             .addComponent(port)))
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(synchronize)
-                        .addGap(0, 154, Short.MAX_VALUE)))
+                        .addGap(0, 149, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
