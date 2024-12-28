@@ -4,7 +4,7 @@
 	"description": "Apache NetBeans Language Server Extension for Visual Studio Code",
 	"author": "Apache NetBeans",
 	"license": "Apache 2.0",
-	"version": "99.99.9",
+	"version": "0.1.0",
 	"preview": false,
 	"repository": {
 		"type": "git",
@@ -186,6 +186,11 @@
 					"type": "integer",
 					"default": 100,
 					"description": "Timeout (in milliseconds) for loading Javadoc in code completion (-1 for unlimited)"
+				},
+				"netbeans.completion.warning.time": {
+					"type": "integer",
+					"default": 10000,
+					"description": "When code completion takes longer than this specified time (in milliseconds), there will be a warning produced (-1 to disable)"
 				},
 				"netbeans.format.codeFormatter": {
 					"type": "string",
@@ -519,6 +524,10 @@
 			{
 				"command": "nbls.cloud.publicIp.copy",
 				"title": "Copy the public IP address"
+			},
+			{
+				"command": "nbls.cloud.openConsole",
+				"title": "Open in OCI Console"
 			},
 			{
 				"command": "nbls.cloud.imageUrl.copy",
@@ -869,6 +878,10 @@
 					"when": "false"
 				},
 				{
+					"command": "nbls.cloud.openConsole",
+					"when": "false"
+				},
+				{
 					"command": "nbls.cloud.imageUrl.copy",
 					"when": "false"
 				},
@@ -1118,7 +1131,12 @@
 				{
 					"command": "nbls.cloud.publicIp.copy",
 					"when": "viewItem =~ /publicIp:.*/ && viewItem =~ /^(?!.*imageUrl:).*/",
-					"group": "oci@1000"
+					"group": "instance@1500"
+				},
+				{
+					"command": "nbls.cloud.openConsole",
+					"when": "viewItem =~ /consoleUrl:.*/",
+					"group": "oci@2000"
 				},
 				{
 					"command": "nbls.cloud.imageUrl.copy",
@@ -1153,7 +1171,7 @@
 				{
 					"command": "nbls.cloud.assets.buildPushNativeImage",
 					"when": "viewItem =~ /class:oracle.developer.ContainerRepositoryItem/",
-					"group": "oci@1000"
+					"group": "container@1000"
 				},
 				{
 					"command": "nbls:Tools:org.netbeans.modules.cloud.oracle.actions.AddRepository",
@@ -1163,7 +1181,7 @@
 				{
 					"command": "nbls:Tools:org.netbeans.modules.cloud.oracle.actions.CreateBuildRun",
 					"when": "viewItem =~ /class:oracle.devops.BuildPipelineItem/",
-					"group": "inline@12"
+					"group": "container@12"
 				},
 				{
 					"command": "nbls:Tools:org.netbeans.modules.cloud.oracle.actions.AddToProject",

@@ -32,25 +32,33 @@ import com.sun.source.util.TreePath;
 import com.sun.source.util.TreePathScanner;
 import com.sun.source.util.Trees;
 import com.vladsch.flexmark.html2md.converter.FlexmarkHtmlConverter;
+import java.io.DataOutputStream;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.net.URI;
 import java.net.URL;
 import java.time.Instant;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.Deque;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -63,6 +71,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.IntFunction;
@@ -78,7 +87,6 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import javax.swing.JEditorPane;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.BadLocationException;
@@ -120,6 +128,7 @@ import org.eclipse.lsp4j.DocumentRangeFormattingParams;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.DocumentSymbolParams;
 import org.eclipse.lsp4j.FoldingRange;
+import org.eclipse.lsp4j.FoldingRangeCapabilities;
 import org.eclipse.lsp4j.FoldingRangeKind;
 import org.eclipse.lsp4j.FoldingRangeRequestParams;
 import org.eclipse.lsp4j.Hover;
@@ -152,6 +161,7 @@ import org.eclipse.lsp4j.SignatureHelp;
 import org.eclipse.lsp4j.SignatureHelpParams;
 import org.eclipse.lsp4j.SignatureInformation;
 import org.eclipse.lsp4j.SymbolInformation;
+import org.eclipse.lsp4j.TextDocumentClientCapabilities;
 import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
 import org.eclipse.lsp4j.TextDocumentEdit;
 import org.eclipse.lsp4j.TextEdit;
@@ -236,6 +246,7 @@ import org.netbeans.modules.editor.indent.api.Reformat;
 import org.netbeans.modules.java.lsp.server.URITranslator;
 import org.netbeans.modules.java.lsp.server.ui.AbstractJavaPlatformProviderOverride;
 import org.netbeans.modules.parsing.impl.SourceAccessor;
+import org.netbeans.modules.sampler.Sampler;
 import org.netbeans.spi.editor.hints.ErrorDescription;
 import org.netbeans.spi.lsp.CallHierarchyProvider;
 import org.netbeans.spi.lsp.CodeLensProvider;
@@ -244,11 +255,16 @@ import org.netbeans.spi.lsp.StructureProvider;
 import org.netbeans.spi.project.ActionProvider;
 import org.netbeans.spi.project.ProjectConfiguration;
 import org.netbeans.spi.project.ProjectConfigurationProvider;
+import org.openide.DialogDescriptor;
+import org.openide.DialogDisplayer;
+import org.openide.NotifyDescriptor;
+import org.openide.NotifyDescriptor.Message;
 import org.openide.cookies.EditorCookie;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.filesystems.URLMapper;
 import org.openide.loaders.DataObject;
+import org.openide.modules.Places;
 import org.openide.text.CloneableEditorSupport;
 import org.openide.text.NbDocument;
 import org.openide.text.PositionBounds;
@@ -256,6 +272,7 @@ import org.openide.util.BaseUtilities;
 import org.openide.util.Exceptions;
 import org.openide.util.Lookup;
 import org.openide.util.NbBundle;
+import org.openide.util.NbBundle.Messages;
 import org.openide.util.Pair;
 import org.openide.util.RequestProcessor;
 import org.openide.util.WeakSet;
@@ -273,6 +290,7 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
     private static final String COMMAND_RUN_SINGLE = "nbls.run.single";         // NOI18N
     private static final String COMMAND_DEBUG_SINGLE = "nbls.debug.single";     // NOI18N
     private static final String NETBEANS_JAVADOC_LOAD_TIMEOUT = "javadoc.load.timeout";// NOI18N
+    private static final String NETBEANS_COMPLETION_WARNING_TIME = "completion.warning.time";// NOI18N
     private static final String NETBEANS_JAVA_ON_SAVE_ORGANIZE_IMPORTS = "java.onSave.organizeImports";// NOI18N
     private static final String URL = "url";// NOI18N
     private static final String INDEX = "index";// NOI18N
@@ -334,8 +352,41 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
     private final AtomicInteger javadocTimeout = new AtomicInteger(-1);
     private List<Completion> lastCompletions = null;
 
+    private static final int INITIAL_COMPLETION_SAMPLING_DELAY = 1000;
+    private static final int DEFAULT_COMPLETION_WARNING_LENGTH = 10_000;
+    private static final RequestProcessor COMPLETION_SAMPLER_WORKER = new RequestProcessor("java-lsp-completion-sampler", 1, false, false);
+    private static final AtomicReference<Sampler> RUNNING_SAMPLER = new AtomicReference<>();
+
     @Override
+    @Messages({
+        "# {0} - the timeout elapsed",
+        "# {1} - path to the saved sampler file",
+        "INFO_LongCodeCompletion=Analyze completions taking longer than {0}. A sampler snapshot has been saved to: {1}"
+    })
     public CompletableFuture<Either<List<CompletionItem>, CompletionList>> completion(CompletionParams params) {
+        AtomicBoolean done = new AtomicBoolean();
+        AtomicReference<Sampler> samplerRef = new AtomicReference<>();
+        AtomicLong samplingStart = new AtomicLong();
+        AtomicLong samplingWarningLength = new AtomicLong(DEFAULT_COMPLETION_WARNING_LENGTH);
+        long completionStart = System.currentTimeMillis();
+        COMPLETION_SAMPLER_WORKER.post(() -> {
+            if (!done.get()) {
+                Sampler sampler = Sampler.createSampler("completion");
+                if (sampler != null) {
+                    Sampler witnessSampler = RUNNING_SAMPLER.compareAndExchange(null, sampler);
+
+                    if (witnessSampler == null) {
+                        sampler.start();
+                        samplerRef.set(sampler);
+                        samplingStart.set(System.currentTimeMillis());
+                        if (done.get()) {
+                            sampler.stop();
+                        }
+                    }
+                }
+            }
+        }, INITIAL_COMPLETION_SAMPLING_DELAY);
+
         lastCompletions = new ArrayList<>();
         AtomicInteger index = new AtomicInteger(0);
         final CompletionList completionList = new CompletionList();
@@ -358,9 +409,21 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
             ConfigurationItem conf = new ConfigurationItem();
             conf.setScopeUri(uri);
             conf.setSection(client.getNbCodeCapabilities().getConfigurationPrefix() + NETBEANS_JAVADOC_LOAD_TIMEOUT);
-            return client.configuration(new ConfigurationParams(Collections.singletonList(conf))).thenApply(c -> {
-                if (c != null && !c.isEmpty() && c.get(0) instanceof JsonPrimitive) {
-                    javadocTimeout.set(((JsonPrimitive)c.get(0)).getAsInt());
+            ConfigurationItem completionWarningLength = new ConfigurationItem();
+            completionWarningLength.setScopeUri(uri);
+            completionWarningLength.setSection(client.getNbCodeCapabilities().getConfigurationPrefix() + NETBEANS_COMPLETION_WARNING_TIME);
+            return client.configuration(new ConfigurationParams(Arrays.asList(conf, completionWarningLength))).thenApply(c -> {
+                if (c != null && !c.isEmpty()) {
+                    if (c.get(0) instanceof JsonPrimitive) {
+                        JsonPrimitive javadocTimeSetting = (JsonPrimitive) c.get(0);
+
+                        javadocTimeout.set(javadocTimeSetting.getAsInt());
+                    }
+                    if (c.get(1) instanceof JsonPrimitive) {
+                        JsonPrimitive samplingWarningsLengthSetting = (JsonPrimitive) c.get(1);
+
+                        samplingWarningLength.set(samplingWarningsLengthSetting.getAsLong());
+                    }
                 }
                 final int caret = Utils.getOffset(doc, params.getPosition());
                 List<CompletionItem> items = new ArrayList<>();
@@ -438,6 +501,37 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
                         prefs.put("classMemberInsertionPoint", point);
                     } else {
                         prefs.remove("classMemberInsertionPoint");
+                    }
+
+                    done.set(true);
+                    Sampler sampler = samplerRef.get();
+                    RUNNING_SAMPLER.compareAndExchange(sampler, null);
+                    if (sampler != null) {
+                        long samplingTime = (System.currentTimeMillis() - completionStart);
+                        long minSamplingTime = Math.min(1_000, samplingWarningLength.get());
+                        if (samplingTime >= minSamplingTime &&
+                            samplingTime >= samplingWarningLength.get() &&
+                            samplingWarningLength.get() >= 0) {
+                            Lookup lookup = Lookup.getDefault();
+                            new Thread(() -> {
+                                Lookups.executeWith(lookup, () -> {
+                                    Path logDir = Places.getUserDirectory().toPath().resolve("var/log");
+                                    try {
+                                        Path target = Files.createTempFile(logDir, "completion-sampler", ".npss");
+                                        try (OutputStream out = Files.newOutputStream(target);
+                                             DataOutputStream dos = new DataOutputStream(out)) {
+                                            sampler.stopAndWriteTo(dos);
+
+                                            NotifyDescriptor notifyUser = new Message(Bundle.INFO_LongCodeCompletion(samplingWarningLength.get(), target.toAbsolutePath().toString()));
+
+                                            DialogDisplayer.getDefault().notifyLater(notifyUser);
+                                        }
+                                    } catch (IOException ex) {
+                                        Exceptions.printStackTrace(ex);
+                                    }
+                                });
+                            }).start();
+                        }
                     }
                 }
                 completionList.setItems(items);
@@ -1473,7 +1567,6 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
                         refactoring[0] = new RenameRefactoring(Lookups.fixed(lookupContent.toArray(new Object[0])));
                         refactoring[0].getContext().add(JavaRefactoringUtils.getClasspathInfoFor(cc.getFileObject()));
                         refactoring[0].setNewName(params.getNewName());
-                        refactoring[0].setSearchInComments(true); //TODO?
                     }
                 }, true);
                 if (cancel.get()) return ;
@@ -1553,12 +1646,18 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
         if (source == null) {
             return CompletableFuture.completedFuture(Collections.emptyList());
         }
+        ClientCapabilities clientCapabilities = client.getNbCodeCapabilities()
+                                                      .getClientCapabilities();
+        TextDocumentClientCapabilities textDocumentCapabilities = clientCapabilities != null ? clientCapabilities.getTextDocument() : null;
+        FoldingRangeCapabilities foldingRangeCapabilities = textDocumentCapabilities != null ? textDocumentCapabilities.getFoldingRange() : null;
+        Boolean lineFoldingOnlyCapability = foldingRangeCapabilities != null ? foldingRangeCapabilities.getLineFoldingOnly() : null;
+        final boolean lineFoldingOnly = lineFoldingOnlyCapability == Boolean.TRUE;
         CompletableFuture<List<FoldingRange>> result = new CompletableFuture<>();
         try {
             source.runUserActionTask(cc -> {
                 cc.toPhase(JavaSource.Phase.RESOLVED);
                 Document doc = cc.getSnapshot().getSource().getDocument(true);
-                JavaElementFoldVisitor v = new JavaElementFoldVisitor(cc, cc.getCompilationUnit(), cc.getTrees().getSourcePositions(), doc, new FoldCreator<FoldingRange>() {
+                JavaElementFoldVisitor<FoldingRange> v = new JavaElementFoldVisitor<>(cc, cc.getCompilationUnit(), cc.getTrees().getSourcePositions(), doc, new FoldCreator<FoldingRange>() {
                     @Override
                     public FoldingRange createImportsFold(int start, int end) {
                         return createFold(start, end, FoldingRangeKind.Imports);
@@ -1603,13 +1702,86 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
                 });
                 v.checkInitialFold();
                 v.scan(cc.getCompilationUnit(), null);
-                result.complete(v.getFolds());
+                List<FoldingRange> folds = v.getFolds();
+                if (lineFoldingOnly)
+                    folds = convertToLineOnlyFolds(folds);
+                result.complete(folds);
             }, true);
         } catch (IOException ex) {
             result.completeExceptionally(ex);
         }
         return result;
     }
+
+    /**
+     * Converts a list of code-folds to a line-only Range form, in place of the
+     * finer-grained form of {@linkplain Position Position-based} (line, column) Ranges.
+     * <p>
+     * This is needed for LSP clients that do not support the finer grained Range
+     * specification. This is expected to be advertised by the client in
+     * {@code FoldingRangeClientCapabilities.lineFoldingOnly}.
+     *
+     * @implSpec The line-only ranges computed uphold the code-folding invariant that:
+     * <em>a fold <b>does not end</b> at the same point <b>where</b> another fold <b>starts</b></em>.
+     *
+     * @implNote This is performed in {@code O(n log n) + O(n)} time and {@code O(n)} space for the returned list.
+     *
+     * @param folds List of code-folding ranges computed for a textDocument,
+     *              containing fine-grained {@linkplain Position Position-based}
+     *              (line, column) ranges.
+     * @return List of code-folding ranges computed for a textDocument,
+     * containing coarse-grained line-only ranges.
+     *
+     * @see <a href="https://microsoft.github.io/language-server-protocol/specifications/specification-current/#foldingRangeClientCapabilities">
+     *     LSP FoldingRangeClientCapabilities</a>
+     */
+    static List<FoldingRange> convertToLineOnlyFolds(List<FoldingRange> folds) {
+        if (folds != null && folds.size() > 1) {
+            // Ensure that the folds are sorted in increasing order of their start position
+            folds = new ArrayList<>(folds);
+            folds.sort(Comparator.comparingInt(FoldingRange::getStartLine)
+                    .thenComparing(FoldingRange::getStartCharacter));
+            // Maintain a stack of enclosing folds
+            Deque<FoldingRange> enclosingFolds = new ArrayDeque<>();
+            for (FoldingRange fold : folds) {
+                FoldingRange last;
+                while ((last = enclosingFolds.peek()) != null &&
+                        (last.getEndLine() < fold.getEndLine() || 
+                        (last.getEndLine() == fold.getEndLine() && last.getEndCharacter() < fold.getEndCharacter()))) {
+                    // The last enclosingFold does not enclose this fold.
+                    // Due to sortedness of the folds, last also ends before this fold starts.
+                    enclosingFolds.pop();
+                    // If needed, adjust last to end on a line prior to this fold start
+                    if (last.getEndLine() == fold.getStartLine()) {
+                        last.setEndLine(last.getEndLine() - 1);
+                    }
+                    last.setEndCharacter(null);       // null denotes the end of the line.
+                    last.setStartCharacter(null);     // null denotes the end of the line.
+                }
+                enclosingFolds.push(fold);
+            }
+            // empty the stack; since each fold completely encloses the next higher one.
+            FoldingRange fold;
+            while ((fold = enclosingFolds.poll()) != null) {
+                fold.setEndCharacter(null);       // null denotes the end of the line.
+                fold.setStartCharacter(null);     // null denotes the end of the line.
+            }
+            // Remove invalid or duplicate folds
+            Iterator<FoldingRange> it = folds.iterator();
+            FoldingRange prev = null;
+            while(it.hasNext()) {
+                FoldingRange next = it.next();
+                if (next.getEndLine() <= next.getStartLine() || 
+                        (prev != null && prev.equals(next))) {
+                    it.remove();
+                } else {
+                    prev = next;
+                }
+            }
+        }
+        return folds;
+    }
+
 
     @Override
     public void didOpen(DidOpenTextDocumentParams params) {
@@ -2231,7 +2403,7 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
      * @param uri file URI
      * @param mergedDiags the diagnostics
      */
-    public void publishDiagnostics(String uri, List<Diagnostic> mergedDiags) {
+    private void publishDiagnostics(String uri, List<Diagnostic> mergedDiags) {
         knownFiles.put(uri, Instant.now());
         client.publishDiagnostics(new PublishDiagnosticsParams(uri, mergedDiags));
     }

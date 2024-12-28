@@ -88,7 +88,7 @@ public final class PropertiesGenerator {
                     application.put("micronaut.object-storage.oracle-cloud." + nameLowercase + ".bucket", item.getKey().getValue()); //NOI18N
                     application.put("micronaut.object-storage.oracle-cloud." + nameLowercase + ".namespace", ((BucketItem) item).getNamespace()); //NOI18N
                     break;
-                case "Databases": //NOI18N
+                case "Database": //NOI18N
                     DatabaseConnection conn = ((DatabaseItem) item).getCorrespondingConnection();
                    
                     if (conn != null) {
@@ -139,6 +139,7 @@ public final class PropertiesGenerator {
         }
         if (vault != null) {
             bootstrap.put("oci.vault.config.enabled", "true"); // NOI18N
+            bootstrap.put("micronaut.config-client.enabled", "true"); // NOI18N
             bootstrap.put("oci.vault.vaults[0].ocid", vault.getKey().getValue()); //NOI18N
             bootstrap.put("oci.vault.vaults[0].compartment-ocid", vault.getCompartmentId()); //NOI18N
         }

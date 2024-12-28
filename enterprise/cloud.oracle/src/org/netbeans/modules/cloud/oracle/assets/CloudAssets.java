@@ -120,7 +120,7 @@ public final class CloudAssets {
             boolean update = false;
             for (Iterator it = items.iterator(); it.hasNext();) {
                 OCIItem item = (OCIItem) it.next();
-                if (!ocids.contains(item.getKey().getValue()) && "Databases".equals(item.getKey().getPath())) { //NOI18N
+                if (!ocids.contains(item.getKey().getValue()) && "Database".equals(item.getKey().getPath())) { //NOI18N
                     it.remove();
                     update = true;
                 }
@@ -139,17 +139,28 @@ public final class CloudAssets {
         return instance;
     }
 
-    public synchronized void addItem(OCIItem newItem) {
+    public synchronized boolean addItem(OCIItem newItem) {
         Parameters.notNull("newItem cannot be null", newItem);
         long presentCount = items.stream()
                 .filter(i -> i.getKey().getPath().equals(newItem.getKey().getPath()))
                 .count();
         if (newItem.maxInProject() > presentCount && isTenancyCompatible(newItem, true)) {
+            if (newItem instanceof Validator) {
+                Validator.Result result = ((Validator) newItem).validate();
+                if (result.status == Validator.ValidationStatus.WARNING) {
+                    showWarningMessage(result.message);
+                }
+                if (result.status == Validator.ValidationStatus.ERROR) {
+                    showWarningMessage(result.message);
+                    return false;
+                }
+            }
             items.add(newItem);
             newItem.addChangeListener(itemsListener);
             update();
             storeAssets();
         }
+        return true;
     }
 
     synchronized void removeItem(OCIItem item) {
@@ -184,7 +195,7 @@ public final class CloudAssets {
     }
     
     public synchronized boolean isTenancyCompatible(OCIItem toCheck, boolean showWarning) {
-        List<OCIItem> itemsMissingInfo = new ArrayList();
+        List<OCIItem> itemsMissingInfo = new ArrayList<> ();
         for(OCIItem item: items) {
             if (item != null && item.getTenancyId() == null) {
                 itemsMissingInfo.add(item);
@@ -243,7 +254,23 @@ public final class CloudAssets {
         list.addAll(items);
         return list;
     }
-
+    
+    /**
+     * Returns a <code>Collection</code> of all items for a given path
+     * 
+     * @param path
+     * @return 
+     */
+    public List<OCIItem> getItems(String path) {
+        List<OCIItem> result = new ArrayList<> ();
+        for (OCIItem item : items) {
+            if (path != null && path.equals(item.getKey().getPath())) {
+                result.add(item);
+            } 
+        }
+        return result;
+    }
+    
     /**
      * Returns a <code>Collection</code> of items assigned by user. This doesn't
      * include suggested items.
@@ -292,7 +319,6 @@ public final class CloudAssets {
         refNames.put(item, refName);
         storeAssets();
         item.fireRefNameChanged(oldRefName, refName);
-//        item.fireRefNameChanged(null, refName);
         return true;
     }
 
@@ -406,7 +432,7 @@ public final class CloudAssets {
                                     .get("id").getAsJsonObject() //NOI18N
                                     .get("path").getAsString(); //NOI18N
                             switch (path) {
-                                case "Databases": //NOI18N
+                                case "Database": //NOI18N
                                     loaded.add(gson.fromJson(element, DatabaseItem.class));
                                     break;
                                 case "Bucket": //NOI18N

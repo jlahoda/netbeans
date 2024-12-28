@@ -159,11 +159,21 @@ public class LanguageClientImpl implements LanguageClient, Endpoint {
 
     @Override
     public void publishDiagnostics(PublishDiagnosticsParams pdp) {
-        FileObject file = Utils.fromURI(bindings, pdp.getUri());
-        EditorCookie ec = file != null ? file.getLookup().lookup(EditorCookie.class) : null;
-        Document doc = ec != null ? ec.getDocument() : null;
-        if (doc == null) {
-            return ; //ignore...
+        try {
+            FileObject file = Utils.fromURI(bindings, pdp.getUri());
+            EditorCookie ec = file != null ? file.getLookup().lookup(EditorCookie.class) : null;
+            Document doc = ec != null ? ec.getDocument() : null;
+            if (doc == null) {
+                return ; //ignore...
+            }
+            assert file != null;
+            List<ErrorDescription> diags = pdp.getDiagnostics().stream().map(d -> {
+                LazyFixList fixList = allowCodeActions ? new DiagnosticFixList(doc, pdp.getUri(), d) : ErrorDescriptionFactory.lazyListForFixes(Collections.emptyList());
+                return ErrorDescriptionFactory.createErrorDescription(severityMap.get(d.getSeverity()), d.getMessage(), fixList, file, Utils.getOffset(doc, d.getRange().getStart()), Utils.getOffset(doc, d.getRange().getEnd()));
+            }).collect(Collectors.toList());
+            HintsController.setErrors(doc, LanguageClientImpl.class.getName(), diags);
+        } catch (URISyntaxException | MalformedURLException ex) {
+            LOG.log(Level.FINE, null, ex);
         }
         assert file != null;
         List<ErrorDescription> diags = pdp.getDiagnostics().stream().map(d -> {
@@ -301,12 +311,14 @@ public class LanguageClientImpl implements LanguageClient, Endpoint {
 
         private final PropertyChangeSupport pcs = new PropertyChangeSupport(this);
         private final String fileUri;
+        private final Document doc;
         private final Diagnostic diagnostic;
         private List<Fix> fixes;
         private boolean computing;
         private boolean computed;
 
-        public DiagnosticFixList(String fileUri, Diagnostic diagnostic) {
+        public DiagnosticFixList(Document doc, String fileUri, Diagnostic diagnostic) {
+            this.doc = doc;
             this.fileUri = fileUri;
             this.diagnostic = diagnostic;
         }
@@ -333,17 +345,19 @@ public class LanguageClientImpl implements LanguageClient, Endpoint {
                 computing = true;
                 bindings.runOnBackground(() -> {
                     try {
-                        List<Either<Command, CodeAction>> commands =
-                                bindings.getTextDocumentService().codeAction(new CodeActionParams(new TextDocumentIdentifier(fileUri),
-                                        diagnostic.getRange(),
-                                        new CodeActionContext(Collections.singletonList(diagnostic)))).get();
-
                         List<Fix> newFixes = Collections.emptyList();
 
-                        if (commands != null) {
-                            newFixes = commands.stream()
-                                    .map(cmd -> new CommandBasedFix(cmd))
-                                    .collect(Collectors.toList());
+                        if (Utils.getOffset(doc, diagnostic.getRange().getEnd()) < doc.getEndPosition().getOffset()) {
+                            List<Either<Command, CodeAction>> commands
+                                    = bindings.getTextDocumentService().codeAction(new CodeActionParams(new TextDocumentIdentifier(fileUri),
+                                            diagnostic.getRange(),
+                                            new CodeActionContext(Collections.singletonList(diagnostic)))).get();
+
+                            if (commands != null) {
+                                newFixes = commands.stream()
+                                        .map(cmd -> new CommandBasedFix(cmd))
+                                        .collect(Collectors.toList());
+                            }
                         }
 
                         synchronized (this) {
@@ -354,7 +368,7 @@ public class LanguageClientImpl implements LanguageClient, Endpoint {
                         pcs.firePropertyChange(PROP_COMPUTED, null, null);
                         pcs.firePropertyChange(PROP_FIXES, null, null);
                     } catch (InterruptedException | ExecutionException ex) {
-                        Exceptions.printStackTrace(ex);
+                        LOG.log(Level.INFO, "Failure fetching DiagnosticFixList (at least typescript server has known problems)", ex);
                     }
                 });
             }

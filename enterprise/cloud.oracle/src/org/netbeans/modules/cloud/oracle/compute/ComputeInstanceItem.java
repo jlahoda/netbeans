@@ -18,14 +18,27 @@
  */
 package org.netbeans.modules.cloud.oracle.compute;
 
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import org.netbeans.modules.cloud.oracle.adm.URLProvider;
 import org.netbeans.modules.cloud.oracle.items.OCID;
 import org.netbeans.modules.cloud.oracle.items.OCIItem;
+import org.openide.util.Exceptions;
+import org.openide.util.NbBundle;
+import org.netbeans.modules.cloud.oracle.assets.Validator;
 
 /**
  *
  * @author Jan Horvath
  */
-public final class ComputeInstanceItem extends OCIItem {
+@NbBundle.Messages({
+    "SuggestAmpere=The Compute Instance has a different architecture than the local machine. Container images built on the local machine may not be compatible with this Compute Instance. Please consider creating a Compute Instance with an Ampere® shape.",
+    "SuggestIntel=The Compute Instance has a different architecture than the local machine. Container images built on the local machine may not be compatible with this Compute Instance. Please consider creating a Compute Instance with an AMD or Intel® shape."
+})
+public final class ComputeInstanceItem extends OCIItem implements URLProvider, Validator {
+    private final String AARCH = "aarch64";
     private String publicIp = null;
     private String processorDescription;
     private String username;
@@ -70,4 +83,31 @@ public final class ComputeInstanceItem extends OCIItem {
         this.publicIp = publicIp;
     }
     
+    @Override
+    public URL getURL() {
+        if (getKey().getValue() != null && getRegion() != null) {
+            try {
+                URI uri = new URI(String.format("https://cloud.oracle.com/compute/instances/%s?region=%s", getKey().getValue(), getRegion()));
+                return uri.toURL();
+            } catch (MalformedURLException | URISyntaxException ex) {
+                Exceptions.printStackTrace(ex);
+            }
+        } 
+        return null;
+    }
+
+    @Override
+    public Result validate() {
+        String osArch = System.getProperty("os.arch"); //NOI18N
+        String shapeDesc = getProcessorDescription();
+        boolean os_arm = AARCH.equals(osArch);
+        boolean shape_arm = shapeDesc != null && shapeDesc.contains("Ampere"); //NOI18N
+        if (os_arm == shape_arm) {
+            return new Result(ValidationStatus.OK, null);
+        } else if (os_arm && !shape_arm) {
+            return new Result(ValidationStatus.WARNING, Bundle.SuggestAmpere());
+        } 
+        return new Result(ValidationStatus.WARNING, Bundle.SuggestIntel());
+    }
+
 }
