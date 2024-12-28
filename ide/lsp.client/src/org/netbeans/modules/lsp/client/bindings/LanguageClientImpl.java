@@ -159,25 +159,15 @@ public class LanguageClientImpl implements LanguageClient, Endpoint {
 
     @Override
     public void publishDiagnostics(PublishDiagnosticsParams pdp) {
-        try {
-            FileObject file = Utils.fromURI(bindings, pdp.getUri());
-            EditorCookie ec = file != null ? file.getLookup().lookup(EditorCookie.class) : null;
-            Document doc = ec != null ? ec.getDocument() : null;
-            if (doc == null) {
-                return ; //ignore...
-            }
-            assert file != null;
-            List<ErrorDescription> diags = pdp.getDiagnostics().stream().map(d -> {
-                LazyFixList fixList = allowCodeActions ? new DiagnosticFixList(doc, pdp.getUri(), d) : ErrorDescriptionFactory.lazyListForFixes(Collections.emptyList());
-                return ErrorDescriptionFactory.createErrorDescription(severityMap.get(d.getSeverity()), d.getMessage(), fixList, file, Utils.getOffset(doc, d.getRange().getStart()), Utils.getOffset(doc, d.getRange().getEnd()));
-            }).collect(Collectors.toList());
-            HintsController.setErrors(doc, LanguageClientImpl.class.getName(), diags);
-        } catch (URISyntaxException | MalformedURLException ex) {
-            LOG.log(Level.FINE, null, ex);
+        FileObject file = Utils.fromURI(bindings, pdp.getUri());
+        EditorCookie ec = file != null ? file.getLookup().lookup(EditorCookie.class) : null;
+        Document doc = ec != null ? ec.getDocument() : null;
+        if (doc == null) {
+            return ; //ignore...
         }
         assert file != null;
         List<ErrorDescription> diags = pdp.getDiagnostics().stream().map(d -> {
-            LazyFixList fixList = allowCodeActions ? new DiagnosticFixList(pdp.getUri(), d) : ErrorDescriptionFactory.lazyListForFixes(Collections.emptyList());
+            LazyFixList fixList = allowCodeActions ? new DiagnosticFixList(doc, pdp.getUri(), d) : ErrorDescriptionFactory.lazyListForFixes(Collections.emptyList());
             return ErrorDescriptionFactory.createErrorDescription(severityMap.get(d.getSeverity()), d.getMessage(), fixList, file, Utils.getOffset(doc, d.getRange().getStart()), Utils.getOffset(doc, d.getRange().getEnd()));
         }).collect(Collectors.toList());
         HintsController.setErrors(doc, LanguageClientImpl.class.getName(), diags);
