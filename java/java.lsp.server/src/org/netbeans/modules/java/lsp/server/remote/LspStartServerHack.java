@@ -16,12 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.netbeans.modules.java.lsp.server;
+package org.netbeans.modules.java.lsp.server.remote;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import org.netbeans.api.sendopts.CommandException;
+import org.netbeans.modules.java.lsp.server.ConnectionSpec;
+import org.netbeans.modules.java.lsp.server.LspSession;
+import org.netbeans.modules.java.lsp.server.debugging.Debugger;
 import org.netbeans.modules.java.lsp.server.protocol.Server;
 import org.netbeans.modules.remote.agent.lsp.LSPService.StartJavaServerHack;
 import org.openide.util.RequestProcessor;
@@ -33,20 +36,34 @@ import org.openide.util.lookup.ServiceProvider;
 @ServiceProvider(service=StartJavaServerHack.class)
 public class LspStartServerHack implements StartJavaServerHack {
 
-    public void start(InputStream in, OutputStream out) throws IOException {
+    public void start(InputStream lspIn, OutputStream lspOut,
+                      InputStream dapIn, OutputStream dapOut) throws IOException {
         RequestProcessor worker = new RequestProcessor(LspStartServerHack.class.getName(), 1, false, false);
         worker.post(() -> {
             try {
                 LspSession session = new LspSession();
-                ConnectionSpec connectTo = ConnectionSpec.parse("stdio");
-                connectTo.prepare(
-                    "Java Language Server",
-                    in,
-                    out,
-                    session,
-                    LspSession::setLspServer,
-                    Server::launchServer
-                );
+                if (lspIn != null) {
+                    ConnectionSpec connectTo = ConnectionSpec.parse("stdio");
+                    connectTo.prepare(
+                        "Java Language Server",
+                        lspIn,
+                        lspOut,
+                        session,
+                        LspSession::setLspServer,
+                        Server::launchServer
+                    );
+                }
+                if (dapIn != null) {
+                    ConnectionSpec connectTo = ConnectionSpec.parse("stdio");
+                    connectTo.prepare(
+                        "Java Debug Server Adapter",
+                        dapIn,
+                        dapOut,
+                        session,
+                        LspSession::setDapServer,
+                        Debugger::startDebugger
+                    );
+                }
             } catch (IOException | CommandException ex) {
                 ex.printStackTrace();
                 throw new RuntimeException(ex);

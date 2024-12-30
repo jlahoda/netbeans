@@ -79,6 +79,7 @@ import org.netbeans.api.debugger.DebuggerManagerAdapter;
 import org.netbeans.api.debugger.DebuggerManagerListener;
 import org.netbeans.api.debugger.Session;
 import org.netbeans.api.io.InputOutput;
+import org.netbeans.modules.lsp.client.debugger.api.DAPConfiguration.URLPathConvertor;
 import org.netbeans.modules.lsp.client.debugger.spi.BreakpointConvertor;
 import org.netbeans.spi.debugger.ContextProvider;
 import org.netbeans.spi.debugger.DebuggerEngineProvider;
@@ -146,7 +147,7 @@ public final class DAPDebugger implements IDebugProtocolClient {
     }
 
     public CompletableFuture<Void> connect(DAPConfiguration config, Type type) throws Exception {
-        fileConvertor = DEFAULT_CONVERTOR;
+        fileConvertor = DAPConfigurationAccessor.getInstance().getURLPathConvertor(config);
         in = DAPConfigurationAccessor.getInstance().getIn(config);
         Launcher<IDebugProtocolServer> serverLauncher = DSPLauncher.createClientLauncher(this, in, DAPConfigurationAccessor.getInstance().getOut(config));//, false, new PrintWriter(System.err));
         launched = serverLauncher.startListening();
@@ -318,6 +319,8 @@ public final class DAPDebugger implements IDebugProtocolClient {
         //some servers (e.g. the GraalVM DAP server) require the threadId to be always set, even if singleThread is set to false
         args.setThreadId(currentThreadId);
         args.setSingleThread(Boolean.FALSE);
+
+        continued();
         server.continue_(args);
     }
 
@@ -552,7 +555,7 @@ public final class DAPDebugger implements IDebugProtocolClient {
 
     public enum Type {LAUNCH, ATTACH}
 
-    private static final URLPathConvertor DEFAULT_CONVERTOR = new URLPathConvertor() {
+    public static final URLPathConvertor DEFAULT_CONVERTOR = new URLPathConvertor() {
         @Override
         public String toPath(String file) {
             if (file.startsWith("file:")) {
@@ -568,8 +571,4 @@ public final class DAPDebugger implements IDebugProtocolClient {
         }
     };
 
-    public interface URLPathConvertor {
-        public String toPath(String url);
-        public String toURL(String path);
-    }
 }

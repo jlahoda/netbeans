@@ -82,7 +82,7 @@ public class RemoteManager {
             try {
     //            Process ssh = new ProcessBuilder(connectionOptions).redirectError(Redirect.INHERIT).start();
                 Process ssh = new ProcessBuilder(connectionOptions).redirectError(Redirect.DISCARD).start();
-                remote = new Remote(ssh.getInputStream(), ssh.getOutputStream());
+                remote = new Remote(remoteDescription, ssh.getInputStream(), ssh.getOutputStream());
                 description2Remote.put(sshDesc, remote);
                 return remote;
             } catch (IOException ex) {
@@ -96,7 +96,7 @@ public class RemoteManager {
 
             try {
                 Socket client = new Socket(running.hostname(), running.port());
-                remote = new Remote(client.getInputStream(), client.getOutputStream());
+                remote = new Remote(remoteDescription, client.getInputStream(), client.getOutputStream());
                 description2Remote.put(remoteDescription, remote);
                 return remote;
             } catch (IOException ex) {

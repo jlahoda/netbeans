@@ -25,7 +25,7 @@ import java.util.logging.Logger;
 import org.eclipse.lsp4j.debug.StackFrame;
 
 import org.netbeans.api.annotations.common.CheckForNull;
-import org.netbeans.modules.lsp.client.debugger.DAPDebugger.URLPathConvertor;
+import org.netbeans.modules.lsp.client.debugger.api.DAPConfiguration.URLPathConvertor;
 import org.netbeans.spi.debugger.ui.DebuggingView.DVFrame;
 import org.netbeans.spi.debugger.ui.DebuggingView.DVThread;
 

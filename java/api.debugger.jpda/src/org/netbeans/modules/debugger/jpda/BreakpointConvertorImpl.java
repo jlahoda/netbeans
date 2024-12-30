@@ -16,28 +16,25 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.netbeans.modules.java.lsp.server.debugging;
+package org.netbeans.modules.debugger.jpda;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Semaphore;
+import org.netbeans.api.debugger.Breakpoint;
+import org.netbeans.api.debugger.jpda.LineBreakpoint;
+import org.netbeans.modules.lsp.client.debugger.spi.BreakpointConvertor;
+import org.openide.util.lookup.ServiceProvider;
 
 /**
- *
- * @author martin
+ * TODO: should be moved to a separate bridge module(!)
+ * TODO: needed(???)
  */
-public class NBConfigurationSemaphore {
+@ServiceProvider(service=BreakpointConvertor.class)
+public class BreakpointConvertorImpl implements BreakpointConvertor {
 
-    private final CountDownLatch s = new CountDownLatch(1);
-
-    public void waitForConfigurationDone() {
-        try {
-            s.await();
-        } catch (InterruptedException e) {
-            // Continue
+    @Override
+    public void covert(Breakpoint b, ConvertedBreakpointConsumer breakpointConsumer) {
+        if (b instanceof LineBreakpoint lb) {
+            breakpointConsumer.lineBreakpoint(lb.getURL(), lb.getLineNumber(), lb.getCondition());
         }
     }
 
-    public void notifyCongigurationDone() {
-        s.countDown();
-    }
 }

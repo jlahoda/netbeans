@@ -38,6 +38,7 @@ public class DAPConfiguration {
     private Map<String, Object> configuration = new HashMap<>();
     private String sessionName = "";
     private boolean delayLaunch;
+    private URLPathConvertor urlPathConvertor = DAPDebugger.DEFAULT_CONVERTOR;
 
     /**
      * Start the configuration of the DAP client. The provided input and output
@@ -90,6 +91,11 @@ public class DAPConfiguration {
         return this;
     }
 
+    public DAPConfiguration setURLPathConvertor(URLPathConvertor urlPathConvertor) {
+        this.urlPathConvertor = urlPathConvertor;
+        return this;
+    }
+
     /**
      * Attach to an already running DAP server/debuggee, based on the configuration up to
      * this point.
@@ -111,6 +117,11 @@ public class DAPConfiguration {
         } catch (Exception ex) {
             Exceptions.printStackTrace(ex);
         }
+    }
+
+    public interface URLPathConvertor {
+        public String toPath(String url);
+        public String toURL(String path);
     }
 
     static {
@@ -138,6 +149,11 @@ public class DAPConfiguration {
             @Override
             public String getSessionName(DAPConfiguration config) {
                 return config.sessionName;
+            }
+
+            @Override
+            public URLPathConvertor getURLPathConvertor(DAPConfiguration config) {
+                return config.urlPathConvertor;
             }
         });
     }

@@ -39,12 +39,12 @@ import org.openide.util.Pair;
 
 @NbBundle.Messages({
     "# {0} - specification to parse",
-    "MSG_ConnectionSpecError=Cannot parse '{0}' as connection. Use 'stdio', 'listen:<port>' or 'connect:<port>'",
+    "MSG_ConnectionSpecError=Cannot parse ''{0}'' as connection. Use 'stdio', 'listen:<port>' or 'connect:<port>'",
     "# {0} - specification to parse",
     "# {1} - port to parse",
-    "MSG_PortParseError=Cannot parse '{1}' as port in '{0}'"
+    "MSG_PortParseError=Cannot parse ''{1}'' as port in ''{0}''"
 })
-final class ConnectionSpec implements Closeable {
+public final class ConnectionSpec implements Closeable {
     private final Boolean listen;
     private final int port;
     // @GuardedBy (this)

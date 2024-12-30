@@ -28,7 +28,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.netbeans.modules.remote.AsynchronousConnection.ReceiverBuilder;
 import org.netbeans.modules.remote.AsynchronousConnection.Sender;
+import org.netbeans.modules.remote.agent.debugger.DebuggerAgent;
+import org.netbeans.modules.remote.agent.debugger.DebuggerAgent.WrapJavaDebuggerHack;
 import org.netbeans.modules.remote.agent.io.ToClientIOProvider;
+import org.netbeans.modules.remote.ide.RemoteManager.RemoteDescription;
+import org.netbeans.modules.remote.ide.debugger.DebuggerHandler;
 import org.netbeans.modules.remote.ide.fs.io.IOHandler;
 import org.netbeans.spi.io.InputOutputProvider;
 import org.openide.util.Lookup;
@@ -46,14 +50,17 @@ public class Remote {
     //TODO: state - connecting, failed, connected, etc.
     private final StreamMultiplexor multiplexor;
     private final Sender asynchronousSendAndReceive;
-    private final AtomicInteger channel = new AtomicInteger(2);
+    private final AtomicInteger channel = new AtomicInteger(3);
 
-    public Remote(InputStream in, OutputStream out) {
+    public Remote(RemoteDescription remoteDescription, InputStream in, OutputStream out) {
         this.multiplexor = new StreamMultiplexor(in, out);
         Streams controlChannel = multiplexor.getStreamsForChannel(0);
-        Streams ioChannel = multiplexor.getStreamsForChannel(1);
         asynchronousSendAndReceive = new Sender(controlChannel.in(), controlChannel.out());
+        Streams ioChannel = multiplexor.getStreamsForChannel(1);
         IOHandler.run(ioChannel);
+        Streams debuggerChannel = multiplexor.getStreamsForChannel(2);
+
+        DebuggerHandler.startListenOn(remoteDescription, debuggerChannel);
     }
 
     public Streams runService(String serviceName) throws IOException, ExecutionException {
@@ -107,10 +114,15 @@ public class Remote {
         Streams controlChannel = multiplexor.getStreamsForChannel(0);
         Streams ioChannel = multiplexor.getStreamsForChannel(1);
         ToClientIOProvider ioProvider = new ToClientIOProvider(ioChannel);
-        AtomicInteger nextChannel = new AtomicInteger(2);
+        Streams debuggerChannel = multiplexor.getStreamsForChannel(2);
+        DebuggerAgent agent = new DebuggerAgent(debuggerChannel);
+        AtomicInteger nextChannel = new AtomicInteger(3);
         RequestProcessor.Task[] agentTask = new RequestProcessor.Task[1];
         Lookup inputOutputLookup = Lookups.fixed(ioProvider);
-        ProxyLookup lookupWithContext = new ProxyLookup(Lookups.exclude(Lookup.getDefault(), InputOutputProvider.class, org.openide.windows.IOProvider.class), inputOutputLookup);
+        Lookup lookupWithContext = new ProxyLookup(Lookups.exclude(Lookup.getDefault(), InputOutputProvider.class, org.openide.windows.IOProvider.class), inputOutputLookup);
+        for (WrapJavaDebuggerHack hack : Lookup.getDefault().lookupAll(WrapJavaDebuggerHack.class)) {
+            lookupWithContext = hack.replaceLookup(lookupWithContext, agent);
+        }
         Lookups.executeWith(lookupWithContext, () -> {
             agentTask[0] = new ReceiverBuilder<Task>(controlChannel.in(), controlChannel.out(), Task.class)
                    .addHandler(Task.RUN_SERVICE, RunService.class, value -> {

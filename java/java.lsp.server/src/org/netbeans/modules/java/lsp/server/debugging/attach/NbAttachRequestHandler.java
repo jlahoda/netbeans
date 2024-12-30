@@ -26,7 +26,14 @@ import com.sun.jdi.connect.ListeningConnector;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,15 +45,20 @@ import org.eclipse.lsp4j.MessageParams;
 import org.eclipse.lsp4j.MessageType;
 import org.eclipse.lsp4j.debug.TerminatedEventArguments;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
+import org.netbeans.api.debugger.Breakpoint;
 
 import org.netbeans.api.debugger.DebuggerEngine;
 import org.netbeans.api.debugger.DebuggerInfo;
 import org.netbeans.api.debugger.DebuggerManager;
+import org.netbeans.api.debugger.DebuggerManagerAdapter;
+import org.netbeans.api.debugger.DebuggerManagerListener;
 import org.netbeans.api.debugger.Session;
+import org.netbeans.api.debugger.Watch;
 import org.netbeans.api.debugger.jpda.AttachingDICookie;
 import org.netbeans.api.debugger.jpda.DebuggerStartException;
 import org.netbeans.api.debugger.jpda.JPDADebugger;
 import org.netbeans.api.debugger.jpda.ListeningDICookie;
+import org.netbeans.api.java.classpath.ClassPath;
 import org.netbeans.modules.java.lsp.server.debugging.DebugAdapterContext;
 import org.netbeans.modules.java.lsp.server.debugging.launch.NbDebugSession;
 import org.netbeans.modules.java.lsp.server.debugging.ni.NILocationVisualizer;
@@ -56,6 +68,10 @@ import org.netbeans.modules.java.lsp.server.protocol.NbCodeLanguageClient;
 import org.netbeans.modules.java.nativeimage.debugger.api.NIDebugRunner;
 import org.netbeans.modules.nativeimage.api.debug.NIDebugger;
 import org.netbeans.modules.nativeimage.api.debug.StartDebugParameters;
+import org.netbeans.spi.java.classpath.support.ClassPathSupport;
+import org.openide.filesystems.FileUtil;
+import org.openide.filesystems.URLMapper;
+import org.openide.util.Exceptions;
 import org.openide.util.NbBundle;
 import org.openide.util.NbBundle.Messages;
 import org.openide.util.RequestProcessor;
@@ -169,7 +185,7 @@ public final class NbAttachRequestHandler {
         ConfigurationAttributes configurationAttributes = AttachConfigurations.get(clientCapa).findConfiguration(attachArguments);
         if (configurationAttributes != null) {
             Connector connector = configurationAttributes.getConnector();
-            RP.post(() -> attachTo(connector, attachArguments, context, resultFuture));
+        RP.post(() -> attachTo(connector, attachArguments, context, resultFuture));
         } else {
             context.setDebugMode(true);
             String name = (String) attachArguments.get("name");     // NOI18N
@@ -198,59 +214,101 @@ public final class NbAttachRequestHandler {
             }
             arg.setValue(value);
         }
+        Map<String, Object> properties = new HashMap<>();
+        if (arguments.containsKey("properties")) {
+            Map<String, Object> inProperties = (Map<String, Object>) arguments.get("properties");
+            if (inProperties.containsKey("baseDir")) {
+                String basedir = (String) inProperties.get("baseDir");
+                properties.put("baseDir", new File(basedir));
+            }
+            if (inProperties.containsKey("sourcepath")) {
+                List<Object> inSourcePath = (List<Object>) inProperties.get("sourcepath");
+                properties.put("sourcepath", toClassPath(inSourcePath));
+            }
+        }
         DebuggerInfo debuggerInfo;
         if (connector instanceof AttachingConnector) {
             AttachingDICookie attachingCookie = AttachingDICookie.create((AttachingConnector) connector, args);
             resultFuture.complete(null);
-            debuggerInfo = DebuggerInfo.create(AttachingDICookie.ID, new Object [] { attachingCookie });
+            debuggerInfo = DebuggerInfo.create(AttachingDICookie.ID, new Object [] { attachingCookie, properties });
         } else {
             assert connector instanceof ListeningConnector : connector;
             ListeningDICookie listeningCookie = ListeningDICookie.create((ListeningConnector) connector, args);
-            debuggerInfo = DebuggerInfo.create(ListeningDICookie.ID, new Object [] { listeningCookie });
+            debuggerInfo = DebuggerInfo.create(ListeningDICookie.ID, new Object [] { listeningCookie, properties });
         }
         startAttaching(debuggerInfo, context);
     }
 
-    @Messages("MSG_FailedToAttach=Failed to attach.")
-    private void startAttaching(DebuggerInfo debuggerInfo, DebugAdapterContext context) {
-        DebuggerEngine[] es = DebuggerManager.getDebuggerManager ().startDebugging(debuggerInfo);
-        if (es.length > 0) {
-            JPDADebugger debugger = es[0].lookupFirst(null, JPDADebugger.class);
-            if (debugger != null) {
-                Session session = es[0].lookupFirst(null, Session.class);
-                NbDebugSession debugSession = new NbDebugSession(session);
-                context.setDebugSession(debugSession);
-                AtomicBoolean finished = new AtomicBoolean(false);
-                debugger.addPropertyChangeListener(JPDADebugger.PROP_STATE, new PropertyChangeListener() {
-                    @Override
-                    public void propertyChange(PropertyChangeEvent evt) {
-                        int newState = (int) evt.getNewValue();
-                        if (newState == JPDADebugger.STATE_DISCONNECTED) {
-                            if (!finished.getAndSet(true)) {
-                                notifyTerminated(context);
-                            }
-                        }
-                    }
-                });
-                boolean success = false;
-                try {
-                    debugger.waitRunning();
-                    success = debugger.getState() != JPDADebugger.STATE_DISCONNECTED;
-                } catch (DebuggerStartException ex) {
-                    notifyErrorMessage(context, ex.getLocalizedMessage());
-                }
-                if (!success) {
-                    if (!finished.getAndSet(true)) {
-                        notifyTerminated(context);
-                    }
-                } else {
-                    context.getClient().initialized();
-                }
-                return ;
+    private ClassPath toClassPath(List<Object> sourcepath) {
+        List<URL> content = new ArrayList<>();
+        for (Object entry : sourcepath) {
+            try {
+                content.add(URI.create((String) entry).toURL());
+            } catch (MalformedURLException ex) {
+                Exceptions.printStackTrace(ex);
             }
         }
-        notifyErrorMessage(context, Bundle.MSG_FailedToAttach());
-        notifyTerminated(context);
+        return ClassPathSupport.createClassPath(content.toArray(URL[]::new));
+    }
+
+    @Messages("MSG_FailedToAttach=Failed to attach.")
+    private void startAttaching(DebuggerInfo debuggerInfo, DebugAdapterContext context) {
+        DebuggerManagerAdapter configureListener = new DebuggerManagerAdapter() {
+            @Override
+            public void engineAdded(DebuggerEngine engine) {
+                if (engine.lookupFirst(null, DebuggerInfo.class) != debuggerInfo) {
+                    return ; //some other debugger starting, ignore
+                }
+                Session session = engine.lookupFirst(null, Session.class);
+                NbDebugSession debugSession = new NbDebugSession(session);
+                context.setDebugSession(debugSession);
+
+                JPDADebugger debugger = engine.lookupFirst(null, JPDADebugger.class);
+                if (debugger != null) {
+                    context.getClient().initialized();
+                    context.getConfigurationSemaphore().waitForConfigurationDone();
+                }
+            }
+        };
+        DebuggerManager manager = DebuggerManager.getDebuggerManager ();
+        manager.addDebuggerListener(configureListener);
+        try {
+            DebuggerEngine[] es = manager.startDebugging(debuggerInfo);
+            if (es.length > 0) {
+                JPDADebugger debugger = es[0].lookupFirst(null, JPDADebugger.class);
+                if (debugger != null) {
+                    AtomicBoolean finished = new AtomicBoolean(false);
+                    debugger.addPropertyChangeListener(JPDADebugger.PROP_STATE, new PropertyChangeListener() {
+                        @Override
+                        public void propertyChange(PropertyChangeEvent evt) {
+                            int newState = (int) evt.getNewValue();
+                            if (newState == JPDADebugger.STATE_DISCONNECTED) {
+                                if (!finished.getAndSet(true)) {
+                                    notifyTerminated(context);
+                                }
+                            }
+                        }
+                    });
+                    boolean success = false;
+                    try {
+                        debugger.waitRunning();
+                        success = debugger.getState() != JPDADebugger.STATE_DISCONNECTED;
+                    } catch (DebuggerStartException ex) {
+                        notifyErrorMessage(context, ex.getLocalizedMessage());
+                    }
+                    if (!success) {
+                        if (!finished.getAndSet(true)) {
+                            notifyTerminated(context);
+                        }
+                    }
+                    return ;
+                }
+            }
+            notifyErrorMessage(context, Bundle.MSG_FailedToAttach());
+            notifyTerminated(context);
+        } finally {
+            manager.removeDebuggerListener(configureListener);
+        }
     }
 
     private void notifyErrorMessage(DebugAdapterContext context, String message) {

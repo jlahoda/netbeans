@@ -113,6 +113,14 @@ public final class AttachConfigurations {
     }
 
     ConfigurationAttributes findConfiguration(Map<String, Object> attributes) {
+        Object port = attributes.get("port");
+
+        if (port instanceof Number) {
+            Number n = (Number) port;
+            //XXX: avoid double/float for port number
+            attributes.put("port", n.intValue());
+        }
+
         if (!CONFIG_TYPE.equals(attributes.get("type")) ||              // NOI18N
             !CONFIG_REQUEST.equals(attributes.get("request"))) {        // NOI18N
 

@@ -41,7 +41,7 @@ public final class LspSession {
     private volatile NbLspServer lspServer;
     private volatile NbProtocolServer dapServer;
 
-    LspSession() {
+    public LspSession() {
         sessionLookup = new ProxyLookup(
                 new ProxyLookup(lspServices),
                 new ProxyLookup(dapServices),
@@ -52,7 +52,7 @@ public final class LspSession {
     /**
      * Set the launched LSP server.
      */
-    void setLspServer(NbLspServer lspServer) {
+    public void setLspServer(NbLspServer lspServer) {
         setServerLookup(lspServer, lspServices);
         this.lspServer = lspServer;
     }
@@ -60,7 +60,7 @@ public final class LspSession {
     /**
      * Set the launched DAP server.
      */
-    void setDapServer(NbProtocolServer dapServer) {
+    public void setDapServer(NbProtocolServer dapServer) {
         setServerLookup(dapServer, dapServices);
         this.dapServer = dapServer;
     }

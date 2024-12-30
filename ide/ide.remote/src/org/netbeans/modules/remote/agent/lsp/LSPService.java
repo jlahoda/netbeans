@@ -75,7 +75,7 @@ public class LSPService implements Service {
                                 int channelNumber = nextChannel.incrementAndGet();
                                 Streams javaChannel = mainConnection.getStreamsForChannel(channelNumber);
 
-                                Lookup.getDefault().lookup(StartJavaServerHack.class).start(javaChannel.in(), javaChannel.out());
+                                Lookup.getDefault().lookup(StartJavaServerHack.class).start(javaChannel.in(), javaChannel.out(), null, null);
                                 return new ServerDescription(serverNumber, channelNumber);
                             } catch (IOException ex) {
                                 throw new UncheckedIOException(ex);
@@ -96,6 +96,7 @@ public class LSPService implements Service {
     }
 
     public interface StartJavaServerHack {
-        public void start(InputStream in, OutputStream out) throws IOException;
+        public void start(InputStream lspIn, OutputStream lspOut,
+                          InputStream dapIn, OutputStream dapOut) throws IOException;
     }
 }

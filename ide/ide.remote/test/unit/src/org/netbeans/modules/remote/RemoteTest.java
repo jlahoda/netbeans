@@ -46,7 +46,7 @@ public class RemoteTest extends NbTestCase {
         });
         connectThread.start();
         var clientSocket = new Socket(server.getInetAddress(), server.getLocalPort());
-        var remote = new Remote(clientSocket.getInputStream(), clientSocket.getOutputStream());
+        var remote = new Remote(null, clientSocket.getInputStream(), clientSocket.getOutputStream());
         Streams fsStreams = remote.runService("fs");
         RemoteFileSystem fs = new RemoteFileSystem(new SshRemoteDescription("", "", "", ""), fsStreams.out(), fsStreams.in());
         assertTrue(fs.getRoot().getChildren().length > 0);

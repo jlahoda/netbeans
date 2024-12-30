@@ -38,7 +38,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -50,22 +49,23 @@ import java.util.stream.Stream;
 
 import javax.swing.AbstractAction;
 import javax.swing.SwingUtilities;
+import org.netbeans.api.debugger.jpda.JPDADebuggerStarter;
+import org.netbeans.api.debugger.jpda.JPDADebuggerStarter.ConnectionInfo;
 
 import org.netbeans.api.java.classpath.ClassPath;
 import org.netbeans.api.java.project.JavaProjectConstants;
 import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.api.project.Project;
-import org.netbeans.api.project.ProjectManager;
 import org.netbeans.api.project.ProjectUtils;
 import org.netbeans.modules.java.openjdk.common.BuildUtils;
 import org.netbeans.modules.java.openjdk.common.BuildUtils.ExtraMakeTargets;
 import org.netbeans.modules.java.openjdk.common.ShortcutUtils;
 import org.netbeans.modules.java.openjdk.project.Settings;
+import org.netbeans.spi.debugger.jpda.JPDADebuggerStarterImplementation;
 import org.netbeans.spi.java.classpath.support.ClassPathSupport;
 import org.netbeans.spi.project.ActionProgress;
 import org.netbeans.spi.project.ActionProvider;
 import org.netbeans.spi.project.SingleMethod;
-import org.netbeans.spi.project.ui.CustomizerProvider2;
 import org.openide.DialogDisplayer;
 import org.openide.NotifyDescriptor;
 import org.openide.NotifyDescriptor.InputLine;
@@ -84,7 +84,6 @@ import org.openide.util.ImageUtilities;
 import org.openide.util.Lookup;
 import org.openide.util.Mutex;
 import org.openide.util.NbBundle.Messages;
-import org.openide.util.Pair;
 import org.openide.util.RequestProcessor;
 import org.openide.util.RequestProcessor.Task;
 import org.openide.util.lookup.Lookups;
@@ -302,11 +301,13 @@ public class ActionProviderImpl implements ActionProvider {
                                     try {
                                         while (true) {
                                             Socket server = debugSocket[0].accept();
-                                            JPDAStart s = new JPDAStart(io, COMMAND_DEBUG_SINGLE); //XXX command
-                                            s.setAdditionalSourcePath(fullSourcePath);
+                                            ConnectionInfo connectionInfo =
+                                                JPDADebuggerStarter.create(prj.getProjectDirectory()) //XXX: prj == null
+                                                                   .withName(COMMAND_DEBUG_SINGLE)
+                                                                   .withSourcePath(fullSourcePath)
+                                                                   .startDebugger();
                                             try {
-                                                Pair<String, Integer> connectTo = s.execute(prj);
-                                                Socket clientSocket = new Socket(connectTo.first() != null ? connectTo.first() : InetAddress.getLocalHost().getHostName(), connectTo.second());
+                                                Socket clientSocket = new Socket(connectionInfo.host() != null ? connectionInfo.host() : InetAddress.getLocalHost().getHostName(), connectionInfo.port());
                                                 BACKGROUND.post(new Copy(clientSocket.getInputStream(), server.getOutputStream(), clientSocket));
                                                 BACKGROUND.post(new Copy(server.getInputStream(), clientSocket.getOutputStream(), clientSocket));
                                             } catch (Throwable ex) {
@@ -930,7 +931,6 @@ public class ActionProviderImpl implements ActionProvider {
                 int count;
                 
                 while ((count = in.read(read)) != (-1)) {
-                    System.err.println("count=" + count);
                     out.write(read, 0, count);
                 }
             } catch (IOException ex) {
