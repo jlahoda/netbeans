@@ -23,13 +23,16 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import javax.swing.text.JTextComponent;
+import org.netbeans.api.debugger.Breakpoint;
+import org.netbeans.api.debugger.DebuggerManager;
 import org.netbeans.api.editor.EditorRegistry;
 import org.netbeans.api.project.ui.OpenProjects;
 import org.netbeans.modules.editor.*;
+import org.netbeans.modules.lsp.client.debugger.api.DAPLineBreakpoint;
 import org.netbeans.modules.remote.RemoteInvocation;
 import org.netbeans.modules.remote.Service;
 import org.netbeans.modules.remote.Utils;
+import org.netbeans.modules.remote.ide.sync.SyncHandler.BreakpointDescription;
 import org.netbeans.modules.remote.ide.sync.SyncHandler.EditorDescription;
 import org.netbeans.modules.remote.ide.sync.SyncHandler.SyncInterface;
 import org.openide.filesystems.FileObject;
@@ -62,6 +65,23 @@ public class SyncService implements Service {
                                          return new EditorDescription(Utils.file2Path(file), c.getCaretPosition());
                                      })
                                      .toArray(EditorDescription[]::new);
+            }
+            @Override
+            public BreakpointDescription[] breakpoints() {
+                List<BreakpointDescription> result = new ArrayList<>();
+
+                for (Breakpoint brk : DebuggerManager.getDebuggerManager().getBreakpoints()) {
+                    DAPLineBreakpoint converted = DAPLineBreakpoint.copyOf(brk);
+
+                    if (converted == null) {
+                        //cannot synchronize this breakpoint
+                        continue;
+                    }
+
+                    result.add(new BreakpointDescription(Utils.file2Path(converted.getFileObject()), converted.getLineNumber(), converted.getCondition()));
+                }
+
+                return result.toArray(BreakpointDescription[]::new);
             }
         });
     }

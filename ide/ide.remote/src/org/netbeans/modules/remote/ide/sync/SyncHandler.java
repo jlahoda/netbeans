@@ -24,10 +24,12 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.netbeans.api.debugger.DebuggerManager;
 import org.netbeans.api.editor.EditorRegistry;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectManager;
 import org.netbeans.api.project.ui.OpenProjects;
+import org.netbeans.modules.lsp.client.debugger.api.DAPLineBreakpoint;
 import org.netbeans.modules.remote.RemoteInvocation;
 import org.netbeans.modules.remote.Utils;
 import org.netbeans.modules.remote.ide.RemoteManager;
@@ -99,11 +101,25 @@ public class SyncHandler {
             //TODO: FOCUS(!)
             NbDocument.openDocument(desc.first(), desc.second(), ShowOpenType.OPEN, desc == first ? ShowVisibilityType.FOCUS : ShowVisibilityType.NONE);
         });
+
+        for (BreakpointDescription breakpoint : proxy.breakpoints()) {
+            FileObject file = Utils.resolveRemotePath(remoteRoot, breakpoint.getPath());
+
+            if (file == null) {
+                continue;
+            }
+
+            DAPLineBreakpoint brk = DAPLineBreakpoint.create(file, breakpoint.getLine());
+
+            brk.setCondition(breakpoint.getCondition());
+            DebuggerManager.getDebuggerManager().addBreakpoint(brk);
+        }
     }
 
     public interface SyncInterface {
         public EditorDescription[] openedEditors();
         public String[] openedProjects();
+        public BreakpointDescription[] breakpoints();
     }
 
     public static class EditorDescription {
@@ -132,6 +148,46 @@ public class SyncHandler {
 
         public void setCaret(int caret) {
             this.caret = caret;
+        }
+
+    }
+
+    public static class BreakpointDescription {
+        private String path;
+        private int line;
+        private String condition;
+
+        public BreakpointDescription() {
+        }
+
+        public BreakpointDescription(String path, int line, String condition) {
+            this.path = path;
+            this.line = line;
+            this.condition = condition;
+        }
+
+        public String getPath() {
+            return path;
+        }
+
+        public void setPath(String path) {
+            this.path = path;
+        }
+
+        public int getLine() {
+            return line;
+        }
+
+        public void setLine(int line) {
+            this.line = line;
+        }
+
+        public String getCondition() {
+            return condition;
+        }
+
+        public void setCondition(String condition) {
+            this.condition = condition;
         }
 
     }

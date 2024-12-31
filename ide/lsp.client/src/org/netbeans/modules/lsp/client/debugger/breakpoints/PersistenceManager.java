@@ -19,6 +19,7 @@
 
 package org.netbeans.modules.lsp.client.debugger.breakpoints;
 
+import org.netbeans.modules.lsp.client.debugger.api.DAPLineBreakpoint;
 import java.beans.PropertyChangeEvent;
 import java.util.List;
 import java.util.ArrayList;

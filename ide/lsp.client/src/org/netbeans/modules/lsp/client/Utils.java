@@ -270,7 +270,7 @@ public class Utils {
     public static FileObject fromURI(LSPBindings bindings, String targetUri) {
         try {
             URI target = URI.create(targetUri);
-            if (bindings.baseFS != null) {
+            if (bindings != null && bindings.baseFS != null) {
                 return bindings.baseFS.findResource(target.getPath());
             }
             return URLMapper.findFileObject(target.toURL());

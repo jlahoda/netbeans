@@ -17,9 +17,8 @@
  * under the License.
  */
 
-package org.netbeans.modules.lsp.client.debugger.breakpoints;
+package org.netbeans.modules.lsp.client.debugger.api;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +26,6 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.netbeans.api.annotations.common.CheckForNull;
-import org.netbeans.api.annotations.common.NullAllowed;
 import org.netbeans.api.debugger.Breakpoint;
 import org.netbeans.api.debugger.DebuggerEngine;
 import org.netbeans.api.debugger.DebuggerManager;
@@ -35,18 +33,23 @@ import org.netbeans.api.debugger.DebuggerManagerAdapter;
 import org.netbeans.api.debugger.DebuggerManagerListener;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectManager;
+import org.netbeans.modules.lsp.client.Utils;
 import org.netbeans.modules.lsp.client.debugger.DAPDebugger;
+import org.netbeans.modules.lsp.client.debugger.LineBreakpointData;
+import org.netbeans.modules.lsp.client.debugger.SPIAccessor;
+import org.netbeans.modules.lsp.client.debugger.spi.BreakpointConvertor;
+import org.netbeans.modules.lsp.client.debugger.spi.BreakpointConvertor.ConvertedBreakpointConsumer;
 import org.openide.cookies.LineCookie;
 import org.openide.filesystems.FileObject;
-import org.openide.filesystems.FileUtil;
 import org.openide.loaders.DataObject;
 import org.openide.loaders.DataObjectNotFoundException;
 import org.openide.text.Line;
+import org.openide.util.Lookup;
 import org.openide.util.NbBundle;
 import org.openide.util.WeakListeners;
 
 
-
+//TODO: API to support IDE Remote module - is there a better solution?
 public final class DAPLineBreakpoint extends Breakpoint {
 
     public static final String PROP_CONDITION = "condition";                    // NOI18N
@@ -54,23 +57,19 @@ public final class DAPLineBreakpoint extends Breakpoint {
 
     private final AtomicBoolean enabled = new AtomicBoolean(true);
     private final AtomicBoolean hidden = new AtomicBoolean(false);
-    @NullAllowed
     private final FileObject fileObject; // The user file that contains the breakpoint
-    private final String filePath; // Path of the file to which MI breakpoint is submitted
     private final int lineNumber; // The breakpoint line number
     private volatile String condition;
 
-    private DAPLineBreakpoint (FileObject fileObject, String filePath, int lineNumber) {
+    private DAPLineBreakpoint (FileObject fileObject, int lineNumber) {
         this.fileObject = fileObject;
-        this.filePath = filePath;
         this.lineNumber = lineNumber;
     }
 
     public static DAPLineBreakpoint create(Line line) {
         int lineNumber = line.getLineNumber() + 1;
         FileObject fileObject = line.getLookup().lookup(FileObject.class);
-        String filePath = FileUtil.toFile(fileObject).getAbsolutePath();
-        return new DAPLineBreakpoint(fileObject, filePath, lineNumber);
+        return create(fileObject, lineNumber);
     }
 
     /**
@@ -80,25 +79,29 @@ public final class DAPLineBreakpoint extends Breakpoint {
      * @return a new breakpoint.
      */
     public static DAPLineBreakpoint create(FileObject fileObject, int lineNumber) {
-        String filePath = FileUtil.toFile(fileObject).getAbsolutePath();
-        return new DAPLineBreakpoint(fileObject, filePath, lineNumber);
+        return new DAPLineBreakpoint(fileObject, /*filePath, */lineNumber);
     }
 
-    /**
-     * Create a new CPP lite breakpoint, that is not associated with a user file.
-     * @param filePath the file path of the breakpoint in the debuggee
-     * @param lineNumber 1-based line number
-     * @return a new breakpoint.
-     */
-    public static DAPLineBreakpoint create(String filePath, int lineNumber) {
-        return new DAPLineBreakpoint(null, filePath, lineNumber);
-    }
+    public static @CheckForNull DAPLineBreakpoint copyOf(Breakpoint brk) {
+        List<LineBreakpointData> data = new ArrayList<>();
+        ConvertedBreakpointConsumer consumer = SPIAccessor.getInstance().createConvertedBreakpointConsumer(data);
 
-    /**
-     * Get the file path of the breakpoint in the debuggee.
-     */
-    public String getFilePath() {
-        return filePath;
+        for (BreakpointConvertor conv : Lookup.getDefault().lookupAll(BreakpointConvertor.class)) {
+            conv.covert(brk, consumer);
+
+            if (!data.isEmpty()) {
+                LineBreakpointData currentData = data.get(0);
+                FileObject file = Utils.fromURI(null, currentData.url());
+                if (file != null) {
+                    DAPLineBreakpoint result = DAPLineBreakpoint.create(file, currentData.lineNumber());
+
+                    result.setCondition(currentData.condition());
+                    return result;
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -189,10 +192,6 @@ public final class DAPLineBreakpoint extends Breakpoint {
         firePropertyChange (PROP_CONDITION, oldCondition, condition);
     }
 
-    public void setCPPValidity(VALIDITY validity, String reason) {
-        setValidity(validity, reason);
-    }
-
     /**
      * Gets value of hidden property.
      *
@@ -234,7 +233,7 @@ public final class DAPLineBreakpoint extends Breakpoint {
         }
 
         private FileObject getFile() {
-            return FileUtil.toFileObject(new File(filePath));
+            return fileObject;
         }
 
         @Override
