@@ -72,6 +72,8 @@ import org.netbeans.api.debugger.DebuggerManagerAdapter;
 import org.netbeans.api.debugger.Session;
 import org.netbeans.api.debugger.jpda.ExceptionBreakpoint;
 import org.netbeans.api.debugger.jpda.JPDAClassType;
+import org.netbeans.api.debugger.jpda.JPDADebuggerStarter;
+import org.netbeans.api.debugger.jpda.JPDADebuggerStarter.ConnectionInfo;
 import org.netbeans.api.debugger.jpda.JPDAThread;
 import org.netbeans.api.debugger.jpda.MethodBreakpoint;
 import org.netbeans.api.debugger.jpda.ObjectVariable;
@@ -307,6 +309,45 @@ public class JPDAStart extends Task implements Runnable {
         synchronized (lock) {
             debug("Entered synch lock"); // NOI18N
             try {
+                String workDir = getProject().getProperty("work.dir");
+                final File baseDir;
+                if (workDir != null) {
+                    baseDir = new File(workDir);
+                } else {
+                    baseDir = getProject().getBaseDir();
+                }
+                debug ("Creating source path"); // NOI18N
+                ClassPath sourcePath = createSourcePath (
+                    getProject (),
+                    modulepath,
+                    classpath,
+                    plainSourcepath,
+                    isSourcePathExclusive
+                );
+                ClassPath jdkSourcePath = createJDKSourcePath (
+                    getProject (),
+                    bootclasspath
+                );
+                if (logger.isLoggable(Level.FINE)) {
+                    logger.fine("Create sourcepath:"); // NOI18N
+                    logger.log(Level.FINE, "    modulepath : {0}", modulepath); // NOI18N
+                    logger.log(Level.FINE, "    classpath : {0}", classpath); // NOI18N
+                    logger.log(Level.FINE, "    sourcepath : {0}", plainSourcepath); // NOI18N
+                    logger.log(Level.FINE, "    bootclasspath : {0}", bootclasspath); // NOI18N
+                    logger.log(Level.FINE, "    >> sourcePath : {0}", sourcePath); // NOI18N
+                    logger.log(Level.FINE, "    >> jdkSourcePath : {0}", jdkSourcePath); // NOI18N
+                }
+
+                ConnectionInfo connectionInfo =
+                        JPDADebuggerStarter.create(FileUtil.toFileObject(baseDir))
+                                           .withName(getName())
+                                           .withSourcePath(sourcePath)
+                                           .withJdkSourcePath(jdkSourcePath)
+                                           .startDebugger(false);
+                if (connectionInfo != null) {
+                    //TODO: transport?
+                    getProject ().setNewProperty (getAddressProperty (), connectionInfo.host() + ":" + connectionInfo.port());
+                } else {
                 ListeningConnector lc = null;
                 final Set<ListeningConnector> connectors = new HashSet<ListeningConnector>();
                 // search for connectors registered by NetBeans modules
@@ -441,28 +482,6 @@ public class JPDAStart extends Task implements Runnable {
                 }
                 getProject ().setNewProperty (getAddressProperty (), address);
 
-                debug ("Creating source path"); // NOI18N
-                ClassPath sourcePath = createSourcePath (
-                    getProject (),
-                    modulepath,
-                    classpath,
-                    plainSourcepath,
-                    isSourcePathExclusive
-                );
-                ClassPath jdkSourcePath = createJDKSourcePath (
-                    getProject (),
-                    bootclasspath
-                );
-                if (logger.isLoggable(Level.FINE)) {
-                    logger.fine("Create sourcepath:"); // NOI18N
-                    logger.log(Level.FINE, "    modulepath : {0}", modulepath); // NOI18N
-                    logger.log(Level.FINE, "    classpath : {0}", classpath); // NOI18N
-                    logger.log(Level.FINE, "    sourcepath : {0}", plainSourcepath); // NOI18N
-                    logger.log(Level.FINE, "    bootclasspath : {0}", bootclasspath); // NOI18N
-                    logger.log(Level.FINE, "    >> sourcePath : {0}", sourcePath); // NOI18N
-                    logger.log(Level.FINE, "    >> jdkSourcePath : {0}", jdkSourcePath); // NOI18N
-                }
-
                 Breakpoint first = null;
 
                 if (stopClassName != null && stopClassName.length() > 0) {
@@ -481,13 +500,6 @@ public class JPDAStart extends Task implements Runnable {
                 properties.put ("name", getName ()); // NOI18N
                 properties.put ("jdksources", jdkSourcePath); // NOI18N
                 properties.put ("listeningCP", listeningCP); // NOI18N
-                String workDir = getProject().getProperty("work.dir");
-                final File baseDir;
-                if (workDir != null) {
-                    baseDir = new File(workDir);
-                } else {
-                    baseDir = getProject().getBaseDir();
-                }
                 properties.put ("baseDir", baseDir); // NOI18N
 
                 logger.log(Level.FINE, "JPDAStart: properties = {0}", properties);
@@ -599,6 +611,7 @@ public class JPDAStart extends Task implements Runnable {
                     }
 
                 });
+                }
             } catch (java.io.IOException ioex) {
                 lock[1] = ioex;
             } catch (com.sun.jdi.connect.IllegalConnectorArgumentsException icaex) {

@@ -19,8 +19,10 @@
 package org.netbeans.api.debugger.jpda;
 
 import java.io.IOException;
+import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.java.classpath.ClassPath;
+import org.netbeans.modules.debugger.jpda.DebuggerStarterImpl;
 import org.netbeans.modules.debugger.jpda.SPIAccessor;
 import org.netbeans.spi.debugger.jpda.JPDADebuggerStarterImplementation.Context;
 import org.openide.filesystems.FileObject;
@@ -53,9 +55,23 @@ public class JPDADebuggerStarter {
     }
 
     public @NonNull ConnectionInfo startDebugger() throws IOException, IllegalStateException {
+        ConnectionInfo info = startDebugger(true);
+
+        if (info == null) {
+            throw new IllegalStateException("Cannot start debugger");
+        }
+
+        return info;
+    }
+
+    public @CheckForNull ConnectionInfo startDebugger(boolean useDefault) throws IOException, IllegalStateException {
         Context context = SPIAccessor.getInstance().newContext(baseDir, actionName, jdkSourcePath, sourcePath, transport);
 
         for (JPDADebuggerStarterImplementation i : Lookup.getDefault().lookupAll(JPDADebuggerStarterImplementation.class)) {
+            if (i instanceof DebuggerStarterImpl && !useDefault) {
+                continue;
+            }
+
             ConnectionInfo info = i.startDebugger(context);
 
             if (info != null) {
@@ -63,11 +79,16 @@ public class JPDADebuggerStarter {
             }
         }
 
-        throw new IllegalStateException("Cannot start debugger");
+        return null;
     }
 
     public JPDADebuggerStarter withName(String actionName) {
         this.actionName = actionName;
+        return this;
+    }
+
+    public JPDADebuggerStarter withJdkSourcePath(ClassPath jdkSourcePath) {
+        this.jdkSourcePath = jdkSourcePath;
         return this;
     }
 
