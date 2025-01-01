@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.netbeans.api.debugger.DebuggerManager;
-import org.netbeans.api.editor.EditorRegistry;
+import org.netbeans.api.progress.ProgressHandle;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectManager;
 import org.netbeans.api.project.ui.OpenProjects;
@@ -34,7 +34,6 @@ import org.netbeans.modules.remote.RemoteInvocation;
 import org.netbeans.modules.remote.Utils;
 import org.netbeans.modules.remote.ide.RemoteManager;
 import org.netbeans.modules.remote.ide.fs.RemoteFileSystem;
-import org.openide.cookies.EditorCookie;
 import org.openide.filesystems.FileObject;
 import org.openide.text.Line.ShowOpenType;
 import org.openide.text.Line.ShowVisibilityType;
@@ -48,10 +47,10 @@ import org.openide.util.Pair;
  */
 public class SyncHandler {
 
-    public static void startSync(RemoteFileSystem rfs) {
+    public static void startSync(RemoteFileSystem rfs, ProgressHandle progress) {
         SyncHandler handler = RemoteManager.getDefault().getService(rfs.getRemoteDescription(), "sync", streams -> new SyncHandler(streams.in(), streams.out(), rfs.getRoot()));
 
-        handler.startSync();
+        handler.startSync(progress);
     }
 
     private final FileObject remoteRoot;
@@ -62,7 +61,9 @@ public class SyncHandler {
         proxy = RemoteInvocation.caller(in, out, SyncInterface.class);
     }
 
-    private void startSync() {
+    private void startSync(ProgressHandle progress) {
+        progress.switchToDeterminate(3);
+        progress.progress("Synchronizing projects...", 0);
         List<Project> projects = new ArrayList<>();
 
         for (String prj : proxy.openedProjects()) {
@@ -79,6 +80,8 @@ public class SyncHandler {
         }
 
         OpenProjects.getDefault().open(projects.toArray(Project[]::new), false);
+
+        progress.progress("Synchronizing opened editors...", 1);
 
         List<Pair<FileObject, Integer>> openedEditors = new ArrayList<>();
 
@@ -102,6 +105,8 @@ public class SyncHandler {
             NbDocument.openDocument(desc.first(), desc.second(), ShowOpenType.OPEN, desc == first ? ShowVisibilityType.FOCUS : ShowVisibilityType.NONE);
         });
 
+        progress.progress("Synchronizing breakpoints...", 2);
+
         for (BreakpointDescription breakpoint : proxy.breakpoints()) {
             FileObject file = Utils.resolveRemotePath(remoteRoot, breakpoint.getPath());
 
@@ -114,6 +119,8 @@ public class SyncHandler {
             brk.setCondition(breakpoint.getCondition());
             DebuggerManager.getDebuggerManager().addBreakpoint(brk);
         }
+
+        progress.progress("All done", 3);
     }
 
     public interface SyncInterface {

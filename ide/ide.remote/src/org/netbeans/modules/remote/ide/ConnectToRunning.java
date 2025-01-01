@@ -22,6 +22,8 @@ import java.awt.Dialog;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.prefs.Preferences;
+import org.netbeans.api.progress.ProgressHandle;
+import org.netbeans.modules.favorites.api.Favorites;
 import org.netbeans.modules.remote.Utils;
 import org.netbeans.modules.remote.ide.RemoteManager.Running;
 import org.netbeans.modules.remote.ide.fs.RemoteFileSystem;
@@ -30,7 +32,10 @@ import org.openide.*;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
 import org.openide.awt.ActionRegistration;
+import org.openide.loaders.DataObjectNotFoundException;
+import org.openide.util.Exceptions;
 import org.openide.util.NbBundle.Messages;
+import org.openide.util.RequestProcessor;
 
 @ActionID(
         category = "Tools",
@@ -46,6 +51,8 @@ public final class ConnectToRunning implements ActionListener {
     private static final String KEY_HOSTNAME = "hostname";
     private static final String KEY_PORT = "port";
     private static final String KEY_SYNCHRONIZE = "synchronize";
+
+    private static final RequestProcessor WORKER = new RequestProcessor(ConnectToRunning.class.getName(), 1, false, false); //TODO: throughput?
 
     @Override
     public void actionPerformed(ActionEvent e) {
@@ -63,10 +70,23 @@ public final class ConnectToRunning implements ActionListener {
                 connectPrefs.put(KEY_PORT, settings.getPort());
                 connectPrefs.putBoolean(KEY_SYNCHRONIZE, settings.isSynchronize());
 
-                Running remote = new Running(settings.getHostname(), Integer.parseInt(settings.getPort()), (int) System.currentTimeMillis()); //XXX: better transientId!
-                RemoteManager.getDefault().registerTransientRemote(remote);
-                RemoteFileSystem rfs = RemoteFileSystem.getRemoteFileSystem(remote);
-                SyncHandler.startSync(rfs);
+                String displayName = settings.getHostname() + ":" + settings.getPort();
+                ProgressHandle progress = ProgressHandle.createHandle("Synchronizing with: " + displayName);
+                progress.start();
+                WORKER.post(() -> {
+                    try {
+                        progress.progress("Connecting to the remote server");
+                        Running remote = new Running(settings.getHostname(), Integer.parseInt(settings.getPort()), (int) System.currentTimeMillis()); //XXX: better transientId!
+                        RemoteManager.getDefault().registerTransientRemote(remote);
+                        RemoteFileSystem rfs = RemoteFileSystem.getRemoteFileSystem(remote);
+                        Favorites.getDefault().add(rfs.getRoot()); //TODO: remove the broken links from the previous runs on start
+                        SyncHandler.startSync(rfs, progress);
+                    } catch (DataObjectNotFoundException ex) {
+                        Exceptions.printStackTrace(ex);
+                    } finally {
+                        progress.finish();
+                    }
+                });
             }
             d[0].setVisible(false);
         });
