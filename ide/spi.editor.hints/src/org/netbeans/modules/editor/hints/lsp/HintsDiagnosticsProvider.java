@@ -29,6 +29,7 @@ import org.netbeans.spi.editor.hints.ErrorDescription;
 import org.netbeans.spi.editor.hints.HintsController;
 import org.netbeans.spi.lsp.ErrorProvider;
 import org.openide.filesystems.FileObject;
+import org.openide.filesystems.FileUtil;
 import org.openide.text.PositionBounds;
 
 /**
@@ -52,6 +53,9 @@ public class HintsDiagnosticsProvider implements ErrorProvider {
         if (ah == null) {
             return null;
         }
+        if ("text/x-java".equals(FileUtil.getMIMEType(file))) {
+            return null; //nothing for Java
+        }
         Document doc = ah.getDocument();
         if (!(doc instanceof LineDocument)) {
             return null;
@@ -71,12 +75,12 @@ public class HintsDiagnosticsProvider implements ErrorProvider {
             
             switch (d.getSeverity()) {
                 case ERROR:
-                case VERIFIER:
                     if (context.errorKind() != ErrorProvider.Kind.ERRORS) {
                         continue;
                     }
                     s = Diagnostic.Severity.Error;
                     break;
+                case VERIFIER:
                 case WARNING:
                     if (context.errorKind() != ErrorProvider.Kind.ERRORS) {
                         continue;
