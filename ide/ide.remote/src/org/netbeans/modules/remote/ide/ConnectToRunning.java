@@ -70,27 +70,33 @@ public final class ConnectToRunning implements ActionListener {
                 connectPrefs.put(KEY_PORT, settings.getPort());
                 connectPrefs.putBoolean(KEY_SYNCHRONIZE, settings.isSynchronize());
 
-                String displayName = settings.getHostname() + ":" + settings.getPort();
-                ProgressHandle progress = ProgressHandle.createHandle("Synchronizing with: " + displayName);
-                progress.start();
-                WORKER.post(() -> {
-                    try {
-                        progress.progress("Connecting to the remote server");
-                        Running remote = new Running(settings.getHostname(), Integer.parseInt(settings.getPort()), (int) System.currentTimeMillis()); //XXX: better transientId!
-                        RemoteManager.getDefault().registerTransientRemote(remote);
-                        RemoteFileSystem rfs = RemoteFileSystem.getRemoteFileSystem(remote);
-                        Favorites.getDefault().add(rfs.getRoot()); //TODO: remove the broken links from the previous runs on start
-                        SyncHandler.startSync(rfs, progress);
-                    } catch (DataObjectNotFoundException ex) {
-                        Exceptions.printStackTrace(ex);
-                    } finally {
-                        progress.finish();
-                    }
-                });
+                connectTo(settings.getHostname(), settings.getPort());
             }
             d[0].setVisible(false);
         });
         d[0] = DialogDisplayer.getDefault().createDialog(dd);
         d[0].setVisible(true);
+    }
+
+    public static void connectTo(String hostname, String port) {
+        String displayName = hostname + ":" + port;
+        ProgressHandle progress = ProgressHandle.createHandle("Synchronizing with: " + displayName);
+
+        progress.start();
+
+        WORKER.post(() -> {
+            try {
+                progress.progress("Connecting to the remote server");
+                Running remote = new Running(hostname, Integer.parseInt(port), (int) System.currentTimeMillis()); //XXX: better transientId!
+                RemoteManager.getDefault().registerTransientRemote(remote);
+                RemoteFileSystem rfs = RemoteFileSystem.getRemoteFileSystem(remote);
+                Favorites.getDefault().add(rfs.getRoot()); //TODO: remove the broken links from the previous runs on start
+                SyncHandler.startSync(rfs, progress);
+            } catch (DataObjectNotFoundException ex) {
+                Exceptions.printStackTrace(ex);
+            } finally {
+                progress.finish();
+            }
+        });
     }
 }
