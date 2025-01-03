@@ -20,6 +20,7 @@ package org.netbeans.modules.lsp.client.bindings;
 
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -209,14 +210,7 @@ public class BaseSymbolProvider {
         }
 
         public default FileObject getFileObject() {
-            try {
-                URI target = URI.create(getUri());
-
-                return URLMapper.findFileObject(target.toURL());
-            } catch (MalformedURLException ex) {
-                Exceptions.printStackTrace(ex);
-            }
-            return null;
+            return Utils.fromURI(getBindings(), getUri());
         }
 
         public default int getOffset() {
@@ -235,7 +229,24 @@ public class BaseSymbolProvider {
             if (location.isLeft()) {
                 return location.getLeft().getUri();
             }
-            return location.getRight().getUri();
+            String uri = location.getRight().getUri();
+            //XXX: NetBeans Java LSP sends class names as fragment(!)
+            //resolveWorkspaceSymbol could be used to resolve the URI,
+            //but unclear if that can be done lazily.
+            try {
+                URI uriValue = new URI(uri);
+                String fragment = uriValue.getFragment();
+                if (fragment != null) {
+                    int dollar = fragment.indexOf('$');
+                    if (dollar != (-1)) {
+                        fragment = fragment.substring(0, dollar);
+                    }
+                    return uriValue.getPath() + fragment.replace('.', '/') + ".java";
+                }
+            } catch (URISyntaxException ex) {
+                LOG.log(Level.FINE, null, ex);
+            }
+            return uri;
         }
 
         public default Range getRange() {

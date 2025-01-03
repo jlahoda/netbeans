@@ -47,7 +47,7 @@
     <fontcolor name="markup.italic" default="identifier">
         <font style="italic" />
     </fontcolor>
-    <fontcolor name="storage" default="keyword" />
+    <fontcolor name="storage" default="identifier" />
     <fontcolor name="string" default="string" />
     <fontcolor name="support.function" default="method" />
     <fontcolor name="support.constant" default="keyword" />

@@ -271,7 +271,12 @@ public class Utils {
         try {
             URI target = URI.create(targetUri);
             if (bindings != null && bindings.baseFS != null) {
-                return bindings.baseFS.findResource(target.getPath());
+                String path = target.getPath();
+                if (path == null) {
+                    //TODO - e.g. nbjrt:file:...; can this be improved?
+                    return null;
+                }
+                return bindings.baseFS.findResource(path);
             }
             return URLMapper.findFileObject(target.toURL());
         } catch (MalformedURLException ex) {
