@@ -26,6 +26,7 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.event.KeyEvent;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -38,6 +39,7 @@ import javax.swing.JToolTip;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import javax.swing.text.JTextComponent;
+import javax.swing.text.Position.Bias;
 import javax.swing.text.StyledDocument;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionItemKind;
@@ -48,6 +50,8 @@ import org.eclipse.lsp4j.InitializeResult;
 import org.eclipse.lsp4j.InsertReplaceEdit;
 import org.eclipse.lsp4j.MarkupContent;
 import org.eclipse.lsp4j.ParameterInformation;
+import org.eclipse.lsp4j.Position;
+import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.SignatureHelp;
 import org.eclipse.lsp4j.SignatureHelpParams;
@@ -56,9 +60,12 @@ import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.netbeans.api.editor.completion.Completion;
+import org.netbeans.api.editor.document.LineDocument;
+import org.netbeans.api.editor.document.LineDocumentUtils;
 import org.netbeans.api.editor.mimelookup.MimeRegistration;
 import org.netbeans.editor.BaseDocument;
 import org.netbeans.editor.Utilities;
+import org.netbeans.modules.editor.NbEditorDocument;
 import org.netbeans.modules.editor.NbEditorUtilities;
 import org.netbeans.modules.lsp.client.LSPBindings;
 import org.netbeans.modules.lsp.client.Utils;
@@ -201,38 +208,60 @@ public class CompletionProviderImpl implements CompletionProvider {
                                 commit("");
                             }
                             private void commit(String appendText) {
-                                Either<TextEdit, InsertReplaceEdit> edit = i.getTextEdit();
+                                CompletionItem resolved;
+                                if (i.getTextEdit() == null) {
+                                    CompletionItem resolvedTemp = i;
+                                    try {
+                                        resolvedTemp = server.getTextDocumentService().resolveCompletionItem(resolvedTemp).get();
+                                    } catch (InterruptedException | ExecutionException ex) {
+                                        //TODO: ?
+                                        LOG.log(Level.FINE, null, ex);
+                                    }
+                                    resolved = resolvedTemp;
+                                } else {
+                                    resolved = i;
+                                }
+                                Either<TextEdit, InsertReplaceEdit> edit = resolved.getTextEdit();
                                 if (edit != null && edit.isRight()) {
                                     //TODO: the NetBeans client does not current support InsertReplaceEdits, should not happen
                                     Completion.get().hideDocumentation();
                                     Completion.get().hideCompletion();
                                     return ;
                                 }
-                                TextEdit te = edit != null ? edit.getLeft() : null;
                                 NbDocument.runAtomic((StyledDocument) doc, () -> {
                                     try {
-                                        int endPos;
-                                        if (te != null) {
-                                            int start = Utils.getOffset(doc, te.getRange().getStart());
-                                            int end = Utils.getOffset(doc, te.getRange().getEnd());
-                                            doc.remove(start, end - start);
-                                            doc.insertString(start, te.getNewText(), null);
-                                            endPos = start + te.getNewText().length();
+                                        TextEdit mainEdit;
+
+                                        if (edit != null ) {
+                                            mainEdit = edit.getLeft();
                                         } else {
-                                            String toAdd = i.getInsertText();
+                                            String toAdd = resolved.getInsertText();
                                             if (toAdd == null) {
-                                                toAdd = i.getLabel();
+                                                toAdd = resolved.getLabel();
                                             }
                                             int[] identSpan = Utilities.getIdentifierBlock((BaseDocument) doc, caretOffset);
                                             if (identSpan != null) {
-                                                doc.remove(identSpan[0], identSpan[1] - identSpan[0]);
-                                                doc.insertString(identSpan[0], toAdd, null);
-                                                endPos = identSpan[0] + toAdd.length();
+                                                Position start = Utils.createPosition(doc, identSpan[0]);
+                                                Position end = Utils.createPosition(doc, identSpan[1]);
+                                                mainEdit = new TextEdit(new Range(start, end), toAdd);
                                             } else {
-                                                doc.insertString(caretOffset, toAdd, null);
-                                                endPos = caretOffset + toAdd.length();
+                                                Position start = Utils.createPosition(doc, caretOffset);
+                                                mainEdit = new TextEdit(new Range(start, start), toAdd);
                                             }
                                         }
+
+                                        List<TextEdit> allEdits = new ArrayList<>();
+
+                                        allEdits.add(mainEdit);
+
+                                        if (resolved.getAdditionalTextEdits() != null) {
+                                            allEdits.addAll(resolved.getAdditionalTextEdits());
+                                        }
+                                        int start = Utils.getOffset(doc, mainEdit.getRange().getStart());
+                                        LineDocument ld = LineDocumentUtils.as(doc, LineDocument.class);
+                                        javax.swing.text.Position startPos = ld.createPosition(start, Bias.Backward);
+                                        Utils.applyEditsNoLock(doc, allEdits);
+                                        int endPos = startPos.hashCode() + mainEdit.getNewText().length();
                                         doc.insertString(endPos, appendText, null);
                                     } catch (BadLocationException ex) {
                                         Exceptions.printStackTrace(ex);

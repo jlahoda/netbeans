@@ -55,6 +55,9 @@ import javax.swing.event.ChangeListener;
 import org.eclipse.lsp4j.ClientCapabilities;
 import org.eclipse.lsp4j.CodeActionCapabilities;
 import org.eclipse.lsp4j.CodeActionResolveSupportCapabilities;
+import org.eclipse.lsp4j.CompletionCapabilities;
+import org.eclipse.lsp4j.CompletionItemCapabilities;
+import org.eclipse.lsp4j.CompletionItemResolveSupportCapabilities;
 import org.eclipse.lsp4j.DiagnosticWorkspaceCapabilities;
 import org.eclipse.lsp4j.DocumentSymbolCapabilities;
 import org.eclipse.lsp4j.InitializeParams;
@@ -435,6 +438,7 @@ public class LSPBindings {
            initParams.setRootPath(rootFile.getAbsolutePath()); //some servers still expect root path
        }
        initParams.setProcessId(0);
+       //TODO: rewrite this to JSon?
        TextDocumentClientCapabilities tdcc = new TextDocumentClientCapabilities();
        DocumentSymbolCapabilities dsc = new DocumentSymbolCapabilities();
        dsc.setHierarchicalDocumentSymbolSupport(true);
@@ -444,6 +448,11 @@ public class LSPBindings {
        CodeActionCapabilities codeActionCapa = new CodeActionCapabilities();
        codeActionCapa.setResolveSupport(new CodeActionResolveSupportCapabilities(List.of("edit")));
        tdcc.setCodeAction(codeActionCapa);
+       CompletionCapabilities completionCapa = new CompletionCapabilities();
+       CompletionItemCapabilities completionItemCapa = new CompletionItemCapabilities();
+       completionItemCapa.setResolveSupport(new CompletionItemResolveSupportCapabilities(List.of("documentation", "textEdit")));
+       completionCapa.setCompletionItem(completionItemCapa);
+       tdcc.setCompletion(completionCapa);
        WorkspaceClientCapabilities wcc = new WorkspaceClientCapabilities();
        wcc.setWorkspaceEdit(new WorkspaceEditCapabilities());
        wcc.getWorkspaceEdit().setDocumentChanges(true);
