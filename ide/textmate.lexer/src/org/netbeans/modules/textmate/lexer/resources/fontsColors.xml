@@ -48,6 +48,10 @@
         <font style="italic" />
     </fontcolor>
     <fontcolor name="storage" default="identifier" />
+    <fontcolor name="storage.modifier" default="keyword" />
+    <fontcolor name="storage.modifier.package" default="identifier" />
+    <fontcolor name="storage.modifier.import" default="identifier" />
+    <fontcolor name="storage.type.primitive" default="keyword" />
     <fontcolor name="string" default="string" />
     <fontcolor name="support.function" default="method" />
     <fontcolor name="support.constant" default="keyword" />
