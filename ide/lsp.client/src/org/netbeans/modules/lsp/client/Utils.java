@@ -29,11 +29,14 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.SwingUtilities;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import javax.swing.text.StyledDocument;
 import org.eclipse.lsp4j.CodeAction;
+import org.eclipse.lsp4j.CodeActionOptions;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.CreateFile;
 import org.eclipse.lsp4j.DeleteFile;
@@ -47,6 +50,7 @@ import org.eclipse.lsp4j.TextDocumentEdit;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.editor.document.LineDocument;
 import org.netbeans.api.editor.document.LineDocumentUtils;
 import org.netbeans.lib.editor.util.swing.DocumentUtilities;
@@ -69,6 +73,8 @@ import org.openide.util.Exceptions;
  * @author lahvac
  */
 public class Utils {
+
+    private static final Logger LOG = Logger.getLogger(Utils.class.getName());
 
     public static String toURI(FileObject file) {
         String uri = file.toURI().toString();
@@ -97,11 +103,11 @@ public class Utils {
         return 0;
     }
 
-    public static void applyWorkspaceEdit(WorkspaceEdit edit) {
+    public static void applyWorkspaceEdit(LSPBindings server, WorkspaceEdit edit) {
         if (edit.getDocumentChanges() != null) {
             for (Either<TextDocumentEdit, ResourceOperation> change : edit.getDocumentChanges()) {
                 if (change.isLeft()) {
-                    applyEdits(change.getLeft().getTextDocument().getUri(), change.getLeft().getEdits());
+                    applyEdits(server, change.getLeft().getTextDocument().getUri(), change.getLeft().getEdits());
                 } else {
                     switch (change.getRight().getKind()) {
                         case ResourceOperationKind.Create:
@@ -136,15 +142,15 @@ public class Utils {
             }
         } else {
             for (Map.Entry<String, List<TextEdit>> e : edit.getChanges().entrySet()) {
-                applyEdits(e.getKey(), e.getValue());
+                applyEdits(server, e.getKey(), e.getValue());
             }
         }
     }
 
-    private static void applyEdits(String uri, List<TextEdit> edits) {
+    private static void applyEdits(LSPBindings server, String uri, List<TextEdit> edits) {
         try {
-            FileObject file = URLMapper.findFileObject(new URI(uri).toURL());
-            EditorCookie ec = file.getLookup().lookup(EditorCookie.class);
+            FileObject file = Utils.fromURI(server, uri);
+            EditorCookie ec = file != null ? file.getLookup().lookup(EditorCookie.class) : null;
             Document doc = ec != null ? ec.openDocument() : null;
             if (doc == null) {
                 return ;
@@ -152,7 +158,7 @@ public class Utils {
             NbDocument.runAtomic((StyledDocument) doc, () -> {
                 applyEditsNoLock(doc, edits);
             });
-        } catch (URISyntaxException | IOException ex) {
+        } catch (IOException ex) {
             Exceptions.printStackTrace(ex);
         }
     }
@@ -202,10 +208,21 @@ public class Utils {
             if (cmd.isLeft()) {
                 command = cmd.getLeft();
             } else {
-                if(cmd.getRight().getEdit() != null) {
-                    Utils.applyWorkspaceEdit(cmd.getRight().getEdit());
+                CodeAction action = cmd.getRight();
+
+                if (action.getEdit() == null) {
+                    //attempt to resolve:
+                    try {
+                        action = server.getTextDocumentService().resolveCodeAction(action).get();
+                    } catch (InterruptedException | ExecutionException ex) {
+                        //ignore(?)
+                        LOG.log(Level.FINE, null, ex);
+                    }
                 }
-                command = cmd.getRight().getCommand();
+                if (action.getEdit() != null) {
+                    Utils.applyWorkspaceEdit(server, action.getEdit());
+                }
+                command = action.getCommand();
             }
             if (command != null) {
                 server.getWorkspaceService().executeCommand(new ExecuteCommandParams(command.getCommand(), command.getArguments())).get();
@@ -267,7 +284,7 @@ public class Utils {
         return edits;
     }
 
-    public static FileObject fromURI(LSPBindings bindings, String targetUri) {
+    public static @CheckForNull FileObject fromURI(LSPBindings bindings, String targetUri) {
         try {
             URI target = URI.create(targetUri);
             if (bindings != null && bindings.baseFS != null) {

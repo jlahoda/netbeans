@@ -81,7 +81,7 @@ public class UtilsTest extends NbTestCase {
                                                             new TextEdit(new Range(new Position(1, 2), new Position(1, 6)), "b"),
                                                             new TextEdit(new Range(new Position(3, 1), new Position(4, 4)), "c")));
         WorkspaceEdit edit = new WorkspaceEdit(changes);
-        Utils.applyWorkspaceEdit(edit);
+        Utils.applyWorkspaceEdit(null, edit);
         assertContent("0123456789\n" +
                       "01b6789\n" +
                       "012a6789\n" +
@@ -125,7 +125,7 @@ public class UtilsTest extends NbTestCase {
                                                              Either.forLeft(new TextDocumentEdit(new VersionedTextDocumentIdentifier(Utils.toURI(sourceFile2).replace("Test2", "Test4"), -1), Arrays.asList(new TextEdit(new Range(new Position(1, 1), new Position(1, 1)), "new content")))),
                                                              Either.forRight(new DeleteFile(Utils.toURI(sourceFile3))),
                                                              Either.forRight(new RenameFile(Utils.toURI(sourceFile1), Utils.toURI(sourceFile1).replace("Test1", "Test1a")))));
-        Utils.applyWorkspaceEdit(edit);
+        Utils.applyWorkspaceEdit(null, edit);
         assertContent("0123456789\n" +
                       "01b6789\n" +
                       "012a6789\n" +
