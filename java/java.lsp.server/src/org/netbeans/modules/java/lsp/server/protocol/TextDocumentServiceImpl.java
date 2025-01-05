@@ -67,6 +67,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.WeakHashMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -294,6 +295,7 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
     private static final String NETBEANS_JAVA_ON_SAVE_ORGANIZE_IMPORTS = "java.onSave.organizeImports";// NOI18N
     private static final String URL = "url";// NOI18N
     private static final String INDEX = "index";// NOI18N
+    private static final String DIAGNOSTIC_ID = "id";// NOI18N
     
     private static final RequestProcessor BACKGROUND_TASKS = new RequestProcessor(TextDocumentServiceImpl.class.getName(), 1, false, false);
     private static final RequestProcessor WORKER = new RequestProcessor(TextDocumentServiceImpl.class.getName(), 1, false, false);
@@ -1058,11 +1060,10 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
         return ds;
     }
 
-    private List<LazyCodeAction> lastCodeActions = null;
+    private Map<org.netbeans.api.lsp.Diagnostic, List<LazyCodeAction>> diag2LazyAction = new WeakHashMap<>();
     
     @Override
     public CompletableFuture<List<Either<Command, CodeAction>>> codeAction(CodeActionParams params) {
-        lastCodeActions = new ArrayList<>();
         AtomicInteger index = new AtomicInteger(0);
 
         // shortcut: if the projects are not yet initialized, return empty:
@@ -1092,15 +1093,15 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
                 diagnostics.addAll(computeDiags(params.getTextDocument().getUri(), startOffset, ErrorProvider.Kind.HINTS, documentVersion(doc), null));
             }
 
-            Map<String, org.netbeans.api.lsp.Diagnostic> id2Errors = new HashMap<>();
+            Map<Long, org.netbeans.api.lsp.Diagnostic> id2Errors = new HashMap<>();
             for (String key : VALID_ERROR_KEYS) {
-                Map<String, org.netbeans.api.lsp.Diagnostic> diags = (Map<String, org.netbeans.api.lsp.Diagnostic>) doc.getProperty("lsp-errors-valid-" + key);
+                Map<Long, org.netbeans.api.lsp.Diagnostic> diags = (Map<Long, org.netbeans.api.lsp.Diagnostic>) doc.getProperty("lsp-errors-valid-" + key);
                 if (diags != null) {
                     id2Errors.putAll(diags);
                 }
             }
             if (!id2Errors.isEmpty()) {
-                for (Entry<String, org.netbeans.api.lsp.Diagnostic> entry : id2Errors.entrySet()) {
+                for (Entry<Long, org.netbeans.api.lsp.Diagnostic> entry : id2Errors.entrySet()) {
                     org.netbeans.api.lsp.Diagnostic err = entry.getValue();
                     if (err.getDescription() == null || err.getDescription().isEmpty()) {
                         continue;
@@ -1119,7 +1120,7 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
                             continue;
                         }
                     }
-                    Optional<Diagnostic> diag = diagnostics.stream().filter(d -> entry.getKey().equals(d.getCode().getLeft())).findFirst();
+                    Optional<Diagnostic> diag = diagnostics.stream().filter(d -> entry.getKey().equals(d.getData())).findFirst();
                     org.netbeans.api.lsp.Diagnostic.LazyCodeActions actions = err.getActions();
                     if (actions != null) {
                         for (org.netbeans.api.lsp.CodeAction inputAction : actions.computeCodeActions(ex -> client.logMessage(new MessageParams(MessageType.Error, ex.getMessage())))) {
@@ -1144,10 +1145,13 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
                                 action.setCommand(new Command(inputAction.getCommand().getTitle(), Utils.encodeCommand(inputAction.getCommand().getCommand(), client.getNbCodeCapabilities()), commandParams));
                             }
                             if (inputAction instanceof LazyCodeAction && ((LazyCodeAction) inputAction).getLazyEdit() != null) {
-                                lastCodeActions.add((LazyCodeAction) inputAction);
+                                List<LazyCodeAction> diagsLazyActions = diag2LazyAction.computeIfAbsent(entry.getValue(), __ -> new ArrayList<>());
+                                int idx = diagsLazyActions.size();
+                                diagsLazyActions.add((LazyCodeAction) inputAction);
                                 Map<String, Object> data = new HashMap<>();
                                 data.put(URL, uri);
-                                data.put(INDEX, index.getAndIncrement());
+                                data.put(DIAGNOSTIC_ID, entry.getKey());
+                                data.put(INDEX, idx);
                                 action.setData(data);
                             } else if (inputAction.getEdit() != null) {
                                 action.setEdit(Utils.workspaceEditFromApi(inputAction.getEdit(), uri, client));
@@ -1220,11 +1224,27 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
                             return;
                         }
                     }
-                } else if (data.has(URL) && data.has(INDEX)) {
-                    LazyCodeAction inputAction = lastCodeActions.get(data.getAsJsonPrimitive(INDEX).getAsInt());
-                    if (inputAction != null) {
+                } else if (data.has(URL) && data.has(DIAGNOSTIC_ID) && data.has(INDEX)) {
+                    String uri = data.getAsJsonPrimitive(URL).getAsString();
+                    Document doc = server.getOpenedDocuments().getDocument(uri);
+                    long diagnosticId = data.getAsJsonPrimitive(DIAGNOSTIC_ID).getAsLong();
+                    org.netbeans.api.lsp.Diagnostic diag = null;
+
+                    for (String key : VALID_ERROR_KEYS) {
+                        Map<Long, org.netbeans.api.lsp.Diagnostic> diags = (Map<Long, org.netbeans.api.lsp.Diagnostic>) doc.getProperty("lsp-errors-valid-" + key);
+
+                        diag = diags.get(diagnosticId);
+
+                        if (diag != null) {
+                            break;
+                        }
+                    }
+
+                    List<LazyCodeAction> lazyActions = diag2LazyAction.get(diag);
+                    if (lazyActions != null) {
+                        int idx = data.getAsJsonPrimitive(INDEX).getAsInt();
                         try {
-                            unresolved.setEdit(Utils.workspaceEditFromApi(inputAction.getLazyEdit().get(), data.getAsJsonPrimitive(URL).getAsString(), client));
+                            unresolved.setEdit(Utils.workspaceEditFromApi(lazyActions.get(idx).getLazyEdit().get(), uri, client));
                         } catch (Exception e) {
                             future.completeExceptionally(e);
                             return;
@@ -2146,6 +2166,7 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
     private static final int DELAY = 500;
     public boolean hintsSettingsRead = false;
     private FileObject hintsPrefsFile = null;
+    private AtomicLong diagnosticId = new AtomicLong();
     
     /**
      * Recomputes a specific kinds of diagnostics for the file, and returns a complete set diagnostics for that
@@ -2177,7 +2198,7 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
                 docHolder.set(doc);
             }
             long originalVersion = orgV != -1 ? orgV : documentVersion(doc);
-            Map<String, org.netbeans.api.lsp.Diagnostic> id2Errors = new HashMap<>();
+            Map<Long, org.netbeans.api.lsp.Diagnostic> id2Errors = new HashMap<>();
             Collection<? extends ErrorProvider> errorProviders = MimeLookup.getLookup(DocumentUtilities.getMimeType(doc))
                                                     .lookupAll(ErrorProvider.class);
             List<? extends org.netbeans.api.lsp.Diagnostic> errors;
@@ -2224,7 +2245,7 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
                 return result;
             }
             for (org.netbeans.api.lsp.Diagnostic err : errors) {
-                String id = err.getCode();
+                long id = diagnosticId.getAndIncrement();
                 id2Errors.put(id, err);
             }
             if (offset < 0) {
@@ -2233,14 +2254,14 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
             } else {
                 doc.putProperty("lsp-errors-valid-offsetHints", id2Errors);
             }
-            Map<String, org.netbeans.api.lsp.Diagnostic> mergedId2Errors = new HashMap<>();
+            Map<Long, org.netbeans.api.lsp.Diagnostic> mergedId2Errors = new HashMap<>();
             for (String k : ERROR_KEYS) {
-                Map<String, org.netbeans.api.lsp.Diagnostic> prevErrors = (Map<String, org.netbeans.api.lsp.Diagnostic>) doc.getProperty("lsp-errors-" + k);
+                Map<Long, org.netbeans.api.lsp.Diagnostic> prevErrors = (Map<Long, org.netbeans.api.lsp.Diagnostic>) doc.getProperty("lsp-errors-" + k);
                 if (prevErrors != null) {
                     mergedId2Errors.putAll(prevErrors);
                 }
             }
-            for (Entry<String, org.netbeans.api.lsp.Diagnostic> id2Error : (offset < 0 ? mergedId2Errors : id2Errors).entrySet()) {
+            for (Entry<Long, org.netbeans.api.lsp.Diagnostic> id2Error : (offset < 0 ? mergedId2Errors : id2Errors).entrySet()) {
                 org.netbeans.api.lsp.Diagnostic err = id2Error.getValue();
                 Diagnostic diag = new Diagnostic(new Range(Utils.createPosition(file, err.getStartPosition().getOffset()),
                                                            Utils.createPosition(file, err.getEndPosition().getOffset())),
@@ -2254,12 +2275,13 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
                 }
                 // TODO: currently Diagnostic.getCode() is misused to provide an unique ID for the diagnostic. This should be changed somehow
                 // at SPI level between ErrorProvider and LSP core. For now, report just part of the (mangled) diagnostics code.
-                String realCode = id2Error.getKey();
+                String realCode = id2Error.getValue().getCode();
                 int idPart = realCode == null ?  -1 : realCode.indexOf("~~"); // NOI18N
                 if (idPart != -1) {
                     realCode = realCode.substring(0, idPart);
                 }
                 diag.setCode(realCode);
+                diag.setData(id2Error.getKey());
                 result.add(diag);
             }
             if (offset >= 0) {
