@@ -207,7 +207,7 @@ final class IntroduceExpressionBasedMethodFix extends IntroduceFixBase implement
         int counter = 0;
         do {
             try {
-                result = getModificationResult("method" + (counter != 0 ? String.valueOf(counter) : ""), targets.iterator().next(), true, EnumSet.of(Modifier.PRIVATE), false, null);
+                result = getModificationResult("method" + (counter != 0 ? String.valueOf(counter) : ""), targets.iterator().next(), false, EnumSet.of(Modifier.PRIVATE), false, null);
             } catch (Exception e) {
                 counter++;
             }

@@ -446,7 +446,7 @@ public final class IntroduceMethodFix extends IntroduceFixBase implements Fix {
         int counter = 0;
         do {
             try {
-                result = ModificationResult.runModificationTask(Collections.singleton(source), new TaskImpl(EnumSet.of(Modifier.PRIVATE), "method" + (counter != 0 ? String.valueOf(counter) : ""), targets.iterator().next(), true, null, false));
+                result = ModificationResult.runModificationTask(Collections.singleton(source), new TaskImpl(EnumSet.of(Modifier.PRIVATE), "method" + (counter != 0 ? String.valueOf(counter) : ""), targets.iterator().next(), false, null, false));
             } catch (Exception e) {
                 counter++;
             }
