@@ -123,7 +123,7 @@ public class CompletionProviderImpl implements CompletionProvider {
                         signatures.append("<html>");
                         for (SignatureInformation info : help.getSignatures()) {
                             if (info.getParameters().isEmpty()) {
-                                signatures.append("No parameter.");
+                                signatures.append("No parameter.<br>");
                                 continue;
                             }
                             String sigSep = "";
@@ -133,13 +133,23 @@ public class CompletionProviderImpl implements CompletionProvider {
                                     signatures.append("<b>");
                                 }
                                 signatures.append(sigSep);
-                                signatures.append(pi.getLabel());
+                                String label;
+                                if (pi.getLabel().isLeft()) {
+                                    label = pi.getLabel().getLeft();
+                                } else {
+                                    Integer start = pi.getLabel().getRight().getFirst();
+                                    Integer end = pi.getLabel().getRight().getSecond();
+
+                                    label = info.getLabel().substring(start, end);
+                                }
+                                signatures.append(label);
                                 if (idx == help.getActiveParameter()) {
                                     signatures.append("</b>");
                                 }
                                 sigSep = ", ";
                                 idx++;
                             }
+                            signatures.append("<br>");
                         }
                         JToolTip tip = new JToolTip();
                         tip.setTipText(signatures.toString());
