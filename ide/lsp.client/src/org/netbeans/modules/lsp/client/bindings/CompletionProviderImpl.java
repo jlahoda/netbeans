@@ -48,6 +48,7 @@ import org.eclipse.lsp4j.CompletionOptions;
 import org.eclipse.lsp4j.CompletionParams;
 import org.eclipse.lsp4j.InitializeResult;
 import org.eclipse.lsp4j.InsertReplaceEdit;
+import org.eclipse.lsp4j.InsertTextFormat;
 import org.eclipse.lsp4j.MarkupContent;
 import org.eclipse.lsp4j.ParameterInformation;
 import org.eclipse.lsp4j.Position;
@@ -65,6 +66,8 @@ import org.netbeans.api.editor.document.LineDocumentUtils;
 import org.netbeans.api.editor.mimelookup.MimeRegistration;
 import org.netbeans.editor.BaseDocument;
 import org.netbeans.editor.Utilities;
+import org.netbeans.lib.editor.codetemplates.api.CodeTemplate;
+import org.netbeans.lib.editor.codetemplates.api.CodeTemplateManager;
 import org.netbeans.modules.editor.NbEditorDocument;
 import org.netbeans.modules.editor.NbEditorUtilities;
 import org.netbeans.modules.lsp.client.LSPBindings;
@@ -230,24 +233,33 @@ public class CompletionProviderImpl implements CompletionProvider {
                                 }
                                 NbDocument.runAtomic((StyledDocument) doc, () -> {
                                     try {
+                                        CodeTemplate template = null;
                                         TextEdit mainEdit;
 
                                         if (edit != null ) {
                                             mainEdit = edit.getLeft();
                                         } else {
-                                            String toAdd = resolved.getInsertText();
-                                            if (toAdd == null) {
-                                                toAdd = resolved.getLabel();
+                                            String toAdd;
+                                            if (resolved.getInsertTextFormat() == InsertTextFormat.Snippet) {
+                                                //TODO: handle appendText
+                                                template = CodeTemplateManager.get(doc).createTemporary(convertSnippet2CodeTemplate(resolved.getInsertText()));
+                                                toAdd = "";
+                                            } else {
+                                                toAdd = resolved.getInsertText();
+                                                if (toAdd == null) {
+                                                    toAdd = resolved.getLabel();
+                                                }
                                             }
                                             int[] identSpan = Utilities.getIdentifierBlock((BaseDocument) doc, caretOffset);
+                                            Position start;
+                                            Position end;
                                             if (identSpan != null) {
-                                                Position start = Utils.createPosition(doc, identSpan[0]);
-                                                Position end = Utils.createPosition(doc, identSpan[1]);
-                                                mainEdit = new TextEdit(new Range(start, end), toAdd);
+                                                start = Utils.createPosition(doc, identSpan[0]);
+                                                end = Utils.createPosition(doc, identSpan[1]);
                                             } else {
-                                                Position start = Utils.createPosition(doc, caretOffset);
-                                                mainEdit = new TextEdit(new Range(start, start), toAdd);
+                                                end = start = Utils.createPosition(doc, caretOffset);
                                             }
+                                            mainEdit = new TextEdit(new Range(start, end), toAdd);
                                         }
 
                                         List<TextEdit> allEdits = new ArrayList<>();
@@ -257,12 +269,21 @@ public class CompletionProviderImpl implements CompletionProvider {
                                         if (resolved.getAdditionalTextEdits() != null) {
                                             allEdits.addAll(resolved.getAdditionalTextEdits());
                                         }
-                                        int start = Utils.getOffset(doc, mainEdit.getRange().getStart());
+
+                                        int insertPos = Utils.getOffset(doc, mainEdit.getRange().getStart());
                                         LineDocument ld = LineDocumentUtils.as(doc, LineDocument.class);
-                                        javax.swing.text.Position startPos = ld.createPosition(start, Bias.Backward);
+                                        javax.swing.text.Position startPos = ld.createPosition(insertPos, Bias.Backward);
+
                                         Utils.applyEditsNoLock(doc, allEdits);
-                                        int endPos = startPos.hashCode() + mainEdit.getNewText().length();
-                                        doc.insertString(endPos, appendText, null);
+
+                                        if (template != null) {
+                                            //XXX: this does format
+                                            template.insert(component);
+                                        } else {
+                                            int endPos = startPos.hashCode() + mainEdit.getNewText().length();
+
+                                            doc.insertString(endPos, appendText, null);
+                                        }
                                     } catch (BadLocationException ex) {
                                         Exceptions.printStackTrace(ex);
                                     }
@@ -445,5 +466,82 @@ public class CompletionProviderImpl implements CompletionProvider {
         List<String> triggerCharacters = completionOptions.getTriggerCharacters();
         if (triggerCharacters == null) return false;
         return triggerCharacters.stream().anyMatch(trigger -> text.endsWith(trigger));
+    }
+
+    static String convertSnippet2CodeTemplate(String snippet) {
+        //TODO: error states
+        StringBuilder template = new StringBuilder();
+        int placeholderIdx = 0;
+
+        for (int i = 0; i < snippet.length(); i++) {
+            char c = snippet.charAt(i);
+            if (c == '$') {
+                c = snippet.charAt(++i);
+
+                boolean hasBody = false;
+
+                if (c == '{') {
+                    hasBody = true;
+                    c = snippet.charAt(++i);
+                }
+
+                if (Character.isLetter(c)) {
+                    if (hasBody) {
+                        while (c != '}') {
+                            c = snippet.charAt(++i);
+                        }
+                    } else {
+                        while (Character.isLetter(c)) {
+                            c = snippet.charAt(++i);
+                        }
+                        i--;
+                    }
+                    template.append("${P").append(placeholderIdx).append("}");
+                } else {
+                    int tabStopIndexStart = i;
+
+                    while (Character.isDigit(c)) {
+                        if (++i >= snippet.length()) {
+                            break;
+                        }
+
+                        c = snippet.charAt(i);
+                    }
+
+                    String tabStopIndex = snippet.substring(tabStopIndexStart, i);
+                    String tabStopContent = "";
+
+                    //TODO: handle variables
+                    if (hasBody) {
+                        int pos = i;
+
+                        while (c != '}') {
+                            c = snippet.charAt(++i);
+                        }
+                        tabStopContent = snippet.substring(pos, i);
+                    } else {
+                        i--;
+                    }
+
+                    if ("0".equals(tabStopIndex)) {
+                        template.append("${cursor}");
+                    } else {
+                        template.append("${T");
+                        template.append(tabStopIndex);
+                        //TODO: choices
+                        if (tabStopContent.startsWith(":")) {
+                            template.append(" default=\"");
+                            template.append(tabStopContent.substring(1));
+                            template.append("\"");
+                        }
+                        template.append("}");
+                    }
+                }
+            } else {
+                template.append(c);
+            }
+        }
+
+        return template.toString();
     }
 }

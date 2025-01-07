@@ -166,11 +166,13 @@ public class LanguageClientImpl implements LanguageClient, Endpoint {
             return ; //ignore...
         }
         assert file != null;
-        List<ErrorDescription> diags = pdp.getDiagnostics().stream().map(d -> {
-            LazyFixList fixList = allowCodeActions ? new DiagnosticFixList(doc, pdp.getUri(), d) : ErrorDescriptionFactory.lazyListForFixes(Collections.emptyList());
-            return ErrorDescriptionFactory.createErrorDescription(severityMap.get(d.getSeverity()), d.getMessage(), fixList, file, Utils.getOffset(doc, d.getRange().getStart()), Utils.getOffset(doc, d.getRange().getEnd()));
-        }).collect(Collectors.toList());
-        HintsController.setErrors(doc, LanguageClientImpl.class.getName(), diags);
+        WORKER.post(() -> {
+            List<ErrorDescription> diags = pdp.getDiagnostics().stream().map(d -> {
+                LazyFixList fixList = allowCodeActions ? new DiagnosticFixList(doc, pdp.getUri(), d) : ErrorDescriptionFactory.lazyListForFixes(Collections.emptyList());
+                return ErrorDescriptionFactory.createErrorDescription(severityMap.get(d.getSeverity()), d.getMessage(), fixList, file, Utils.getOffset(doc, d.getRange().getStart()), Utils.getOffset(doc, d.getRange().getEnd()));
+            }).collect(Collectors.toList());
+            HintsController.setErrors(doc, LanguageClientImpl.class.getName(), diags);
+        });
     }
 
     private static final Map<DiagnosticSeverity, Severity> severityMap = new EnumMap<>(DiagnosticSeverity.class);
