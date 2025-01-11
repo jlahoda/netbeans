@@ -20,7 +20,6 @@ package org.netbeans.modules.lsp.client.debugger.breakpoints;
 
 import org.netbeans.modules.lsp.client.debugger.api.DAPLineBreakpoint;
 import org.netbeans.api.debugger.Breakpoint;
-import org.netbeans.modules.lsp.client.Utils;
 import org.netbeans.modules.lsp.client.debugger.spi.BreakpointConvertor;
 import org.openide.util.lookup.ServiceProvider;
 
@@ -28,9 +27,9 @@ import org.openide.util.lookup.ServiceProvider;
 public class DAPBreakpointConvertor implements BreakpointConvertor {
 
     @Override
-    public void covert(Breakpoint b, ConvertedBreakpointConsumer breakpointConsumer) {
+    public void convert(Breakpoint b, ConvertedBreakpointConsumer breakpointConsumer) {
         if (b instanceof DAPLineBreakpoint lb) {
-            breakpointConsumer.lineBreakpoint(Utils.toURI(lb.getFileObject()), lb.getLineNumber(), lb.getCondition());
+            breakpointConsumer.lineBreakpoint(lb.getFileObject().toURI(), lb.getLineNumber(), lb.getCondition());
         }
     }
 

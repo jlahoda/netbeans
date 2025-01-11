@@ -25,7 +25,7 @@ import org.netbeans.api.debugger.DebuggerEngine;
 import org.netbeans.api.debugger.DebuggerManager;
 import org.netbeans.modules.lsp.client.debugger.api.DAPLineBreakpoint;
 import org.netbeans.modules.lsp.client.debugger.DAPDebugger;
-import org.netbeans.modules.lsp.client.debugger.Utils;
+import org.netbeans.modules.lsp.client.debugger.DAPStackTraceAnnotationHolder;
 
 import org.netbeans.spi.debugger.DebuggerServiceRegistration;
 import org.netbeans.spi.viewmodel.ModelEvent;
@@ -86,7 +86,7 @@ public final class BreakpointModel implements NodeModel {
                 return DISABLED_LINE_BREAKPOINT;
             DAPDebugger debugger = getDebugger ();
             if ( debugger != null &&
-                 Utils.contains (
+                 DAPStackTraceAnnotationHolder.contains (
                      debugger.getCurrentLine (),
                      breakpoint.getLine ()
                  )

@@ -22,7 +22,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
 import org.netbeans.modules.lsp.client.debugger.api.DAPConfiguration;
-import org.netbeans.modules.lsp.client.debugger.api.DAPConfiguration.URLPathConvertor;
+import org.netbeans.modules.lsp.client.debugger.api.DAPConfiguration.URIPathConvertor;
 import org.openide.util.Exceptions;
 
 public abstract class DAPConfigurationAccessor {
@@ -46,6 +46,6 @@ public abstract class DAPConfigurationAccessor {
     public abstract boolean getDelayLaunch(DAPConfiguration config);
     public abstract Map<String, Object> getConfiguration(DAPConfiguration config);
     public abstract String getSessionName(DAPConfiguration config);
-    public abstract URLPathConvertor getURLPathConvertor(DAPConfiguration config);
+    public abstract URIPathConvertor getURIPathConvertor(DAPConfiguration config);
 
 }

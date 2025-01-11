@@ -18,13 +18,14 @@
  */
 package org.netbeans.modules.remote.ide.debugger;
 
+import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.netbeans.modules.lsp.client.debugger.api.DAPConfiguration;
+import org.netbeans.modules.lsp.client.debugger.api.DAPConfiguration.URIPathConvertor;
 import org.netbeans.modules.remote.AsynchronousConnection.ReceiverBuilder;
 import org.netbeans.modules.remote.StreamMultiplexor;
 import org.netbeans.modules.remote.Streams;
-import org.netbeans.modules.lsp.client.debugger.api.DAPConfiguration.URLPathConvertor;
 import org.netbeans.modules.remote.ide.RemoteManager.RemoteDescription;
 import org.netbeans.modules.remote.ide.fs.RemoteFileSystem;
 
@@ -40,23 +41,24 @@ public class DebuggerHandler {
                     try {
                         Streams channel = mainChannel.getStreamsForChannel(attach.channel);
                         RemoteFileSystem rfs = RemoteFileSystem.getRemoteFileSystem(remoteDescription);
-                        String rootURL = rfs.getRoot().toURL().toString();
-                        System.err.println("rootURL: " + rootURL);
-                        URLPathConvertor fileConvertor = new URLPathConvertor() {
+                        URI rootURI = rfs.getRoot().toURI();
+                        System.err.println("rootURL: " + rootURI);
+                        URIPathConvertor fileConvertor = new URIPathConvertor() {
                             @Override
-                            public String toPath(String url) {
-                                if (url.startsWith(rootURL)) {
-                                    return url.substring(rootURL.length() - 1);
+                            public String toPath(URI uri) {
+                                URI relative = rootURI.relativize(uri);
+                                if (!relative.isAbsolute()) {
+                                    return "/" + relative.getPath();//XXX
                                 }
                                 return null;
                             }
 
                             @Override
-                            public String toURL(String path) {
-                                return rootURL.substring(0, rootURL.length() - 1) + path;
+                            public URI toURI(String path) {
+                                return rootURI.resolve(path.substring(1));//XXX
                             }
                         };
-                        DAPConfiguration.create(channel.in(), channel.out()).setURLPathConvertor(fileConvertor).addConfiguration(Map.of("type","java+", "request", "attach", "hostName", attach.hostName, "port", attach.port, "properties", attach.properties)).attach();
+                        DAPConfiguration.create(channel.in(), channel.out()).setURIPathConvertor(fileConvertor).addConfiguration(Map.of("type","java+", "request", "attach", "hostName", attach.hostName, "port", attach.port, "properties", attach.properties)).attach();
                         cf.complete(null);
                         System.err.println("complete");
                     } catch (Exception ex) {

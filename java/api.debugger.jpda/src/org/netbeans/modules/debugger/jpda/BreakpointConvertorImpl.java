@@ -18,6 +18,7 @@
  */
 package org.netbeans.modules.debugger.jpda;
 
+import java.net.URI;
 import org.netbeans.api.debugger.Breakpoint;
 import org.netbeans.api.debugger.jpda.LineBreakpoint;
 import org.netbeans.modules.lsp.client.debugger.spi.BreakpointConvertor;
@@ -31,9 +32,9 @@ import org.openide.util.lookup.ServiceProvider;
 public class BreakpointConvertorImpl implements BreakpointConvertor {
 
     @Override
-    public void covert(Breakpoint b, ConvertedBreakpointConsumer breakpointConsumer) {
+    public void convert(Breakpoint b, ConvertedBreakpointConsumer breakpointConsumer) {
         if (b instanceof LineBreakpoint lb) {
-            breakpointConsumer.lineBreakpoint(lb.getURL(), lb.getLineNumber(), lb.getCondition());
+            breakpointConsumer.lineBreakpoint(URI.create(lb.getURL()), lb.getLineNumber(), lb.getCondition());
         }
     }
 

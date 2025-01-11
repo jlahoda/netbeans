@@ -20,6 +20,7 @@ package org.netbeans.modules.lsp.client.debugger.api;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import org.netbeans.modules.lsp.client.debugger.DAPConfigurationAccessor;
@@ -38,7 +39,7 @@ public class DAPConfiguration {
     private Map<String, Object> configuration = new HashMap<>();
     private String sessionName = "";
     private boolean delayLaunch;
-    private URLPathConvertor urlPathConvertor = DAPDebugger.DEFAULT_CONVERTOR;
+    private URIPathConvertor uriPathConvertor = DAPDebugger.DEFAULT_CONVERTOR;
 
     /**
      * Start the configuration of the DAP client. The provided input and output
@@ -91,8 +92,8 @@ public class DAPConfiguration {
         return this;
     }
 
-    public DAPConfiguration setURLPathConvertor(URLPathConvertor urlPathConvertor) {
-        this.urlPathConvertor = urlPathConvertor;
+    public DAPConfiguration setURIPathConvertor(URIPathConvertor uriPathConvertor) {
+        this.uriPathConvertor = uriPathConvertor;
         return this;
     }
 
@@ -119,9 +120,9 @@ public class DAPConfiguration {
         }
     }
 
-    public interface URLPathConvertor {
-        public String toPath(String url);
-        public String toURL(String path);
+    public interface URIPathConvertor {
+        public String toPath(URI uri);
+        public URI toURI(String path);
     }
 
     static {
@@ -152,8 +153,8 @@ public class DAPConfiguration {
             }
 
             @Override
-            public URLPathConvertor getURLPathConvertor(DAPConfiguration config) {
-                return config.urlPathConvertor;
+            public URIPathConvertor getURIPathConvertor(DAPConfiguration config) {
+                return config.uriPathConvertor;
             }
         });
     }

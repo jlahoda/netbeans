@@ -18,6 +18,7 @@
  */
 package org.netbeans.modules.lsp.client.debugger;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
@@ -79,7 +80,7 @@ import org.netbeans.api.debugger.DebuggerManagerAdapter;
 import org.netbeans.api.debugger.DebuggerManagerListener;
 import org.netbeans.api.debugger.Session;
 import org.netbeans.api.io.InputOutput;
-import org.netbeans.modules.lsp.client.debugger.api.DAPConfiguration.URLPathConvertor;
+import org.netbeans.modules.lsp.client.debugger.api.DAPConfiguration.URIPathConvertor;
 import org.netbeans.modules.lsp.client.debugger.spi.BreakpointConvertor;
 import org.netbeans.spi.debugger.ContextProvider;
 import org.netbeans.spi.debugger.DebuggerEngineProvider;
@@ -90,6 +91,7 @@ import org.openide.util.Exceptions;
 import org.openide.util.Lookup;
 import org.openide.util.RequestProcessor;
 import org.netbeans.modules.lsp.client.debugger.spi.BreakpointConvertor.ConvertedBreakpointConsumer;
+import org.openide.util.Utilities;
 
 public final class DAPDebugger implements IDebugProtocolClient {
     public static final String ENGINE_TYPE_ID = "DAPDebuggerEngine";
@@ -110,7 +112,7 @@ public final class DAPDebugger implements IDebugProtocolClient {
     private final AtomicBoolean suspended = new AtomicBoolean();
     private final Map<Integer, DAPThread> id2Thread = new HashMap<>(); //TODO: concurrent/synchronization!!!
     private final AtomicReference<Runnable> runAfterConfigureDone = new AtomicReference<>();
-    private URLPathConvertor fileConvertor;
+    private URIPathConvertor fileConvertor;
     private InputStream in;
     private Future<Void> launched;
     private IDebugProtocolServer server;
@@ -131,13 +133,13 @@ public final class DAPDebugger implements IDebugProtocolClient {
                 updateAfterBreakpointChange(breakpoint);
             }
             private void updateAfterBreakpointChange(Breakpoint breakpoint) {
-                Set<String> modifiedURLs =
+                Set<URI> modifiedURLs =
                         convertBreakpoints(breakpoint).stream()
-                                                      .map(b -> b.url())
+                                                      .map(b -> b.uri())
                                                       .collect(Collectors.toSet());
 
                 try {
-                    setBreakpoints(d -> modifiedURLs.contains(d.url()));
+                    setBreakpoints(d -> modifiedURLs.contains(d.uri()));
                 } catch (InterruptedException | ExecutionException ex) {
                     Exceptions.printStackTrace(ex);
                 }
@@ -147,7 +149,7 @@ public final class DAPDebugger implements IDebugProtocolClient {
     }
 
     public CompletableFuture<Void> connect(DAPConfiguration config, Type type) throws Exception {
-        fileConvertor = DAPConfigurationAccessor.getInstance().getURLPathConvertor(config);
+        fileConvertor = DAPConfigurationAccessor.getInstance().getURIPathConvertor(config);
         in = DAPConfigurationAccessor.getInstance().getIn(config);
         Launcher<IDebugProtocolServer> serverLauncher = DSPLauncher.createClientLauncher(this, in, DAPConfigurationAccessor.getInstance().getOut(config));//, false, new PrintWriter(System.err));
         launched = serverLauncher.startListening();
@@ -213,7 +215,7 @@ public final class DAPDebugger implements IDebugProtocolClient {
                 lb.setLine(data.lineNumber());
                 lb.setCondition(data.condition());
 
-                String path = fileConvertor.toPath(data.url());
+                String path = fileConvertor.toPath(data.uri());
 
                 if (path != null) {
                     url2Breakpoints.computeIfAbsent(path, x -> new ArrayList<>())
@@ -242,7 +244,7 @@ public final class DAPDebugger implements IDebugProtocolClient {
         //TODO: could cache the convertors:
         for (BreakpointConvertor convertor : Lookup.getDefault().lookupAll(BreakpointConvertor.class)) {
             for (Breakpoint b : breakpoints) {
-                convertor.covert(b, consumer);
+                convertor.convert(b, consumer);
             }
         }
 
@@ -263,7 +265,7 @@ public final class DAPDebugger implements IDebugProtocolClient {
         }
         currentThreadId = -1;
         cs.fireChange(); //TODO: in a different thread?
-        Utils.unmarkCurrent();
+        DAPStackTraceAnnotationHolder.unmarkCurrent();
     }
 
     @Override
@@ -294,7 +296,7 @@ public final class DAPDebugger implements IDebugProtocolClient {
         WORKER.post(() -> { //TODO: what if something else is running in WORKER? And OK to coalescence all the below?
             cs.fireChange(); //TODO: in a different thread?
             engineProvider.getDestructor().killEngine();
-            Utils.unmarkCurrent(); //TODO: can this be done cleaner?
+            DAPStackTraceAnnotationHolder.unmarkCurrent(); //TODO: can this be done cleaner?
             DebuggerManager.getDebuggerManager().removeDebuggerListener(DebuggerManager.PROP_BREAKPOINTS, updateBreakpointsListener);
             launched.cancel(true);
             try {
@@ -555,19 +557,19 @@ public final class DAPDebugger implements IDebugProtocolClient {
 
     public enum Type {LAUNCH, ATTACH}
 
-    public static final URLPathConvertor DEFAULT_CONVERTOR = new URLPathConvertor() {
+    public static final URIPathConvertor DEFAULT_CONVERTOR = new URIPathConvertor() {
         @Override
-        public String toPath(String file) {
-            if (file.startsWith("file:")) {
-                return URI.create(file).getPath();
+        public String toPath(URI uri) {
+            if ("file".equals(uri.getScheme())) {
+                return uri.getPath();
             }
 
             return null;
         }
 
         @Override
-        public String toURL(String path) {
-            return "file:" + path;
+        public URI toURI(String path) {
+            return Utilities.toURI(new File(path));
         }
     };
 
