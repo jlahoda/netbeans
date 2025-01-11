@@ -24,7 +24,6 @@ import com.sun.tools.javac.code.ModuleFinder;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.jvm.Target;
-import com.sun.tools.javac.model.JavacElements;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.util.Name;
 import java.util.Arrays;
@@ -53,7 +52,7 @@ import org.openide.util.WeakSet;
 /**
  * Represents a handle for {@link Element} which can be kept and later resolved
  * by another javac. The javac {@link Element}s are valid only in a single
- * {@link javax.tools.CompilationTask} or a single run of a
+ * {@link javax.tools.JavaCompiler.CompilationTask} or a single run of a
  * {@link CancellableTask}. A client needing to
  * keep a reference to an {@link Element} and use it in another {@link CancellableTask}
  * must serialize it into an {@link ElementHandle}.
@@ -106,17 +105,28 @@ public final class ElementHandle<T extends Element> {
     
     /**
      * Resolves an {@link Element} from the {@link ElementHandle}.
-     * @param compilationInfo representing the {@link javax.tools.CompilationTask}
+     * @param compilationInfo representing the {@link javax.tools.JavaCompiler.CompilationTask}
      * in which the {@link Element} should be resolved.
      * @return resolved subclass of {@link Element} or null if the elment does not exist on
-     * the classpath/sourcepath of {@link javax.tools.CompilationTask}.
+     * the classpath/sourcepath of {@link javax.tools.JavaCompiler.CompilationTask}.
      */
     @SuppressWarnings ("unchecked")     // NOI18N
     public @CheckForNull T resolve (@NonNull final CompilationInfo compilationInfo) {
         Parameters.notNull("compilationInfo", compilationInfo); // NOI18N
-        ModuleElement module = compilationInfo.getFileObject() != null
-                ? ((JCTree.JCCompilationUnit)compilationInfo.getCompilationUnit()).modle
-                : null;
+        ModuleElement module;
+
+        if (compilationInfo.getFileObject() != null) {
+            JCTree.JCCompilationUnit cut = (JCTree.JCCompilationUnit)compilationInfo.getCompilationUnit();
+            if (cut != null) {
+                module = cut.modle;
+            } else if (compilationInfo.getTopLevelElements().iterator().hasNext()) {
+                module = ((Symbol) compilationInfo.getTopLevelElements().iterator().next()).packge().modle;
+            } else {
+                module = null;
+            }
+        } else {
+            module = null;
+        }
         T result = resolveImpl (module, compilationInfo.impl.getJavacTask());
         if (result == null) {
             if (log.isLoggable(Level.INFO))
@@ -132,7 +142,14 @@ public final class ElementHandle<T extends Element> {
     private T resolveImpl (final ModuleElement module, final JavacTaskImpl jt) {
         if (log.isLoggable(Level.FINE))
             log.log(Level.FINE, "Resolving element kind: {0}", this.kind); // NOI18N       
-        switch (this.kind) {
+        ElementKind simplifiedKind = this.kind;
+        if (simplifiedKind.name().equals("RECORD")) {
+            simplifiedKind = ElementKind.CLASS; //TODO: test
+        }
+        if (simplifiedKind.name().equals("RECORD_COMPONENT")) {
+            simplifiedKind = ElementKind.FIELD; //TODO: test
+        }
+        switch (simplifiedKind) {
             case PACKAGE:
                 assert signatures.length == 1;
                 return (T) jt.getElements().getPackageElement(signatures[0]);
@@ -214,6 +231,31 @@ public final class ElementHandle<T extends Element> {
                     return (T) new Symbol.VarSymbol(0, (Name) jt.getElements().getName(this.signatures[1]), Symtab.instance(jt.getContext()).unknownType, (Symbol)type);
                 } else 
                     log.log(Level.INFO, "Resolved type is null for kind = {0}", this.kind); // NOI18N
+                break;
+            }
+            case PARAMETER:
+            {
+                assert signatures.length == 4;
+                final Element type = getTypeElementByBinaryName (module, signatures[0], jt);
+                if (type instanceof TypeElement) {
+                    final List<? extends Element> members = type.getEnclosedElements();
+                    for (Element member : members) {
+                        if (member.getKind() == ElementKind.METHOD || member.getKind() == ElementKind.CONSTRUCTOR) {
+                            String[] desc = ClassFileUtil.createExecutableDescriptor((ExecutableElement)member);
+                            assert desc.length == 3;
+                            if (this.signatures[1].equals(desc[1]) && this.signatures[2].equals(desc[2])) {
+                                assert member instanceof ExecutableElement;
+                                List<? extends VariableElement> ves =((ExecutableElement)member).getParameters();
+                                for (VariableElement ve : ves) {
+                                    if (ve.getSimpleName().contentEquals(signatures[3])) {
+                                        return (T) ve;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else
+                    log.log(Level.INFO, "Resolved type is null for kind = {0} signatures.length = {1}", new Object[] {this.kind, signatures.length}); // NOI18N
                 break;
             }
             case TYPE_PARAMETER:
@@ -313,7 +355,7 @@ public final class ElementHandle<T extends Element> {
      * {@link ElementHandle}. When the {@link ElementHandle} doesn't represent
      * a {@link TypeElement} it throws a {@link IllegalStateException}
      * @return the qualified name
-     * @throws an {@link IllegalStateException} when this {@link ElementHandle} 
+     * @throws IllegalStateException when this {@link ElementHandle} 
      * isn't created for the {@link TypeElement}.
      */
     public @NonNull String getBinaryName () throws IllegalStateException {
@@ -334,7 +376,7 @@ public final class ElementHandle<T extends Element> {
      * {@link ElementHandle}. When the {@link ElementHandle} doesn't represent
      * a {@link TypeElement} it throws a {@link IllegalStateException}
      * @return the qualified name
-     * @throws an {@link IllegalStateException} when this {@link ElementHandle} 
+     * @throws IllegalStateException when this {@link ElementHandle} 
      * isn't creatred for the {@link TypeElement}.
      */
     public @NonNull String getQualifiedName () throws IllegalStateException {
@@ -450,8 +492,9 @@ public final class ElementHandle<T extends Element> {
     private static @NonNull <T extends Element> ElementHandle<T> createImpl (@NonNull final T element) throws IllegalArgumentException {
         Parameters.notNull("element", element);
         ElementKind kind = element.getKind();
+        ElementKind simplifiedKind = kind;
         String[] signatures;
-        switch (kind) {
+        switch (simplifiedKind) {
             case PACKAGE:
                 assert element instanceof PackageElement;
                 signatures = new String[]{((PackageElement)element).getQualifiedName().toString()};
@@ -460,6 +503,7 @@ public final class ElementHandle<T extends Element> {
             case INTERFACE:
             case ENUM:
             case ANNOTATION_TYPE:
+            case RECORD:
                 assert element instanceof TypeElement;
                 signatures = new String[] {ClassFileUtil.encodeClassNameOrArray((TypeElement)element)};
                 break;
@@ -472,8 +516,29 @@ public final class ElementHandle<T extends Element> {
                 break;
             case FIELD:
             case ENUM_CONSTANT:
+            case RECORD_COMPONENT:
                 assert element instanceof VariableElement;
                 signatures = ClassFileUtil.createFieldDescriptor((VariableElement)element);
+                break;
+            case PARAMETER:
+                assert element instanceof VariableElement;
+                Element ee = element.getEnclosingElement();
+                ElementKind eek = ee.getKind();
+                if (eek == ElementKind.METHOD || eek == ElementKind.CONSTRUCTOR) {
+                    assert ee instanceof ExecutableElement;
+                    ExecutableElement eel = (ExecutableElement)ee;
+                    if (!eel.getParameters().contains(element)) {
+                        //may be e.g. a lambda parameter:
+                        throw new IllegalArgumentException("Not a parameter for a method or a constructor.");
+                    }
+                    String[] _sigs = ClassFileUtil.createExecutableDescriptor(eel);
+                    signatures = new String[_sigs.length + 1];
+                    System.arraycopy(_sigs, 0, signatures, 0, _sigs.length);
+                    signatures[_sigs.length] = element.getSimpleName().toString();
+                }
+                else {
+                    throw new IllegalArgumentException(eek.toString());
+                }
                 break;
             case TYPE_PARAMETER:
                 assert element instanceof TypeParameterElement;
@@ -536,7 +601,7 @@ public final class ElementHandle<T extends Element> {
     }
     
     
-    /**@inheritDoc*/
+    /**{@inheritDoc}*/
     @Override
     public int hashCode () {
         int hashCode = 0;
@@ -548,7 +613,7 @@ public final class ElementHandle<T extends Element> {
         return hashCode;
     }
     
-    /**@inheritDoc*/
+    /**{@inheritDoc}*/
     @Override
     public boolean equals (Object other) {
         if (other instanceof ElementHandle) {
@@ -584,6 +649,7 @@ public final class ElementHandle<T extends Element> {
                 case INTERFACE:
                 case ENUM:
                 case ANNOTATION_TYPE:
+                case RECORD:
                 case OTHER:
                     if (descriptors.length != 1) {
                         throw new IllegalArgumentException ();
@@ -608,7 +674,8 @@ public final class ElementHandle<T extends Element> {
                     }
                     return new ElementHandle<VariableElement> (kind, descriptors);
                 default:
-                    throw new IllegalArgumentException ();
+                    throw new IllegalArgumentException();
+                    
             }            
         }
 

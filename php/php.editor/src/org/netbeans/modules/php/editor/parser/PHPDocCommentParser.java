@@ -29,6 +29,7 @@ import java.util.regex.Pattern;
 import org.netbeans.modules.csl.api.OffsetRange;
 import org.netbeans.modules.php.api.annotation.PhpAnnotations;
 import org.netbeans.modules.php.api.util.StringUtils;
+import org.netbeans.modules.php.editor.model.impl.Type;
 import org.netbeans.modules.php.editor.parser.astnodes.PHPDocBlock;
 import org.netbeans.modules.php.editor.parser.astnodes.PHPDocMethodTag;
 import org.netbeans.modules.php.editor.parser.astnodes.PHPDocNode;
@@ -149,7 +150,7 @@ public class PHPDocCommentParser {
         if (index == 0) {  // there is only one line comment
             line = removeStarAndTrim(comment);
         } else {
-            line = comment.substring(index, comment.length()).trim();
+            line = comment.substring(index).trim();
         }
         AnnotationParsedLine tagType = findTagOnLine(line);
         if (tagType != null) {  // is defined a tag on the last line
@@ -201,8 +202,7 @@ public class PHPDocCommentParser {
     private PHPDocTag createTag(int start, int end, AnnotationParsedLine type, String description, String originalComment, int originalCommentStart) {
         final Map<OffsetRange, String> types = type.getTypes();
         if (types.isEmpty()) {
-            boolean isReturnTag = type.equals(PHPDocTag.Type.RETURN);
-            List<PHPDocTypeNode> docTypes = findTypes(description, start, originalComment, originalCommentStart, isReturnTag);
+            List<PHPDocTypeNode> docTypes = findTypes(description, start, originalComment, originalCommentStart, type);
             if (PHP_DOC_VAR_TYPE_TAGS.contains(type)) {
                 String variable = getVaribleName(description);
                 PHPDocNode varibaleNode = null;
@@ -221,13 +221,14 @@ public class PHPDocCommentParser {
             } else if (type.equals(PHPDocTag.Type.METHOD)) {
                 String name = getMethodName(description);
                 if (name != null) {
+                    boolean isStatic = description.trim().startsWith("static"); // NOI18N
                     int startOfVariable = findStartOfDocNode(originalComment, originalCommentStart, name, start);
                     if (startOfVariable != -1) {
                         PHPDocNode methodNode = new PHPDocNode(startOfVariable, startOfVariable + name.length(), name);
                         int startOfDescription = findStartOfDocNode(originalComment, originalCommentStart, description, start);
                         if (startOfDescription != -1) {
                             List<PHPDocVarTypeTag> params = findMethodParams(description, startOfDescription);
-                            return new PHPDocMethodTag(start, end, type, docTypes, methodNode, params, description);
+                            return new PHPDocMethodTag(start, end, type, docTypes, methodNode, params, description, isStatic);
                         }
                     }
                 }
@@ -250,21 +251,27 @@ public class PHPDocCommentParser {
     }
 
     private List<PHPDocTypeNode> findTypes(String description, int startDescription, String originalComment, int originalCommentStart) {
-        return findTypes(description, startDescription, originalComment, originalCommentStart, false);
+        return findTypes(description, startDescription, originalComment, originalCommentStart, PHPDocTypeTag.Type.PARAM);
     }
 
-    private List<PHPDocTypeNode> findTypes(String description, int startDescription, String originalComment, int originalCommentStart, boolean isReturnTag) {
+    private List<PHPDocTypeNode> findTypes(String description, int startDescription, String originalComment, int originalCommentStart, AnnotationParsedLine tagType) {
         if (StringUtils.isEmpty(description)) {
             return Collections.emptyList();
         }
 
         List<PHPDocTypeNode> result = new ArrayList<>();
-        for (String stype : getTypes(description, isReturnTag)) {
+        int startPosition = startDescription;
+        for (String stype : getTypes(description, tagType)) {
             stype = removeHTMLTags(stype);
-            int startDocNode = findStartOfDocNode(originalComment, originalCommentStart, stype, startDescription);
+            stype = sanitizeShapes(stype);
+            stype = sanitizeBraces(stype);
+            int startDocNode = findStartOfDocNode(originalComment, originalCommentStart, stype, startPosition);
             if (startDocNode == -1) {
                 continue;
             }
+            // move start position to find the position of the same class name
+            // e.g. (X&Y)|(X&Z)
+            startPosition = startDocNode + stype.length();
             int index = stype.indexOf("::");    //NOI18N
             boolean isArray = (stype.indexOf('[') > 0 && stype.indexOf(']') > 0);
             if (isArray) {
@@ -275,7 +282,7 @@ public class PHPDocCommentParser {
                 docType = new PHPDocTypeNode(startDocNode, startDocNode + stype.length(), stype, isArray);
             } else {
                 String className = stype.substring(0, index);
-                String constantName = stype.substring(index + 2, stype.length());
+                String constantName = stype.substring(index + 2);
                 PHPDocNode classNameNode = new PHPDocNode(startDocNode, startDocNode + className.length(), className);
                 PHPDocNode constantNode = new PHPDocNode(startDocNode + className.length() + 2, startDocNode + stype.length(), constantName);
                 docType = new PHPDocStaticAccessType(startDocNode, startDocNode + stype.length(), stype, classNameNode, constantNode);
@@ -285,15 +292,26 @@ public class PHPDocCommentParser {
         return result;
     }
 
-    private List<String> getTypes(String description, boolean isReturnTag) {
+    private List<String> getTypes(String description, AnnotationParsedLine tagType) {
         String[] tokens = description.trim().split("[ ]+"); //NOI18N
+        if (isMethodTag(tagType) && tokens.length > 0 && tokens[0].equals(Type.STATIC)) {
+            tokens = Arrays.copyOfRange(tokens, 1, tokens.length);
+        }
         ArrayList<String> types = new ArrayList<>();
-        if (tokens.length > 0 && (isReturnTag || !tokens[0].startsWith("$"))) { //NOI18N
-            if (tokens[0].indexOf('|') > -1) {
-                String[] ttokens = tokens[0].split("[|]"); //NOI18N
+        if (tokens.length > 0 && (isReturnTag(tagType) || !tokens[0].startsWith("$"))) { //NOI18N
+            if (findParameterStartPosition(tokens[0]) != -1) {
+                // e.g. @method voidReturn((X&Y)|Z $param)
+                types.add(Type.VOID);
+            } else if (tokens[0].indexOf('|') > -1 || tokens[0].indexOf('&') > -1) {
+                String[] ttokens = tokens[0].split("[|&]"); //NOI18N
                 for (String ttoken : ttokens) {
                     types.add(ttoken.trim());
                 }
+            } else if (tokens[0].indexOf('(') > 0) {
+                // e.g. @method getSomething(int $i)
+                // NOTE: add void type but it is not shown as a return type in doc popup
+                // because it doesn't exist
+                types.add(Type.VOID);
             } else {
                 types.add(tokens[0].trim());
             }
@@ -316,17 +334,21 @@ public class PHPDocCommentParser {
 
     private String getMethodName(String description) {
         String name = null;
-        int index = description.indexOf('(');
+        int index = findParameterStartPosition(description);
         if (index > 0) {
             name = description.substring(0, index);
             index = name.lastIndexOf(' ');
-            if (index > 0) {
+            if (index >= 0) { // e.g. " methodName" has whitespace at 0
                 name = name.substring(index + 1);
             }
         } else {
             // probably defined without () after the name
             // then we expect that the name is after the first space
-            String[] tokens = description.trim().split("[ \n\t]+"); //NOI18N
+            String desc = description.trim();
+            if (desc.startsWith("static ")) { // NOI18N
+                desc = desc.substring("static ".length()); // NOI18N
+            }
+            String[] tokens = desc.trim().split("[ \n\t]+"); //NOI18N
             if (tokens.length > 1) {
                 name = tokens[1];
             }
@@ -335,7 +357,7 @@ public class PHPDocCommentParser {
     }
 
     private List<PHPDocVarTypeTag> findMethodParams(String description, int startOfDescription) {
-        List<PHPDocVarTypeTag> result = new ArrayList();
+        List<PHPDocVarTypeTag> result = new ArrayList<>();
         int position = startOfDescription;
         ParametersExtractor parametersExtractor = ParametersExtractorImpl.create();
         String parameters = parametersExtractor.extract(description);
@@ -363,15 +385,41 @@ public class PHPDocCommentParser {
 
     private String removeHTMLTags(String text) {
         String value = text;
-        int index = value.indexOf('>');
-        if (index > -1) {
-            value = value.substring(index + 1);
-            index = value.indexOf('<');
-            if (index > -1) {
-                value = value.substring(0, index);
-            }
+        int startTagIndex = value.indexOf('<');
+        if (startTagIndex > -1) {
+            value = value.substring(0, startTagIndex).trim();
         }
         return value;
+    }
+
+    /**
+     * Remove `{'key': type}`.
+     *
+     * e.g. {@code array{'foo': int}}, {@code object{'foo': int, "bar": string}}
+     *
+     * @see https://phpstan.org/writing-php-code/phpdoc-types#array-shapes
+     * @see https://phpstan.org/writing-php-code/phpdoc-types#object-shapes
+     *
+     * @param type the type
+     * @return the sanitized type
+     */
+    private String sanitizeShapes(String type) {
+        String sanitizedType = type;
+        int startIndex = sanitizedType.indexOf("{"); // NOI18N
+        if (startIndex > -1) {
+            sanitizedType = sanitizedType.substring(0, startIndex).trim();
+        }
+        return sanitizedType;
+    }
+
+    private String sanitizeBraces(String type) {
+        String sanitizedType = type;
+        if (sanitizedType.startsWith("(")) { // NOI18N
+            sanitizedType = sanitizedType.substring(1).trim();
+        } else if (sanitizedType.endsWith(")")) { // NOI18N
+            sanitizedType = sanitizedType.substring(0, sanitizedType.length() - 1);
+        }
+        return sanitizedType;
     }
 
     /**
@@ -425,7 +473,7 @@ public class PHPDocCommentParser {
 
     private static String composeDescription(String[] tokens) {
         assert tokens.length > 0;
-        List<String> tokenList = new ArrayList(Arrays.asList(tokens));
+        List<String> tokenList = new ArrayList<>(Arrays.asList(tokens));
         tokenList.remove(0); // remove annotation name
         return StringUtils.implode(tokenList, " ");
     }
@@ -440,6 +488,34 @@ public class PHPDocCommentParser {
             }
         }
         return result;
+    }
+
+    private static boolean isReturnTag(AnnotationParsedLine type) {
+        return PHPDocTypeTag.Type.RETURN == type;
+    }
+
+    private static boolean isMethodTag(AnnotationParsedLine type) {
+        return PHPDocTypeTag.Type.METHOD == type;
+    }
+
+    private static int findParameterStartPosition(String description) {
+        // e.g. static (X&Y)|Z method((X&Y)|Z $param) someting...
+        // return type may have a dnf type i.e. it has "("
+        // so, also check the char just before "("
+        char previousChar = ' ';
+        for (int i = 0; i < description.length(); i++) {
+            switch (description.charAt(i)) {
+                case '(':
+                    if (previousChar != '|' && previousChar != '&' && previousChar != ' ') {
+                        return i;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            previousChar = description.charAt(i);
+        }
+        return -1;
     }
 
     private static final class ParametersExtractorImpl implements ParametersExtractor {
@@ -461,7 +537,7 @@ public class PHPDocCommentParser {
 
         @Override
         public String extract(String description) {
-            int index = description.indexOf('(');
+            int index = findParameterStartPosition(description);
             int possibleParamIndex = description.indexOf('$');
             if (index > -1 && possibleParamIndex > -1) {
                 position += index;

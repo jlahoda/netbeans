@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.66.1
+#Version 1.89.0
 
 CLSS public abstract interface java.io.Serializable
 
@@ -150,7 +150,7 @@ meth public static java.lang.String getLogDir()
 meth public static java.lang.String getUserDir()
 meth public static void initialize()
 supr org.netbeans.CLIHandler
-hfds DIR_MODULES,cacheDir,defaultsLoaded,fallbackToMemory,gui,homeDir,noSplash,systemDir,uiFontSize,userDir
+hfds DIR_MODULES,cacheDir,defaultsLoaded,fallbackToMemory,gui,homeDir,noSplash,systemDir,uiClassName,uiFontSize,userDir
 
 CLSS public final org.netbeans.core.startup.CLITestModuleReload
 cons public init()
@@ -331,6 +331,7 @@ intf org.netbeans.Stamps$Updater
 meth public java.awt.Component getComponent()
 meth public static java.awt.Image loadContent(boolean)
 meth public static org.netbeans.core.startup.Splash getInstance()
+meth public static void configureDefaultRenderingHints(java.awt.Graphics2D)
 meth public static void showAboutDialog(java.awt.Frame,javax.swing.JComponent)
 meth public void addToMaxSteps(int)
 meth public void cacheReady()
@@ -340,8 +341,8 @@ meth public void increment(int)
 meth public void print(java.lang.String)
 meth public void setRunning(boolean)
 supr java.lang.Object
-hfds ICON_1024,ICON_16,ICON_256,ICON_32,ICON_48,ICON_512,comp,frame,noBar,painter,splash,splashScreen
-hcls SplashComponent,SplashDialog,SplashPainter,SplashRunner
+hfds ICON_1024,ICON_16,ICON_256,ICON_32,ICON_48,ICON_512,USE_LAUNCHER_SPLASH,comp,frame,noBar,painter,splash,splashScreen
+hcls SplashComponent,SplashDialog,SplashPainter,SplashRunner,TextBox
 
 CLSS public org.netbeans.core.startup.StartLog
 cons public init()
@@ -738,6 +739,8 @@ meth public abstract void resultChanged(org.openide.util.LookupEvent)
 CLSS public org.openide.util.lookup.ProxyLookup
 cons protected init()
 cons public !varargs init(org.openide.util.Lookup[])
+cons public init(org.openide.util.lookup.ProxyLookup$Controller)
+innr public final static Controller
 meth protected !varargs final void setLookups(java.util.concurrent.Executor,org.openide.util.Lookup[])
 meth protected !varargs final void setLookups(org.openide.util.Lookup[])
 meth protected final org.openide.util.Lookup[] getLookups()

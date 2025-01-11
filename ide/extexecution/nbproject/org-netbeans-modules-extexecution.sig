@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.52.1
+#Version 1.75
 
 CLSS public abstract interface java.io.Closeable
 intf java.lang.AutoCloseable
@@ -12,6 +12,12 @@ meth public abstract void close() throws java.lang.Exception
 
 CLSS public abstract interface java.lang.Comparable<%0 extends java.lang.Object>
 meth public abstract int compareTo({java.lang.Comparable%0})
+
+CLSS public abstract interface !annotation java.lang.Deprecated
+ anno 0 java.lang.annotation.Documented()
+ anno 0 java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy value=RUNTIME)
+ anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[CONSTRUCTOR, FIELD, LOCAL_VARIABLE, METHOD, PACKAGE, PARAMETER, TYPE])
+intf java.lang.annotation.Annotation
 
 CLSS public abstract java.lang.Enum<%0 extends java.lang.Enum<{java.lang.Enum%0}>>
 cons protected init(java.lang.String,int)
@@ -28,7 +34,6 @@ meth public final java.lang.String name()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
-hfds name,ordinal
 
 CLSS public abstract interface !annotation java.lang.FunctionalInterface
  anno 0 java.lang.annotation.Documented()
@@ -106,6 +111,7 @@ meth public org.netbeans.api.extexecution.ExecutionDescriptor errLineBased(boole
  anno 0 org.netbeans.api.annotations.common.CheckReturnValue()
  anno 0 org.netbeans.api.annotations.common.NonNull()
 meth public org.netbeans.api.extexecution.ExecutionDescriptor errProcessorFactory(org.netbeans.api.extexecution.ExecutionDescriptor$InputProcessorFactory)
+ anno 0 java.lang.Deprecated()
  anno 0 org.netbeans.api.annotations.common.CheckReturnValue()
  anno 0 org.netbeans.api.annotations.common.NonNull()
  anno 1 org.netbeans.api.annotations.common.NullAllowed()
@@ -141,6 +147,7 @@ meth public org.netbeans.api.extexecution.ExecutionDescriptor outLineBased(boole
  anno 0 org.netbeans.api.annotations.common.CheckReturnValue()
  anno 0 org.netbeans.api.annotations.common.NonNull()
 meth public org.netbeans.api.extexecution.ExecutionDescriptor outProcessorFactory(org.netbeans.api.extexecution.ExecutionDescriptor$InputProcessorFactory)
+ anno 0 java.lang.Deprecated()
  anno 0 org.netbeans.api.annotations.common.CheckReturnValue()
  anno 0 org.netbeans.api.annotations.common.NonNull()
  anno 1 org.netbeans.api.annotations.common.NullAllowed()
@@ -149,6 +156,10 @@ meth public org.netbeans.api.extexecution.ExecutionDescriptor outProcessorFactor
  anno 0 org.netbeans.api.annotations.common.NonNull()
  anno 1 org.netbeans.api.annotations.common.NullAllowed()
 meth public org.netbeans.api.extexecution.ExecutionDescriptor postExecution(java.lang.Runnable)
+ anno 0 org.netbeans.api.annotations.common.CheckReturnValue()
+ anno 0 org.netbeans.api.annotations.common.NonNull()
+ anno 1 org.netbeans.api.annotations.common.NullAllowed()
+meth public org.netbeans.api.extexecution.ExecutionDescriptor postExecution(java.util.function.Consumer<java.lang.Integer>)
  anno 0 org.netbeans.api.annotations.common.CheckReturnValue()
  anno 0 org.netbeans.api.annotations.common.NonNull()
  anno 1 org.netbeans.api.annotations.common.NullAllowed()
@@ -176,6 +187,7 @@ hcls DescriptorData
 
 CLSS public abstract interface static org.netbeans.api.extexecution.ExecutionDescriptor$InputProcessorFactory
  outer org.netbeans.api.extexecution.ExecutionDescriptor
+ anno 0 java.lang.Deprecated()
 meth public abstract org.netbeans.api.extexecution.input.InputProcessor newInputProcessor(org.netbeans.api.extexecution.input.InputProcessor)
  anno 0 org.netbeans.api.annotations.common.NonNull()
  anno 1 org.netbeans.api.annotations.common.NonNull()
@@ -216,6 +228,7 @@ hfds LOGGER,descriptor,originalDisplayName,processCreator
 hcls ProgressAction,ProgressCancellable
 
 CLSS public final org.netbeans.api.extexecution.ExternalProcessBuilder
+ anno 0 java.lang.Deprecated()
 cons public init(java.lang.String)
  anno 1 org.netbeans.api.annotations.common.NonNull()
 intf java.util.concurrent.Callable<java.lang.Process>
@@ -246,12 +259,14 @@ hfds ESCAPED_PATTERN,LOGGER,PROXY_AUTHENTICATION_PASSWORD,PROXY_AUTHENTICATION_U
 hcls BuilderData
 
 CLSS public final org.netbeans.api.extexecution.ExternalProcessSupport
+ anno 0 java.lang.Deprecated()
 meth public static void destroy(java.lang.Process,java.util.Map<java.lang.String,java.lang.String>)
  anno 1 org.netbeans.api.annotations.common.NonNull()
  anno 2 org.netbeans.api.annotations.common.NonNull()
 supr java.lang.Object
 
 CLSS public final org.netbeans.api.extexecution.ProcessBuilder
+ anno 0 java.lang.Deprecated()
 intf java.util.concurrent.Callable<java.lang.Process>
 meth public java.lang.Process call() throws java.io.IOException
  anno 0 org.netbeans.api.annotations.common.NonNull()
@@ -274,6 +289,7 @@ hfds arguments,description,envVariables,executable,implementation,paths,redirect
 hcls LocalProcessFactory
 
 CLSS public abstract interface org.netbeans.api.extexecution.input.InputProcessor
+ anno 0 java.lang.Deprecated()
 intf java.io.Closeable
 meth public abstract void close() throws java.io.IOException
 meth public abstract void processInput(char[]) throws java.io.IOException
@@ -281,6 +297,7 @@ meth public abstract void processInput(char[]) throws java.io.IOException
 meth public abstract void reset() throws java.io.IOException
 
 CLSS public final org.netbeans.api.extexecution.input.InputProcessors
+ anno 0 java.lang.Deprecated()
 meth public !varargs static org.netbeans.api.extexecution.input.InputProcessor proxy(org.netbeans.api.extexecution.input.InputProcessor[])
  anno 0 org.netbeans.api.annotations.common.NonNull()
  anno 1 org.netbeans.api.annotations.common.NonNull()
@@ -303,12 +320,14 @@ meth public static org.netbeans.api.extexecution.input.InputProcessor printing(o
 supr java.lang.Object
 
 CLSS public abstract interface org.netbeans.api.extexecution.input.InputReader
+ anno 0 java.lang.Deprecated()
 intf java.io.Closeable
 meth public abstract int readInput(org.netbeans.api.extexecution.input.InputProcessor) throws java.io.IOException
  anno 1 org.netbeans.api.annotations.common.NullAllowed()
 meth public abstract void close() throws java.io.IOException
 
 CLSS public final org.netbeans.api.extexecution.input.InputReaderTask
+ anno 0 java.lang.Deprecated()
 intf java.lang.Runnable
 intf org.openide.util.Cancellable
 meth public boolean cancel()
@@ -326,6 +345,7 @@ hfds delegate
 hcls BaseInputReader
 
 CLSS public final org.netbeans.api.extexecution.input.InputReaders
+ anno 0 java.lang.Deprecated()
 innr public final static FileInput
 meth public static org.netbeans.api.extexecution.input.InputReader forFile(java.io.File,java.nio.charset.Charset)
  anno 0 org.netbeans.api.annotations.common.NonNull()
@@ -362,6 +382,7 @@ meth public abstract org.netbeans.api.extexecution.input.InputReaders$FileInput 
  anno 0 org.netbeans.api.annotations.common.CheckForNull()
 
 CLSS public abstract interface org.netbeans.api.extexecution.input.LineProcessor
+ anno 0 java.lang.Deprecated()
 intf java.io.Closeable
 meth public abstract void close()
 meth public abstract void processLine(java.lang.String)
@@ -369,6 +390,7 @@ meth public abstract void processLine(java.lang.String)
 meth public abstract void reset()
 
 CLSS public final org.netbeans.api.extexecution.input.LineProcessors
+ anno 0 java.lang.Deprecated()
 meth public !varargs static org.netbeans.api.extexecution.input.LineProcessor proxy(org.netbeans.api.extexecution.input.LineProcessor[])
  anno 0 org.netbeans.api.annotations.common.NonNull()
  anno 1 org.netbeans.api.annotations.common.NonNull()
@@ -461,12 +483,13 @@ meth public java.lang.String getDescription()
  anno 0 org.netbeans.api.annotations.common.NonNull()
 meth public java.util.List<java.lang.String> getArguments()
  anno 0 org.netbeans.api.annotations.common.NonNull()
+meth public java.util.List<java.lang.String> getRawArguments()
 meth public static java.util.List<org.netbeans.api.extexecution.startup.StartupExtender> getExtenders(org.openide.util.Lookup,org.netbeans.api.extexecution.startup.StartupExtender$StartMode)
  anno 0 org.netbeans.api.annotations.common.NonNull()
  anno 1 org.netbeans.api.annotations.common.NonNull()
  anno 2 org.netbeans.api.annotations.common.NonNull()
 supr java.lang.Object
-hfds LOG,arguments,description
+hfds LOG,arguments,description,rawArguments
 
 CLSS public final static !enum org.netbeans.api.extexecution.startup.StartupExtender$StartMode
  outer org.netbeans.api.extexecution.startup.StartupExtender
@@ -485,10 +508,12 @@ hfds mode
 CLSS abstract interface org.netbeans.api.extexecution.startup.package-info
 
 CLSS public org.netbeans.spi.extexecution.ProcessBuilderFactory
+ anno 0 java.lang.Deprecated()
 meth public static org.netbeans.api.extexecution.ProcessBuilder createProcessBuilder(org.netbeans.spi.extexecution.ProcessBuilderImplementation,java.lang.String)
 supr java.lang.Object
 
 CLSS public abstract interface org.netbeans.spi.extexecution.ProcessBuilderImplementation
+ anno 0 java.lang.Deprecated()
 meth public abstract java.lang.Process createProcess(java.lang.String,java.lang.String,java.util.List<java.lang.String>,java.util.List<java.lang.String>,java.util.Map<java.lang.String,java.lang.String>,boolean) throws java.io.IOException
  anno 0 org.netbeans.api.annotations.common.NonNull()
  anno 1 org.netbeans.api.annotations.common.NonNull()
@@ -498,6 +523,7 @@ meth public abstract java.lang.Process createProcess(java.lang.String,java.lang.
  anno 5 org.netbeans.api.annotations.common.NonNull()
 
 CLSS public abstract interface org.netbeans.spi.extexecution.destroy.ProcessDestroyPerformer
+ anno 0 java.lang.Deprecated()
 meth public abstract void destroy(java.lang.Process,java.util.Map<java.lang.String,java.lang.String>)
 
 CLSS abstract interface org.netbeans.spi.extexecution.destroy.package-info
@@ -530,6 +556,7 @@ CLSS public abstract interface static !annotation org.netbeans.spi.extexecution.
  anno 0 java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy value=SOURCE)
  anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[TYPE, METHOD])
 intf java.lang.annotation.Annotation
+meth public abstract !hasdefault boolean argumentsQuoted()
 meth public abstract !hasdefault int position()
 meth public abstract java.lang.String displayName()
 meth public abstract org.netbeans.api.extexecution.startup.StartupExtender$StartMode[] startMode()

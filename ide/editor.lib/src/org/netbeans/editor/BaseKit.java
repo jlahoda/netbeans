@@ -34,7 +34,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.prefs.PreferenceChangeEvent;
 import javax.swing.Action;
 import javax.swing.InputMap;
@@ -73,10 +72,6 @@ import static javax.swing.text.DefaultEditorKit.selectionUpAction;
 import javax.swing.text.EditorKit;
 import javax.swing.text.Position;
 import javax.swing.text.View;
-import javax.swing.undo.AbstractUndoableEdit;
-import javax.swing.undo.CannotRedoException;
-import javax.swing.undo.CannotUndoException;
-import javax.swing.undo.UndoableEdit;
 import org.netbeans.api.editor.caret.CaretInfo;
 import org.netbeans.api.editor.EditorActionRegistration;
 import org.netbeans.api.editor.EditorActionRegistrations;
@@ -102,7 +97,6 @@ import org.netbeans.api.editor.caret.MoveCaretsOrigin;
 import org.netbeans.spi.editor.caret.CaretMoveHandler;
 import org.netbeans.lib.editor.util.swing.PositionRegion;
 import org.netbeans.modules.editor.lib.SettingsConversions;
-import org.netbeans.modules.editor.lib2.CaretUndo;
 import org.netbeans.modules.editor.lib2.RectangularSelectionCaretAccessor;
 import org.netbeans.modules.editor.lib2.RectangularSelectionUtils;
 import org.netbeans.modules.editor.lib2.actions.KeyBindingsUpdater;
@@ -116,7 +110,6 @@ import org.openide.util.Lookup;
 import org.openide.util.LookupEvent;
 import org.openide.util.LookupListener;
 import org.openide.util.NbBundle;
-import org.openide.util.Pair;
 import org.openide.util.WeakListeners;
 import org.openide.util.WeakSet;
 
@@ -449,6 +442,7 @@ public class BaseKit extends DefaultEditorKit {
      * <code>MimeLookup</code> instead to find <code>EditorKit</code> for a mime
      * type.
      */
+    @Deprecated
     public static BaseKit getKit(Class kitClass) {
         if (kitClass != null && BaseKit.class.isAssignableFrom(kitClass) && BaseKit.class != kitClass) {
             String mimeType = KitsTracker.getInstance().findMimeType(kitClass);
@@ -468,14 +462,13 @@ public class BaseKit extends DefaultEditorKit {
                 BaseKit kit = (BaseKit)kits.get(classToTry);
                 if (kit == null) {
                     try {
-                        kit = (BaseKit)classToTry.newInstance();
+                        kit = (BaseKit)classToTry.getDeclaredConstructor().newInstance();
                         kits.put(classToTry, kit);
                         return kit;
-                    } catch (IllegalAccessException e) {
-                        LOG.log(Level.WARNING, "Can't instantiate editor kit from: " + classToTry, e); //NOI18N
-                    } catch (InstantiationException e) {
+                    } catch (ReflectiveOperationException e) {
                         LOG.log(Level.WARNING, "Can't instantiate editor kit from: " + classToTry, e); //NOI18N
                     }
+                    //NOI18N
                     
                     if (classToTry != BaseKit.class) {
                         classToTry = BaseKit.class;
@@ -556,6 +549,7 @@ public class BaseKit extends DefaultEditorKit {
      * @deprecated Please use Lexer instead, for details see
      *   <a href="@org-netbeans-modules-lexer@/overview-summary.html">Lexer</a>.
      */
+    @Deprecated
     public Syntax createSyntax(Document doc) {
         return new DefaultSyntax();
     }
@@ -566,6 +560,7 @@ public class BaseKit extends DefaultEditorKit {
      * @deprecated Please use Editor Indentation API instead, for details see
      *   <a href="@org-netbeans-modules-editor-indent@/overview-summary.html">Editor Indentation</a>.
      */
+    @Deprecated
     public Syntax createFormatSyntax(Document doc) {
         return createSyntax(doc);
     }
@@ -576,6 +571,7 @@ public class BaseKit extends DefaultEditorKit {
      * @deprecated Please use Lexer instead, for details see
      *   <a href="@org-netbeans-modules-lexer@/overview-summary.html">Lexer</a>.
      */
+    @Deprecated
     public SyntaxSupport createSyntaxSupport(BaseDocument doc) {
         return new SyntaxSupport(doc);
     }
@@ -606,6 +602,7 @@ public class BaseKit extends DefaultEditorKit {
      *  {@link #createPrintEditorUI(BaseDocument, boolean, boolean)} is being
      *  called instead.
      */
+    @Deprecated
     protected EditorUI createPrintEditorUI(BaseDocument doc) {
         return new EditorUI(doc);
     }
@@ -642,12 +639,12 @@ public class BaseKit extends DefaultEditorKit {
                 
                 for(org.netbeans.api.editor.settings.MultiKeyBinding mkb : mkbList) {
                     List<KeyStroke> keyStrokes = mkb.getKeyStrokeList();
-                    MultiKeyBinding editorMkb = new MultiKeyBinding(keyStrokes.toArray(new KeyStroke[keyStrokes.size()]), mkb.getActionName());
+                    MultiKeyBinding editorMkb = new MultiKeyBinding(keyStrokes.toArray(new KeyStroke[0]), mkb.getActionName());
                     editorMkbList.add(editorMkb);
                 }
                 
                 // go through all levels and collect key bindings
-                km.load(editorMkbList.toArray(new JTextComponent.KeyBinding[editorMkbList.size()]), getActionMap());
+                km.load(editorMkbList.toArray(new JTextComponent.KeyBinding[0]), getActionMap());
                 km.setDefaultAction(getActionMap().get(defaultKeyTypedAction));
 
                 kitKeymaps.put(mimePath, km);
@@ -908,12 +905,13 @@ public class BaseKit extends DefaultEditorKit {
             LOG.fine("} End of " + EditorPreferencesKeys.CUSTOM_ACTION_LIST + " for '" + getContentType() + "'"); //NOI18N
         }
         
-        return customActions == null ? null : customActions.toArray(new Action[customActions.size()]);
+        return customActions == null ? null : customActions.toArray(new Action[0]);
     }
     
     /**
      * @deprecated Without any replacement. 
      */
+    @Deprecated
     protected Action[] getMacroActions() {
         return new Action[0];
     }                               
@@ -1049,6 +1047,7 @@ public class BaseKit extends DefaultEditorKit {
      *   <a href="@org-netbeans-modules-editor-lib2@/overview-summary.html">Editor Library 2</a>.
      */
 //    @EditorActionRegistration(name = defaultKeyTypedAction)
+    @Deprecated
     public static class DefaultKeyTypedAction extends LocalBaseAction {
 
         static final long serialVersionUID = 3069164318144463899L;
@@ -1250,9 +1249,10 @@ public class BaseKit extends DefaultEditorKit {
                                         Object[] r = transaction.textTyped();
                                         String insertionText = r == null ? cmd : (String) r[0];
                                         int caretPosition = r == null ? -1 : (Integer) r[1];
+                                        boolean formatNewLines = r == null ? false : (Boolean) r[2];
 
                                         try {
-                                            performTextInsertion(target, insertionOffset.getOffset(), insertionText, caretPosition);
+                                            performTextInsertion(target, insertionOffset.getOffset(), insertionText, caretPosition, formatNewLines);
                                             result[0] = Boolean.TRUE;
                                             result[1] = insertionText;
                                         } catch (BadLocationException ble) {
@@ -1346,7 +1346,7 @@ public class BaseKit extends DefaultEditorKit {
          * Check whether there was any important character typed
          * so that the line should be possibly reformatted.
          *
-         * @deprecated Please use <a href="@org-netbeans-modules-editor-indent@/org/netbeans/modules/editor/indent/spi/AutomatedIndenting.html">AutomatedIndentig</a>
+         * @deprecated Please use <a href="@org-netbeans-modules-editor-indent-support@/org/netbeans/modules/editor/indent/spi/support/AutomatedIndenting.html">AutomatedIndentig</a>
          *   or Typing Hooks instead, for details see
          *   <a href="@org-netbeans-modules-editor-lib2@/overview-summary.html">Editor Library 2</a>.
          */
@@ -1357,7 +1357,7 @@ public class BaseKit extends DefaultEditorKit {
         // Private implementation
         // --------------------------------------------------------------------
 
-        private void performTextInsertion(JTextComponent target, int insertionOffset, String insertionText, int caretPosition) throws BadLocationException {
+        private void performTextInsertion(JTextComponent target, int insertionOffset, String insertionText, int caretPosition, boolean formatNewLines) throws BadLocationException {
             final BaseDocument doc = (BaseDocument)target.getDocument();
             
             try {
@@ -1374,25 +1374,48 @@ public class BaseKit extends DefaultEditorKit {
                 editorUI.getWordMatch().clear(); // reset word matching
                 Boolean overwriteMode = (Boolean)editorUI.getProperty(EditorUI.OVERWRITE_MODE_PROPERTY);
                 boolean ovr = (overwriteMode != null && overwriteMode.booleanValue());
-                if (Utilities.isSelectionShowing(caret)) { // valid selection
-                    try {
-                        doc.putProperty(DOC_REPLACE_SELECTION_PROPERTY, true);
-                        replaceSelection(target, insertionOffset, caret, insertionText, ovr);
-                    } finally {
-                        doc.putProperty(DOC_REPLACE_SELECTION_PROPERTY, null);
+                int currentInsertOffset = insertionOffset;
+                int targetCaretOffset = caretPosition;
+                for (int i = 0; i < insertionText.length();) {
+                    int end = insertionText.indexOf('\n', i);
+                    if (end == (-1) || !formatNewLines) end = insertionText.length();
+                    String currentLine = insertionText.substring(i, end);
+                    if (i == 0) {
+                        if (Utilities.isSelectionShowing(caret)) { // valid selection
+                            try {
+                                doc.putProperty(DOC_REPLACE_SELECTION_PROPERTY, true);
+                                replaceSelection(target, currentInsertOffset, caret, currentLine, ovr);
+                            } finally {
+                                doc.putProperty(DOC_REPLACE_SELECTION_PROPERTY, null);
+                            }
+                        } else { // no selection
+                            if (ovr && currentInsertOffset < doc.getLength() && doc.getChars(currentInsertOffset, 1)[0] != '\n') { //NOI18N
+                                // overwrite current char
+                                insertString(doc, currentInsertOffset, caret, currentLine, true);
+                            } else { // insert mode
+                                insertString(doc, currentInsertOffset, caret, currentLine, false);
+                            }
+                        }
+                    } else {
+                        Indent indent = Indent.get(doc);
+                        indent.lock();
+                        try {
+                            currentInsertOffset = indent.indentNewLine(currentInsertOffset);
+                        } finally {
+                            indent.unlock();
+                        }
+                        insertString(doc, currentInsertOffset, caret, currentLine, false);
                     }
-                } else { // no selection
-                    if (ovr && insertionOffset < doc.getLength() && doc.getChars(insertionOffset, 1)[0] != '\n') { //NOI18N
-                        // overwrite current char
-                        insertString(doc, insertionOffset, caret, insertionText, true);
-                    } else { // insert mode
-                        insertString(doc, insertionOffset, caret, insertionText, false);
+                    if (caretPosition >= i && caretPosition <= end) {
+                        targetCaretOffset = currentInsertOffset - insertionOffset + caretPosition - i;
                     }
+                    currentInsertOffset += currentLine.length();
+                    i = end + 1;
                 }
 
-                if (caretPosition != -1) {
+                if (targetCaretOffset != -1) {
                     assert caretPosition >= 0 && (caretPosition <= insertionText.length());
-                    caret.setDot(insertionOffset + caretPosition);
+                    caret.setDot(insertionOffset + targetCaretOffset);
                 }
             } finally {
                 DocumentUtilities.setTypingModification(doc, false);
@@ -1412,6 +1435,7 @@ public class BaseKit extends DefaultEditorKit {
      * @deprecated Please do not subclass this class. Use Typing Hooks instead, for details see
      *   <a href="@org-netbeans-modules-editor-lib2@/overview-summary.html">Editor Library 2</a>.
      */
+    @Deprecated
     public static class InsertBreakAction extends LocalBaseAction {
 
         static final long serialVersionUID =7966576342334158659L;
@@ -1995,6 +2019,7 @@ public class BaseKit extends DefaultEditorKit {
      * @deprecated Please do not subclass this class. Use Typing Hooks instead, for details see
      *   <a href="@org-netbeans-modules-editor-lib2@/overview-summary.html">Editor Library 2</a>.
      */
+    @Deprecated
     public static class DeleteCharAction extends LocalBaseAction {
 
         protected boolean nextChar;
@@ -2473,7 +2498,7 @@ public class BaseKit extends DefaultEditorKit {
 //	    p0 = p+1;
 //	  }
 //	}
-//	if (p0 < str.length()) v.add(str.substring(p0, str.length())); else v.add("");
+//	if (p0 < str.length()) v.add(str.substring(p0)); else v.add("");
 //
 //	return (String [])v.toArray(new String [0]);
 //      }
@@ -3681,6 +3706,7 @@ public class BaseKit extends DefaultEditorKit {
     /**
      * @deprecated use {@link CamelCaseInterceptor} instead
      */
+    @Deprecated
     public static class NextWordAction extends LocalBaseAction {
 
         static final long serialVersionUID =-5909906947175434032L;
@@ -3723,6 +3749,7 @@ public class BaseKit extends DefaultEditorKit {
     /**
      * @deprecated use {@link CamelCaseInterceptor} instead
      */
+    @Deprecated
     public static class PreviousWordAction extends LocalBaseAction {
 
         static final long serialVersionUID =-5465143382669785799L;
@@ -4077,8 +4104,8 @@ public class BaseKit extends DefaultEditorKit {
                 LOG.fine("BaseKit.KeymapTracker('" + mimeType + "') refreshing keymap " + (refreshActions ? "and actions" : "")); //NOI18N
             }
             
-            MultiKeymap keymap;
-            JTextComponent [] arr;
+            final MultiKeymap keymap;
+            final JTextComponent [] arr;
             
             synchronized (KEYMAPS_AND_ACTIONS_LOCK) {
                 MimePath mimePath = MimePath.parse(mimeType);
@@ -4093,16 +4120,23 @@ public class BaseKit extends DefaultEditorKit {
                 kitKeymaps.remove(mimePath);
                 
                 keymap = getKeymap();
-                arr = components.toArray(new JTextComponent[components.size()]);
+                arr = components.toArray(new JTextComponent[0]);
             }
             
-            for(JTextComponent c : arr) {
-                if (c != null) {
-                    c.setKeymap(keymap);
+            Runnable pushKeymapChange = () -> {
+                for(JTextComponent c : arr) {
+                    if (c != null) {
+                        c.setKeymap(keymap);
+                    }
                 }
+                
+                searchableKit.fireActionsChange();
+            };
+            if(SwingUtilities.isEventDispatchThread()) {
+                pushKeymapChange.run();
+            } else {
+                SwingUtilities.invokeLater(pushKeymapChange);
             }
-
-            searchableKit.fireActionsChange();
         }
         
     } // End of KeymapTracker class
@@ -4242,7 +4276,7 @@ public class BaseKit extends DefaultEditorKit {
 
     /** Increase/decrease indentation of the block of the code. Document
     * is atomically locked during the operation.
-    * <br/>
+    * <br>
     * If indent is in between multiplies of shiftwidth it jumps to multiplies of shiftwidth.
     * 
     * @param doc document to operate on

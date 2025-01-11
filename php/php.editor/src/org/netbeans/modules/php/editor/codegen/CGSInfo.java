@@ -23,8 +23,11 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import javax.swing.text.JTextComponent;
+import org.netbeans.api.annotations.common.CheckForNull;
+import org.netbeans.api.annotations.common.NullAllowed;
 import org.netbeans.modules.csl.spi.ParserResult;
 import org.netbeans.modules.parsing.api.ParserManager;
 import org.netbeans.modules.parsing.api.ResultIterator;
@@ -33,6 +36,7 @@ import org.netbeans.modules.parsing.api.UserTask;
 import org.netbeans.modules.parsing.spi.ParseException;
 import org.netbeans.modules.php.api.PhpVersion;
 import org.netbeans.modules.php.editor.CodeUtils;
+import org.netbeans.modules.php.editor.NavUtils;
 import org.netbeans.modules.php.editor.api.ElementQuery.Index;
 import org.netbeans.modules.php.editor.api.ElementQueryFactory;
 import org.netbeans.modules.php.editor.api.NameKind;
@@ -46,21 +50,25 @@ import org.netbeans.modules.php.editor.api.elements.TypeElement;
 import org.netbeans.modules.php.editor.api.elements.TypeNameResolver;
 import org.netbeans.modules.php.editor.codegen.CGSGenerator.GenWay;
 import org.netbeans.modules.php.editor.elements.TypeNameResolverImpl;
+import org.netbeans.modules.php.editor.model.Model;
 import org.netbeans.modules.php.editor.model.ModelUtils;
 import org.netbeans.modules.php.editor.model.impl.Type;
 import org.netbeans.modules.php.editor.model.impl.VariousUtils;
-import org.netbeans.modules.php.editor.NavUtils;
-import org.netbeans.modules.php.editor.model.Model;
 import org.netbeans.modules.php.editor.parser.PHPParseResult;
 import org.netbeans.modules.php.editor.parser.api.Utils;
 import org.netbeans.modules.php.editor.parser.astnodes.ASTNode;
 import org.netbeans.modules.php.editor.parser.astnodes.Block;
 import org.netbeans.modules.php.editor.parser.astnodes.BodyDeclaration;
 import org.netbeans.modules.php.editor.parser.astnodes.ClassDeclaration;
+import org.netbeans.modules.php.editor.parser.astnodes.ClassInstanceCreation;
 import org.netbeans.modules.php.editor.parser.astnodes.Comment;
+import org.netbeans.modules.php.editor.parser.astnodes.EnumDeclaration;
 import org.netbeans.modules.php.editor.parser.astnodes.FieldsDeclaration;
+import org.netbeans.modules.php.editor.parser.astnodes.FormalParameter;
 import org.netbeans.modules.php.editor.parser.astnodes.Identifier;
+import org.netbeans.modules.php.editor.parser.astnodes.IntersectionType;
 import org.netbeans.modules.php.editor.parser.astnodes.MethodDeclaration;
+import org.netbeans.modules.php.editor.parser.astnodes.NullableType;
 import org.netbeans.modules.php.editor.parser.astnodes.PHPDocBlock;
 import org.netbeans.modules.php.editor.parser.astnodes.PHPDocTag;
 import org.netbeans.modules.php.editor.parser.astnodes.PHPDocTypeNode;
@@ -69,12 +77,14 @@ import org.netbeans.modules.php.editor.parser.astnodes.Program;
 import org.netbeans.modules.php.editor.parser.astnodes.SingleFieldDeclaration;
 import org.netbeans.modules.php.editor.parser.astnodes.TraitDeclaration;
 import org.netbeans.modules.php.editor.parser.astnodes.TypeDeclaration;
+import org.netbeans.modules.php.editor.parser.astnodes.UnionType;
 import org.netbeans.modules.php.editor.parser.astnodes.Variable;
 import org.netbeans.modules.php.editor.parser.astnodes.visitors.DefaultVisitor;
 import org.openide.filesystems.FileObject;
 import org.openide.util.Exceptions;
 
 /**
+ * Constructor Getter Setter Info.
  *
  * @author Petr Pisl
  */
@@ -90,6 +100,7 @@ public final class CGSInfo {
     private final List<Property> possibleGettersSetters;
     private final List<MethodProperty> possibleMethods;
     private final JTextComponent textComp;
+    private final PhpVersion phpVersion;
     /**
      * how to generate  getters and setters method name
      */
@@ -97,10 +108,10 @@ public final class CGSInfo {
     private boolean generateDoc;
     private boolean fluentSetter;
     private boolean isPublicModifier;
-    private PhpVersion phpVersion;
+    @NullAllowed
+    private Index index;
 
-
-    private CGSInfo(JTextComponent textComp) {
+    private CGSInfo(JTextComponent textComp, PhpVersion phpVersion) {
         properties = new ArrayList<>();
         instanceProperties = new ArrayList<>();
         possibleGetters = new ArrayList<>();
@@ -112,12 +123,23 @@ public final class CGSInfo {
         hasConstructor = false;
         this.generateDoc = true;
         fluentSetter = false;
-        isPublicModifier = false;
+        isPublicModifier = true;
         this.howToGenerate = CGSGenerator.GenWay.AS_JAVA;
+        this.phpVersion = phpVersion != null ? phpVersion : PhpVersion.getDefault();
     }
 
     public static CGSInfo getCGSInfo(JTextComponent textComp) {
-        CGSInfo info = new CGSInfo(textComp);
+        PhpVersion phpVersion = null;
+        FileObject file = NavUtils.getFile(textComp.getDocument());
+        if (file != null) {
+            phpVersion = CodeUtils.getPhpVersion(file);
+        }
+        return getCGSInfo(textComp, phpVersion);
+    }
+
+    // for unit tests
+    static CGSInfo getCGSInfo(JTextComponent textComp, PhpVersion phpVersion) {
+        CGSInfo info = new CGSInfo(textComp, phpVersion);
         info.findPropertyInScope();
         return info;
     }
@@ -194,9 +216,9 @@ public final class CGSInfo {
         return phpVersion;
     }
 
-    // for unit tests
-    void setPhpVersion(PhpVersion phpVersion) {
-        this.phpVersion = phpVersion;
+    @CheckForNull
+    public Index getIndex() {
+        return index;
     }
 
     public TypeNameResolver createTypeNameResolver(MethodElement method) {
@@ -222,7 +244,6 @@ public final class CGSInfo {
         if (file == null) {
             return;
         }
-        phpVersion = CodeUtils.getPhpVersion(file);
         try {
             ParserManager.parse(Collections.singleton(Source.create(textComp.getDocument())), new UserTask() {
 
@@ -240,33 +261,35 @@ public final class CGSInfo {
         PHPParseResult info = (PHPParseResult) resultIterator.getParserResult();
         if (info != null) {
             int caretOffset = textComp.getCaretPosition();
-            TypeDeclaration typeDecl = findEnclosingClassOrTrait(info, caretOffset);
+            ASTNode typeDecl = findEnclosingType(info, caretOffset);
             if (typeDecl != null) {
-                className = typeDecl.getName().getName();
+                className = getTypeName(typeDecl);
                 if (className != null) {
                     FileObject fileObject = info.getSnapshot().getSource().getFileObject();
-                    Index index = ElementQueryFactory.getIndexQuery(info);
+                    index = ElementQueryFactory.getIndexQuery(info);
                     final ElementFilter forFilesFilter = ElementFilter.forFiles(fileObject);
                     QualifiedName fullyQualifiedName = VariousUtils.getFullyQualifiedName(
                             QualifiedName.create(className),
                             caretOffset,
                             info.getModel().getVariableScope(caretOffset));
-                    Set<ClassElement> classes = forFilesFilter.filter(index.getClasses(NameKind.exact(fullyQualifiedName)));
-                    for (ClassElement classElement : classes) {
-                        ElementFilter forNotDeclared = ElementFilter.forExcludedElements(index.getDeclaredMethods(classElement));
+                    Set<TypeElement> types = forFilesFilter.filter(index.getTypes(NameKind.exact(fullyQualifiedName)));
+                    for (TypeElement typeElement : types) {
+                        ElementFilter forNotDeclared = ElementFilter.forExcludedElements(index.getDeclaredMethods(typeElement));
                         final Set<MethodElement> accessibleMethods = new HashSet<>();
-                        accessibleMethods.addAll(forNotDeclared.filter(index.getAccessibleMethods(classElement, classElement)));
+                        accessibleMethods.addAll(forNotDeclared.filter(index.getAccessibleMethods(typeElement, typeElement)));
+                        if (typeElement instanceof ClassElement) {
+                            accessibleMethods.addAll(
+                                    ElementFilter.forExcludedElements(accessibleMethods).filter(forNotDeclared.filter(index.getConstructors((ClassElement) typeElement))));
+                        }
                         accessibleMethods.addAll(
-                                ElementFilter.forExcludedElements(accessibleMethods).filter(forNotDeclared.filter(index.getConstructors(classElement))));
-                        accessibleMethods.addAll(
-                                ElementFilter.forExcludedElements(accessibleMethods).filter(forNotDeclared.filter(index.getAccessibleMagicMethods(classElement))));
+                                ElementFilter.forExcludedElements(accessibleMethods).filter(forNotDeclared.filter(index.getAccessibleMagicMethods(typeElement))));
                         final Set<TypeElement> preferedTypes = forFilesFilter.prefer(ElementTransformation.toMemberTypes().transform(accessibleMethods));
-                        final TreeElement<TypeElement> enclosingType = index.getInheritedTypesAsTree(classElement, preferedTypes);
+                        final TreeElement<TypeElement> enclosingType = index.getInheritedTypesAsTree(typeElement, preferedTypes);
                         final List<MethodProperty> methodProperties = new ArrayList<>();
                         final Set<MethodElement> methods = ElementFilter.forMembersOfTypes(preferedTypes).filter(accessibleMethods);
                         for (final MethodElement methodElement : methods) {
                             if (!methodElement.isFinal()) {
-                                methodProperties.add(new MethodProperty(methodElement, enclosingType));
+                                methodProperties.add(new MethodProperty(methodElement, enclosingType, phpVersion));
                             }
                         }
                         Collections.<MethodProperty>sort(methodProperties, MethodProperty.getComparator());
@@ -279,6 +302,11 @@ public final class CGSInfo {
 
                 PropertiesVisitor visitor = new PropertiesVisitor(existingGetters, existingSetters, Utils.getRoot(info));
                 visitor.scan(typeDecl);
+                if (typeDecl instanceof EnumDeclaration) {
+                    // Enum can't have a constructor
+                    // to avoid adding the list of code generators, change this
+                    hasConstructor = true;
+                }
                 String propertyName;
                 boolean existGetter, existSetter;
                 for (Property property : getProperties()) {
@@ -300,22 +328,48 @@ public final class CGSInfo {
     }
 
     /**
-     * Find out class enclosing caret
-     * @param info
+     * Find out the type enclosing the caret.
+     *
+     * @param info parser result
      * @param offset caret offset
-     * @return class declaration or null
+     * @return type declaration or class instance creation(anonymous class),
+     * otherwise {@code null}
      */
-    private TypeDeclaration findEnclosingClassOrTrait(ParserResult info, int offset) {
+    @CheckForNull
+    private ASTNode findEnclosingType(ParserResult info, int offset) {
         List<ASTNode> nodes = NavUtils.underCaret(info, offset);
         int count = nodes.size();
         if (count > 2) {  // the cursor has to be in class block see issue #142417
             ASTNode declaration = nodes.get(count - 2);
             ASTNode block = nodes.get(count - 1);
-            if (block instanceof Block &&  (declaration instanceof ClassDeclaration || declaration instanceof TraitDeclaration)) {
-                return (TypeDeclaration) declaration;
+            if (block instanceof Block && isValidEnclosingType(declaration)) {
+                return declaration;
             }
         }
         return null;
+    }
+
+    private boolean isValidEnclosingType(ASTNode typeDeclaration) {
+        return typeDeclaration instanceof ClassDeclaration
+                || typeDeclaration instanceof TraitDeclaration
+                || typeDeclaration instanceof EnumDeclaration
+                || (typeDeclaration instanceof ClassInstanceCreation && ((ClassInstanceCreation) typeDeclaration).isAnonymous());
+    }
+
+    @CheckForNull
+    private String getTypeName(@NullAllowed ASTNode typeDeclaration) {
+        if (typeDeclaration == null) {
+            return null;
+        }
+        String typeName = null;
+        if (typeDeclaration instanceof TypeDeclaration) {
+            typeName = ((TypeDeclaration) typeDeclaration).getName().getName();
+        } else if (typeDeclaration instanceof ClassInstanceCreation) {
+            typeName = CodeUtils.extractClassName((ClassInstanceCreation) typeDeclaration);
+        } else {
+            assert false : "Expected: TypeDeclaration or ClassInstanceCreation, but got" + typeDeclaration.getClass(); // NOI18N
+        }
+        return typeName;
     }
 
     private class PropertiesVisitor extends DefaultVisitor {
@@ -337,13 +391,41 @@ public final class CGSInfo {
                 Variable variable = singleFieldDeclaration.getName();
                 if (variable != null && variable.getName() instanceof Identifier) {
                     String name = ((Identifier) variable.getName()).getName();
-                    Property property = new Property(name, node.getModifier(), getPropertyType(singleFieldDeclaration));
+                    String type = getPropertyType(node, singleFieldDeclaration);
+                    Property property = new Property(name, node.getModifier(), type);
                     if (!BodyDeclaration.Modifier.isStatic(node.getModifier())) {
                         getInstanceProperties().add(property);
                     }
                     getProperties().add(property);
                 }
             }
+        }
+
+        private String getPropertyType(FieldsDeclaration fieldsDeclaration, SingleFieldDeclaration singleFieldDeclaration) {
+            String type = ""; // NOI18N
+            if (fieldsDeclaration.getFieldType() == null || !phpVersion.hasPropertyTypes()) {
+                type = getPropertyType(singleFieldDeclaration);
+            } else {
+                // PHP 7.4 or newer
+                if (fieldsDeclaration.getFieldType() instanceof UnionType) {
+                    type = VariousUtils.getUnionType((UnionType) fieldsDeclaration.getFieldType());
+                } else if (fieldsDeclaration.getFieldType() instanceof IntersectionType) {
+                    // NETBEANS-5599 PHP 8.1 Pure intersection types
+                    type = VariousUtils.getIntersectionType((IntersectionType) fieldsDeclaration.getFieldType());
+                } else {
+                    QualifiedName qualifiedName = QualifiedName.create(fieldsDeclaration.getFieldType());
+                    if (qualifiedName != null) {
+                        type = qualifiedName.toString();
+                        if (fieldsDeclaration.getFieldType() instanceof NullableType) {
+                            type = CodeUtils.NULLABLE_TYPE_PREFIX + type;
+                        }
+                    }
+                }
+                assert !type.isEmpty() : "couldn't get the qualified name from the field type(" + fieldsDeclaration.getFieldType() + ")"; // NOI18N
+                // if type is empty, check QualifiedName.create method (and fix it if posiible)
+                // or get type name using another way
+            }
+            return type;
         }
 
         private String getPropertyType(final ASTNode node) {
@@ -369,10 +451,19 @@ public final class CGSInfo {
         }
 
         private String getFirstTypeFromTag(final PHPDocTypeTag typeTag) {
+            boolean canBeNull = canBeNull(typeTag);
             String result = ""; //NOI18N
             for (PHPDocTypeNode typeNode : typeTag.getTypes()) {
                 String type = typeNode.getValue();
-                if (!Type.isPrimitive(type) && !VariousUtils.isSpecialClassName(type)) {
+                if (phpVersion.hasScalarAndReturnTypes()
+                        && !VariousUtils.isSpecialClassName(type)
+                        && !Type.isInvalidPropertyType(type)) {
+                    result = typeNode.isArray() ? Type.ARRAY : type;
+                    if (canBeNull && phpVersion.hasNullableTypes()) {
+                        result = CodeUtils.NULLABLE_TYPE_PREFIX + result;
+                    }
+                    break;
+                } else if (!Type.isPrimitive(type) && !VariousUtils.isSpecialClassName(type)) {
                     result = typeNode.isArray() ? Type.ARRAY : type;
                     break;
                 }
@@ -380,10 +471,33 @@ public final class CGSInfo {
             return result;
         }
 
+        private boolean canBeNull(final PHPDocTypeTag typeTag) {
+            boolean canBeNull = false;
+            if (typeTag.getTypes().size() > 1) {
+                for (PHPDocTypeNode typeNode : typeTag.getTypes()) {
+                    String type = typeNode.getValue().toLowerCase(Locale.ROOT);
+                    if (type.equals(Type.NULL)) {
+                        canBeNull = true;
+                        break;
+                    }
+                }
+            }
+            return canBeNull;
+        }
+
         @Override
         public void visit(MethodDeclaration node) {
             String name = node.getFunction().getFunctionName().getName();
             String possibleProperty;
+            if (CodeUtils.isConstructor(node)) {
+                // [NETBEANS-4443] PHP 8.0 Constructor Property Promotion
+                for (FormalParameter parameter : node.getFunction().getFormalParameters()) {
+                    FieldsDeclaration fieldsDeclaration = FieldsDeclaration.create(parameter);
+                    if (fieldsDeclaration != null) {
+                        scan(fieldsDeclaration);
+                    }
+                }
+            }
             if (name != null) {
                 if (name.startsWith(CGSGenerator.START_OF_GETTER)) {
                     possibleProperty = name.substring(CGSGenerator.START_OF_GETTER.length());
@@ -405,12 +519,12 @@ public final class CGSInfo {
          */
         private List<String> getAllPossibleProperties(String possibleProperty) {
             List<String> allPossibleProperties = new LinkedList<>();
-            possibleProperty = possibleProperty.toLowerCase();
-            allPossibleProperties.add(possibleProperty);
-            if (possibleProperty.startsWith("_")) { // NOI18N
-                allPossibleProperties.add(possibleProperty.substring(1));
+            String lowerCasePossibleProperty = possibleProperty.toLowerCase(Locale.ROOT);
+            allPossibleProperties.add(lowerCasePossibleProperty);
+            if (lowerCasePossibleProperty.startsWith("_")) { // NOI18N
+                allPossibleProperties.add(lowerCasePossibleProperty.substring(1));
             } else {
-                allPossibleProperties.add("_" + possibleProperty); // NOI18N
+                allPossibleProperties.add("_" + lowerCasePossibleProperty); // NOI18N
             }
             return allPossibleProperties;
         }

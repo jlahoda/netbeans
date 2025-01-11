@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 9.14.1
+#Version 9.36
 
 CLSS public java.io.IOException
 cons public init()
@@ -7,7 +7,6 @@ cons public init(java.lang.String)
 cons public init(java.lang.String,java.lang.Throwable)
 cons public init(java.lang.Throwable)
 supr java.lang.Exception
-hfds serialVersionUID
 
 CLSS public abstract interface java.io.Serializable
 
@@ -21,7 +20,6 @@ cons public init(java.lang.String)
 cons public init(java.lang.String,java.lang.Throwable)
 cons public init(java.lang.Throwable)
 supr java.lang.Throwable
-hfds serialVersionUID
 
 CLSS public java.lang.Object
 cons public init()
@@ -58,8 +56,6 @@ meth public void printStackTrace(java.io.PrintStream)
 meth public void printStackTrace(java.io.PrintWriter)
 meth public void setStackTrace(java.lang.StackTraceElement[])
 supr java.lang.Object
-hfds CAUSE_CAPTION,EMPTY_THROWABLE_ARRAY,NULL_CAUSE_MESSAGE,SELF_SUPPRESSION_MESSAGE,SUPPRESSED_CAPTION,SUPPRESSED_SENTINEL,UNASSIGNED_STACK,backtrace,cause,detailMessage,serialVersionUID,stackTrace,suppressedExceptions
-hcls PrintStreamOrWriter,SentinelHolder,WrappedPrintStream,WrappedPrintWriter
 
 CLSS public abstract interface java.lang.annotation.Annotation
 meth public abstract boolean equals(java.lang.Object)
@@ -96,7 +92,6 @@ intf java.io.Serializable
 meth public java.lang.Object getSource()
 meth public java.lang.String toString()
 supr java.lang.Object
-hfds serialVersionUID
 
 CLSS public abstract org.openide.filesystem.spi.FileChooserBuilderProvider
 cons public init()
@@ -394,6 +389,7 @@ meth public org.openide.filesystems.FileObject copy(org.openide.filesystems.File
 meth public org.openide.filesystems.FileObject createData(java.lang.String) throws java.io.IOException
 meth public org.openide.filesystems.FileObject getCanonicalFileObject() throws java.io.IOException
 meth public org.openide.filesystems.FileObject getFileObject(java.lang.String)
+meth public org.openide.filesystems.FileObject getFileObject(java.lang.String,boolean)
 meth public org.openide.filesystems.FileObject move(org.openide.filesystems.FileLock,org.openide.filesystems.FileObject,java.lang.String,java.lang.String) throws java.io.IOException
 meth public org.openide.filesystems.FileObject readSymbolicLink() throws java.io.IOException
 meth public org.openide.util.Lookup getLookup()
@@ -507,6 +503,7 @@ meth public static boolean isArchiveFile(java.net.URL)
 meth public static boolean isArchiveFile(org.openide.filesystems.FileObject)
 meth public static boolean isParentOf(org.openide.filesystems.FileObject,org.openide.filesystems.FileObject)
 meth public static boolean isRecursiveSymbolicLink(org.openide.filesystems.FileObject) throws java.io.IOException
+meth public static boolean isValidFileName(java.lang.String)
 meth public static java.io.File archiveOrDirForURL(java.net.URL)
 meth public static java.io.File normalizeFile(java.io.File)
 meth public static java.io.File toFile(org.openide.filesystems.FileObject)
@@ -524,8 +521,10 @@ meth public static java.net.URL getArchiveRoot(java.net.URL)
 meth public static java.net.URL urlForArchiveOrDir(java.io.File)
 meth public static java.net.URLStreamHandler nbfsURLStreamHandler()
  anno 0 java.lang.Deprecated()
+meth public static java.nio.file.Path toPath(org.openide.filesystems.FileObject)
 meth public static java.util.List<java.lang.String> getMIMETypeExtensions(java.lang.String)
 meth public static java.util.List<org.openide.filesystems.FileObject> getOrder(java.util.Collection<org.openide.filesystems.FileObject>,boolean)
+meth public static java.util.function.BiFunction<java.lang.String,java.lang.Object,java.lang.Object> defaultAttributesTransformer()
 meth public static org.openide.filesystems.FileChangeListener weakFileChangeListener(org.openide.filesystems.FileChangeListener,java.lang.Object)
 meth public static org.openide.filesystems.FileObject copyFile(org.openide.filesystems.FileObject,org.openide.filesystems.FileObject,java.lang.String) throws java.io.IOException
 meth public static org.openide.filesystems.FileObject copyFile(org.openide.filesystems.FileObject,org.openide.filesystems.FileObject,java.lang.String,java.lang.String) throws java.io.IOException
@@ -542,6 +541,7 @@ meth public static org.openide.filesystems.FileObject getSystemConfigFile(java.l
 meth public static org.openide.filesystems.FileObject getSystemConfigRoot()
 meth public static org.openide.filesystems.FileObject moveFile(org.openide.filesystems.FileObject,org.openide.filesystems.FileObject,java.lang.String) throws java.io.IOException
 meth public static org.openide.filesystems.FileObject toFileObject(java.io.File)
+meth public static org.openide.filesystems.FileObject toFileObject(java.nio.file.Path)
 meth public static org.openide.filesystems.FileObject[] fromFile(java.io.File)
  anno 0 java.lang.Deprecated()
 meth public static org.openide.filesystems.FileStatusListener weakFileStatusListener(org.openide.filesystems.FileStatusListener,java.lang.Object)
@@ -553,6 +553,7 @@ meth public static void addRecursiveListener(org.openide.filesystems.FileChangeL
 meth public static void addRecursiveListener(org.openide.filesystems.FileChangeListener,java.io.File,java.util.concurrent.Callable<java.lang.Boolean>)
 meth public static void copy(java.io.InputStream,java.io.OutputStream) throws java.io.IOException
 meth public static void copyAttributes(org.openide.filesystems.FileObject,org.openide.filesystems.FileObject) throws java.io.IOException
+meth public static void copyAttributes(org.openide.filesystems.FileObject,org.openide.filesystems.FileObject,java.util.function.BiFunction<java.lang.String,java.lang.Object,java.lang.Object>) throws java.io.IOException
 meth public static void extractJar(org.openide.filesystems.FileObject,java.io.InputStream) throws java.io.IOException
  anno 0 java.lang.Deprecated()
 meth public static void preventFileChooserSymlinkTraversal(javax.swing.JFileChooser,java.io.File)
@@ -564,7 +565,7 @@ meth public static void removeRecursiveListener(org.openide.filesystems.FileChan
 meth public static void setMIMEType(java.lang.String,java.lang.String)
 meth public static void setOrder(java.util.List<org.openide.filesystems.FileObject>) throws java.io.IOException
 supr java.lang.Object
-hfds LOG,REFRESH_RP,archiveRootProviders,diskFileSystem,normalizedRef,refreshTask,transientAttributes
+hfds DEFAULT_ATTR_TRANSFORMER,ILLEGAL_FILENAME_CHARACTERS,LOG,REFRESH_RP,archiveRootProviderCache,archiveRootProviders,diskFileSystem,normalizedRef,refreshTask,transientAttributes
 hcls NonCanonicalizingFile
 
 CLSS public abstract interface org.openide.filesystems.ImageDecorator

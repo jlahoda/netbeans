@@ -25,6 +25,7 @@ import java.awt.Dimension;
 import java.awt.Rectangle;
 import java.awt.Graphics;
 import java.awt.Color;
+import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.Image;
 import java.awt.Toolkit;
@@ -117,20 +118,20 @@ public class GlyphGutter extends JComponent implements Annotations.AnnotationsLi
     private int glyphGutterWidth;
 
     /** Predefined width of the glyph icons */
-    private final static int glyphWidth = 16;
+    private static final int glyphWidth = 16;
 
     /** Predefined width of the cycling button */
-    private final static int glyphButtonWidth = 9;
+    private static final int glyphButtonWidth = 9;
     
     /** Predefined left area width - area between left border of the number
      *  and the left border of the glyphgutter
      */
-    private final static int leftGap= 10;
+    private static final int leftGap= 10;
 
     /** Predefined right area width - area between right border of the number
      *  and the right border of the glyphgutter
      */
-    private final static int rightGap= 4;
+    private static final int rightGap= 4;
     
     /** Whether the line numbers are shown or not */
     private boolean showLineNumbers = true;
@@ -512,7 +513,7 @@ public class GlyphGutter extends JComponent implements Annotations.AnnotationsLi
                         Element lineElementRoot = doc.getDefaultRootElement();
                         ParagraphViewDescriptor pViewDesc = lockedVH.getParagraphViewDescriptor(pViewIndex);
                         int pViewStartOffset = pViewDesc.getStartOffset();
-                        int lineIndex = lineElementRoot.getElementIndex(pViewStartOffset);;
+                        int lineIndex = lineElementRoot.getElementIndex(pViewStartOffset);
                         int lineEndOffset = lineElementRoot.getElement(lineIndex).getEndOffset();
                         int lineWithAnno = -1;
                         float rowHeight = lockedVH.getDefaultRowHeight();
@@ -858,11 +859,26 @@ public class GlyphGutter extends JComponent implements Annotations.AnnotationsLi
         /** end line of the dragging. */
         private int dragEndOffset;
 
-        public @Override void mouseClicked(MouseEvent e) {
+        @Override
+        public void mouseClicked(MouseEvent e) {
+            EditorUI eui = editorUI;
+            if (eui == null) {
+                return;
+            }
+            JTextComponent cmp = eui.getComponent();
+            if (cmp.hasFocus()) {
+                handleMouseClicked(e);
+            } else {
+                cmp.requestFocusInWindow();
+                // allow focus events to propagate
+                EventQueue.invokeLater(() -> handleMouseClicked(e));
+            }
+        }
+
+        private void handleMouseClicked(MouseEvent e) {
             EditorUI eui = editorUI;
             if (eui==null)
                 return;
-            eui.getComponent().requestFocus();
             // cycling button was clicked by left mouse button
             if (e.getModifiers() == InputEvent.BUTTON1_MASK) {
                 if (isMouseOverCycleButton(e)) {
@@ -898,7 +914,7 @@ public class GlyphGutter extends JComponent implements Annotations.AnnotationsLi
                             Object defAction = a.getValue("default-action");
                             if (toInvoke == null && defAction != null && ((Boolean) defAction)) {
                                 Object supportedAnnotationTypes = a.getValue("default-action-excluded-annotation-types");
-                                if (supportedAnnotationTypes == null || !(supportedAnnotationTypes instanceof String[]) || Collections.disjoint(Arrays.asList((String[]) supportedAnnotationTypes), annotationTypes)) {
+                                if (!(supportedAnnotationTypes instanceof String[]) || Collections.disjoint(Arrays.asList((String[]) supportedAnnotationTypes), annotationTypes)) {
                                     toInvoke = a;
                                 }
                             }

@@ -97,33 +97,23 @@ public class JpaControllerIterator implements TemplateWizard.Iterator {
         final ProgressReporter reporter = new ProgressReporterDelegate( 
                 progressContributor, progressPanel ); 
 
-        final Runnable r = new Runnable() {
-
-            @Override
-            public void run() {
-                try {
-                    handle.start();
-                    int progressStepCount = getProgressStepCount(entities.size());
-                    progressContributor.start(progressStepCount);
-                    generateJpaControllers(reporter, entities, project, 
-                            jpaControllerPackage, jpaControllerPackageFileObject, 
-                            null, true);
-                    progressContributor.progress(progressStepCount);
-                } catch (IOException ioe) {
-                    Logger.getLogger(JpaControllerIterator.class.getName()).log(Level.INFO, null, ioe);
-                    NotifyDescriptor nd = new NotifyDescriptor.Message(ioe.getLocalizedMessage(), NotifyDescriptor.ERROR_MESSAGE);
-                    DialogDisplayer.getDefault().notify(nd);
-                } finally {
-                    progressContributor.finish();
-                    SwingUtilities.invokeLater(new Runnable() {
-
-                        @Override
-                        public void run() {
-                            progressPanel.close();
-                        }
-                    });
-                    handle.finish();
-                }
+        final Runnable r = () -> {
+            try {
+                handle.start();
+                int progressStepCount = getProgressStepCount(entities.size());
+                progressContributor.start(progressStepCount);
+                generateJpaControllers(reporter, entities, project,
+                        jpaControllerPackage, jpaControllerPackageFileObject,
+                        null, true);
+                progressContributor.progress(progressStepCount);
+            } catch (IOException ioe) {
+                Logger.getLogger(JpaControllerIterator.class.getName()).log(Level.INFO, null, ioe);
+                NotifyDescriptor nd = new NotifyDescriptor.Message(ioe.getLocalizedMessage(), NotifyDescriptor.ERROR_MESSAGE);
+                DialogDisplayer.getDefault().notify(nd);
+            } finally {
+                progressContributor.finish();
+                SwingUtilities.invokeLater( () -> progressPanel.close() );
+                handle.finish();
             }
         };
 
@@ -197,7 +187,7 @@ public class JpaControllerIterator implements TemplateWizard.Iterator {
                         JpaControllerUtil.class.getClassLoader().
                         getResourceAsStream(RESOURCE_FOLDER + 
                                 EXCEPTION_CLASS_NAMES[i] + ".java.txt"), "UTF-8"); //NOI18N
-                content = content.replaceAll("__PACKAGE__", exceptionPackage);
+                content = content.replace("__PACKAGE__", exceptionPackage);
                 FileObject target = FileUtil.createData(exceptionFolder, 
                         EXCEPTION_CLASS_NAMES[i] + ".java");//NOI18N
                 String projectEncoding = JpaControllerUtil.

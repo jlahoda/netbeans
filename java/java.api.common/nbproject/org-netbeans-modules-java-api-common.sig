@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.128
+#Version 1.149
 
 CLSS public abstract java.awt.Component
 cons protected init()
@@ -159,8 +159,6 @@ meth public java.awt.im.InputMethodRequests getInputMethodRequests()
 meth public java.awt.image.ColorModel getColorModel()
 meth public java.awt.image.VolatileImage createVolatileImage(int,int)
 meth public java.awt.image.VolatileImage createVolatileImage(int,int,java.awt.ImageCapabilities) throws java.awt.AWTException
-meth public java.awt.peer.ComponentPeer getPeer()
- anno 0 java.lang.Deprecated()
 meth public java.beans.PropertyChangeListener[] getPropertyChangeListeners()
 meth public java.beans.PropertyChangeListener[] getPropertyChangeListeners(java.lang.String)
 meth public java.lang.String getName()
@@ -274,8 +272,6 @@ meth public void transferFocusUpCycle()
 meth public void update(java.awt.Graphics)
 meth public void validate()
 supr java.lang.Object
-hfds FOCUS_TRAVERSABLE_DEFAULT,FOCUS_TRAVERSABLE_SET,FOCUS_TRAVERSABLE_UNKNOWN,LOCK,acc,actionListenerK,adjustmentListenerK,appContext,autoFocusTransferOnDisposal,background,backgroundEraseDisabled,boundsOp,bufferStrategy,changeSupport,coalesceEventsParams,coalesceMap,coalescingEnabled,componentListener,componentListenerK,componentOrientation,componentSerializedDataVersion,compoundShape,containerListenerK,cursor,dropTarget,enabled,eventCache,eventLog,eventMask,focusListener,focusListenerK,focusLog,focusTraversalKeyPropertyNames,focusTraversalKeys,focusTraversalKeysEnabled,focusable,font,foreground,graphicsConfig,height,hierarchyBoundsListener,hierarchyBoundsListenerK,hierarchyListener,hierarchyListenerK,ignoreRepaint,incRate,inputMethodListener,inputMethodListenerK,isAddNotifyComplete,isFocusTraversableOverridden,isInc,isPacked,itemListenerK,keyListener,keyListenerK,locale,log,maxSize,maxSizeSet,minSize,minSizeSet,mixingCutoutRegion,mixingLog,mouseListener,mouseListenerK,mouseMotionListener,mouseMotionListenerK,mouseWheelListener,mouseWheelListenerK,name,nameExplicitlySet,newEventsOnly,objectLock,ownedWindowK,parent,peer,peerFont,popups,prefSize,prefSizeSet,requestFocusController,serialVersionUID,textListenerK,valid,visible,width,windowClosingException,windowFocusListenerK,windowListenerK,windowStateListenerK,x,y
-hcls AWTTreeLock,BltSubRegionBufferStrategy,DummyRequestFocusController,FlipSubRegionBufferStrategy,ProxyCapabilities,SingleBufferStrategy
 
 CLSS public java.awt.Container
 cons public init()
@@ -360,8 +356,6 @@ meth public void transferFocusDownCycle()
 meth public void update(java.awt.Graphics)
 meth public void validate()
 supr java.awt.Component
-hfds EMPTY_ARRAY,INCLUDE_SELF,SEARCH_HEAVYWEIGHTS,component,containerListener,containerSerializedDataVersion,descendUnconditionallyWhenValidating,descendantsCount,dispatcher,eventLog,focusCycleRoot,focusTraversalPolicy,focusTraversalPolicyProvider,isJavaAwtSmartInvalidate,layoutMgr,listeningBoundsChildren,listeningChildren,log,mixingLog,modalAppContext,modalComp,numOfHWComponents,numOfLWComponents,preserveBackgroundColor,printing,printingThreads,serialPersistentFields,serialVersionUID
-hcls DropTargetEventTargetFilter,EventTargetFilter,MouseEventTargetFilter,WakingRunnable
 
 CLSS public abstract interface java.awt.MenuContainer
 meth public abstract boolean postEvent(java.awt.Event)
@@ -403,7 +397,6 @@ meth public void setPreferred(boolean)
 meth public void setShortDescription(java.lang.String)
 meth public void setValue(java.lang.String,java.lang.Object)
 supr java.lang.Object
-hfds TRANSIENT,classRef,displayName,expert,hidden,name,preferred,shortDescription,table
 
 CLSS public abstract interface java.io.Serializable
 
@@ -431,7 +424,6 @@ meth public final java.lang.String name()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
-hfds name,ordinal
 
 CLSS public abstract interface !annotation java.lang.FunctionalInterface
  anno 0 java.lang.annotation.Documented()
@@ -488,7 +480,6 @@ intf java.io.Serializable
 meth public java.lang.Object getSource()
 meth public java.lang.String toString()
 supr java.lang.Object
-hfds serialVersionUID
 
 CLSS public abstract interface javax.accessibility.Accessible
 meth public abstract javax.accessibility.AccessibleContext getAccessibleContext()
@@ -517,7 +508,6 @@ meth public void repaint(long,int,int,int,int)
 meth public void revalidate()
 meth public void validate()
 supr javax.swing.JLabel
-hfds DEFAULT_NO_FOCUS_BORDER,SAFE_NO_FOCUS_BORDER
 
 CLSS public abstract javax.swing.JComponent
 cons public init()
@@ -675,8 +665,6 @@ meth public void unregisterKeyboardAction(javax.swing.KeyStroke)
 meth public void update(java.awt.Graphics)
 meth public void updateUI()
 supr java.awt.Container
-hfds ACTIONMAP_CREATED,ANCESTOR_INPUTMAP_CREATED,ANCESTOR_USING_BUFFER,AUTOSCROLLS_SET,COMPLETELY_OBSCURED,CREATED_DOUBLE_BUFFER,DEBUG_GRAPHICS_LOADED,FOCUS_INPUTMAP_CREATED,FOCUS_TRAVERSAL_KEYS_BACKWARD_SET,FOCUS_TRAVERSAL_KEYS_FORWARD_SET,INHERITS_POPUP_MENU,INPUT_VERIFIER_SOURCE_KEY,IS_DOUBLE_BUFFERED,IS_OPAQUE,IS_PAINTING_TILE,IS_PRINTING,IS_PRINTING_ALL,IS_REPAINTING,KEYBOARD_BINDINGS_KEY,KEY_EVENTS_ENABLED,NEXT_FOCUS,NOT_OBSCURED,OPAQUE_SET,PARTIALLY_OBSCURED,REQUEST_FOCUS_DISABLED,RESERVED_1,RESERVED_2,RESERVED_3,RESERVED_4,RESERVED_5,RESERVED_6,WHEN_IN_FOCUSED_WINDOW_BINDINGS,WIF_INPUTMAP_CREATED,WRITE_OBJ_COUNTER_FIRST,WRITE_OBJ_COUNTER_LAST,aaTextInfo,actionMap,alignmentX,alignmentY,ancestorInputMap,autoscrolls,border,clientProperties,componentObtainingGraphicsFrom,componentObtainingGraphicsFromLock,defaultLocale,flags,focusController,focusInputMap,inputVerifier,isAlignmentXSet,isAlignmentYSet,managingFocusBackwardTraversalKeys,managingFocusForwardTraversalKeys,paintingChild,popupMenu,readObjectCallbacks,revalidateRunnableScheduled,tempRectangles,uiClassID,verifyInputWhenFocusTarget,vetoableChangeSupport,windowInputMap
-hcls ActionStandin,IntVector,KeyboardState,ReadObjectCallback
 
 CLSS public javax.swing.JLabel
 cons public init()
@@ -722,7 +710,6 @@ meth public void setVerticalAlignment(int)
 meth public void setVerticalTextPosition(int)
 meth public void updateUI()
 supr javax.swing.JComponent
-hfds LABELED_BY_PROPERTY,defaultIcon,disabledIcon,disabledIconSet,horizontalAlignment,horizontalTextPosition,iconTextGap,mnemonic,mnemonicIndex,text,uiClassID,verticalAlignment,verticalTextPosition
 
 CLSS public javax.swing.JPanel
 cons public init()
@@ -738,7 +725,6 @@ meth public javax.swing.plaf.PanelUI getUI()
 meth public void setUI(javax.swing.plaf.PanelUI)
 meth public void updateUI()
 supr javax.swing.JComponent
-hfds uiClassID
 
 CLSS public abstract interface javax.swing.ListCellRenderer<%0 extends java.lang.Object>
 meth public abstract java.awt.Component getListCellRendererComponent(javax.swing.JList<? extends {javax.swing.ListCellRenderer%0}>,{javax.swing.ListCellRenderer%0},int,boolean,boolean)
@@ -806,15 +792,6 @@ meth public static org.netbeans.modules.java.api.common.Roots propertyBased(java
 supr java.lang.Object
 hfds hint,isSourceRoot,support,supportIncludes,type
 hcls MyAccessor,NonSourceRoots,PropSourceRoots
-
-CLSS public final org.netbeans.modules.java.api.common.SingleJavaSourceRunActionProvider
-cons public init()
-intf org.netbeans.spi.project.ActionProvider
-meth public boolean isActionEnabled(java.lang.String,org.openide.util.Lookup)
-meth public java.lang.String[] getSupportedActions()
-meth public void invokeAction(java.lang.String,org.openide.util.Lookup)
-supr java.lang.Object
-hfds FILE_ARGUMENTS,FILE_VM_OPTIONS
 
 CLSS public org.netbeans.modules.java.api.common.SourceRoots
 fld public final static java.lang.String DEFAULT_SOURCE_LABEL
@@ -1173,7 +1150,7 @@ meth public org.netbeans.api.java.classpath.ClassPath findClassPath(org.openide.
 meth public org.netbeans.api.java.classpath.ClassPath getProjectSourcesClassPath(java.lang.String)
 meth public org.netbeans.api.java.classpath.ClassPath[] getProjectClassPaths(java.lang.String)
 supr org.netbeans.modules.java.api.common.classpath.AbstractClassPathProvider
-hfds INTERNAL_MOUDLE_BINARIES_PATH,LOG,buildModulesDirProperty,dirCache,eval,executeClassPath,executeModulePath,helper,javacClassPath,modSensitivePrjPathFcts,modulePath,platformType,processorClassPath,processorModulePath,projectDirectory,sourceCache,testCache,testExecuteClassPath,testExecuteModulePath,testJavacClassPath,testModulePath,testProcessorClassPath,testProcessorModulePath,urlCache
+hfds INTERNAL_MODULE_BINARIES_PATH,LOG,buildModulesDirProperty,dirCache,eval,executeClassPath,executeModulePath,helper,javacClassPath,modSensitivePrjPathFcts,modulePath,platformType,processorClassPath,processorModulePath,projectDirectory,sourceCache,testCache,testExecuteClassPath,testExecuteModulePath,testJavacClassPath,testModulePath,testProcessorClassPath,testProcessorModulePath,urlCache
 hcls Cache,Filter,Location,Owner,TranslateBuildModules
 
 CLSS public final static org.netbeans.modules.java.api.common.classpath.MultiModuleClassPathProvider$Builder
@@ -2160,6 +2137,14 @@ supr javax.swing.JPanel
 hfds LOG,TESTS_RE,addButton,fcMessage,jLabel1,jScrollPane1,lastUsedFolder,projectFolder,relatedFolderFilter,relatedFolderList,removeButton,roots
 hcls ContextFileFilter,DNDHandle,FileListTransferable,Renderer
 
+CLSS public org.netbeans.modules.java.api.common.queries.GenericModuleInfoAccessibilityQuery
+cons public init()
+intf org.netbeans.spi.java.queries.AccessibilityQueryImplementation2
+meth public org.netbeans.spi.java.queries.AccessibilityQueryImplementation2$Result isPubliclyAccessible(org.openide.filesystems.FileObject)
+supr java.lang.Object
+hfds LOG,path2Result,sourcePath2Listener
+hcls ClassPathListener,CleanPath2Result,ResultImpl,TextJFO
+
 CLSS public abstract interface org.netbeans.modules.java.api.common.queries.MultiModuleGroupQuery
 innr public final static Result
 meth public abstract org.netbeans.api.project.SourceGroup[] filterModuleGroups(java.lang.String,org.netbeans.api.project.SourceGroup[])
@@ -2426,6 +2411,12 @@ meth protected static java.net.URI[] convertURLsToURIs(java.net.URL[])
 supr java.lang.Object
 hcls Accessor
 
+CLSS public abstract interface org.netbeans.spi.java.queries.AccessibilityQueryImplementation2
+innr public abstract interface static Result
+meth public abstract org.netbeans.spi.java.queries.AccessibilityQueryImplementation2$Result isPubliclyAccessible(org.openide.filesystems.FileObject)
+ anno 0 org.netbeans.api.annotations.common.CheckForNull()
+ anno 1 org.netbeans.api.annotations.common.NonNull()
+
 CLSS public abstract interface org.netbeans.spi.project.ActionProvider
 fld public final static java.lang.String COMMAND_BUILD = "build"
 fld public final static java.lang.String COMMAND_CLEAN = "clean"
@@ -2437,6 +2428,7 @@ fld public final static java.lang.String COMMAND_DEBUG_STEP_INTO = "debug.stepin
 fld public final static java.lang.String COMMAND_DEBUG_TEST_SINGLE = "debug.test.single"
 fld public final static java.lang.String COMMAND_DELETE = "delete"
 fld public final static java.lang.String COMMAND_MOVE = "move"
+fld public final static java.lang.String COMMAND_PRIME = "prime"
 fld public final static java.lang.String COMMAND_PROFILE = "profile"
 fld public final static java.lang.String COMMAND_PROFILE_SINGLE = "profile.single"
 fld public final static java.lang.String COMMAND_PROFILE_TEST_SINGLE = "profile.test.single"

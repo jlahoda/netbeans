@@ -32,10 +32,13 @@
 // Rebuild the lexer and parser:
 // 1. Update Css3.g
 // 2. Update the lexer/parser sources by running
-//    ant -Dantlr.jar=<PATH_TO_ANTLR3_JAR> generate-antlr-parser
+//    ant generate-antlr-parser
 //    from the module directory (ide/css.lib)
 // 3. Rerun unittests
 // 4. Commit Css3.g together with generated Css3Lexer.java and Css3Parser.java
+//
+// INFO: It is known, that the grammar does not compile without warnings
+//
 
 grammar Css3;
 
@@ -44,7 +47,7 @@ grammar Css3;
 //}
 
 @header {
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -101,6 +104,10 @@ package org.netbeans.modules.css.lib;
     private boolean tokenNameEquals(String tokenImage) {
         return tokenImage.equalsIgnoreCase(input.LT(1).getText());
     }
+    
+    private boolean tokenNameEquals2(String tokenImage) {
+        return tokenImage.equalsIgnoreCase(input.LT(2).getText());
+    }
 
     private boolean tokenNameIs(String[] tokens) {
         for(String tokenImage : tokens) {
@@ -116,7 +123,7 @@ package org.netbeans.modules.css.lib;
             && input.LT(1).getText().startsWith(prefix);
     }
 
-/**
+    /**
      * Use the current stacked followset to work out the valid tokens that
      * can follow on from the current point in the parse, then recover by
      * eating tokens that are not a member of the follow set we compute.
@@ -193,7 +200,7 @@ package org.netbeans.modules.css.lib;
         }
     }
 
-    /**
+        /**
          * synces to next RBRACE "}" taking nesting into account
          */
         protected void syncToRBRACE(int nest)
@@ -246,7 +253,7 @@ package org.netbeans.modules.css.lib;
 }
 
 @lexer::header {
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -278,6 +285,7 @@ styleSheet
     :
     	ws?
     	( charSet ws? )?
+        ( layerStatement ws? )?
         imports?
         namespaces?
         body?
@@ -311,18 +319,81 @@ charSetValue
 
 imports
 	:
-	( importItem ws? SEMI ws? )+
+	(
+            ( importItem ws? SEMI ws? )
+            |
+            {isScssSource()}? ( sass_use ws? SEMI ws? )
+            |
+            {isScssSource()}? ( sass_forward ws? SEMI ws? )
+        )+
 	;
 
 importItem
     :
-        IMPORT_SYM ws? resourceIdentifier ((ws? mediaQueryList)=>ws? mediaQueryList)?
+        IMPORT_SYM ws? resourceIdentifier ws? importLayer? ((ws? mediaQueryList)=>ws? mediaQueryList)?
         |
         //multiple imports in one directive
-        {isScssSource()}? IMPORT_SYM ws? resourceIdentifier (ws? COMMA ws? resourceIdentifier)* ((ws? mediaQueryList)=>ws? mediaQueryList)?
+        {isScssSource()}? IMPORT_SYM ws? resourceIdentifier (ws? COMMA ws? resourceIdentifier)* ws? importLayer? ((ws? mediaQueryList)=>ws? mediaQueryList)?
         |
-        {isLessSource()}? IMPORT_SYM ws? (LPAREN less_import_types RPAREN ws?)? resourceIdentifier ((ws? mediaQueryList)=>ws? mediaQueryList)?
+        {isLessSource()}? IMPORT_SYM ws? (LPAREN less_import_types RPAREN ws?)? resourceIdentifier ws? importLayer? ((ws? mediaQueryList)=>ws? mediaQueryList)?
     ;
+
+importLayer
+    :
+    {tokenNameEquals("layer")}? IDENT (LPAREN ws? layerName ws? RPAREN)?
+    ;
+
+sass_use
+    :
+        SASS_USE ws resourceIdentifier (ws sass_use_as)? (ws sass_use_with)?
+    ;
+
+sass_use_as
+    :
+    {tokenNameEquals("as")}? IDENT ws IDENT
+    ;
+
+sass_use_with
+    :
+    {tokenNameEquals("with")}? IDENT ws? LPAREN ws? sass_use_with_declaration  (ws? COMMA ws? sass_use_with_declaration)*  ws? RPAREN
+    ;
+
+sass_use_with_declaration
+    :
+    cp_variable ws? COLON ws? cp_expression
+    ;
+
+
+sass_forward
+    :
+        SASS_FORWARD ws resourceIdentifier ( ws ( sass_forward_hide |  sass_forward_show))? ({tokenNameEquals2("as")}? ws sass_forward_as)? ({tokenNameEquals2("with")}? ws sass_forward_with)?
+    ;
+
+sass_forward_as
+    :
+    {tokenNameEquals("as")}? IDENT ws IDENT
+    ;
+
+sass_forward_with
+    :
+    {tokenNameEquals("with")}? IDENT ws? LPAREN ws? sass_forward_with_declaration  (ws? COMMA ws? sass_forward_with_declaration)*  ws? RPAREN
+    ;
+
+sass_forward_with_declaration
+    :
+    cp_variable ws? COLON ws? cp_expression
+    ;
+
+sass_forward_hide
+    :
+    {tokenNameEquals("hide")}? IDENT ws IDENT (ws? COMMA ws? IDENT)*
+    ;
+
+sass_forward_show
+    :
+    {tokenNameEquals("show")}? IDENT ws IDENT (ws? COMMA ws? IDENT)*
+    ;
+
 media
     : MEDIA_SYM ws?
     (
@@ -458,20 +529,168 @@ supportsDisjunction
         : (key_or ws supportsInParens)
         ;
 
-supportsInParens
+supportsInParens options {backtrack=true;}
 	:
-	LPAREN ws? (supportsCondition | supportsFeature) ws? RPAREN
+	LPAREN ws? supportsCondition ws? RPAREN
+	| supportsFeature
+        | function
+        // this is still lacking ( <any-value>?) - lets see whether this becomes
+        // a problem or not
 	;
-	
+
 supportsFeature
 	:
 	supportsDecl
 	;
-	
+
 supportsDecl
 	:
-	declaration
+	LPAREN ws? declaration ws? RPAREN
 	;
+
+containerAtRule options {backtrack=true;}
+	:
+	(CONTAINER_SYM ws containerCondition ws? LBRACE) => CONTAINER_SYM ws containerCondition ws? LBRACE ws? syncToFollow body? RBRACE
+	| CONTAINER_SYM ws containerName ws containerCondition ws? LBRACE ws? syncToFollow body? RBRACE
+	;
+
+containerCondition
+        :
+        NOT ws containerQueryInParens
+        | containerQueryInParens (ws containerQueryWithOperator)?
+        ;
+
+containerQueryWithOperator
+        :
+        containerQueryConjunction (ws containerQueryConjunction)*
+        | containerQueryDisjunction (ws containerQueryDisjunction)*
+        ;
+
+containerQueryConjunction
+        : (key_and ws containerQueryInParens)
+        ;
+
+containerQueryDisjunction
+        : (key_or ws containerQueryInParens)
+        ;
+
+containerQueryInParens options {backtrack=true;}
+	:
+	LPAREN ws? containerCondition ws? RPAREN
+	| sizeFeature
+	| {tokenNameEquals("style")}? IDENT ws? LPAREN ws? styleQuery ws? RPAREN
+        | function
+        // this is still lacking ( <any-value>?) - lets see whether this becomes
+        // a problem or not
+	;
+
+containerName
+        : IDENT
+        ;
+
+styleQuery:
+        styleCondition
+        | styleFeature
+        ;
+
+styleCondition:
+        NOT ws styleInParens
+        | styleInParens (ws styleConditionWithOperator)
+        ;
+
+styleConditionWithOperator
+        :
+        styleQueryConjunction (ws styleQueryConjunction)*
+        | styleQueryDisjunction (ws styleQueryDisjunction)*
+        ;
+
+styleQueryConjunction
+        : (key_and ws styleInParens)
+        ;
+
+styleQueryDisjunction
+        : (key_or ws styleInParens)
+        ;
+
+styleInParens options {backtrack=true;}
+        :
+        LPAREN ws? styleCondition ws? RPAREN
+        | LPAREN ws? styleFeature ws? RPAREN
+        | function
+        // this is still lacking ( <any-value>?) - lets see whether this becomes
+        // a problem or not
+        ;
+
+sizeFeature options {backtrack=true;}
+        :
+        LPAREN ws? sizeFeatureFixedValue ws? RPAREN
+        | LPAREN ws? sizeFeatureRangeSingle ws? RPAREN
+        | LPAREN ws? sizeFeatureRangeBetweenLt ws? RPAREN
+        | LPAREN ws? sizeFeatureRangeBetweenGt ws? RPAREN
+        ;
+
+sizeFeatureFixedValue
+        :
+        sizeFeatureName ( ws? COLON ws? sizeFeatureValue)?
+        ;
+
+sizeFeatureRangeSingle
+        :
+        (sizeFeatureName | sizeFeatureValue) ws? (OPEQ | LESS | LESS_OR_EQ | GREATER | GREATER_OR_EQ) ws? (sizeFeatureName | sizeFeatureValue)
+        ;
+
+sizeFeatureRangeBetweenLt
+        :
+        sizeFeatureValue ws? (LESS | LESS_OR_EQ) ws? sizeFeatureName ws? (LESS | LESS_OR_EQ) ws? sizeFeatureValue
+        ;
+
+sizeFeatureRangeBetweenGt
+        :
+        sizeFeatureValue ws? (GREATER | GREATER_OR_EQ) ws? sizeFeatureName ws? (GREATER | GREATER_OR_EQ) ws? sizeFeatureValue
+        ;
+
+sizeFeatureName
+        :
+        IDENT
+        | VARIABLE
+        ;
+
+sizeFeatureValue
+        :
+        term
+        ;
+
+styleFeature
+        :
+        declaration
+        ;
+
+layerAtRule
+        :
+        layerBlock
+        |
+        layerStatement
+        ;
+
+layerBlock
+        :
+        (LAYER_SYM ws layerName? ws? layerBody)
+        ;
+
+layerStatement
+        :
+        (LAYER_SYM ws layerName ( ws? COMMA ws? layerName)* SEMI)
+        ;
+
+layerName
+        :
+        IDENT (DOT IDENT)*
+        ;
+
+layerBody
+        :
+        LBRACE ws? body? ws? RBRACE
+        ;
 
 at_rule
     :
@@ -481,6 +700,8 @@ at_rule
     | fontFace
     | supportsAtRule
     | vendorAtRule
+    | layerAtRule
+    | containerAtRule
     ;
 
 vendorAtRule
@@ -492,11 +713,8 @@ atRuleId
 	;
 
 generic_at_rule
-    : AT_IDENT ws? ( atRuleId ws? )?
-        LBRACE
-        	syncTo_RBRACE
-        RBRACE
-	;
+    : AT_IDENT ws ((LBRACE) => braceBlock2 | (componentValue) => componentValue) ((ws (LBRACE | (componentValue) => componentValue)) => (ws ((LBRACE) => braceBlock2 | (componentValue) => componentValue)))*;
+
 moz_document
 	:
 	MOZ_DOCUMENT_SYM ws? ( moz_document_function ws?) ( COMMA ws? moz_document_function ws? )*
@@ -513,7 +731,7 @@ moz_document_function
 //http://developer.apple.com/library/safari/#documentation/appleapplications/reference/SafariCSSRef/Articles/OtherStandardCSS3Features.html#//apple_ref/doc/uid/TP40007601-SW1
 webkitKeyframes
 	:
-	WEBKIT_KEYFRAMES_SYM ws? atRuleId ws?
+	( WEBKIT_KEYFRAMES_SYM | KEYFRAMES_SYM | {tokenNameEquals("@-moz-keyframes")}? AT_IDENT | {tokenNameEquals("@-o-keyframes")}? AT_IDENT ) ws? atRuleId ws?
 	LBRACE ws?
 		( webkitKeyframesBlock ws? )*
 	RBRACE
@@ -534,11 +752,16 @@ webkitKeyframeSelectors
 	;
 
 page
+@init {
+    boolean semiRequired = false;
+}
     : PAGE_SYM ws? ( IDENT ws? )? (pseudoPage ws?)?
-        LBRACE ws?
+        LBRACE
             //the grammar in the http://www.w3.org/TR/css3-page/ says the declaration/margins should be delimited by the semicolon,
             //but there's no such char in the examples => making it arbitrary
-            ((propertyDeclaration|margin) ws?)? (SEMI ws? ((propertyDeclaration|margin) ws?)?)*
+            ( ws? ({semiRequired}? (SEMI ws?) | (SEMI ws?)?) (propertyDeclaration{semiRequired=true;}|margin{semiRequired=false;}))*
+            SEMI?
+            ws?
         RBRACE
     ;
 
@@ -673,7 +896,7 @@ declaration
     | (cp_mixin_declaration)=>cp_mixin_declaration
     | (cp_mixin_call)=> cp_mixin_call (ws? IMPORTANT_SYM)?
     | (cp_mixin_call)=> {isScssSource()}? cp_mixin_call (ws? IMPORTANT_SYM)?    
-    | {isCssPreprocessorSource()}? at_rule
+    | at_rule
     | {isScssSource()}? sass_control
     | {isScssSource()}? sass_extend
     | {isScssSource()}? sass_debug
@@ -733,7 +956,7 @@ elementSubsequent
     :
     (
         {isScssSource()}? sass_extend_only_selector
-        | {isCssPreprocessorSource()}? LESS_AND (IDENT | NUMBER)*
+        | {isCssPreprocessorSource()}? LESS_AND (IDENT | NUMBER | {isScssSource()}? sass_interpolation_expression_var)*
         | {isLessSource()}? LESS_AND less_selector_interpolation_exp
     	| cssId
     	| cssClass
@@ -827,16 +1050,16 @@ pseudo
                     )?
                 )
                 | {isScssSource()}? sass_interpolation_expression_var
-                |
-                ( NOT ws? LPAREN ws? (simpleSelectorSequence ws?)? RPAREN )
-                | 
-                ({isLessSource()}? {tokenNameEquals("extend")}? IDENT ws? LPAREN ws? selectorsGroup? RPAREN)
+                | ( NOT ws? LPAREN ws? ( selectorsGroup ws?)? RPAREN )
+                | {tokenNameEquals("is") || tokenNameEquals("where") || tokenNameEquals("has")}? ( IDENT ws? LPAREN ws? ( selectorsGroup ws?)? RPAREN )
+                | ({isLessSource()}? {tokenNameEquals("extend")}? IDENT ws? LPAREN ws? selectorsGroup? RPAREN)
              ) 
     ;
 
 propertyDeclaration
     :
-{isCssPreprocessorSource()}? STAR? property ws? COLON ws? cp_propertyValue //cp_expression may contain the IMPORT_SYM
+      {isCssPreprocessorSource() && !tokenNameStartsWith("--")}? STAR? property ws? COLON ws? cp_propertyValue //cp_expression may contain the IMPORT_SYM
+    | {tokenNameStartsWith("--")}? property ws? COLON ws? componentValueOuter?
     | STAR? property ws? COLON ws? propertyValue (ws? prio)?
     
     ;
@@ -865,6 +1088,28 @@ expressionPredicate
     :
     ( ~ (AT_IDENT | STAR | SOLIDUS | LBRACE | SEMI | RBRACE | SASS_VAR) )+ ( SEMI | RBRACE )
     ;
+
+preservedToken: ~ (LPAREN | LBRACE | LBRACKET | RPAREN | RBRACE | RBRACKET);
+
+preservedTokenTopLevel: ~ (LPAREN | LBRACE | LBRACKET | RPAREN | RBRACE | RBRACKET | SEMI );
+
+// {} block
+braceBlock2:
+    LBRACE ws?
+        declarations?
+    RBRACE
+    ;
+
+// simple brace block
+braceBlock: LBRACE componentValue* RBRACE;
+
+bracketBlock: LBRACKET componentValue+ RBRACKET;
+
+parenBlock: LPAREN componentValue+ RPAREN;
+
+componentValue: parenBlock | braceBlock | bracketBlock | (functionName ws? LPAREN) => function | preservedToken;
+
+componentValueOuter: (parenBlock | braceBlock | bracketBlock | (functionName ws? LPAREN) => function | preservedTokenTopLevel) componentValueOuter*;
 
 //recovery: syncs the parser to the first identifier in the token input stream or the closing curly bracket
 //since the rule matches epsilon it will always be entered
@@ -913,8 +1158,10 @@ term
     (
         (functionName ws? LPAREN)=>function //"myfunction(" as predicate
         | VARIABLE
-        | IDENT
+        | {! (isScssSource() && tokenNameEquals2("."))}? IDENT
+        | (LBRACKET WS? IDENT (WS IDENT)* WS? RBRACKET)
         | NUMBER
+        | URANGE
         | PERCENTAGE
         | LENGTH
         | EMS
@@ -947,7 +1194,7 @@ cp_term_symbol
     ;
 
 function
-	: 	functionName ws?
+	: 	functionName
 		LPAREN ws?
 		(
                     fnAttributes
@@ -1014,9 +1261,9 @@ cp_variable_declaration
 cp_variable
     :
         //every token which might possibly begin with the at sign
-        {isLessSource()}? ( AT_IDENT | IMPORT_SYM | PAGE_SYM | MEDIA_SYM | NAMESPACE_SYM | CHARSET_SYM | COUNTER_STYLE_SYM | FONT_FACE_SYM | TOPLEFTCORNER_SYM | TOPLEFT_SYM | TOPCENTER_SYM | TOPRIGHT_SYM | TOPRIGHTCORNER_SYM | BOTTOMLEFTCORNER_SYM | BOTTOMLEFT_SYM | BOTTOMCENTER_SYM | BOTTOMRIGHT_SYM | BOTTOMRIGHTCORNER_SYM | LEFTTOP_SYM | LEFTMIDDLE_SYM | LEFTBOTTOM_SYM | RIGHTTOP_SYM | RIGHTMIDDLE_SYM | RIGHTBOTTOM_SYM | MOZ_DOCUMENT_SYM | WEBKIT_KEYFRAMES_SYM | SASS_CONTENT | SASS_MIXIN | SASS_INCLUDE | SASS_EXTEND | SASS_DEBUG | SASS_WARN | SASS_IF | SASS_ELSE | SASS_FOR | SASS_FUNCTION | SASS_RETURN | SASS_EACH | SASS_WHILE | SASS_AT_ROOT )
+        {isLessSource()}? ( AT_IDENT | IMPORT_SYM | PAGE_SYM | MEDIA_SYM | NAMESPACE_SYM | CHARSET_SYM | COUNTER_STYLE_SYM | FONT_FACE_SYM | TOPLEFTCORNER_SYM | TOPLEFT_SYM | TOPCENTER_SYM | TOPRIGHT_SYM | TOPRIGHTCORNER_SYM | BOTTOMLEFTCORNER_SYM | BOTTOMLEFT_SYM | BOTTOMCENTER_SYM | BOTTOMRIGHT_SYM | BOTTOMRIGHTCORNER_SYM | LEFTTOP_SYM | LEFTMIDDLE_SYM | LEFTBOTTOM_SYM | RIGHTTOP_SYM | RIGHTMIDDLE_SYM | RIGHTBOTTOM_SYM | MOZ_DOCUMENT_SYM | WEBKIT_KEYFRAMES_SYM | SASS_CONTENT | SASS_MIXIN | SASS_INCLUDE | SASS_EXTEND | SASS_DEBUG | SASS_WARN | SASS_IF | SASS_ELSE | SASS_FOR | SASS_FUNCTION | SASS_RETURN | SASS_EACH | SASS_WHILE | SASS_AT_ROOT | SASS_USE | SASS_FORWARD | KEYFRAMES_SYM )
         |
-        {isScssSource()}? ( SASS_VAR )
+        {isScssSource()}? ( SASS_VAR | IDENT DOT SASS_VAR )
     ;
 
 //comma separated list of cp_expression-s
@@ -1250,7 +1497,7 @@ sass_nested_properties
 
 sass_extend
     :
-    SASS_EXTEND ws simpleSelectorSequence (ws SASS_OPTIONAL)?
+    SASS_EXTEND ws simpleSelectorSequence (ws? COMMA ws? simpleSelectorSequence)* (ws SASS_OPTIONAL)?
     ;
 
 sass_extend_only_selector
@@ -1340,7 +1587,7 @@ sass_content
     ;
 
 less_import_types: 
-    {tokenNameIs(new String[]{"LESS", "CSS", "REFERENCE", "INLINE", "ONCE", "MULTIPLE"})}? IDENT
+    {tokenNameIs(new String[]{"LESS", "CSS", "REFERENCE", "INLINE", "ONCE", "MULTIPLE", "OPTIONAL"})}? IDENT
     ; catch[ RecognitionException rce] {
         reportError(rce);
         input.consume();
@@ -1754,6 +2001,9 @@ CHARSET_SYM         : '@CHARSET';
 COUNTER_STYLE_SYM   : '@COUNTER-STYLE';
 FONT_FACE_SYM       : '@FONT-FACE';
 SUPPORTS_SYM        : '@SUPPORTS';
+LAYER_SYM           : '@LAYER';
+CONTAINER_SYM       : '@CONTAINER';
+KEYFRAMES_SYM       : '@KEYFRAMES';
 
 TOPLEFTCORNER_SYM     :'@TOP-LEFT-CORNER';
 TOPLEFT_SYM           :'@TOP-LEFT';
@@ -1789,6 +2039,8 @@ SASS_ELSEIF         : '@ELSEIF'; //@elseif
 SASS_FOR            : '@FOR';
 SASS_FUNCTION       : '@FUNCTION';
 SASS_RETURN         : '@RETURN';
+SASS_USE            : '@USE';
+SASS_FORWARD        : '@FORWARD';
 
 SASS_EACH           : '@EACH';
 SASS_WHILE          : '@WHILE';
@@ -1898,6 +2150,10 @@ URI :   U R L
             ((WS)=>WS)? (URL|STRING) WS?
         ')'
     ;
+
+fragment HEXCHAR_WILDCARD: '?' | HEXCHAR;
+
+URANGE: ('u'|'U') PLUS HEXCHAR_WILDCARD+ (MINUS HEXCHAR_WILDCARD+)?;
 
 MOZ_URL_PREFIX
 	:

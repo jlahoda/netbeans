@@ -83,6 +83,11 @@ public class FoldingTest extends PHPTestBase {
         checkFolds("testfiles/parser/foldingArrays.php");
     }
 
+    // GH-7187
+    public void testEmptyArrays() throws Exception {
+        checkFolds("testfiles/parser/foldingEmptyArrays.php");
+    }
+
     // #254432
     public void testUses() throws Exception {
         checkFolds("testfiles/parser/foldingUses.php");
@@ -91,6 +96,29 @@ public class FoldingTest extends PHPTestBase {
     // #232600
     public void testPHPTags() throws Exception {
         checkFolds("testfiles/parser/foldingPHPTags.php");
+    }
+
+    // PHP 8.0
+    public void testMatchExpression_01() throws Exception {
+        checkFolds("testfiles/parser/foldingMatch_01.php");
+    }
+
+    public void testMatchExpression_02() throws Exception {
+        checkFolds("testfiles/parser/foldingMatch_02.php");
+    }
+
+    public void testMatchExpression_03() throws Exception {
+        checkFolds("testfiles/parser/foldingMatch_03.php");
+    }
+
+    // NETBEANS-6438
+    public void testAttributes_01() throws Exception {
+        checkFolds("testfiles/parser/php80/attributeSyntax_01.php");
+    }
+
+    // NETBEANS-5599 PHP 8.1
+    public void testEnumerations_01() throws Exception {
+        checkFolds("testfiles/parser/php81/enumerations_01.php");
     }
 
 }

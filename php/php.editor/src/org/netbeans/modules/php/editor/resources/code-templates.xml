@@ -29,7 +29,16 @@
     <codetemplate uuid="org.netbeans.modules.php.editor.codetemplate.cls" abbreviation="cls" contexts="php-code">
         <code>
 <![CDATA[class ${ClassName} {
-    function ${__construct}() {
+    public function ${__construct}() {
+        ${selection}${cursor}
+    }
+}]]>
+        </code>
+    </codetemplate>
+    <codetemplate uuid="org.netbeans.modules.php.editor.codetemplate.rcls" abbreviation="rcls" contexts="php-code">
+        <code>
+<![CDATA[readonly class ${ClassName} {
+    public function ${__construct}() {
         ${selection}${cursor}
     }
 }]]>
@@ -49,10 +58,43 @@
 }]]>
         </code>
     </codetemplate>
+    <codetemplate uuid="org.netbeans.modules.php.editor.codetemplate.en" abbreviation="en" contexts="php-code">
+        <code>
+<![CDATA[enum ${EnumName} {
+    case ${CaseName};${cursor}
+}]]>
+        </code>
+    </codetemplate>
+    <codetemplate uuid="org.netbeans.modules.php.editor.codetemplate.eni" abbreviation="eni" contexts="php-code">
+        <code>
+<![CDATA[enum ${EnumName}: int {
+    case ${CaseName} = ${value};${cursor}
+}]]>
+        </code>
+    </codetemplate>
+    <codetemplate uuid="org.netbeans.modules.php.editor.codetemplate.ens" abbreviation="ens" contexts="php-code">
+        <code>
+<![CDATA[enum ${EnumName}: string {
+    case ${CaseName} = ${value};${cursor}
+}]]>
+        </code>
+    </codetemplate>
     <codetemplate uuid="org.netbeans.modules.php.editor.codetemplate.cln" abbreviation="cln" contexts="php-code">
         <code>
 <![CDATA[$$${NEW_VAR newVarName default="newObj"} = clone ${VARIABLE variableFromPreviousAssignment default="$variable"};
 ${cursor}]]>
+        </code>
+    </codetemplate>
+
+    <codetemplate uuid="org.netbeans.modules.php.editor.codetemplate.const" abbreviation="con" contexts="php-code">
+        <code>
+<![CDATA[const ${CONST_NAME} = ${ConstValue};${cursor}]]>
+        </code>
+    </codetemplate>
+
+    <codetemplate uuid="org.netbeans.modules.php.editor.codetemplate.typed.const" abbreviation="cons" contexts="php-code">
+        <code>
+<![CDATA[const ${TypeName} ${CONST_NAME} = ${ConstValue};${cursor}]]>
         </code>
     </codetemplate>
 
@@ -126,6 +168,15 @@ ${cursor}]]>
         </code>
     </codetemplate>
 
+    <codetemplate uuid="org.netbeans.modules.php.editor.codetemplate.match" abbreviation="mat" contexts="php-code">
+        <code>
+<![CDATA[match (${VARIABLE variableFromPreviousAssignment default="$variable"}) {
+    ${condition} => ${expr},
+    default => ${defaultExpr},
+}${cursor}]]>
+        </code>
+    </codetemplate>
+
     <codetemplate uuid="org.netbeans.modules.php.editor.codetemplate.instanceof" abbreviation="inst" contexts="php-code">
         <code>
 <![CDATA[if (${VARIABLE variableFromPreviousAssignment default="$variable"} instanceof ${ClassName}) {
@@ -170,6 +221,30 @@ ${cursor}]]>
     <codetemplate uuid="org.netbeans.modules.php.editor.codetemplate.ifnc" abbreviation="ifnc" contexts="php-code">
         <code>
 <![CDATA[public function ${functionName}($$${param});]]>
+        </code>
+    </codetemplate>
+
+    <codetemplate uuid="org.netbeans.modules.php.editor.codetemplate.fn" abbreviation="fn" contexts="php-code">
+        <code>
+<![CDATA[fn() => ${selection}${cursor}]]>
+        </code>
+    </codetemplate>
+
+    <codetemplate uuid="org.netbeans.modules.php.editor.codetemplate.fnp" abbreviation="fnp" contexts="php-code">
+        <code>
+<![CDATA[fn($$${param}) => ${selection}${cursor}]]>
+        </code>
+    </codetemplate>
+
+    <codetemplate uuid="org.netbeans.modules.php.editor.codetemplate.fnr" abbreviation="fnr" contexts="php-code">
+        <code>
+<![CDATA[fn(): ${type} => ${selection}${cursor}]]>
+        </code>
+    </codetemplate>
+
+    <codetemplate uuid="org.netbeans.modules.php.editor.codetemplate.fnpr" abbreviation="fnpr" contexts="php-code">
+        <code>
+<![CDATA[fn($$${param}): ${type} => ${selection}${cursor}]]>
         </code>
     </codetemplate>
 

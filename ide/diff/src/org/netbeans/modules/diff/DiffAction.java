@@ -48,7 +48,6 @@ import org.netbeans.modules.diff.builtin.SingleDiffPanel;
 import org.netbeans.modules.diff.options.AccessibleJFileChooser;
 import org.openide.DialogDisplayer;
 import org.openide.ErrorManager;
-import org.openide.util.lookup.ProxyLookup;
 
 /**
  * Diff Action. It gets the default diff visualizer and diff provider if needed
@@ -71,7 +70,7 @@ public class DiffAction extends NodeAction {
 
         private DiffActionImpl(Lookup context) {
             Collection<? extends Node> nodez = context.lookup(new Lookup.Template<Node>(Node.class)).allInstances();
-            nodes = nodez.toArray(new Node[nodez.size()]);
+            nodes = nodez.toArray(new Node[0]);
             if (nodes.length == 1) {
                 putValue(Action.NAME, NbBundle.getMessage(DiffAction.class, "CTL_DiffToActionName"));
             } else {
@@ -183,6 +182,11 @@ public class DiffAction extends NodeAction {
         int result = fileChooser.showDialog(WindowManager.getDefault().getMainWindow(), NbBundle.getMessage(DiffAction.class, "DiffTo_BrowseFile_OK")); // NOI18N
         if (result != JFileChooser.APPROVE_OPTION) return null;
 
+        FileObject userSelectedFo = editorSelector.getSelectedEditorFile();
+        if (userSelectedFo != null) {
+            return userSelectedFo;
+        }
+        
         File f = fileChooser.getSelectedFile();
         if (f != null) {
             File file = f.getAbsoluteFile();

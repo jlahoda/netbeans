@@ -25,8 +25,10 @@ import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.StatementTree;
+import com.sun.source.tree.SwitchExpressionTree;
 import com.sun.source.tree.SwitchTree;
 import com.sun.source.tree.Tree;
+import com.sun.source.tree.Tree.Kind;
 import com.sun.source.tree.VariableTree;
 import com.sun.tools.javac.tree.JCTree;
 import java.io.IOException;
@@ -35,6 +37,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.swing.event.ChangeListener;
 import static junit.framework.TestCase.assertEquals;
@@ -45,7 +48,6 @@ import org.netbeans.api.java.source.TestUtilities;
 import org.netbeans.api.java.source.TreeMaker;
 import org.netbeans.api.java.source.WorkingCopy;
 import org.netbeans.junit.NbTestSuite;
-import org.netbeans.modules.java.source.TreeShims;
 import org.netbeans.modules.java.source.parsing.JavacParser;
 import org.netbeans.spi.java.queries.CompilerOptionsQueryImplementation;
 import org.openide.filesystems.FileObject;
@@ -72,7 +74,7 @@ public class SwitchExpressionTest extends TreeRewriteTestBase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        sourceLevel = "1.12";
+        sourceLevel = "1.13";
         JavacParser.DISABLE_SOURCE_LEVEL_DOWNGRADE = true;
         EXTRA_OPTIONS.add("--enable-preview");
     }
@@ -108,12 +110,18 @@ public class SwitchExpressionTest extends TreeRewriteTestBase {
     }
 
     public void testSwitchExpression() throws Exception {
+        try {
+            SourceVersion.valueOf("RELEASE_13");
+        } catch (IllegalArgumentException ex) {
+            //OK, skip test
+            return ;
+        }
 
         String code = "package test; \n"
                 + "public class Test {\n"
                 + "     private void test(int p) {\n"
                 + "         var v = switch (p) {\n"
-                + "             case 1: break 1;\n"
+                + "             case 1: yield 1;\n"
                 + "             case 2 -> 2;\n"
                 + "             default -> 3;\n"
                 + "         }\n"
@@ -124,13 +132,13 @@ public class SwitchExpressionTest extends TreeRewriteTestBase {
                 + "     private void test(int p) {\n"
                 + "         var v = switch (p) {\n"
                 + "             case 1 -> {\n"
-                + "                 break 1;\n"
+                + "                 yield 1;\n"
                 + "             }\n"
                 + "             case 2 -> {\n"
-                + "                 break 2;\n"
+                + "                 yield 2;\n"
                 + "             }\n"
                 + "             default -> {\n"
-                + "                 break 3;\n"
+                + "                 yield 3;\n"
                 + "             }\n"
                 + "         }\n"
                 + "     }\n"
@@ -140,7 +148,7 @@ public class SwitchExpressionTest extends TreeRewriteTestBase {
 
         rewriteSwitchExpression();
         String res = TestUtilities.copyFileToString(getTestFile());
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
 
     }
@@ -167,16 +175,19 @@ public class SwitchExpressionTest extends TreeRewriteTestBase {
                 VariableTree switcExpression = (VariableTree) ((BlockTree) method.getBody()).getStatements().get(0);
                 Tree switchBlock = switcExpression.getInitializer();
                 List<? extends CaseTree> cases;
+                ExpressionTree selExpr;
                 List<ExpressionTree> patterns = new ArrayList<>();
-                boolean switchExpressionFlag = switchBlock.getKind().toString().equals(TreeShims.SWITCH_EXPRESSION);
+                boolean switchExpressionFlag = switchBlock.getKind() == Kind.SWITCH_EXPRESSION;
                 if (switchExpressionFlag) {
-                    cases = TreeShims.getCases(switchBlock);
+                    selExpr = ((SwitchExpressionTree) switchBlock).getExpression();
+                    cases = ((SwitchExpressionTree) switchBlock).getCases();
                 } else {
+                    selExpr = ((SwitchTree) switchBlock).getExpression();
                     cases = ((SwitchTree) switchBlock).getCases();
                 }
                 for (Iterator<? extends CaseTree> it = cases.iterator(); it.hasNext();) {
                     CaseTree ct = it.next();
-                    patterns.addAll(TreeShims.getExpressions(ct));
+                    patterns.addAll(ct.getExpressions());
                     List<StatementTree> statements;
                     if (ct.getStatements() == null) {
                         statements = new ArrayList<>(((JCTree.JCCase) ct).stats);
@@ -203,7 +214,7 @@ public class SwitchExpressionTest extends TreeRewriteTestBase {
                         patterns = new ArrayList<>();
                     }
                 }
-                workingCopy.rewrite(switchBlock, make.SwitchExpression(TreeShims.getExpressions(switchBlock).get(0), newCases));
+                workingCopy.rewrite(switchBlock, make.SwitchExpression(selExpr, newCases));
             }
 
         };

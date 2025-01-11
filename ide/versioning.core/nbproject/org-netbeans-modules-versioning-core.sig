@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.35.1
+#Version 1.57.0
 
 CLSS public abstract interface java.io.Serializable
 
@@ -21,7 +21,6 @@ meth public final java.lang.String name()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
-hfds name,ordinal
 
 CLSS public java.lang.Object
 cons public init()
@@ -94,6 +93,7 @@ CLSS public final org.netbeans.modules.versioning.core.api.VersioningSupport
 fld public final static java.lang.String PREF_BOOLEAN_TEXT_ANNOTATIONS_VISIBLE = "textAnnotationsVisible"
 meth public static boolean isExcluded(org.netbeans.modules.versioning.core.api.VCSFileProxy)
 meth public static boolean isFlat(org.netbeans.modules.versioning.core.api.VCSFileProxy)
+meth public static boolean isTextAnnotationVisible()
 meth public static java.util.prefs.Preferences getPreferences()
 meth public static org.netbeans.api.extexecution.ProcessBuilder createProcessBuilder(org.netbeans.modules.versioning.core.api.VCSFileProxy)
 meth public static org.netbeans.modules.versioning.core.spi.VersioningSystem getOwner(org.netbeans.modules.versioning.core.api.VCSFileProxy)

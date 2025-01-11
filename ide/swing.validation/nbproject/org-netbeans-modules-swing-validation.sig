@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.36.1
+#Version 1.58
 
 CLSS public abstract java.awt.Component
 cons protected init()
@@ -159,8 +159,6 @@ meth public java.awt.im.InputMethodRequests getInputMethodRequests()
 meth public java.awt.image.ColorModel getColorModel()
 meth public java.awt.image.VolatileImage createVolatileImage(int,int)
 meth public java.awt.image.VolatileImage createVolatileImage(int,int,java.awt.ImageCapabilities) throws java.awt.AWTException
-meth public java.awt.peer.ComponentPeer getPeer()
- anno 0 java.lang.Deprecated()
 meth public java.beans.PropertyChangeListener[] getPropertyChangeListeners()
 meth public java.beans.PropertyChangeListener[] getPropertyChangeListeners(java.lang.String)
 meth public java.lang.String getName()
@@ -274,8 +272,6 @@ meth public void transferFocusUpCycle()
 meth public void update(java.awt.Graphics)
 meth public void validate()
 supr java.lang.Object
-hfds FOCUS_TRAVERSABLE_DEFAULT,FOCUS_TRAVERSABLE_SET,FOCUS_TRAVERSABLE_UNKNOWN,LOCK,acc,actionListenerK,adjustmentListenerK,appContext,autoFocusTransferOnDisposal,background,backgroundEraseDisabled,boundsOp,bufferStrategy,changeSupport,coalesceEventsParams,coalesceMap,coalescingEnabled,componentListener,componentListenerK,componentOrientation,componentSerializedDataVersion,compoundShape,containerListenerK,cursor,dropTarget,enabled,eventCache,eventLog,eventMask,focusListener,focusListenerK,focusLog,focusTraversalKeyPropertyNames,focusTraversalKeys,focusTraversalKeysEnabled,focusable,font,foreground,graphicsConfig,height,hierarchyBoundsListener,hierarchyBoundsListenerK,hierarchyListener,hierarchyListenerK,ignoreRepaint,incRate,inputMethodListener,inputMethodListenerK,isAddNotifyComplete,isFocusTraversableOverridden,isInc,isPacked,itemListenerK,keyListener,keyListenerK,locale,log,maxSize,maxSizeSet,minSize,minSizeSet,mixingCutoutRegion,mixingLog,mouseListener,mouseListenerK,mouseMotionListener,mouseMotionListenerK,mouseWheelListener,mouseWheelListenerK,name,nameExplicitlySet,newEventsOnly,objectLock,ownedWindowK,parent,peer,peerFont,popups,prefSize,prefSizeSet,requestFocusController,serialVersionUID,textListenerK,valid,visible,width,windowClosingException,windowFocusListenerK,windowListenerK,windowStateListenerK,x,y
-hcls AWTTreeLock,BltSubRegionBufferStrategy,DummyRequestFocusController,FlipSubRegionBufferStrategy,ProxyCapabilities,SingleBufferStrategy
 
 CLSS public java.awt.Container
 cons public init()
@@ -360,8 +356,6 @@ meth public void transferFocusDownCycle()
 meth public void update(java.awt.Graphics)
 meth public void validate()
 supr java.awt.Component
-hfds EMPTY_ARRAY,INCLUDE_SELF,SEARCH_HEAVYWEIGHTS,component,containerListener,containerSerializedDataVersion,descendUnconditionallyWhenValidating,descendantsCount,dispatcher,eventLog,focusCycleRoot,focusTraversalPolicy,focusTraversalPolicyProvider,isJavaAwtSmartInvalidate,layoutMgr,listeningBoundsChildren,listeningChildren,log,mixingLog,modalAppContext,modalComp,numOfHWComponents,numOfLWComponents,preserveBackgroundColor,printing,printingThreads,serialPersistentFields,serialVersionUID
-hcls DropTargetEventTargetFilter,EventTargetFilter,MouseEventTargetFilter,WakingRunnable
 
 CLSS public abstract interface java.awt.MenuContainer
 meth public abstract boolean postEvent(java.awt.Event)
@@ -400,7 +394,26 @@ meth public final java.lang.String name()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
-hfds name,ordinal
+
+CLSS public java.lang.Exception
+cons protected init(java.lang.String,java.lang.Throwable,boolean,boolean)
+cons public init()
+cons public init(java.lang.String)
+cons public init(java.lang.String,java.lang.Throwable)
+cons public init(java.lang.Throwable)
+supr java.lang.Throwable
+
+CLSS public java.lang.IllegalArgumentException
+cons public init()
+cons public init(java.lang.String)
+cons public init(java.lang.String,java.lang.Throwable)
+cons public init(java.lang.Throwable)
+supr java.lang.RuntimeException
+
+CLSS public abstract interface java.lang.Iterable<%0 extends java.lang.Object>
+meth public abstract java.util.Iterator<{java.lang.Iterable%0}> iterator()
+meth public java.util.Spliterator<{java.lang.Iterable%0}> spliterator()
+meth public void forEach(java.util.function.Consumer<? super {java.lang.Iterable%0}>)
 
 CLSS public java.lang.Object
 cons public init()
@@ -415,6 +428,36 @@ meth public final void wait(long) throws java.lang.InterruptedException
 meth public final void wait(long,int) throws java.lang.InterruptedException
 meth public int hashCode()
 meth public java.lang.String toString()
+
+CLSS public java.lang.RuntimeException
+cons protected init(java.lang.String,java.lang.Throwable,boolean,boolean)
+cons public init()
+cons public init(java.lang.String)
+cons public init(java.lang.String,java.lang.Throwable)
+cons public init(java.lang.Throwable)
+supr java.lang.Exception
+
+CLSS public java.lang.Throwable
+cons protected init(java.lang.String,java.lang.Throwable,boolean,boolean)
+cons public init()
+cons public init(java.lang.String)
+cons public init(java.lang.String,java.lang.Throwable)
+cons public init(java.lang.Throwable)
+intf java.io.Serializable
+meth public final java.lang.Throwable[] getSuppressed()
+meth public final void addSuppressed(java.lang.Throwable)
+meth public java.lang.StackTraceElement[] getStackTrace()
+meth public java.lang.String getLocalizedMessage()
+meth public java.lang.String getMessage()
+meth public java.lang.String toString()
+meth public java.lang.Throwable fillInStackTrace()
+meth public java.lang.Throwable getCause()
+meth public java.lang.Throwable initCause(java.lang.Throwable)
+meth public void printStackTrace()
+meth public void printStackTrace(java.io.PrintStream)
+meth public void printStackTrace(java.io.PrintWriter)
+meth public void setStackTrace(java.lang.StackTraceElement[])
+supr java.lang.Object
 
 CLSS public abstract interface java.util.EventListener
 
@@ -577,8 +620,6 @@ meth public void unregisterKeyboardAction(javax.swing.KeyStroke)
 meth public void update(java.awt.Graphics)
 meth public void updateUI()
 supr java.awt.Container
-hfds ACTIONMAP_CREATED,ANCESTOR_INPUTMAP_CREATED,ANCESTOR_USING_BUFFER,AUTOSCROLLS_SET,COMPLETELY_OBSCURED,CREATED_DOUBLE_BUFFER,DEBUG_GRAPHICS_LOADED,FOCUS_INPUTMAP_CREATED,FOCUS_TRAVERSAL_KEYS_BACKWARD_SET,FOCUS_TRAVERSAL_KEYS_FORWARD_SET,INHERITS_POPUP_MENU,INPUT_VERIFIER_SOURCE_KEY,IS_DOUBLE_BUFFERED,IS_OPAQUE,IS_PAINTING_TILE,IS_PRINTING,IS_PRINTING_ALL,IS_REPAINTING,KEYBOARD_BINDINGS_KEY,KEY_EVENTS_ENABLED,NEXT_FOCUS,NOT_OBSCURED,OPAQUE_SET,PARTIALLY_OBSCURED,REQUEST_FOCUS_DISABLED,RESERVED_1,RESERVED_2,RESERVED_3,RESERVED_4,RESERVED_5,RESERVED_6,WHEN_IN_FOCUSED_WINDOW_BINDINGS,WIF_INPUTMAP_CREATED,WRITE_OBJ_COUNTER_FIRST,WRITE_OBJ_COUNTER_LAST,aaTextInfo,actionMap,alignmentX,alignmentY,ancestorInputMap,autoscrolls,border,clientProperties,componentObtainingGraphicsFrom,componentObtainingGraphicsFromLock,defaultLocale,flags,focusController,focusInputMap,inputVerifier,isAlignmentXSet,isAlignmentYSet,managingFocusBackwardTraversalKeys,managingFocusForwardTraversalKeys,paintingChild,popupMenu,readObjectCallbacks,revalidateRunnableScheduled,tempRectangles,uiClassID,verifyInputWhenFocusTarget,vetoableChangeSupport,windowInputMap
-hcls ActionStandin,IntVector,KeyboardState,ReadObjectCallback
 
 CLSS public javax.swing.JPanel
 cons public init()
@@ -594,7 +635,6 @@ meth public javax.swing.plaf.PanelUI getUI()
 meth public void setUI(javax.swing.plaf.PanelUI)
 meth public void updateUI()
 supr javax.swing.JComponent
-hfds uiClassID
 
 CLSS public final org.netbeans.api.validation.adapters.DialogBuilder
 cons public init(java.lang.Class<?>)
@@ -681,6 +721,20 @@ meth public final java.lang.Class<{org.netbeans.validation.api.AbstractValidator
 supr java.lang.Object
 hfds type
 
+CLSS public org.netbeans.validation.api.InvalidInputException
+cons public init(java.lang.String,org.netbeans.validation.api.Problems)
+cons public init(java.lang.String,org.netbeans.validation.api.Validating)
+cons public init(org.netbeans.validation.api.Problems)
+cons public init(org.netbeans.validation.api.Validating)
+intf java.lang.Iterable<org.netbeans.validation.api.Problem>
+meth public java.lang.String getMessage()
+meth public java.util.Iterator<org.netbeans.validation.api.Problem> iterator()
+meth public org.netbeans.validation.api.Problems getProblems()
+meth public static void throwIfNecessary(java.lang.String,org.netbeans.validation.api.Validating)
+meth public static void throwIfNecessary(org.netbeans.validation.api.Validating)
+supr java.lang.IllegalArgumentException
+hfds problems
+
 CLSS public final org.netbeans.validation.api.Problem
 cons public init(java.lang.String,org.netbeans.validation.api.Severity)
 intf java.lang.Comparable<org.netbeans.validation.api.Problem>
@@ -697,14 +751,28 @@ hfds message,severity
 
 CLSS public final org.netbeans.validation.api.Problems
 cons public init()
+intf java.lang.Iterable<org.netbeans.validation.api.Problem>
 meth public final boolean hasFatal()
 meth public final java.util.List<? extends org.netbeans.validation.api.Problem> allProblems()
 meth public final org.netbeans.validation.api.Problem getLeadProblem()
+meth public final org.netbeans.validation.api.Problems addAll(org.netbeans.validation.api.Problems)
+meth public final org.netbeans.validation.api.Problems append(java.lang.String)
+meth public final org.netbeans.validation.api.Problems append(java.lang.String,org.netbeans.validation.api.Severity)
+meth public final org.netbeans.validation.api.Problems append(org.netbeans.validation.api.Problem)
 meth public final void add(java.lang.String)
+ anno 0 java.lang.Deprecated()
 meth public final void add(java.lang.String,org.netbeans.validation.api.Severity)
+ anno 0 java.lang.Deprecated()
 meth public final void add(org.netbeans.validation.api.Problem)
+ anno 0 java.lang.Deprecated()
 meth public final void putAll(org.netbeans.validation.api.Problems)
+ anno 0 java.lang.Deprecated()
 meth public java.lang.String toString()
+meth public java.util.Iterator<org.netbeans.validation.api.Problem> iterator()
+meth public static org.netbeans.validation.api.Problems create(java.lang.Class<?>,java.lang.String)
+meth public static org.netbeans.validation.api.Problems create(java.lang.String)
+meth public void throwIfFatalPresent()
+meth public void throwIfFatalPresent(java.lang.String)
 supr java.lang.Object
 hfds hasFatal,problems
 
@@ -723,6 +791,10 @@ meth public static org.netbeans.validation.api.Severity[] values()
 supr java.lang.Enum<org.netbeans.validation.api.Severity>
 hfds badge,image
 
+CLSS public abstract interface org.netbeans.validation.api.Validating
+meth public abstract boolean isValid()
+meth public abstract org.netbeans.validation.api.Problems getProblems()
+
 CLSS public abstract interface org.netbeans.validation.api.Validator<%0 extends java.lang.Object>
 meth public abstract java.lang.Class<{org.netbeans.validation.api.Validator%0}> modelType()
 meth public abstract void validate(org.netbeans.validation.api.Problems,java.lang.String,{org.netbeans.validation.api.Validator%0})
@@ -730,13 +802,16 @@ meth public abstract void validate(org.netbeans.validation.api.Problems,java.lan
 CLSS public org.netbeans.validation.api.ValidatorUtils
 cons public init()
 meth public !varargs static <%0 extends java.lang.Object> org.netbeans.validation.api.Validator<{%%0}> limitSeverity(org.netbeans.validation.api.Severity,org.netbeans.validation.api.Validator<{%%0}>[])
+ anno 0 java.lang.SafeVarargs()
 meth public !varargs static <%0 extends java.lang.Object> org.netbeans.validation.api.Validator<{%%0}> merge(org.netbeans.validation.api.Validator<{%%0}>[])
+ anno 0 java.lang.SafeVarargs()
 meth public final <%0 extends java.lang.Object, %1 extends java.lang.Object> org.netbeans.validation.api.Validator<{%%0}> as(java.lang.Class<{%%0}>,org.netbeans.validation.api.Validator<{%%1}>)
 meth public static <%0 extends java.lang.Object, %1 extends java.lang.Object> org.netbeans.validation.api.Validator<{%%0}> cast(java.lang.Class<{%%0}>,org.netbeans.validation.api.Validator<{%%1}>)
+meth public static <%0 extends java.lang.Object> org.netbeans.validation.api.Validator<{%%0}> allowNull(org.netbeans.validation.api.Validator<{%%0}>)
 meth public static <%0 extends java.lang.Object> org.netbeans.validation.api.Validator<{%%0}> limitSeverity(org.netbeans.validation.api.Severity,org.netbeans.validation.api.Validator<{%%0}>)
 meth public static <%0 extends java.lang.Object> org.netbeans.validation.api.Validator<{%%0}> merge(org.netbeans.validation.api.Validator<{%%0}>,org.netbeans.validation.api.Validator<{%%0}>)
 supr java.lang.Object
-hcls CastValidator
+hcls AllowNullValidator,CastValidator
 
 CLSS public final !enum org.netbeans.validation.api.builtin.indexvalidation.IndexValidators
 fld public final static org.netbeans.validation.api.builtin.indexvalidation.IndexValidators REQUIRE_SELECTION
@@ -746,6 +821,13 @@ meth public static org.netbeans.validation.api.builtin.indexvalidation.IndexVali
 meth public static org.netbeans.validation.api.builtin.indexvalidation.IndexValidators[] values()
 meth public void validate(org.netbeans.validation.api.Problems,java.lang.String,java.lang.Integer[])
 supr java.lang.Enum<org.netbeans.validation.api.builtin.indexvalidation.IndexValidators>
+
+CLSS public org.netbeans.validation.api.builtin.stringvalidation.BoundValidator
+intf org.netbeans.validation.api.Validator<java.lang.String>
+meth public java.lang.Class<java.lang.String> modelType()
+meth public void validate(org.netbeans.validation.api.Problems,java.lang.String,java.lang.String)
+supr java.lang.Object
+hfds less,value
 
 CLSS public final !enum org.netbeans.validation.api.builtin.stringvalidation.StringValidators
 fld public final static org.netbeans.validation.api.builtin.stringvalidation.StringValidators CHARACTER_SET_NAME
@@ -771,12 +853,17 @@ fld public final static org.netbeans.validation.api.builtin.stringvalidation.Str
 fld public final static org.netbeans.validation.api.builtin.stringvalidation.StringValidators VALID_HEXADECIMAL_NUMBER
 intf org.netbeans.validation.api.Validator<java.lang.String>
 meth public !varargs static org.netbeans.validation.api.Validator<java.lang.String> splitString(java.lang.String,org.netbeans.validation.api.Validator<java.lang.String>[])
+ anno 0 java.lang.SafeVarargs()
 meth public !varargs static org.netbeans.validation.api.Validator<java.lang.String> trimString(org.netbeans.validation.api.Validator<java.lang.String>[])
+ anno 0 java.lang.SafeVarargs()
 meth public java.lang.Class<java.lang.String> modelType()
 meth public org.netbeans.validation.api.Validator<java.lang.String> trim()
+meth public static org.netbeans.validation.api.Validator<java.lang.String> between(int,int)
 meth public static org.netbeans.validation.api.Validator<java.lang.String> disallowChars(char[])
 meth public static org.netbeans.validation.api.Validator<java.lang.String> encodableInCharset(java.lang.String)
 meth public static org.netbeans.validation.api.Validator<java.lang.String> forFormat(java.text.Format)
+meth public static org.netbeans.validation.api.Validator<java.lang.String> greaterThan(int)
+meth public static org.netbeans.validation.api.Validator<java.lang.String> lessThan(int)
 meth public static org.netbeans.validation.api.Validator<java.lang.String> maxLength(int)
 meth public static org.netbeans.validation.api.Validator<java.lang.String> mayNotEndWith(char)
 meth public static org.netbeans.validation.api.Validator<java.lang.String> minLength(int)
@@ -790,9 +877,19 @@ meth public static org.netbeans.validation.api.builtin.stringvalidation.StringVa
 meth public void validate(org.netbeans.validation.api.Problems,java.lang.String,java.lang.String)
 supr java.lang.Enum<org.netbeans.validation.api.builtin.stringvalidation.StringValidators>
 
+CLSS public org.netbeans.validation.api.builtin.stringvalidation.ValidatorTypes
+fld public static java.lang.Class<? extends org.netbeans.validation.api.Validator> HOST_NAME
+fld public static java.lang.Class<? extends org.netbeans.validation.api.Validator> HOST_NAME_OR_IP_ADDRESS
+fld public static java.lang.Class<? extends org.netbeans.validation.api.Validator> IP_ADDRESS
+fld public static java.lang.Class<? extends org.netbeans.validation.api.Validator> MAY_NOT_START_WITH_DIGIT
+fld public static java.lang.Class<? extends org.netbeans.validation.api.Validator> NO_WHITESPACE
+fld public static java.lang.Class<? extends org.netbeans.validation.api.Validator> URL
+supr java.lang.Object
+
 CLSS public abstract org.netbeans.validation.api.conversion.Converter<%0 extends java.lang.Object, %1 extends java.lang.Object>
 cons protected init(java.lang.Class<{org.netbeans.validation.api.conversion.Converter%0}>,java.lang.Class<{org.netbeans.validation.api.conversion.Converter%1}>)
 meth public !varargs final org.netbeans.validation.api.Validator<{org.netbeans.validation.api.conversion.Converter%1}> convert(org.netbeans.validation.api.Validator<{org.netbeans.validation.api.conversion.Converter%0}>[])
+ anno 0 java.lang.SafeVarargs()
 meth public abstract org.netbeans.validation.api.Validator<{org.netbeans.validation.api.conversion.Converter%1}> convert(org.netbeans.validation.api.Validator<{org.netbeans.validation.api.conversion.Converter%0}>)
 meth public boolean equals(java.lang.Object)
 meth public final java.lang.Class<{org.netbeans.validation.api.conversion.Converter%0}> from()
@@ -816,6 +913,7 @@ cons protected !varargs init(org.netbeans.validation.api.ui.GroupValidator,org.n
 cons protected !varargs init(org.netbeans.validation.api.ui.ValidationUI[])
 meth protected <%0 extends java.lang.Object> org.netbeans.validation.api.ui.ValidationUI decorationFor({%%0})
 meth public !varargs final <%0 extends java.lang.Object, %1 extends java.lang.Object> void add({%%0},org.netbeans.validation.api.Validator<{%%1}>[])
+ anno 0 java.lang.SafeVarargs()
 meth public !varargs static org.netbeans.validation.api.ui.ValidationGroup create(org.netbeans.validation.api.ui.GroupValidator,org.netbeans.validation.api.ui.ValidationUI[])
 meth public !varargs static org.netbeans.validation.api.ui.ValidationGroup create(org.netbeans.validation.api.ui.ValidationUI[])
 meth public final <%0 extends java.lang.Object, %1 extends java.lang.Object> void add({%%0},org.netbeans.validation.api.Validator<{%%1}>)
@@ -888,6 +986,7 @@ meth public !varargs final void add(javax.swing.AbstractButton[],org.netbeans.va
 meth public !varargs final void add(javax.swing.JComboBox,org.netbeans.validation.api.Validator<java.lang.String>[])
 meth public !varargs final void add(javax.swing.JList,org.netbeans.validation.api.Validator<java.lang.Integer[]>[])
 meth public !varargs final void add(javax.swing.text.JTextComponent,org.netbeans.validation.api.Validator<java.lang.String>[])
+ anno 0 java.lang.SafeVarargs()
 meth public !varargs static org.netbeans.validation.api.ui.swing.SwingValidationGroup create(org.netbeans.validation.api.ui.GroupValidator,org.netbeans.validation.api.ui.ValidationUI[])
 meth public !varargs static org.netbeans.validation.api.ui.swing.SwingValidationGroup create(org.netbeans.validation.api.ui.GroupValidator,org.netbeans.validation.api.ui.swing.SwingComponentDecorationFactory,org.netbeans.validation.api.ui.ValidationUI[])
 meth public !varargs static org.netbeans.validation.api.ui.swing.SwingValidationGroup create(org.netbeans.validation.api.ui.ValidationUI[])

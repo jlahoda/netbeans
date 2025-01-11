@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.51.1
+#Version 1.73.0
 
 CLSS public abstract interface java.io.Serializable
 
@@ -21,7 +21,6 @@ meth public final java.lang.String name()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
-hfds name,ordinal
 
 CLSS public java.lang.Object
 cons public init()
@@ -181,6 +180,7 @@ CLSS public final org.netbeans.modules.versioning.spi.VersioningSupport
 fld public final static java.lang.String PREF_BOOLEAN_TEXT_ANNOTATIONS_VISIBLE = "textAnnotationsVisible"
 meth public static boolean isExcluded(java.io.File)
 meth public static boolean isFlat(java.io.File)
+meth public static boolean isTextAnnotationVisible()
 meth public static java.io.File getFlat(java.lang.String)
 meth public static java.util.prefs.Preferences getPreferences()
 meth public static org.netbeans.modules.versioning.spi.VersioningSystem getOwner(java.io.File)

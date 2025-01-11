@@ -62,7 +62,7 @@ public class ProxySettings {
     // Only for testing purpose (Test connection in General options panel)
     public static final String TEST_SYSTEM_PROXY_HTTP_HOST = "testSystemProxyHttpHost"; // NOI18N
     public static final String TEST_SYSTEM_PROXY_HTTP_PORT = "testSystemProxyHttpPort"; // NOI18N
-    public static final String HTTP_CONNECTION_TEST_URL = "http://netbeans.org";        // NOI18N
+    public static final String HTTP_CONNECTION_TEST_URL = "https://netbeans.apache.org";// NOI18N
     
     private static String presetNonProxyHosts;
 
@@ -253,8 +253,8 @@ public class ProxySettings {
     }
 
     private static String getModifiedNonProxyHosts (String systemPreset) {
-        String fromSystem = systemPreset.replaceAll (";", "|").replaceAll (",", "|"); //NOI18N
-        String fromUser = getPresetNonProxyHosts () == null ? "" : getPresetNonProxyHosts ().replaceAll (";", "|").replaceAll (",", "|"); //NOI18N
+        String fromSystem = systemPreset.replace (";", "|").replace (",", "|"); //NOI18N
+        String fromUser = getPresetNonProxyHosts () == null ? "" : getPresetNonProxyHosts ().replace (";", "|").replace (",", "|"); //NOI18N
         if (Utilities.isWindows ()) {
             fromSystem = addReguralToNonProxyHosts (fromSystem);
         }

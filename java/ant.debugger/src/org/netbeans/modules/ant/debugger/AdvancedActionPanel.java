@@ -21,6 +21,7 @@ package org.netbeans.modules.ant.debugger;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.text.Collator;
 import java.util.*;
 import javax.swing.DefaultComboBoxModel;
@@ -67,7 +68,7 @@ final class AdvancedActionPanel extends javax.swing.JPanel {
     };
     
     private final AntProjectCookie project;
-    private final Set/*<TargetLister.Target>*/ allTargets;
+    private final Set<TargetLister.Target> allTargets;
     private String defaultTarget = null;
     
     public AdvancedActionPanel(AntProjectCookie project, Set/*<TargetLister.Target>*/ allTargets) {
@@ -95,10 +96,10 @@ final class AdvancedActionPanel extends javax.swing.JPanel {
         FileObject script = project.getFileObject();
         assert script != null : "No file found for " + project;
         String initialTargets = (String) script.getAttribute(ATTR_TARGETS);
-        SortedSet/*<String>*/ relevantTargets = new TreeSet(Collator.getInstance());
-        Iterator it = allTargets.iterator();
+        SortedSet<String> relevantTargets = new TreeSet<>(Collator.getInstance());
+        Iterator<TargetLister.Target> it = allTargets.iterator();
         while (it.hasNext()) {
-            TargetLister.Target target = (TargetLister.Target) it.next();
+            TargetLister.Target target = it.next();
             if (!target.isOverridden() && !target.isInternal()) {
                 relevantTargets.add(target.getName());
                 if (defaultTarget == null && target.isDefault()) {
@@ -253,9 +254,9 @@ final class AdvancedActionPanel extends javax.swing.JPanel {
         String description = "";
         if (targetsL.size() == 1) {
             String targetName = (String) targetsL.get(0);
-            Iterator it = allTargets.iterator();
+            Iterator<TargetLister.Target> it = allTargets.iterator();
             while (it.hasNext()) {
-                TargetLister.Target target = (TargetLister.Target) it.next();
+                TargetLister.Target target = it.next();
                 if (!target.isOverridden() && target.getName().equals(targetName)) {
                     description = target.getElement().getAttribute("description"); // NOI18N
                     // may still be "" if not defined
@@ -296,11 +297,11 @@ final class AdvancedActionPanel extends javax.swing.JPanel {
                 // Run default target.
                 targets = null;
             } else {
-                targets = (String[]) targetsL.toArray(new String[targetsL.size()]);
+                targets = (String[]) targetsL.toArray(new String[0]);
             }
         }
         Properties props = new Properties();
-        ByteArrayInputStream bais = new ByteArrayInputStream(propertiesPane.getText().getBytes("ISO-8859-1"));
+        ByteArrayInputStream bais = new ByteArrayInputStream(propertiesPane.getText().getBytes(StandardCharsets.ISO_8859_1));
         props.load(bais);
         int verbosity = 2;
         String verbosityString = (String) verbosityComboBox.getSelectedItem();

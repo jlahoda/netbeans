@@ -84,7 +84,7 @@ import org.openide.util.lookup.ProxyLookup;
         mimeType="",
         position=1000000 // lets leave some space in case somebody really wants to be the last
 )
-final public class HistoryComponent extends JPanel implements MultiViewElement, HelpCtx.Provider, PropertyChangeListener {
+public final class HistoryComponent extends JPanel implements MultiViewElement, HelpCtx.Provider, PropertyChangeListener {
 
     private HistoryFileView masterView;
     static final String PREFERRED_ID = "text.history";                          // NOI18N
@@ -179,7 +179,7 @@ final public class HistoryComponent extends JPanel implements MultiViewElement, 
                 }
                 filesList.addAll(doFiles);
             }
-            initFiles(filesList.toArray(new VCSFileProxy[filesList.size()]));
+            initFiles(filesList.toArray(new VCSFileProxy[0]));
         }
         Runnable r = new Runnable() {
             @Override
@@ -204,7 +204,7 @@ final public class HistoryComponent extends JPanel implements MultiViewElement, 
                     l.add(fo);
                 }
             }    
-            this.files = l.toArray(new FileObject[l.size()]);
+            this.files = l.toArray(new FileObject[0]);
             registerFileListeners();
         }
     }
@@ -894,7 +894,7 @@ final public class HistoryComponent extends JPanel implements MultiViewElement, 
         return new HelpCtx("org.netbeans.modules.localhistory.ui.view.LHHistoryTab");   // NO18N
     }
 
-    static abstract class Filter implements QuickFilter {
+    abstract static class Filter implements QuickFilter {
         public boolean filtersProperty(Property property) {
             return false;
         }
@@ -1053,7 +1053,7 @@ final public class HistoryComponent extends JPanel implements MultiViewElement, 
             endIdx = value.indexOf(contains, startIdx);
         }
         if(startIdx < value.length()) {
-            String t = value.substring(startIdx, value.length());
+            String t = value.substring(startIdx);
             sb.append(HistoryUtils.escapeForHTMLLabel(t)); 
         }
         return sb.toString();

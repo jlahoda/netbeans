@@ -28,6 +28,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -36,8 +37,6 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.processing.RoundEnvironment;
-import javax.annotation.processing.SupportedSourceVersion;
-import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
@@ -45,12 +44,10 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import org.openide.util.lookup.NamedServiceDefinition;
 import org.openide.util.lookup.implspi.AbstractServiceProviderProcessor;
 
-@SupportedSourceVersion(SourceVersion.RELEASE_7)
 public final class NamedServiceProcessor extends AbstractServiceProviderProcessor {
     private static final String PATH = "META-INF/namedservices.index"; // NOI18N
     private static Pattern reference = Pattern.compile("@([^/]+)\\(\\)"); // NOI18N
@@ -253,7 +250,7 @@ public final class NamedServiceProcessor extends AbstractServiceProviderProcesso
             while (en.hasMoreElements()) {
                 URL url = en.nextElement();
                 InputStream is = url.openStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(is, "UTF-8")); // NOI18N
+                BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 
                 // XXX consider using ServiceLoaderLine instead
                 while (true) {

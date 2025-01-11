@@ -117,7 +117,7 @@ implements ChangeListener {
 	
     /** Method to check whether the constructor is allowed.
      */
-    final static boolean isConstructorAllowed() {
+    static final boolean isConstructorAllowed() {
         return FIND.get() != null;
     }
 
@@ -657,7 +657,7 @@ implements ChangeListener {
         }
     }
     
-    static private Collection<Item> getTargets(FileEvent fe, boolean checkSiblings) {
+    private static Collection<Item> getTargets(FileEvent fe, boolean checkSiblings) {
         FileObject fo = fe.getFile();
         // The FileSystem notifying us about the changes should
         // not hold any lock so we're safe here
@@ -686,7 +686,7 @@ implements ChangeListener {
                         }
                         // notify all in folder
                         for (int i = 0; i < siblings.length; i++) {
-                            itm = (Item) DataObjectPool.POOL.map.get(siblings[i]);
+                            itm = DataObjectPool.POOL.map.get(siblings[i]);
                             if (itm == null) {
                                 continue;
                             }

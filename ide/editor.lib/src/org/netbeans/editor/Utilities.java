@@ -20,6 +20,7 @@
 package org.netbeans.editor;
 
 import java.awt.AWTKeyStroke;
+import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Rectangle;
@@ -30,6 +31,8 @@ import java.awt.KeyboardFocusManager;
 import java.awt.Point;
 import java.awt.Shape;
 import java.awt.event.ActionEvent;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
 import java.awt.geom.Rectangle2D;
 import java.beans.PropertyChangeEvent;
@@ -44,6 +47,7 @@ import javax.swing.Action;
 import javax.swing.InputMap;
 import javax.swing.JComponent;
 import javax.swing.JEditorPane;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.JViewport;
@@ -67,18 +71,22 @@ import javax.swing.text.Element;
 import javax.swing.text.Position;
 import javax.swing.text.View;
 import org.netbeans.api.editor.EditorRegistry;
+import org.netbeans.api.editor.document.LineDocument;
 import org.netbeans.api.editor.document.LineDocumentUtils;
 import org.netbeans.api.editor.mimelookup.MimeLookup;
 import org.netbeans.api.editor.settings.SimpleValueNames;
 import org.netbeans.lib.editor.util.CharSequenceUtilities;
 import org.netbeans.lib.editor.util.swing.DocumentListenerPriority;
 import org.netbeans.lib.editor.util.swing.DocumentUtilities;
+import org.netbeans.modules.editor.indent.api.IndentUtils;
 import org.netbeans.modules.editor.indent.api.Reformat;
 import org.netbeans.modules.editor.indent.spi.CodeStylePreferences;
 import org.netbeans.modules.editor.lib.BeforeSaveTasks;
+import org.netbeans.modules.editor.lib.WcwdithUtil;
 import org.netbeans.modules.editor.lib2.EditorPreferencesDefaults;
 import org.netbeans.modules.editor.lib2.view.DocumentView;
 import org.netbeans.modules.editor.lib2.view.EditorView;
+import org.openide.awt.Actions;
 import org.openide.util.Exceptions;
 import org.openide.util.Mutex;
 import org.openide.util.NbBundle;
@@ -147,13 +155,47 @@ public class Utilities {
         }
         return -1;
     }
-
+    
+    /** Get visual column from position. This method can be used
+    * only for superfixed font i.e. all characters of all font styles
+    * have the same width.
+    * @param offset position for which the visual column should be returned
+    *   the function itself computes the begining of the line first
+    */
+    static int getVisColFromPos(LineDocument doc, int offset) throws BadLocationException {
+        if (offset < 0 || offset > doc.getLength()) {
+            throw new BadLocationException("Invalid offset", offset); // NOI18N
+        }
+        int startLineOffset =  LineDocumentUtils.getLineStart(doc, offset);
+        int tabSize = IndentUtils.tabSize(doc);
+        CharSequence docText = org.netbeans.lib.editor.util.swing.DocumentUtilities.getText(doc);
+        int visCol = 0;
+        for (int i = startLineOffset; i < offset; i++) {
+            char ch = docText.charAt(i);
+            if (ch == '\t') {
+                visCol = (visCol + tabSize) / tabSize * tabSize;
+            } else {
+                // #17356
+                int codePoint;
+                if (Character.isHighSurrogate(ch) && i + 1 < docText.length()) {
+                    codePoint = Character.toCodePoint(ch, docText.charAt(++i));
+                } else {
+                    codePoint = ch;
+                }
+                int w = WcwdithUtil.wcwidth(codePoint);
+                visCol += w > 0 ? w : 0;
+            }
+        }
+        return visCol;
+    }
+    
     /** Get the starting position of the row.
     * @param doc document to operate on
     * @param offset position in document where to start searching
     * @return position of the start of the row or -1 for invalid position
     * @deprecated use {@link LineDocumentUtils}
     */
+    @Deprecated
     public static int getRowStart(BaseDocument doc, int offset)
     throws BadLocationException {
         return LineDocumentUtils.getLineStart(doc, offset);
@@ -171,6 +213,7 @@ public class Utilities {
     * @return position of the start of the row or -1 for invalid position
     * @deprecated Deprecated without replacement
     */
+    @Deprecated
     public static int getRowStart(BaseDocument doc, int offset, int lineShift)
     throws BadLocationException {
         checkOffsetValid(doc, offset);
@@ -210,6 +253,7 @@ public class Utilities {
     *   if there's no non-white character on that line.
     * @deprecated use {@link LineDocumentUtils}
     */
+    @Deprecated
     public static int getRowLastNonWhite(BaseDocument doc, int offset)
     throws BadLocationException {
         return LineDocumentUtils.getLineLastNonWhitespace(doc, offset);
@@ -260,10 +304,10 @@ public class Utilities {
     /** Get the end position of the row right before the new-line character.
     * @param c text component to operate on
     * @param offset position in document where to start searching
-    * @param relLine shift offset forward/back by some amount of lines
     * @return position of the end of the row or -1 for invalid position
     * @deprecated use {@link LineDocumentUtils}
     */
+    @Deprecated
     public static int getRowEnd(JTextComponent c, int offset)
     throws BadLocationException {
         Rectangle2D r = modelToView(c, offset);
@@ -281,6 +325,7 @@ public class Utilities {
      * @throws BadLocationException
      * @deprecated use {@link LineDocumentUtils}
      */
+    @Deprecated
     public static int getRowEnd(BaseDocument doc, int offset)
     throws BadLocationException {
         return LineDocumentUtils.getLineEnd(doc, offset);
@@ -324,13 +369,14 @@ public class Utilities {
 
     /** Get the position that is one line above and visually at some
     * x-coordinate value.
-    * @param doc document to operate on
+    * @param c component to operate on
     * @param offset position in document from which the current line is determined
     * @param x float x-coordinate value
     * @return position of the character that is at the one line above at
     *   the required x-coordinate value
     * @deprecated use {@link LineDocumentUtils}
     */
+    @Deprecated
     public static int getPositionAbove(JTextComponent c, int offset, int x)
     throws BadLocationException {
         // Ignore returned bias
@@ -348,6 +394,7 @@ public class Utilities {
     *   the required x-coordinate value
     * @deprecated use {@link LineDocumentUtils}
     */
+    @Deprecated
     public static int getPositionBelow(JTextComponent c, int offset, int x)
     throws BadLocationException {
         // Ignore returned bias
@@ -362,6 +409,7 @@ public class Utilities {
     * @param offset position in document from which the current line is determined
     * @deprecated use {@link LineDocumentUtils}
     */
+    @Deprecated
     public static int getWordStart(JTextComponent c, int offset)
     throws BadLocationException {
         return getWordStart((BaseDocument)c.getDocument(), offset);
@@ -430,6 +478,7 @@ public class Utilities {
     * @return position of the first white character or -1
     * @deprecated use {@link LineDocumentUtils}
     */
+    @Deprecated
     public static int getFirstWhiteFwd(BaseDocument doc, int offset)
     throws BadLocationException {
         return LineDocumentUtils.getNextWhitespace(doc, offset);
@@ -443,6 +492,7 @@ public class Utilities {
     * @return position of the first non-white character or -1
     * @deprecated use {@link LineDocumentUtils}
     */
+    @Deprecated
     public static int getFirstWhiteFwd(BaseDocument doc, int offset, int limitPos)
     throws BadLocationException {
         return LineDocumentUtils.getNextWhitespace(doc, offset, limitPos);
@@ -454,6 +504,7 @@ public class Utilities {
     * @return position of the first non-white character or -1
     * @deprecated use {@link LineDocumentUtils}
     */
+    @Deprecated
     public static int getFirstNonWhiteFwd(BaseDocument doc, int offset)
     throws BadLocationException {
         return LineDocumentUtils.getNextNonWhitespace(doc, offset);
@@ -467,6 +518,7 @@ public class Utilities {
     * @return position of the first non-white character or -1
     * @deprecated use {@link LineDocumentUtils}
     */
+    @Deprecated
     public static int getFirstNonWhiteFwd(BaseDocument doc, int offset, int limitPos)
     throws BadLocationException {
         return LineDocumentUtils.getNextNonWhitespace(doc, offset, limitPos);
@@ -480,6 +532,7 @@ public class Utilities {
     * @return position of the first white character or -1
     * @deprecated use {@link LineDocumentUtils}
     */
+    @Deprecated
     public static int getFirstWhiteBwd(BaseDocument doc, int offset)
     throws BadLocationException {
         return LineDocumentUtils.getPreviousWhitespace(doc, offset);
@@ -495,6 +548,7 @@ public class Utilities {
     * @return position of the first white character or -1
     * @deprecated use {@link LineDocumentUtils}
     */
+    @Deprecated
     public static int getFirstWhiteBwd(BaseDocument doc, int offset, int limitPos)
     throws BadLocationException {
         return LineDocumentUtils.getPreviousWhitespace(doc, offset, limitPos);
@@ -508,6 +562,7 @@ public class Utilities {
     * @return position of the first non-white character or -1
     * @deprecated use {@link LineDocumentUtils}
     */
+    @Deprecated
     public static int getFirstNonWhiteBwd(BaseDocument doc, int offset)
     throws BadLocationException {
         return LineDocumentUtils.getPreviousNonWhitespace(doc, offset);
@@ -523,6 +578,7 @@ public class Utilities {
     * @return position of the first non-white character or -1
     * @deprecated use {@link LineDocumentUtils}
     */
+    @Deprecated
     public static int getFirstNonWhiteBwd(BaseDocument doc, int offset, int limitPos)
     throws BadLocationException {
         return LineDocumentUtils.getPreviousNonWhitespace(doc, offset, limitPos);
@@ -533,6 +589,7 @@ public class Utilities {
     * @param offset position in document where to start searching
     * @deprecated use {@link LineDocumentUtils}
     */
+    @Deprecated
     public static int getLineOffset(BaseDocument doc, int offset)
     throws BadLocationException {
         return LineDocumentUtils.getLineIndex(doc, offset);
@@ -543,6 +600,7 @@ public class Utilities {
     * @return start position of the line or -1 if lineIndex was invalid
     * @deprecated use {@link LineDocumentUtils}
     */
+    @Deprecated
     public static int getRowStartFromLineOffset(BaseDocument doc, int lineIndex) {
         return LineDocumentUtils.getLineStartFromIndex(doc, lineIndex);
     }
@@ -562,9 +620,25 @@ public class Utilities {
 
         return doc.getVisColFromPos(offset);
     }
+    
+    /** Return visual column (with expanded tabs) on the line.
+    * @param doc document to operate on
+    * @param offset position in document for which the visual column should be found
+    * @return visual column on the line determined by position
+    */
+    public static int getVisualColumn(LineDocument doc, int offset)
+    throws BadLocationException {
+        
+        int docLen = doc.getLength();
+        if (offset == docLen + 1) { // at ending extra '\n' => make docLen to proceed without BLE
+            offset = docLen;
+        }
+
+        return getVisColFromPos(doc,offset);
+    }
 
     /** Get the identifier around the given position or null if there's no identifier
-    * @see getIdentifierBlock()
+    * @see #getIdentifierBlock(BaseDocument,int)
     */
     public static String getIdentifier(BaseDocument doc, int offset)
     throws BadLocationException {
@@ -680,7 +754,7 @@ public class Utilities {
     }
 
     /** Get the selection or identifier at the current caret position
-     * @see getSelectionOrIdentifierBlock(JTextComponent, int)
+     * @see #getSelectionOrIdentifierBlock(JTextComponent, int)
      */
     public static int[] getSelectionOrIdentifierBlock(JTextComponent c) {
         try {
@@ -804,6 +878,7 @@ public class Utilities {
     * @return whether the line is empty or not
     * @deprecated use {@link LineDocumentUtils#isLineEmpty(org.netbeans.api.editor.document.LineDocument, int)}.
     */
+    @Deprecated
     public static boolean isRowEmpty(BaseDocument doc, int offset)
     throws BadLocationException {
         return LineDocumentUtils.isLineEmpty(doc, offset);
@@ -825,6 +900,7 @@ public class Utilities {
     * @return whether the line is empty or not
     * @deprecated use {@link LineDocumentUtils}
     */
+    @Deprecated
     public static boolean isRowWhite(BaseDocument doc, int offset)
     throws BadLocationException {
         return LineDocumentUtils.isLineWhitespace(doc, offset);
@@ -842,9 +918,9 @@ public class Utilities {
 
     /**
      * Reformat a block of code.
-     * <br/>
+     * <br>
      * The document should not be locked prior entering of this method.
-     * <br/>
+     * <br>
      * The method should be called from AWT thread so that the given offsets are more stable.
      * 
      * @param doc document to work with
@@ -880,9 +956,9 @@ public class Utilities {
 
     /**
      * Reformat the line around the given position.
-     * <br/>
+     * <br>
      * The document should not be locked prior entering of this method.
-     * <br/>
+     * <br>
      * The method should be called from AWT thread so that the given offsets are more stable.
      * 
      */
@@ -907,8 +983,9 @@ public class Utilities {
     }
 
     /** @deprecated
-     * @see Formatter.insertTabString()
+     * {@code Formatter#insertTabString()} editor.deprecated.pre65formatting
      */
+    @Deprecated
     public static String getTabInsertString(BaseDocument doc, int offset)
     throws BadLocationException {
         int col = getVisualColumn(doc, offset);
@@ -1228,7 +1305,7 @@ public class Utilities {
      * @param readLockDocument if true lock the document before locking the view hierarchy.
      *  This parameter should only be false if it's known that the document was already read/write-locked
      *  prior calling this method.
-     * @r non-null runnable to execute.
+     * @param r  non-null runnable to execute.
      */
     public static void runViewHierarchyTransaction(final JTextComponent component,
             boolean readLockDocument, final Runnable r)
@@ -1254,7 +1331,7 @@ public class Utilities {
     /**
      * Creates nice textual description of sequence of KeyStrokes. Usable for
      * displaying MultiKeyBindings. The keyStrokes are delimited by space.
-     * @param Array of KeyStrokes representing the actual sequence.
+     * @param seq Array of KeyStrokes representing the actual sequence.
      * @return String describing the KeyStroke sequence.
      */
     public static String keySequenceToString( KeyStroke[] seq ) {
@@ -1268,47 +1345,14 @@ public class Utilities {
 
     /**
      * Creates nice textual representation of KeyStroke.
-     * Modifiers and an actual key label are concated by plus signs
-     * @param the KeyStroke to get description of
+     * Modifiers and an actual key label are concated per the platform-specific convention
+     * @param stroke the KeyStroke to get description of
      * @return String describing the KeyStroke
      */
     public static String keyStrokeToString( KeyStroke stroke ) {
-        String modifText = KeyEvent.getKeyModifiersText( stroke.getModifiers() );
-        String keyText = (stroke.getKeyCode() == KeyEvent.VK_UNDEFINED) ? 
-            String.valueOf(stroke.getKeyChar()) : getKeyText(stroke.getKeyCode());
-        if( modifText.length() > 0 ) return modifText + '+' + keyText;
-        else return keyText;
-    }
-    
-    /** @return slight modification of what KeyEvent.getKeyText() returns.
-     *  The numpad Left, Right, Down, Up get extra result.
-     */
-    private static String getKeyText(int keyCode) {
-        String ret = KeyEvent.getKeyText(keyCode);
-        if (ret != null) {
-            switch (keyCode) {
-                case KeyEvent.VK_KP_DOWN:
-                    ret = prefixNumpad(ret, KeyEvent.VK_DOWN);
-                    break;
-                case KeyEvent.VK_KP_LEFT:
-                    ret = prefixNumpad(ret, KeyEvent.VK_LEFT);
-                    break;
-                case KeyEvent.VK_KP_RIGHT:
-                    ret = prefixNumpad(ret, KeyEvent.VK_RIGHT);
-                    break;
-                case KeyEvent.VK_KP_UP:
-                    ret = prefixNumpad(ret, KeyEvent.VK_UP);
-                    break;
-            }
-        }
-        return ret;
-    }
-    
-    private static String prefixNumpad(String key, int testKeyCode) {
-        if (key.equals(KeyEvent.getKeyText(testKeyCode))) {
-            key = NbBundle.getBundle(BaseKit.class).getString("key-prefix-numpad") + key;
-        }
-        return key;
+        /* The related logic has now been moved into org.openide.awt.Actions, so that it can be used
+        by modules that do not depend on the editor infrastructure. */
+        return Actions.keyStrokeToString(stroke);
     }
 
     private static void checkOffsetValid(Document doc, int offset) throws BadLocationException {
@@ -1333,6 +1377,7 @@ public class Utilities {
      * @deprecated Use java.util.logging.Logger instead with the proper name,
      * log level and message.
      */
+    @Deprecated
     public static void annotateLoggable(Throwable t) {
         Logger.getLogger("org.netbeans.editor").log(Level.INFO, null, t); //NOI18N
     }
@@ -1349,7 +1394,7 @@ public class Utilities {
     }
     
     /**
-     * @see isSelectionShowing(Caret)
+     * @see #isSelectionShowing(Caret)
      * @param component non-null component.
      * @return if selection is showing for component's caret.
      */
@@ -1511,6 +1556,10 @@ public class Utilities {
         im.put(escKs, NO_ACTION);
         im.put(tabKs, NO_ACTION);
 
+        // The editor pane must not have any insets because otherwise the caret
+        // is not positions correctly (maybe a bug somewhere in class DocumentView
+        // where `allocation.x` and `allocation.y` are always zero, but should be
+        // insets left and top).
         editorPane.setBorder (
             new EmptyBorder (0, 0, 0, 0)
         );
@@ -1521,21 +1570,45 @@ public class Utilities {
         tfkeys = referenceTextField.getFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS);
         editorPane.setFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, tfkeys);
 
-        final Insets margin = referenceTextField.getMargin();
-        final Insets borderInsets = referenceTextField.getBorder().getBorderInsets(referenceTextField);
+        final Insets textFieldInsets = referenceTextField.getInsets();
+
+        // Because the insets include the margin, temporary clear margin to get
+        // the real border insets. Subtracting margin from insets does not work
+        // correctly because FlatLaf does some scaling on HiDPI screens
+        // (getInsets() returns scaled values, but getMargin() unscaled values).
+        final Insets oldMargin = referenceTextField.getMargin();
+        referenceTextField.setMargin(new Insets(0, 0, 0, 0));
+        final Insets borderInsets = referenceTextField.getInsets();
+        referenceTextField.setMargin(oldMargin);
+
+        // Compute insets used for scrollpane view, which is textFieldInsets minus
+        // borderInsets because the scrollpane gets the border of the textfield.
+        final Insets viewInsets = new Insets(
+                textFieldInsets.top - borderInsets.top,
+                textFieldInsets.left - borderInsets.left,
+                textFieldInsets.bottom - borderInsets.bottom,
+                textFieldInsets.right - borderInsets.right);
+
+        // This view panel is only needed to have some margin between
+        // the scrollpane border and the editor pane.
+        final JPanel viewPanel = new JPanel(new BorderLayout()) {
+            // overridden so that FlatLaf changes scrollpane border color if editor pane is focused
+            @Override
+            public boolean hasFocus() {
+                return editorPane.hasFocus();
+            }
+        };
+        viewPanel.setBorder(new EmptyBorder(viewInsets));
+        viewPanel.setOpaque(true);
+        viewPanel.setBackground(referenceTextField.getBackground());
+        viewPanel.add(editorPane, BorderLayout.NORTH);
+
         //logger.fine("createSingleLineEditor(): margin = "+margin+", borderInsets = "+borderInsets);
         final JScrollPane sp = new JScrollPane(JScrollPane.VERTICAL_SCROLLBAR_NEVER,
                                                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER) {
-
             @Override
             public void setViewportView(Component view) {
-                if (view instanceof JComponent) {
-                    //logger.fine("createSingleLineEditor() setViewportView(): setting empty border with insets = "+borderInsets);
-                    ((JComponent) view).setBorder(new EmptyBorder(margin)); // borderInsets
-                }
-                if (view instanceof JEditorPane) {
-                    adjustScrollPaneSize(this, (JEditorPane) view);
-                }
+                adjustScrollPaneSize(this, editorPane);
                 super.setViewportView(view);
             }
 
@@ -1549,6 +1622,18 @@ public class Utilities {
             }
         });
 
+        // Repaint scrollpane on focus gained/lost to update border color in case
+        // the current LaF uses different border color for focused state.
+        editorPane.addFocusListener(new FocusListener() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                sp.repaint();
+            }
+            @Override
+            public void focusLost(FocusEvent e) {
+                sp.repaint();
+            }
+        });
 
         sp.setBorder(new DelegatingBorder(referenceTextField.getBorder(), borderInsets));
         sp.setBackground(referenceTextField.getBackground());
@@ -1556,13 +1641,12 @@ public class Utilities {
         int preferredHeight = referenceTextField.getPreferredSize().height;
         Dimension spDim = sp.getPreferredSize();
         spDim.height = preferredHeight;
-        spDim.height += margin.bottom + margin.top;//borderInsets.top + borderInsets.bottom;
         sp.setPreferredSize(spDim);
         sp.setMinimumSize(spDim);
         sp.setMaximumSize(spDim);
-        
-        sp.setViewportView(editorPane);
-        
+
+        sp.setViewportView(viewPanel);
+
         final DocumentListener manageViewListener = new ManageViewPositionListener(editorPane, sp);
         DocumentUtilities.addDocumentListener(editorPane.getDocument(), manageViewListener, DocumentListenerPriority.AFTER_CARET_UPDATE);
         editorPane.addPropertyChangeListener(new PropertyChangeListener() {
@@ -1598,7 +1682,6 @@ public class Utilities {
         //logger.fine("createSingleLineEditor(): editorPane's insets = "+editorPane.getInsets());
         Dimension prefSize = sp.getPreferredSize();
         Insets borderInsets = sp.getBorder().getBorderInsets(sp);//sp.getInsets();
-        int vBorder = borderInsets.bottom + borderInsets.top;
         EditorUI eui = org.netbeans.editor.Utilities.getEditorUI(editorPane);
         if (logger.isLoggable(Level.FINE)) {
             logger.fine("createSingleLineEditor(): editor UI = "+eui);
@@ -1619,7 +1702,7 @@ public class Utilities {
             //logger.fine("createSingleLineEditor(): editor's font = "+font+" with metrics = "+fontMetrics+", leading = "+fontMetrics.getLeading());
             //logger.fine("createSingleLineEditor(): font's height = "+height);
         }
-        height += vBorder + getLFHeightAdjustment();
+        height += getLFHeightAdjustment();
         //height += 2; // 2 for border
         if (logger.isLoggable(Level.FINE)) {
             logger.fine("createSingleLineEditor(): border vertical insets = "+borderInsets.bottom+" + "+borderInsets.top);

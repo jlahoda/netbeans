@@ -25,8 +25,6 @@ import java.util.List;
 import java.util.Set;
 import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
-import javax.annotation.processing.SupportedSourceVersion;
-import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
@@ -49,7 +47,6 @@ import org.openide.util.lookup.ServiceProvider;
  * @author Martin Entlicher
  */
 @ServiceProvider(service=Processor.class)
-@SupportedSourceVersion(SourceVersion.RELEASE_7)
 public class DebuggerProcessor extends LayerGeneratingProcessor {
 
     public static final String SERVICE_NAME = "serviceName"; // NOI18N
@@ -105,7 +102,7 @@ public class DebuggerProcessor extends LayerGeneratingProcessor {
             case CLASS: {
                 TypeElement te = (TypeElement) e;
                 TypeMirror superType = te.getSuperclass();
-                if (superType.getKind().equals(TypeKind.NONE)) {
+                if (superType.getKind() == TypeKind.NONE) {
                     return false;
                 } else {
                     e = ((DeclaredType) superType).asElement();
@@ -119,7 +116,7 @@ public class DebuggerProcessor extends LayerGeneratingProcessor {
             }
             case METHOD: {
                 TypeMirror retType = ((ExecutableElement) e).getReturnType();
-                if (retType.getKind().equals(TypeKind.NONE)) {
+                if (retType.getKind() == TypeKind.NONE) {
                     return false;
                 } else {
                     e = ((DeclaredType) retType).asElement();

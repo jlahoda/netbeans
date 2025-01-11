@@ -36,6 +36,8 @@ import org.netbeans.modules.parsing.spi.indexing.support.IndexDocument;
 import org.netbeans.modules.parsing.spi.indexing.support.IndexingSupport;
 import org.netbeans.modules.php.api.util.FileUtils;
 import static org.netbeans.modules.php.api.util.FileUtils.PHP_MIME_TYPE;
+import org.netbeans.modules.php.editor.NavUtils;
+import org.netbeans.modules.php.editor.completion.PhpTypeCompletionProviderWrapper.PhpTypeCompletionProvider;
 import org.netbeans.modules.php.editor.elements.IndexQueryImpl;
 import org.netbeans.modules.php.editor.model.ConstantElement;
 import org.netbeans.modules.php.editor.model.FileScope;
@@ -45,8 +47,6 @@ import org.netbeans.modules.php.editor.model.Model.Type;
 import org.netbeans.modules.php.editor.model.ModelUtils;
 import org.netbeans.modules.php.editor.model.NamespaceScope;
 import org.netbeans.modules.php.editor.model.TypeScope;
-import org.netbeans.modules.php.editor.NavUtils;
-import org.netbeans.modules.php.editor.completion.PhpTypeCompletionProviderWrapper.PhpTypeCompletionProvider;
 import org.netbeans.modules.php.editor.parser.PHPParseResult;
 import org.netbeans.modules.php.editor.parser.astnodes.Identifier;
 import org.netbeans.modules.php.editor.parser.astnodes.PHPDocTypeNode;
@@ -94,6 +94,9 @@ public final class PHPIndexer extends EmbeddingIndexer {
     public static final String FIELD_USED_TRAIT = "usedtrait"; //NOI18N
     public static final String FIELD_TRAIT_CONFLICT_RESOLUTION = "traitconf"; //NOI18N
     public static final String FIELD_TRAIT_METHOD_ALIAS = "traitmeth"; //NOI18N
+    public static final String FIELD_ENUM = "enum"; //NOI18N
+    public static final String FIELD_ENUM_CASE = "enum.case"; //NOI18N
+    public static final String FIELD_ATTRIBUTE_CLASS = "attribute.clz"; //NOI18N
 
     public static final String FIELD_VAR = "var"; //NOI18N
     /** This field is for fast access top level elemnts. */
@@ -119,7 +122,10 @@ public final class PHPIndexer extends EmbeddingIndexer {
                     FIELD_TRAIT,
                     FIELD_USED_TRAIT,
                     FIELD_TRAIT_CONFLICT_RESOLUTION,
-                    FIELD_TRAIT_METHOD_ALIAS
+                    FIELD_TRAIT_METHOD_ALIAS,
+                    FIELD_ENUM,
+                    FIELD_ENUM_CASE,
+                    FIELD_ATTRIBUTE_CLASS,
                 }
             )
     );
@@ -216,7 +222,7 @@ public final class PHPIndexer extends EmbeddingIndexer {
     public static final class Factory extends EmbeddingIndexerFactory {
 
         public static final String NAME = "php"; // NOI18N
-        public static final int VERSION = 28;
+        public static final int VERSION = 39;
 
         @Override
         public EmbeddingIndexer createIndexer(final Indexable indexable, final Snapshot snapshot) {

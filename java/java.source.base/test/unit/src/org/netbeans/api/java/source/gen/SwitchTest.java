@@ -42,7 +42,6 @@ import org.netbeans.api.java.source.Task;
 import org.netbeans.api.java.source.TestUtilities;
 import org.netbeans.api.java.source.TreeMaker;
 import org.netbeans.api.java.source.WorkingCopy;
-import org.netbeans.modules.java.source.TreeShims;
 
 /**
  * The following shell script was used to generate the code snippets
@@ -83,7 +82,7 @@ public class SwitchTest extends GeneratorTestBase {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -139,7 +138,7 @@ public class SwitchTest extends GeneratorTestBase {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
     
@@ -187,7 +186,7 @@ public class SwitchTest extends GeneratorTestBase {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -234,7 +233,7 @@ public class SwitchTest extends GeneratorTestBase {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -257,21 +256,21 @@ public class SwitchTest extends GeneratorTestBase {
         TestCase[] testCases = new TestCase[] {
             new TestCase("case 0:",
                          (copy, tree) -> {
-                             List<ExpressionTree> labels = new ArrayList<>(TreeShims.getExpressions(tree));
+                             List<ExpressionTree> labels = new ArrayList<>(tree.getExpressions());
                              labels.add(copy.getTreeMaker().Literal(1));
                              return copy.getTreeMaker().CaseMultipleLabels(labels, tree.getStatements());
                          },
                          "case 0, 1:"),
             new TestCase("case 0:",
                          (copy, tree) -> {
-                             List<ExpressionTree> labels = new ArrayList<>(TreeShims.getExpressions(tree));
+                             List<ExpressionTree> labels = new ArrayList<>(tree.getExpressions());
                              labels.add(0, copy.getTreeMaker().Literal(-1));
                              return copy.getTreeMaker().CaseMultipleLabels(labels, tree.getStatements());
                          },
                          "case -1, 0:"),
             new TestCase("case 0:",
                          (copy, tree) -> {
-                             List<ExpressionTree> labels = new ArrayList<>(TreeShims.getExpressions(tree));
+                             List<ExpressionTree> labels = new ArrayList<>(tree.getExpressions());
                              labels.add(0, copy.getTreeMaker().Literal(-1));
                              labels.add(copy.getTreeMaker().Literal(1));
                              return copy.getTreeMaker().CaseMultipleLabels(labels, tree.getStatements());
@@ -279,35 +278,35 @@ public class SwitchTest extends GeneratorTestBase {
                          "case -1, 0, 1:"),
             new TestCase("case -1, 1:",
                          (copy, tree) -> {
-                             List<ExpressionTree> labels = new ArrayList<>(TreeShims.getExpressions(tree));
+                             List<ExpressionTree> labels = new ArrayList<>(tree.getExpressions());
                              labels.add(1, copy.getTreeMaker().Literal(0));
                              return copy.getTreeMaker().CaseMultipleLabels(labels, tree.getStatements());
                          },
                          "case -1, 0, 1:"),
             new TestCase("case -1, 0, 1:",
                          (copy, tree) -> {
-                             List<ExpressionTree> labels = new ArrayList<>(TreeShims.getExpressions(tree));
+                             List<ExpressionTree> labels = new ArrayList<>(tree.getExpressions());
                              labels.remove(0);
                              return copy.getTreeMaker().CaseMultipleLabels(labels, tree.getStatements());
                          },
-                         "case " + /*XXX: too many spaces:*/ " " + "0, 1:"),
+                         "case 0, 1:"),
             new TestCase("case -1, 0, 1:",
                          (copy, tree) -> {
-                             List<ExpressionTree> labels = new ArrayList<>(TreeShims.getExpressions(tree));
+                             List<ExpressionTree> labels = new ArrayList<>(tree.getExpressions());
                              labels.remove(1);
                              return copy.getTreeMaker().CaseMultipleLabels(labels, tree.getStatements());
                          },
                          "case -1, 1:"),
             new TestCase("case -1, 0, 1:",
                          (copy, tree) -> {
-                             List<ExpressionTree> labels = new ArrayList<>(TreeShims.getExpressions(tree));
+                             List<ExpressionTree> labels = new ArrayList<>(tree.getExpressions());
                              labels.remove(2);
                              return copy.getTreeMaker().CaseMultipleLabels(labels, tree.getStatements());
                          },
                          "case -1, 0:"),
             new TestCase("default:",
                          (copy, tree) -> {
-                             List<ExpressionTree> labels = new ArrayList<>(TreeShims.getExpressions(tree));
+                             List<ExpressionTree> labels = new ArrayList<>(tree.getExpressions());
                              labels.add(copy.getTreeMaker().Literal(0));
                              return copy.getTreeMaker().CaseMultipleLabels(labels, tree.getStatements());
                          },
@@ -405,7 +404,7 @@ public class SwitchTest extends GeneratorTestBase {
                 new ErrorAwareTreePathScanner<Void, Void>() {
                     @Override public Void visitCase(CaseTree node, Void p) {
                         copy.rewrite(getCurrentPath().getLeaf(),
-                                     make.Case(TreeShims.getExpressions(node), make.Block(node.getStatements().subList(0, 2), false)));
+                                     make.Case(node.getExpressions(), make.Block(node.getStatements().subList(0, 2), false)));
                         return super.visitCase(node, p);
                     }
                 }.scan(copy.getCompilationUnit(), null);
@@ -413,7 +412,7 @@ public class SwitchTest extends GeneratorTestBase {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -452,10 +451,10 @@ public class SwitchTest extends GeneratorTestBase {
                 final TreeMaker make = copy.getTreeMaker();
                 new ErrorAwareTreePathScanner<Void, Void>() {
                     @Override public Void visitCase(CaseTree node, Void p) {
-                        List<StatementTree> statements = new ArrayList<>(((BlockTree) TreeShims.getBody(node)).getStatements());
+                        List<StatementTree> statements = new ArrayList<>(((BlockTree) node.getBody()).getStatements());
                         statements.add(make.Break(null));
                         copy.rewrite(getCurrentPath().getLeaf(),
-                                     make.CaseMultipleLabels(TreeShims.getExpressions(node), statements));
+                                     make.CaseMultipleLabels(node.getExpressions(), statements));
                         return super.visitCase(node, p);
                     }
                 }.scan(copy.getCompilationUnit(), null);
@@ -463,7 +462,7 @@ public class SwitchTest extends GeneratorTestBase {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -499,7 +498,7 @@ public class SwitchTest extends GeneratorTestBase {
                 new ErrorAwareTreePathScanner<Void, Void>() {
                     @Override public Void visitCase(CaseTree node, Void p) {
                         copy.rewrite(getCurrentPath().getLeaf(),
-                                     make.Case(TreeShims.getExpressions(node), node.getStatements().get(0)));
+                                     make.Case(node.getExpressions(), node.getStatements().get(0)));
                         return super.visitCase(node, p);
                     }
                 }.scan(copy.getCompilationUnit(), null);
@@ -507,7 +506,7 @@ public class SwitchTest extends GeneratorTestBase {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -549,7 +548,7 @@ public class SwitchTest extends GeneratorTestBase {
                 new ErrorAwareTreePathScanner<Void, Void>() {
                     @Override public Void visitCase(CaseTree node, Void p) {
                         copy.rewrite(getCurrentPath().getLeaf(),
-                                     make.Case(TreeShims.getExpressions(node), node.getStatements().get(0)));
+                                     make.Case(node.getExpressions(), node.getStatements().get(0)));
                         return super.visitCase(node, p);
                     }
                 }.scan(copy.getCompilationUnit(), null);
@@ -557,7 +556,7 @@ public class SwitchTest extends GeneratorTestBase {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -585,9 +584,8 @@ public class SwitchTest extends GeneratorTestBase {
                         "                    case 0 -> {\n" +
                         "                        break;\n" +
                         "                    }\n" +
-//                        "                }\n" +
-//                        "                break;\n" +
-                        "                }   break;\n" + //XXX
+                        "                }\n" +
+                        "                break;\n" +
                         "            }\n" +
                         "        }\n" +
                         "    }\n" +
@@ -603,7 +601,7 @@ public class SwitchTest extends GeneratorTestBase {
                 new ErrorAwareTreePathScanner<Void, Void>() {
                     @Override public Void visitCase(CaseTree node, Void p) {
                         copy.rewrite(getCurrentPath().getLeaf(),
-                                     make.Case(TreeShims.getExpressions(node), make.Block(node.getStatements(), false)));
+                                     make.Case(node.getExpressions(), make.Block(node.getStatements(), false)));
                         return super.visitCase(node, p);
                     }
                 }.scan(copy.getCompilationUnit(), null);
@@ -611,7 +609,7 @@ public class SwitchTest extends GeneratorTestBase {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
     

@@ -35,7 +35,6 @@ import javax.swing.ImageIcon;
 import javax.swing.JPanel;
 import org.openide.util.ImageUtilities;
 import org.openide.util.NbBundle;
-import org.openide.util.Utilities;
 
 /**
  *
@@ -64,7 +63,7 @@ public class CCPaintComponent extends JPanel {
     
     private int ascent;
     
-    private Map widths;
+    private Map<String, Integer> widths;
     
     private FontMetrics fontMetrics;
     
@@ -225,9 +224,9 @@ public class CCPaintComponent extends JPanel {
     }
     
     protected int getWidth(String s) {
-        Integer i = (Integer)widths.get(s);
+        Integer i = widths.get(s);
         if (i != null) {
-            return i.intValue();
+            return i;
         } else {
             if (s == null) {
                 s = "";
@@ -262,7 +261,7 @@ public class CCPaintComponent extends JPanel {
         if (widths != null) {
             widths.clear();
         } else {
-            widths = new HashMap();
+            widths = new HashMap<>();
         }
         for (int i = 0; i < frequentWords.length; i++) {
             storeWidth(frequentWords[i]);

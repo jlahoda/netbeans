@@ -26,6 +26,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -78,17 +79,6 @@ public abstract class SetupHid extends NbTestCase {
         return Level.FINE;
     }
 
-    protected static void deleteRec(File f) throws IOException {
-        if (f.isDirectory()) {
-            File[] kids = f.listFiles();
-            if (kids == null) throw new IOException("Could not list: " + f);
-            for (int i = 0; i < kids.length; i++) {
-                deleteRec(kids[i]);
-            }
-        }
-        if (! f.delete()) throw new IOException("Could not delete: " + f);
-    }
-
     /** same as FileUtil.copy */
     protected static void copyStreams(InputStream is, OutputStream os) throws IOException {
         final byte[] BUFFER = new byte[4096];
@@ -132,7 +122,7 @@ public abstract class SetupHid extends NbTestCase {
             while (it.hasNext()) {
                 Map.Entry entry = (Map.Entry) it.next();
                 String path = (String) entry.getKey();
-                byte[] data = ((String) entry.getValue()).getBytes("UTF-8");
+                byte[] data = ((String) entry.getValue()).getBytes(StandardCharsets.UTF_8);
                 JarEntry je = new JarEntry(path);
                 je.setSize(data.length);
                 CRC32 crc = new CRC32();

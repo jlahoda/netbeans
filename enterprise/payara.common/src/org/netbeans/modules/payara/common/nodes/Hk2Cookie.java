@@ -87,7 +87,7 @@ public class Hk2Cookie {
     /**
      * Common node cookie.
      */
-    protected static abstract class Cookie {
+    protected abstract static class Cookie {
 
         /** Task status. */
         protected volatile WeakReference<Future<ResultString>> status;
@@ -454,11 +454,10 @@ public class Hk2Cookie {
 
             final File dir
                     = new File(chooser.getSelectedFile().getAbsolutePath());
-
             Future<ResultString> future = ServerAdmin.<ResultString>exec(
                     instance, new CommandDeploy(dir.getParentFile().getName(),
                     Util.computeTarget(instance.getProperties()),
-                    dir, null, null, null));
+                    dir, null, null, null, instance.isHotDeployEnabled()));
             status = new WeakReference<Future<ResultString>>(future);
             return future;
         }

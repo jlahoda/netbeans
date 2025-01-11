@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.38.1
+#Version 1.60.0
 
 CLSS public abstract interface java.beans.PropertyChangeListener
 intf java.util.EventListener
@@ -27,7 +27,6 @@ meth public final java.lang.String name()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
-hfds name,ordinal
 
 CLSS public abstract interface !annotation java.lang.FunctionalInterface
  anno 0 java.lang.annotation.Documented()
@@ -98,7 +97,6 @@ meth public java.lang.Object[] toArray()
 meth public java.lang.String toString()
 meth public void clear()
 supr java.lang.Object
-hfds MAX_ARRAY_SIZE
 
 CLSS public abstract java.util.AbstractMap<%0 extends java.lang.Object, %1 extends java.lang.Object>
 cons protected init()
@@ -122,7 +120,6 @@ meth public {java.util.AbstractMap%1} get(java.lang.Object)
 meth public {java.util.AbstractMap%1} put({java.util.AbstractMap%0},{java.util.AbstractMap%1})
 meth public {java.util.AbstractMap%1} remove(java.lang.Object)
 supr java.lang.Object
-hfds keySet,values
 
 CLSS public abstract java.util.AbstractSet<%0 extends java.lang.Object>
 cons protected init()
@@ -210,8 +207,6 @@ meth public {java.util.HashMap%1} putIfAbsent({java.util.HashMap%0},{java.util.H
 meth public {java.util.HashMap%1} remove(java.lang.Object)
 meth public {java.util.HashMap%1} replace({java.util.HashMap%0},{java.util.HashMap%1})
 supr java.util.AbstractMap<{java.util.HashMap%0},{java.util.HashMap%1}>
-hfds DEFAULT_INITIAL_CAPACITY,DEFAULT_LOAD_FACTOR,MAXIMUM_CAPACITY,MIN_TREEIFY_CAPACITY,TREEIFY_THRESHOLD,UNTREEIFY_THRESHOLD,entrySet,loadFactor,modCount,serialVersionUID,size,table,threshold
-hcls EntryIterator,EntrySet,EntrySpliterator,HashIterator,HashMapSpliterator,KeyIterator,KeySet,KeySpliterator,Node,TreeNode,ValueIterator,ValueSpliterator,Values
 
 CLSS public java.util.HashSet<%0 extends java.lang.Object>
 cons public init()
@@ -231,7 +226,6 @@ meth public java.util.Iterator<{java.util.HashSet%0}> iterator()
 meth public java.util.Spliterator<{java.util.HashSet%0}> spliterator()
 meth public void clear()
 supr java.util.AbstractSet<{java.util.HashSet%0}>
-hfds PRESENT,map,serialVersionUID
 
 CLSS public abstract interface java.util.Map<%0 extends java.lang.Object, %1 extends java.lang.Object>
 innr public abstract interface static Entry
@@ -695,7 +689,7 @@ meth public void setName(java.lang.String)
 meth public void setPrefix(java.lang.String)
 meth public void setValue(java.lang.String)
 supr org.netbeans.modules.xml.xdm.nodes.NodeImpl
-hfds AMPERSAND_PATTERN,APOSTROPHE_PATTERN,LESS_THAN_PATTERN,QUOTE_PATTERN,name,value
+hfds name,value
 
 CLSS public org.netbeans.modules.xml.xdm.nodes.CData
 intf org.w3c.dom.CDATASection
@@ -936,7 +930,6 @@ meth public void replaceData(int,int,java.lang.String)
 meth public void setData(java.lang.String)
 meth public void setText(java.lang.String)
 supr org.netbeans.modules.xml.xdm.nodes.NodeImpl
-hfds AMPERSAND_PATTERN,GREATER_THAN_PATTERN,LESS_THAN_PATTERN
 
 CLSS public org.netbeans.modules.xml.xdm.nodes.Token
 fld public final static org.netbeans.modules.xml.xdm.nodes.Token CDATA_END
@@ -1071,6 +1064,7 @@ hfds oldtree,pathVisitor,target,xmlModel
 
 CLSS public org.netbeans.modules.xml.xdm.visitor.NamespaceRefactorVisitor
 cons public init()
+ anno 0 java.lang.Deprecated()
 cons public init(org.netbeans.modules.xml.xdm.XDMModel)
 innr public static NamespaceCheck
 meth public static boolean isDefaultPrefix(java.lang.String)
@@ -1248,6 +1242,7 @@ CLSS public org.netbeans.modules.xml.xdm.xam.XDMListener
 cons public init(org.netbeans.modules.xml.xam.dom.AbstractDocumentModel)
 intf java.beans.PropertyChangeListener
 meth protected org.netbeans.modules.xml.xam.dom.ChangeInfo prepareChangeInfo(java.util.List<? extends org.netbeans.modules.xml.xdm.nodes.Node>,java.util.List<? extends org.netbeans.modules.xml.xdm.nodes.Node>)
+ anno 0 java.lang.Deprecated()
 meth protected void processChange(org.netbeans.modules.xml.xam.dom.ChangeInfo)
 meth protected void processEvent(org.netbeans.modules.xml.xdm.nodes.Node,org.netbeans.modules.xml.xdm.diff.NodeInfo,boolean)
 meth protected void processRootRelatedEvent(org.netbeans.modules.xml.xdm.nodes.Node,java.util.List<org.netbeans.modules.xml.xdm.nodes.Node>,boolean)

@@ -61,7 +61,7 @@ public class DatabaseUtils {
     private static final String SQLSTATE_CLIENT_PREFIX = "20";
     // Default URL parameters
     private static final String DFLT_CONFIG_OPTIONS =
-            "?zeroDateTimeBehavior=convertToNull";                      //NOI18N
+            "?zeroDateTimeBehavior=CONVERT_TO_NULL";                      //NOI18N
     
     private static final Logger LOGGER = 
             Logger.getLogger(DatabaseUtils.class.getName());
@@ -129,7 +129,7 @@ public class DatabaseUtils {
         try {
             ClassLoader driverLoader = new DriverClassLoader(jdbcDriver);
             driver = (Driver)Class.forName(jdbcDriver.getClassName(), 
-                        true, driverLoader).newInstance();
+                    true, driverLoader).getDeclaredConstructor().newInstance();
         } catch ( Exception e ) {
             DatabaseException dbe = new DatabaseException(
                     Utils.getMessage(
@@ -331,7 +331,7 @@ public class DatabaseUtils {
     }
 
     public static boolean isCommunicationsException(DatabaseException dbe) {
-        if (dbe.getCause() == null || !(dbe.getCause() instanceof SQLException)) {
+        if (!(dbe.getCause() instanceof SQLException)) {
             return false;
         }
 

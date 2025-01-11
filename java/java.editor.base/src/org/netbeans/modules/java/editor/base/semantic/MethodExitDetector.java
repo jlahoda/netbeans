@@ -189,8 +189,9 @@ public class MethodExitDetector extends CancellableTreePathScanner<Boolean, Stac
             return ;
         }
         
-        for (TypeMirror key : top.keySet()) {
-            List<Tree> topKey    = top.get(key);
+        for (Map.Entry<TypeMirror, List<Tree>> entry : top.entrySet()) {
+            TypeMirror key    = entry.getKey();
+            List<Tree> topKey = entry.getValue();
             List<Tree> resultKey = result.get(key);
             
             if (topKey == null)
@@ -259,9 +260,7 @@ public class MethodExitDetector extends CancellableTreePathScanner<Boolean, Stac
                     }
                 }
                 
-                for (TypeMirror type : toRemove) {
-                    exceptions2Highlights.remove(type);
-                }
+                exceptions2Highlights.keySet().removeAll(toRemove);
             }
             
         }

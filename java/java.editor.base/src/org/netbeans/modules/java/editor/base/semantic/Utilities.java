@@ -55,6 +55,7 @@ import javax.lang.model.element.Name;
 import javax.tools.Diagnostic;
 
 import com.sun.source.tree.ModifiersTree;
+import javax.lang.model.element.TypeElement;
 import org.netbeans.api.java.lexer.JavaTokenId;
 import org.netbeans.api.java.source.TreeUtilities;
 import org.netbeans.api.lexer.Token;
@@ -146,6 +147,11 @@ public class Utilities {
             //(meaning: method returning array of Strings)
             //use a conservative start value:
             start = (int) positions.getStartPosition(cu, decl);
+        }
+
+        if (start == end) {
+            //may happen for enum constants, would use an empty tokensequence
+            end = start + 1;
         }
 
         return findTokenWithText(info, name, start, end);
@@ -262,16 +268,24 @@ public class Utilities {
         
         if (class2Kind.get(MethodTree.class).contains(leaf.getKind())) {
             MethodTree method = (MethodTree) leaf;
+            TreePath parentPath = decl.getParentPath();
             List<Tree> rightTrees = new ArrayList<Tree>();
 
-            rightTrees.addAll(method.getParameters());
+            boolean ignoreParameters = parentPath.getLeaf().getKind() == Kind.RECORD &&
+                                       !method.getParameters().isEmpty() &&
+                                       info.getTreeUtilities().isSynthetic(new TreePath(decl, method.getParameters().get(0)));
+
+            if (!ignoreParameters) {
+                rightTrees.addAll(method.getParameters());
+            }
+
             rightTrees.addAll(method.getThrows());
             rightTrees.add(method.getBody());
 
             Name name = method.getName();
             
             if (method.getReturnType() == null)
-                name = ((ClassTree) decl.getParentPath().getLeaf()).getSimpleName();
+                name = ((ClassTree) parentPath.getLeaf()).getSimpleName();
             
             return findIdentifierSpanImpl(info, leaf, method.getReturnType(), rightTrees, name.toString(), info.getCompilationUnit(), info.getTrees().getSourcePositions());
         }
@@ -370,7 +384,7 @@ public class Utilities {
             
            return findTokenWithText(info, name.toString(), start, end);
         }
-        throw new IllegalArgumentException("Only MethodDecl, VariableDecl, MemberSelectTree, IdentifierTree, ParameterizedTypeTree, AnnotatedTypeTree, ClassDecl, BreakTree, ContinueTree, and LabeledStatementTree are accepted by this method. Got: " + leaf.getKind());
+        throw new IllegalArgumentException("Only MethodDecl, VariableDecl, MemberSelectTree, IdentifierTree, ParameterizedTypeTree, AnnotatedTypeTree, ClassDecl, BreakTree, ContinueTree, LabeledStatementTree and BindingPatternTree are accepted by this method. Got: " + leaf.getKind());
     }
 
     public static int[] findIdentifierSpan( final TreePath decl, final CompilationInfo info, final Document doc) {
@@ -500,7 +514,7 @@ public class Utilities {
     
     public static int findBodyStart(final CompilationInfo info, final Tree cltree, final CompilationUnitTree cu, final SourcePositions positions, final Document doc) {
         Kind kind = cltree.getKind();
-        if (!TreeUtilities.CLASS_TREE_KINDS.contains(kind) && kind != Kind.METHOD)
+        if (!TreeUtilities.CLASS_TREE_KINDS.contains(kind) && kind != Kind.METHOD && !cltree.getKind().toString().equals("RECORD"))
             throw new IllegalArgumentException("Unsupported kind: "+ kind);
         final int[] result = new int[1];
         
@@ -564,7 +578,8 @@ public class Utilities {
         
         //XXX: do not use instanceof:
         if (leaf instanceof MethodTree || leaf instanceof VariableTree || leaf instanceof ClassTree
-                || leaf instanceof MemberSelectTree || leaf instanceof AnnotatedTypeTree || leaf instanceof MemberReferenceTree) {
+                || leaf instanceof MemberSelectTree || leaf instanceof AnnotatedTypeTree || leaf instanceof MemberReferenceTree
+                || "BINDING_PATTERN".equals(leaf.getKind().name())) {
             return findIdentifierSpan(info, doc, tree);
         }
         
@@ -652,11 +667,27 @@ public class Utilities {
         return false;
     }
 
-    private static final Set<ElementKind> LOCAL_ELEMENT_KINDS = EnumSet.of(ElementKind.PARAMETER, ElementKind.LOCAL_VARIABLE, ElementKind.EXCEPTION_PARAMETER, ElementKind.RESOURCE_VARIABLE);
-
+    private static final Set<ElementKind> LOCAL_ELEMENT_KINDS = EnumSet.of(ElementKind.PARAMETER, ElementKind.LOCAL_VARIABLE, ElementKind.EXCEPTION_PARAMETER, ElementKind.RESOURCE_VARIABLE, ElementKind.BINDING_VARIABLE);
+    
     public static boolean isPrivateElement(Element el) {
         return LOCAL_ELEMENT_KINDS.contains(el.getKind()) || el.getModifiers().contains(Modifier.PRIVATE);
     }
 
+    public static Element toRecordComponent(Element el) {
+        if (el == null || el.getKind() != ElementKind.FIELD) {
+            return el;
+        }
+        TypeElement owner = (TypeElement) el.getEnclosingElement();
+        if (!ElementKind.RECORD.equals(owner.getKind())) {
+            return el;
+        }
+        for (Element encl : owner.getEnclosedElements()) {
+            if (encl.getKind() == ElementKind.RECORD_COMPONENT &&
+                encl.getSimpleName().equals(el.getSimpleName())) {
+                return encl;
+            }
+        }
+        return el;
+    }
 
 }

@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -55,9 +56,9 @@ import org.openide.util.lookup.ServiceProvider;
 public class FileBasedFileSystem extends FileSystem {
     private static final Logger LOG = Logger.getLogger(FileBasedFileSystem.class.getName());
     private static volatile FileBasedFileSystem INSTANCE;
-    transient private RootObj<? extends FileObject> root;
-    transient private final StatusImpl status = new StatusImpl();
-    transient private static  int modificationInProgress;
+    private transient RootObj<? extends FileObject> root;
+    private final transient StatusImpl status = new StatusImpl();
+    private static transient  int modificationInProgress;
 
     public FileBasedFileSystem() {
         if (BaseUtilities.isWindows()) {
@@ -69,11 +70,11 @@ public class FileBasedFileSystem extends FileSystem {
         }
     }
    
-    public synchronized static boolean isModificationInProgress() {
+    public static synchronized boolean isModificationInProgress() {
         return modificationInProgress == 0 ? false : true;
     }
 
-    private synchronized static void setModificationInProgress(boolean started) {
+    private static synchronized void setModificationInProgress(boolean started) {
         if (started) {
             modificationInProgress++;
         } else {
@@ -116,7 +117,7 @@ public class FileBasedFileSystem extends FileSystem {
             if (file.getParentFile() == null && BaseUtilities.isUnix()) {
                 retval = FileBasedFileSystem.getInstance().getRoot();
             } else {
-                retval = fs.getValidFileObject(file,caller);
+                retval = fs.getValidFileObject(file,caller, true);
             }                
         }         
         return retval;
@@ -217,7 +218,7 @@ public class FileBasedFileSystem extends FileSystem {
     @Override
     public FileObject createTempFile(FileObject parent, String prefix, String suffix, boolean deleteOnExit) throws IOException {
         if (parent.isFolder() && parent.isValid()) {
-            File tmpFile = File.createTempFile(prefix, suffix, FileUtil.toFile(parent));
+            File tmpFile = Files.createTempFile(FileUtil.toFile(parent).toPath(), prefix, suffix).toFile();
             if (deleteOnExit) {
                 tmpFile.deleteOnExit();
             }
@@ -314,7 +315,7 @@ public class FileBasedFileSystem extends FileSystem {
                     arr.add(lkp);
                 }
             }
-            return new ProxyLookup(arr.toArray(new Lookup[arr.size()]));
+            return new ProxyLookup(arr.toArray(new Lookup[0]));
         }
 
         @Override

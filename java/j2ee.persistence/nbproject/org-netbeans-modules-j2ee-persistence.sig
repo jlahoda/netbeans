@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.58.1
+#Version 1.81.0
 
 CLSS public abstract java.awt.Component
 cons protected init()
@@ -159,8 +159,6 @@ meth public java.awt.im.InputMethodRequests getInputMethodRequests()
 meth public java.awt.image.ColorModel getColorModel()
 meth public java.awt.image.VolatileImage createVolatileImage(int,int)
 meth public java.awt.image.VolatileImage createVolatileImage(int,int,java.awt.ImageCapabilities) throws java.awt.AWTException
-meth public java.awt.peer.ComponentPeer getPeer()
- anno 0 java.lang.Deprecated()
 meth public java.beans.PropertyChangeListener[] getPropertyChangeListeners()
 meth public java.beans.PropertyChangeListener[] getPropertyChangeListeners(java.lang.String)
 meth public java.lang.String getName()
@@ -274,8 +272,6 @@ meth public void transferFocusUpCycle()
 meth public void update(java.awt.Graphics)
 meth public void validate()
 supr java.lang.Object
-hfds FOCUS_TRAVERSABLE_DEFAULT,FOCUS_TRAVERSABLE_SET,FOCUS_TRAVERSABLE_UNKNOWN,LOCK,acc,actionListenerK,adjustmentListenerK,appContext,autoFocusTransferOnDisposal,background,backgroundEraseDisabled,boundsOp,bufferStrategy,changeSupport,coalesceEventsParams,coalesceMap,coalescingEnabled,componentListener,componentListenerK,componentOrientation,componentSerializedDataVersion,compoundShape,containerListenerK,cursor,dropTarget,enabled,eventCache,eventLog,eventMask,focusListener,focusListenerK,focusLog,focusTraversalKeyPropertyNames,focusTraversalKeys,focusTraversalKeysEnabled,focusable,font,foreground,graphicsConfig,height,hierarchyBoundsListener,hierarchyBoundsListenerK,hierarchyListener,hierarchyListenerK,ignoreRepaint,incRate,inputMethodListener,inputMethodListenerK,isAddNotifyComplete,isFocusTraversableOverridden,isInc,isPacked,itemListenerK,keyListener,keyListenerK,locale,log,maxSize,maxSizeSet,minSize,minSizeSet,mixingCutoutRegion,mixingLog,mouseListener,mouseListenerK,mouseMotionListener,mouseMotionListenerK,mouseWheelListener,mouseWheelListenerK,name,nameExplicitlySet,newEventsOnly,objectLock,ownedWindowK,parent,peer,peerFont,popups,prefSize,prefSizeSet,requestFocusController,serialVersionUID,textListenerK,valid,visible,width,windowClosingException,windowFocusListenerK,windowListenerK,windowStateListenerK,x,y
-hcls AWTTreeLock,BltSubRegionBufferStrategy,DummyRequestFocusController,FlipSubRegionBufferStrategy,ProxyCapabilities,SingleBufferStrategy
 
 CLSS public java.awt.Container
 cons public init()
@@ -360,8 +356,6 @@ meth public void transferFocusDownCycle()
 meth public void update(java.awt.Graphics)
 meth public void validate()
 supr java.awt.Component
-hfds EMPTY_ARRAY,INCLUDE_SELF,SEARCH_HEAVYWEIGHTS,component,containerListener,containerSerializedDataVersion,descendUnconditionallyWhenValidating,descendantsCount,dispatcher,eventLog,focusCycleRoot,focusTraversalPolicy,focusTraversalPolicyProvider,isJavaAwtSmartInvalidate,layoutMgr,listeningBoundsChildren,listeningChildren,log,mixingLog,modalAppContext,modalComp,numOfHWComponents,numOfLWComponents,preserveBackgroundColor,printing,printingThreads,serialPersistentFields,serialVersionUID
-hcls DropTargetEventTargetFilter,EventTargetFilter,MouseEventTargetFilter,WakingRunnable
 
 CLSS public abstract interface java.awt.MenuContainer
 meth public abstract boolean postEvent(java.awt.Event)
@@ -408,7 +402,6 @@ meth public void setPreferred(boolean)
 meth public void setShortDescription(java.lang.String)
 meth public void setValue(java.lang.String,java.lang.Object)
 supr java.lang.Object
-hfds TRANSIENT,classRef,displayName,expert,hidden,name,preferred,shortDescription,table
 
 CLSS public abstract interface java.beans.PropertyChangeListener
 intf java.util.EventListener
@@ -464,8 +457,6 @@ meth public void setClassAssertionStatus(java.lang.String,boolean)
 meth public void setDefaultAssertionStatus(boolean)
 meth public void setPackageAssertionStatus(java.lang.String,boolean)
 supr java.lang.Object
-hfds assertionLock,classAssertionStatus,classes,defaultAssertionStatus,defaultDomain,domains,loadedLibraryNames,nativeLibraries,nativeLibraryContext,nocerts,package2certs,packageAssertionStatus,packages,parallelLockMap,parent,scl,sclSet,sys_paths,systemNativeLibraries,usr_paths
-hcls NativeLibrary,ParallelLoaders
 
 CLSS public abstract interface java.lang.Comparable<%0 extends java.lang.Object>
 meth public abstract int compareTo({java.lang.Comparable%0})
@@ -485,7 +476,6 @@ meth public final java.lang.String name()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
-hfds name,ordinal
 
 CLSS public java.lang.Exception
 cons protected init(java.lang.String,java.lang.Throwable,boolean,boolean)
@@ -494,7 +484,6 @@ cons public init(java.lang.String)
 cons public init(java.lang.String,java.lang.Throwable)
 cons public init(java.lang.Throwable)
 supr java.lang.Throwable
-hfds serialVersionUID
 
 CLSS public java.lang.Object
 cons public init()
@@ -531,8 +520,6 @@ meth public void printStackTrace(java.io.PrintStream)
 meth public void printStackTrace(java.io.PrintWriter)
 meth public void setStackTrace(java.lang.StackTraceElement[])
 supr java.lang.Object
-hfds CAUSE_CAPTION,EMPTY_THROWABLE_ARRAY,NULL_CAUSE_MESSAGE,SELF_SUPPRESSION_MESSAGE,SUPPRESSED_CAPTION,SUPPRESSED_SENTINEL,UNASSIGNED_STACK,backtrace,cause,detailMessage,serialVersionUID,stackTrace,suppressedExceptions
-hcls PrintStreamOrWriter,SentinelHolder,WrappedPrintStream,WrappedPrintWriter
 
 CLSS public abstract interface java.lang.annotation.Annotation
 meth public abstract boolean equals(java.lang.Object)
@@ -577,7 +564,6 @@ meth public static java.net.URLClassLoader newInstance(java.net.URL[])
 meth public static java.net.URLClassLoader newInstance(java.net.URL[],java.lang.ClassLoader)
 meth public void close() throws java.io.IOException
 supr java.security.SecureClassLoader
-hfds acc,closeables,ucp
 
 CLSS public java.security.SecureClassLoader
 cons protected init()
@@ -586,7 +572,6 @@ meth protected final java.lang.Class<?> defineClass(java.lang.String,byte[],int,
 meth protected final java.lang.Class<?> defineClass(java.lang.String,java.nio.ByteBuffer,java.security.CodeSource)
 meth protected java.security.PermissionCollection getPermissions(java.security.CodeSource)
 supr java.lang.ClassLoader
-hfds debug,initialized,pdcache
 
 CLSS public abstract interface java.util.EventListener
 
@@ -617,7 +602,6 @@ meth public void repaint(long,int,int,int,int)
 meth public void revalidate()
 meth public void validate()
 supr javax.swing.JLabel
-hfds DEFAULT_NO_FOCUS_BORDER,SAFE_NO_FOCUS_BORDER
 
 CLSS public abstract javax.swing.JComponent
 cons public init()
@@ -775,8 +759,6 @@ meth public void unregisterKeyboardAction(javax.swing.KeyStroke)
 meth public void update(java.awt.Graphics)
 meth public void updateUI()
 supr java.awt.Container
-hfds ACTIONMAP_CREATED,ANCESTOR_INPUTMAP_CREATED,ANCESTOR_USING_BUFFER,AUTOSCROLLS_SET,COMPLETELY_OBSCURED,CREATED_DOUBLE_BUFFER,DEBUG_GRAPHICS_LOADED,FOCUS_INPUTMAP_CREATED,FOCUS_TRAVERSAL_KEYS_BACKWARD_SET,FOCUS_TRAVERSAL_KEYS_FORWARD_SET,INHERITS_POPUP_MENU,INPUT_VERIFIER_SOURCE_KEY,IS_DOUBLE_BUFFERED,IS_OPAQUE,IS_PAINTING_TILE,IS_PRINTING,IS_PRINTING_ALL,IS_REPAINTING,KEYBOARD_BINDINGS_KEY,KEY_EVENTS_ENABLED,NEXT_FOCUS,NOT_OBSCURED,OPAQUE_SET,PARTIALLY_OBSCURED,REQUEST_FOCUS_DISABLED,RESERVED_1,RESERVED_2,RESERVED_3,RESERVED_4,RESERVED_5,RESERVED_6,WHEN_IN_FOCUSED_WINDOW_BINDINGS,WIF_INPUTMAP_CREATED,WRITE_OBJ_COUNTER_FIRST,WRITE_OBJ_COUNTER_LAST,aaTextInfo,actionMap,alignmentX,alignmentY,ancestorInputMap,autoscrolls,border,clientProperties,componentObtainingGraphicsFrom,componentObtainingGraphicsFromLock,defaultLocale,flags,focusController,focusInputMap,inputVerifier,isAlignmentXSet,isAlignmentYSet,managingFocusBackwardTraversalKeys,managingFocusForwardTraversalKeys,paintingChild,popupMenu,readObjectCallbacks,revalidateRunnableScheduled,tempRectangles,uiClassID,verifyInputWhenFocusTarget,vetoableChangeSupport,windowInputMap
-hcls ActionStandin,IntVector,KeyboardState,ReadObjectCallback
 
 CLSS public javax.swing.JLabel
 cons public init()
@@ -822,7 +804,6 @@ meth public void setVerticalAlignment(int)
 meth public void setVerticalTextPosition(int)
 meth public void updateUI()
 supr javax.swing.JComponent
-hfds LABELED_BY_PROPERTY,defaultIcon,disabledIcon,disabledIconSet,horizontalAlignment,horizontalTextPosition,iconTextGap,mnemonic,mnemonicIndex,text,uiClassID,verticalAlignment,verticalTextPosition
 
 CLSS public javax.swing.JPanel
 cons public init()
@@ -838,7 +819,6 @@ meth public javax.swing.plaf.PanelUI getUI()
 meth public void setUI(javax.swing.plaf.PanelUI)
 meth public void updateUI()
 supr javax.swing.JComponent
-hfds uiClassID
 
 CLSS public abstract interface javax.swing.ListCellRenderer<%0 extends java.lang.Object>
 meth public abstract java.awt.Component getListCellRendererComponent(javax.swing.JList<? extends {javax.swing.ListCellRenderer%0}>,{javax.swing.ListCellRenderer%0},int,boolean,boolean)
@@ -954,6 +934,7 @@ CLSS public abstract interface org.eclipse.persistence.jpa.jpql.tools.spi.IMappi
 intf java.lang.Comparable<org.eclipse.persistence.jpa.jpql.tools.spi.IMapping>
 meth public abstract boolean hasAnnotation(java.lang.Class<? extends java.lang.annotation.Annotation>)
 meth public abstract boolean isCollection()
+meth public abstract boolean isEmbeddable()
 meth public abstract boolean isProperty()
 meth public abstract boolean isRelationship()
 meth public abstract boolean isTransient()
@@ -1054,7 +1035,7 @@ meth public java.lang.String getBody(java.lang.String)
 meth public static org.netbeans.modules.j2ee.persistence.action.GenerationOptions$Operation valueOf(java.lang.String)
 meth public static org.netbeans.modules.j2ee.persistence.action.GenerationOptions$Operation[] values()
 supr java.lang.Enum<org.netbeans.modules.j2ee.persistence.action.GenerationOptions$Operation>
-hfds body,body2_0
+hfds JPA_VERSION_COMPARATOR,body,body2_0,body3_0
 
 CLSS public org.netbeans.modules.j2ee.persistence.action.UseEntityManagerCodeGenerator
 cons public init(org.openide.filesystems.FileObject)
@@ -1083,6 +1064,7 @@ meth public abstract org.openide.filesystems.FileObject getLocation()
 
 CLSS public final org.netbeans.modules.j2ee.persistence.api.entity.generator.EntitiesFromDBGenerator
 cons public init(java.util.List<java.lang.String>,boolean,boolean,boolean,org.netbeans.modules.j2ee.persistence.entitygenerator.EntityRelation$FetchType,org.netbeans.modules.j2ee.persistence.entitygenerator.EntityRelation$CollectionType,java.lang.String,org.netbeans.api.project.SourceGroup,org.netbeans.api.db.explorer.DatabaseConnection,org.netbeans.api.project.Project,org.netbeans.modules.j2ee.persistence.dd.common.PersistenceUnit)
+cons public init(java.util.List<java.lang.String>,boolean,boolean,boolean,org.netbeans.modules.j2ee.persistence.entitygenerator.EntityRelation$FetchType,org.netbeans.modules.j2ee.persistence.entitygenerator.EntityRelation$CollectionType,java.lang.String,org.netbeans.api.project.SourceGroup,org.netbeans.api.db.explorer.DatabaseConnection,org.netbeans.api.project.Project,org.netbeans.modules.j2ee.persistence.dd.common.PersistenceUnit,org.netbeans.modules.j2ee.persistence.wizard.fromdb.PersistenceGenerator)
 cons public init(java.util.List<java.lang.String>,boolean,java.lang.String,org.netbeans.api.project.SourceGroup,org.netbeans.api.db.explorer.DatabaseConnection,org.netbeans.api.project.Project,org.netbeans.modules.j2ee.persistence.dd.common.PersistenceUnit)
 meth public java.util.Set<org.openide.filesystems.FileObject> generate(org.netbeans.api.progress.aggregate.ProgressContributor) throws java.io.IOException,java.sql.SQLException
 supr java.lang.Object
@@ -1146,6 +1128,10 @@ fld public final static java.lang.String VERSION = "Version"
 fld public final static java.lang.String VERSION_1_0 = "1.0"
 fld public final static java.lang.String VERSION_2_0 = "2.0"
 fld public final static java.lang.String VERSION_2_1 = "2.1"
+fld public final static java.lang.String VERSION_2_2 = "2.2"
+fld public final static java.lang.String VERSION_3_0 = "3.0"
+fld public final static java.lang.String VERSION_3_1 = "3.1"
+fld public final static java.lang.String VERSION_3_2 = "3.2"
 meth public abstract int addPersistenceUnit(org.netbeans.modules.j2ee.persistence.dd.common.PersistenceUnit)
 meth public abstract int removePersistenceUnit(org.netbeans.modules.j2ee.persistence.dd.common.PersistenceUnit)
 meth public abstract int sizePersistenceUnit()
@@ -1164,7 +1150,9 @@ CLSS public abstract interface org.netbeans.modules.j2ee.persistence.dd.common.P
 fld public final static java.lang.String CLASS2 = "Class2"
 fld public final static java.lang.String DESCRIPTION = "Description"
 fld public final static java.lang.String EXCLUDE_UNLISTED_CLASSES = "ExcludeUnlistedClasses"
+fld public final static java.lang.String JAKARTA_NAMESPACE = "jakarta.persistence."
 fld public final static java.lang.String JAR_FILE = "JarFile"
+fld public final static java.lang.String JAVAX_NAMESPACE = "javax.persistence."
 fld public final static java.lang.String JTA_DATA_SOURCE = "JtaDataSource"
 fld public final static java.lang.String JTA_TRANSACTIONTYPE = "JTA"
 fld public final static java.lang.String MAPPING_FILE = "MappingFile"
@@ -1334,6 +1322,7 @@ meth public int hashCode()
 meth public java.lang.String getMemberName()
 meth public java.lang.String getMemberType()
 meth public static java.lang.String fixRelationshipFieldName(java.lang.String,org.netbeans.modules.j2ee.persistence.entitygenerator.EntityRelation$CollectionType)
+ anno 0 java.lang.Deprecated()
 meth public static java.lang.String makeClassName(java.lang.String)
 meth public static java.lang.String makeFieldName(java.lang.String)
 meth public static java.lang.String makeRelationshipFieldName(java.lang.String,boolean)
@@ -1437,6 +1426,7 @@ cons protected init(java.lang.String,java.lang.String)
 fld public final static java.lang.String TABLE_GENERATION_CREATE = "tableGenerationCreate"
 fld public final static java.lang.String TABLE_GENERATION_DROPCREATE = "tableGenerationDropCreate"
 fld public final static java.lang.String TABLE_GENERATTION_UNKOWN = "tableGenerationUnknown"
+meth protected boolean isJakartaNamespace()
 meth protected java.lang.String getVersion()
 meth public abstract java.lang.String getDisplayName()
 meth public abstract java.util.Map getDefaultVendorSpecificProperties()
@@ -1464,20 +1454,39 @@ supr java.lang.Object
 hfds providerClass,vendorSpecificProperties,version
 
 CLSS public org.netbeans.modules.j2ee.persistence.provider.ProviderUtil
-fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider DATANUCLEUS_PROVIDER
+fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider DATANUCLEUS_PROVIDER1_0
+fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider DATANUCLEUS_PROVIDER2_0
+fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider DATANUCLEUS_PROVIDER2_1
+fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider DATANUCLEUS_PROVIDER2_2
+fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider DATANUCLEUS_PROVIDER3_0
+fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider DATANUCLEUS_PROVIDER3_1
+fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider DATANUCLEUS_PROVIDER3_2
 fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider DEFAULT_PROVIDER
 fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider DEFAULT_PROVIDER2_0
 fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider DEFAULT_PROVIDER2_1
-fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider ECLIPSELINK_PROVIDER
+fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider DEFAULT_PROVIDER2_2
+fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider DEFAULT_PROVIDER3_0
+fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider DEFAULT_PROVIDER3_1
+fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider DEFAULT_PROVIDER3_2
 fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider ECLIPSELINK_PROVIDER1_0
 fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider ECLIPSELINK_PROVIDER2_0
-fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider HIBERNATE_PROVIDER
+fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider ECLIPSELINK_PROVIDER2_1
+fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider ECLIPSELINK_PROVIDER2_2
+fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider ECLIPSELINK_PROVIDER3_0
+fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider ECLIPSELINK_PROVIDER3_1
+fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider ECLIPSELINK_PROVIDER3_2
+fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider HIBERNATE_PROVIDER1_0
 fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider HIBERNATE_PROVIDER2_0
 fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider HIBERNATE_PROVIDER2_1
+fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider HIBERNATE_PROVIDER2_2
+fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider HIBERNATE_PROVIDER3_0
+fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider HIBERNATE_PROVIDER3_1
+fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider HIBERNATE_PROVIDER3_2
 fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider KODO_PROVIDER
-fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider OPENJPA_PROVIDER
 fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider OPENJPA_PROVIDER1_0
+fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider OPENJPA_PROVIDER2_0
 fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider OPENJPA_PROVIDER2_1
+fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider OPENJPA_PROVIDER2_2
 fld public final static org.netbeans.modules.j2ee.persistence.provider.Provider TOPLINK_PROVIDER1_0
 meth public static boolean canServerBeSelected(org.netbeans.api.project.Project)
 meth public static boolean isValid(org.netbeans.modules.j2ee.persistence.unit.PUDataObject)
@@ -1620,7 +1629,15 @@ meth protected java.lang.String computeMethodName()
 meth protected java.lang.String generateCallLines()
 meth protected java.lang.String generateCallLines(java.lang.String)
 meth protected java.lang.String getEmInitCode(org.netbeans.modules.j2ee.persistence.spi.entitymanagergenerator.EntityManagerGenerationStrategySupport$FieldInfo,org.netbeans.modules.j2ee.persistence.spi.entitymanagergenerator.EntityManagerGenerationStrategySupport$FieldInfo)
+meth protected java.lang.String getEntityManagerFactoryFqn()
+meth protected java.lang.String getEntityManagerFqn()
+meth protected java.lang.String getPersistenceContextFqn()
+meth protected java.lang.String getPersistenceUnitFqn()
 meth protected java.lang.String getPersistenceUnitName()
+meth protected java.lang.String getPostConstructFqn()
+meth protected java.lang.String getPreDestroyFqn()
+meth protected java.lang.String getResourceFqn()
+meth protected java.lang.String getUserTxFqn()
 meth protected java.util.List<com.sun.source.tree.VariableTree> getParameterList()
 meth protected javax.lang.model.element.Element getAnnotation(java.lang.String)
 meth protected org.netbeans.api.java.source.TreeMaker getTreeMaker()
@@ -1635,7 +1652,7 @@ meth public void setPersistenceUnit(org.netbeans.modules.j2ee.persistence.dd.com
 meth public void setTreeMaker(org.netbeans.api.java.source.TreeMaker)
 meth public void setWorkingCopy(org.netbeans.api.java.source.WorkingCopy)
 supr java.lang.Object
-hfds classTree,genUtils,generationOptions,persistenceUnit,treeMaker,workingCopy
+hfds ENTITY_MANAGER_FACTORY_JAKARTA_FQN,ENTITY_MANAGER_JAKARTA_FQN,PERSISTENCE_CONTEXT_JAKARTA_FQN,PERSISTENCE_UNIT_JAKARTA_FQN,POST_CONSTRUCT_JAKARTA_FQN,PRE_DESTROY_JAKARTA_FQN,RESOURCE_JAKARTA_FQN,USER_TX_JAKARTA_FQN,classTree,genUtils,generationOptions,persistenceUnit,treeMaker,workingCopy
 
 CLSS protected static org.netbeans.modules.j2ee.persistence.spi.entitymanagergenerator.EntityManagerGenerationStrategySupport$FieldInfo
  outer org.netbeans.modules.j2ee.persistence.spi.entitymanagergenerator.EntityManagerGenerationStrategySupport
@@ -1719,6 +1736,7 @@ cons public init(org.netbeans.modules.j2ee.persistence.spi.jpql.ManagedType,org.
 intf org.eclipse.persistence.jpa.jpql.tools.spi.IMapping
 meth public boolean hasAnnotation(java.lang.Class<? extends java.lang.annotation.Annotation>)
 meth public boolean isCollection()
+meth public boolean isEmbeddable()
 meth public boolean isProperty()
 meth public boolean isRelationship()
 meth public boolean isTransient()
@@ -1910,7 +1928,7 @@ meth public void refresh()
 meth public void removeCatalogListener(org.netbeans.modules.xml.catalog.spi.CatalogListener)
 meth public void removePropertyChangeListener(java.beans.PropertyChangeListener)
 supr java.lang.Object
-hfds ORM_NS,ORM_OLD_NS,PERSISTENCE_NS,PERSISTENCE_OLD_NS,RESOURCE_PATH,schemas
+hfds ORM_JAKARTA_NS,ORM_NS,ORM_OLD_NS,PERSISTENCE_JAKARTA_NS,PERSISTENCE_NS,PERSISTENCE_OLD_NS,RESOURCE_PATH,schemas
 hcls SchemaInfo
 
 CLSS public org.netbeans.modules.j2ee.persistence.unit.PersistenceCfgProperties
@@ -1920,7 +1938,7 @@ meth public static java.util.List<java.lang.String> getKeys(org.netbeans.modules
 meth public static java.util.List<org.netbeans.modules.j2ee.persistence.provider.Provider> getProviders()
 meth public static java.util.Map<org.netbeans.modules.j2ee.persistence.provider.Provider,java.util.Map<java.lang.String,java.lang.String[]>> getAllKeyAndValues()
 supr java.lang.Object
-hfds EL_BATCHWRITER,EL_CACHE_TYPES,EL_CONTEXT_REFMODE,EL_DDL_GEN_MODE,EL_EXCLUSIVE_CON_MODE,EL_FLUSH_CLEAR_CACHE,EL_LOGGER,EL_LOGGER_LEVEL,EL_PROFILER,EL_TARGET_DATABASE,EL_TARGET_SERVER,EL_WEAWING,SCHEMA_GEN_OPTIONS,SCHEMA_GEN_SOURCE_TYPES,TRUE_FALSE,possiblePropertyValues
+hfds DN_CONN_POOLING,DN_TRX_ATTR,DN_TRX_ISO,DN_VALIDATION_MODE,EL_BATCHWRITER,EL_CACHE_TYPES,EL_CONTEXT_REFMODE,EL_DDL_GEN_MODE,EL_EXCLUSIVE_CON_MODE,EL_FLUSH_CLEAR_CACHE,EL_LOGGER,EL_LOGGER_LEVEL,EL_PROFILER,EL_TARGET_DATABASE,EL_TARGET_SERVER,EL_WEAVING,HIBERNATE_DIALECTS,RESOURCE_TYPE,SCHEMA_GEN_DB_OPTIONS,SCHEMA_GEN_SCRIPTS_OPTIONS,SCHEMA_GEN_SOURCE_TYPES,SHARED_CACHE_MODE,TRUE_FALSE,possiblePropertyValues
 hcls KeyOrder
 
 CLSS public org.netbeans.modules.j2ee.persistence.unit.PersistenceToolBarMVElement
@@ -1972,10 +1990,11 @@ hfds filler
 
 CLSS public static org.netbeans.modules.j2ee.persistence.unit.PropertiesPanel$PropertiesParamHolder
  outer org.netbeans.modules.j2ee.persistence.unit.PropertiesPanel
+meth public org.netbeans.modules.j2ee.persistence.dd.common.Persistence getPersistence()
 meth public org.netbeans.modules.j2ee.persistence.dd.common.PersistenceUnit getPU()
 meth public org.netbeans.modules.j2ee.persistence.provider.Provider getProvider()
 supr java.lang.Object
-hfds prov,pu
+hfds persistence,prov,pu
 
 CLSS public org.netbeans.modules.j2ee.persistence.unit.PropertiesTableModel
 cons public init(org.netbeans.modules.j2ee.persistence.unit.PropertiesPanel$PropertiesParamHolder)
@@ -2015,7 +2034,7 @@ cons public init()
 meth public static java.lang.String getResourcePath(org.netbeans.api.project.SourceGroup[],org.openide.filesystems.FileObject)
 meth public static java.lang.String getResourcePath(org.netbeans.api.project.SourceGroup[],org.openide.filesystems.FileObject,char)
 meth public static java.lang.String getResourcePath(org.netbeans.api.project.SourceGroup[],org.openide.filesystems.FileObject,char,boolean)
-meth public static java.util.ArrayList<java.lang.String> getAvailPropNames(org.netbeans.modules.j2ee.persistence.provider.Provider,org.netbeans.modules.j2ee.persistence.dd.common.PersistenceUnit)
+meth public static java.util.ArrayList<java.lang.String> getAvailPropNames(org.netbeans.modules.j2ee.persistence.dd.common.Persistence,org.netbeans.modules.j2ee.persistence.provider.Provider,org.netbeans.modules.j2ee.persistence.dd.common.PersistenceUnit)
 meth public static java.util.List<java.lang.String> getAllPropNames(org.netbeans.modules.j2ee.persistence.provider.Provider)
 meth public static java.util.List<java.lang.String> getPropsNamesExceptGeneral(org.netbeans.modules.j2ee.persistence.provider.Provider)
 meth public static org.netbeans.api.project.SourceGroup[] getJavaSourceGroups(org.netbeans.modules.j2ee.persistence.unit.PUDataObject) throws java.io.IOException
@@ -2078,7 +2097,7 @@ meth public java.util.List<java.net.URL> getProjectClassPath(org.openide.filesys
 meth public org.netbeans.api.project.Project getProject()
 meth public org.openide.filesystems.FileObject getLocation()
 supr java.lang.Object
-hfds loaderRef,logger,project
+hfds loaderRef,project
 
 CLSS public final org.netbeans.modules.j2ee.persistence.util.PersistenceProviderComboboxHelper
 cons public init(org.netbeans.api.project.Project)
@@ -2241,7 +2260,7 @@ meth public void ancestorMoved(javax.swing.event.AncestorEvent)
 meth public void ancestorRemoved(javax.swing.event.AncestorEvent)
 meth public void initialize(org.netbeans.api.project.Project,org.netbeans.modules.j2ee.persistence.wizard.fromdb.DBSchemaFileList,org.netbeans.modules.j2ee.persistence.wizard.fromdb.PersistenceGenerator,org.netbeans.modules.j2ee.persistence.wizard.fromdb.TableSource,org.openide.filesystems.FileObject)
 supr javax.swing.JPanel
-hfds addAllButton,addAllTypeCombo,addButton,allowUpdateRecreate,availableTablesLabel,availableTablesList,availableTablesScrollPane,buttonPanel,changeListener,changeSupport,comboPanel,datasourceComboBox,datasourceLabel,datasourceName,datasourceRadioButton,dbconn,dbschemaComboBox,dbschemaFile,dbschemaFileList,dbschemaManager,dbschemaRadioButton,filterAvailable,filterComboTxts,persistenceGen,project,removeAllButton,removeButton,schemaSource,selectedTablesLabel,selectedTablesList,selectedTablesScrollPane,serverStatusProvider,sourceSchemaElement,sourceSchemaUpdateEnabled,tableClosure,tableClosureCheckBox,tableError,tableErrorScroll,tableSource,tablesPanel,targetFolder
+hfds addAllButton,addAllTypeCombo,addButton,allowUpdateRecreate,availableTablesLabel,availableTablesList,availableTablesScrollPane,buttonPanel,changeListener,changeSupport,comboPanel,datasourceLabel,datasourceLocalComboBox,datasourceLocalRadioButton,datasourceName,datasourceServerComboBox,datasourceServerRadioButton,dbconn,dbschemaComboBox,dbschemaFile,dbschemaFileList,dbschemaManager,dbschemaRadioButton,filterAvailable,filterComboTxts,persistenceGen,project,removeAllButton,removeButton,schemaSource,selectedTablesLabel,selectedTablesList,selectedTablesScrollPane,serverStatusProvider,sourceSchemaElement,sourceSchemaUpdateEnabled,tableClosure,tableClosureCheckBox,tableError,tableErrorScroll,tableSource,tablesPanel,targetFolder
 hcls ItemListCellRenderer,TablesPanel
 
 CLSS public final static org.netbeans.modules.j2ee.persistence.wizard.fromdb.DatabaseTablesPanel$WizardPanel
@@ -2302,7 +2321,7 @@ meth public void removeChangeListener(javax.swing.event.ChangeListener)
 meth public void stateChanged(javax.swing.event.ChangeEvent)
 meth public void storeSettings(java.lang.Object)
 supr java.lang.Object
-hfds JAXBRequired,changeSupport,component,componentInitialized,isFinishable,project,providers,puRequired,wizardDescriptor
+hfds JAXBRequired,changeSupport,component,componentInitialized,isFinishable,isJPA,project,providers,puRequired,wizardDescriptor
 
 CLSS public abstract interface org.netbeans.modules.j2ee.persistence.wizard.fromdb.FacadeGenerator
 fld public final static java.lang.String FACADE_SUFFIX = "Facade"
@@ -3038,6 +3057,7 @@ meth protected void addRefreshable(org.netbeans.modules.xml.multiview.Refreshabl
 meth protected void endUIChange()
 meth protected void scheduleRefreshView()
 meth protected void signalUIChange()
+ anno 0 java.lang.Deprecated()
 meth protected void startUIChange()
 meth public abstract void setValue(javax.swing.JComponent,java.lang.Object)
 meth public boolean canClose()
@@ -3140,7 +3160,10 @@ fld public final static java.lang.String PROP_TITLE = "title"
 fld public final static java.lang.String PROP_VALID = "valid"
 fld public final static java.lang.String PROP_VALUE = "value"
 fld public final static java.lang.String PROP_WARNING_NOTIFICATION = "warningNotification"
+innr public final static ComposedInput
 innr public final static Exception
+innr public final static PasswordLine
+innr public final static QuickPick
 innr public static Confirmation
 innr public static InputLine
 innr public static Message
@@ -3495,12 +3518,13 @@ meth public static void setDescriptionAsResource(org.openide.loaders.DataObject,
 meth public static void setIterator(org.openide.loaders.DataObject,org.openide.loaders.TemplateWizard$Iterator) throws java.io.IOException
  anno 0 java.lang.Deprecated()
 meth public void setTargetFolder(org.openide.loaders.DataFolder)
+meth public void setTargetFolderLazy(java.util.function.Supplier<org.openide.loaders.DataFolder>)
 meth public void setTargetName(java.lang.String)
 meth public void setTemplate(org.openide.loaders.DataObject)
 meth public void setTemplatesFolder(org.openide.loaders.DataFolder)
 meth public void setTitleFormat(java.text.MessageFormat)
 supr org.openide.WizardDescriptor
-hfds CUSTOM_DESCRIPTION,CUSTOM_ITERATOR,EA_DESCRIPTION,EA_DESC_RESOURCE,EA_ITERATOR,LOG,PREF_DIM,isInstantiating,iterator,lastComp,newObjects,pcl,progressHandle,showTargetChooser,targetChooser,targetDataFolder,targetIterator,targetName,template,templateChooser,templatesFolder,titleFormatSet
+hfds CUSTOM_DESCRIPTION,CUSTOM_ITERATOR,EA_DESCRIPTION,EA_DESC_RESOURCE,EA_ITERATOR,LOG,PREF_DIM,isInstantiating,iterator,lastComp,newObjects,pcl,progressHandle,showTargetChooser,targetChooser,targetDataFolder,targetDataFolderCreator,targetIterator,targetName,template,templateChooser,templatesFolder,titleFormatSet
 hcls DefaultIterator,InstantiatingIteratorBridge
 
 CLSS public abstract interface static org.openide.loaders.TemplateWizard$Iterator

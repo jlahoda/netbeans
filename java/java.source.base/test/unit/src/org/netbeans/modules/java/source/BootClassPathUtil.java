@@ -53,6 +53,8 @@ import org.openide.filesystems.URLMapper;
 import org.openide.util.BaseUtilities;
 
 import static junit.framework.TestCase.assertFalse;
+import org.netbeans.api.java.classpath.JavaClassPathConstants;
+import org.netbeans.spi.java.classpath.ClassPathProvider;
 import org.openide.filesystems.MultiFileSystem;
 import org.openide.filesystems.Repository;
 
@@ -122,6 +124,19 @@ public class BootClassPathUtil {
         }
     }
 
+    public static ClassPathProvider getBootClassPathProvider() {
+        return new ClassPathProvider() {
+            @Override
+            public ClassPath findClassPath(FileObject file, String type) {
+                switch (type) {
+                    case ClassPath.BOOT: return BootClassPathUtil.getBootClassPath();
+                    case JavaClassPathConstants.MODULE_BOOT_PATH: return BootClassPathUtil.getModuleBootPath();
+                }
+                return null;
+            }
+        };
+    }
+
     private static final String PROTOCOL = "nbjrt"; //NOI18N
 
     private static URI getImageURI(@NonNull final File jdkHome) {
@@ -149,6 +164,7 @@ public class BootClassPathUtil {
     //create fake "system module path" while running on JDK 8
     //java.base contains rt.jar and exports all java.* packages:
     private static ClassPath moduleBootOnJDK8;
+    private static FileSystem moduleBootOnJDK8FileSystem;
 
     private static ClassPath getModuleBootOnJDK8() throws Exception {
         if (moduleBootOnJDK8 == null) {
@@ -181,13 +197,11 @@ public class BootClassPathUtil {
                 }
             }
 
-            FileSystem outS = new MultiFileSystem(roots.toArray(new FileSystem[0])) {
+            moduleBootOnJDK8FileSystem = new MultiFileSystem(roots.toArray(new FileSystem[0])) {
                 {
                     setSystemName("module-boot");
                 }
             };
-
-            Repository.getDefault().addFileSystem(outS);
 
             StringBuilder moduleInfo = new StringBuilder();
 
@@ -200,7 +214,7 @@ public class BootClassPathUtil {
             moduleInfo.append("}\n");
 
             JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-            FileObject javaBase = outS.getRoot();
+            FileObject javaBase = moduleBootOnJDK8FileSystem.getRoot();
 
             try (JavaFileManager fm = compiler.getStandardFileManager(null, null, null);
                  JFMImpl fmImpl = new JFMImpl(fm, javaBase, sink)) {
@@ -216,6 +230,10 @@ public class BootClassPathUtil {
             javaBase.refresh();
             moduleBootOnJDK8 = ClassPathSupport.createClassPath(javaBase);
         }
+
+        //Ensure the filesystem is registered in the current Repository:
+        Repository.getDefault().removeFileSystem(moduleBootOnJDK8FileSystem);
+        Repository.getDefault().addFileSystem(moduleBootOnJDK8FileSystem);
 
         return moduleBootOnJDK8;
     }

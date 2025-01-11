@@ -23,25 +23,19 @@ import com.sun.jna.Native;
 import com.sun.jna.NativeMapped;
 import com.sun.jna.Platform;
 import com.sun.jna.PointerType;
-import com.sun.jna.TypeMapper;
-import com.sun.jna.win32.W32APIFunctionMapper;
-import com.sun.jna.win32.W32APITypeMapper;
+import com.sun.jna.win32.W32APIOptions;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -57,6 +51,7 @@ import org.openide.util.Utilities;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * @author ads
@@ -65,8 +60,6 @@ import org.xml.sax.SAXException;
 public final class Utils {
     
     private static final String APPDATA_CMD = "cmd /c echo %AppData%"; // NOI18N
-    
-    public static final Charset UTF_8 = Charset.forName("UTF-8");     // NOI18N
     
     private Utils(){
     }
@@ -102,7 +95,7 @@ public final class Utils {
         BufferedReader reader = null;
         try {
             reader = new BufferedReader(new InputStreamReader( 
-                    new FileInputStream(file), UTF_8)); 
+                    new FileInputStream(file), UTF_8));
             return (JSONObject)JSONValue.parseWithException(reader);
         } catch (ParseException ex) {
             Logger.getLogger( Utils.class.getCanonicalName()).log(Level.FINE,
@@ -329,7 +322,7 @@ public final class Utils {
     }
     
     public static List<Integer> getVersionParts(String version) {
-        List<Integer> result = new ArrayList<Integer>();
+        List<Integer> result = new ArrayList<>();
         
         StringTokenizer tokens = new StringTokenizer(version, ".");
         while (tokens.hasMoreTokens()) {
@@ -339,8 +332,7 @@ public final class Utils {
                     int index = nextToken.indexOf("a");
 
                     String first = nextToken.substring(0, index);
-                    String second = nextToken.substring(index + 1, 
-                            nextToken.length());
+                    String second = nextToken.substring(index + 1);
 
                     // version xxbyy is greater than any version xx-1 without a beta
                     // but less than version xx without a beta
@@ -351,8 +343,7 @@ public final class Utils {
                     int index = nextToken.indexOf("b");
 
                     String first = nextToken.substring(0, index);
-                    String second = nextToken.substring(index + 1, 
-                            nextToken.length());
+                    String second = nextToken.substring(index + 1);
 
                     // version xxbyy is greater than any version xx-1 without a beta
                     // but less than version xx without a beta
@@ -425,8 +416,7 @@ public final class Utils {
             char[] pszPath = new char[Shell32.MAX_PATH];
             try {
                 if (Shell32_INSTANCE == null) {
-                    Shell32_INSTANCE = (Shell32) Native.loadLibrary("shell32",
-                            Shell32.class, OPTIONS);
+                    Shell32_INSTANCE = Native.load("shell32", Shell32.class, W32APIOptions.UNICODE_OPTIONS);
                 }
                 int hResult = Shell32_INSTANCE.SHGetFolderPath(null, Shell32.CSIDL_LOCAL_APPDATA,
                         null, Shell32.SHGFP_TYPE_CURRENT, pszPath);
@@ -444,13 +434,6 @@ public final class Utils {
     }
 
     private static Shell32 Shell32_INSTANCE;
-    
-    private static Map<String, Object> OPTIONS = new HashMap<String, Object>();
-    static {
-        OPTIONS.put(Library.OPTION_TYPE_MAPPER, W32APITypeMapper.UNICODE);
-        OPTIONS.put(Library.OPTION_FUNCTION_MAPPER,
-                W32APIFunctionMapper.UNICODE);
-    }
 
     static class HANDLE extends PointerType implements NativeMapped {
     }

@@ -70,7 +70,6 @@ import com.sun.source.util.DocTrees;
 import java.util.Collection;
 import java.util.Comparator;
 
-import com.sun.tools.javac.parser.ParserFactory;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.annotations.common.NullAllowed;
 import org.netbeans.api.annotations.common.NullUnknown;
@@ -82,7 +81,6 @@ import org.openide.util.Parameters;
 import static org.netbeans.api.java.source.ModificationResult.*;
 import org.netbeans.api.lexer.TokenSequence;
 import org.netbeans.modules.java.source.FileObjectFromTemplateCreator;
-import org.netbeans.modules.java.source.TreeShims;
 import org.netbeans.modules.java.source.builder.CommentHandlerService;
 import org.netbeans.modules.java.source.builder.CommentSetImpl;
 import org.netbeans.modules.java.source.builder.TreeFactory;
@@ -100,7 +98,8 @@ import org.netbeans.modules.java.source.save.ElementOverlay.FQNComputer;
 import org.netbeans.modules.java.source.transform.ImmutableDocTreeTranslator;
 import org.netbeans.modules.java.source.transform.ImmutableTreeTranslator;
 import org.netbeans.modules.java.source.transform.TreeDuplicator;
-import org.netbeans.modules.parsing.api.Snapshot;
+import org.netbeans.modules.parsing.api.Source;
+import org.netbeans.modules.parsing.impl.SourceAccessor;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.util.NbBundle;
@@ -167,7 +166,7 @@ public class WorkingCopy extends CompilationController {
 
     /**
      * Returns an instance of the {@link WorkingCopy} for
-     * given {@link Parser.Result} if it is a result
+     * given {@link org.netbeans.modules.parsing.spi.Parser.Result} if it is a result
      * of a java parser.
      * @param result for which the {@link WorkingCopy} should be
      * returned.
@@ -311,7 +310,7 @@ public class WorkingCopy extends CompilationController {
      * <p>
      * <code>tree</code> and <code>newTree</code> cannot be <code>null</code>.
      * If <code>oldTree</code> is null, <code>newTree</code> must be of kind
-     * {@link DocTree.Kind#DOC_COMMENT DOC_COMMENT}.
+     * {@link com.sun.source.doctree.DocTree.Kind#DOC_COMMENT DOC_COMMENT}.
      * 
      * @param tree     the tree to which the doctrees belong.
      * @param oldTree  tree to be replaced, use tree already represented in
@@ -865,8 +864,6 @@ public class WorkingCopy extends CompilationController {
                     Tree t;
                     if (translated != null) {
                         t = translate(translated);
-                    } else if (tree != null && tree.getKind().toString().equals(TreeShims.SWITCH_EXPRESSION)) {
-                        t = visitSwitchExpression(tree, null);
                     } else {
                         t = super.translate(tree);
                     }
@@ -888,10 +885,6 @@ public class WorkingCopy extends CompilationController {
                         }
                     }
                     return super.translate(tree);
-                }
-
-                public Tree visitSwitchExpression(Tree set, Object p) {
-                    return rewriteChildren(set);
                 }
             };
             Context c = impl.getJavacTask().getContext();
@@ -957,8 +950,8 @@ public class WorkingCopy extends CompilationController {
         if (textChanges.isEmpty()) {
             return;
         }
-        List<Diff> orderedDiffs = new ArrayList(textChanges);
-        Collections.sort(orderedDiffs, new Comparator<Diff>() {
+        List<Diff> orderedDiffs = new ArrayList<>(textChanges);
+        orderedDiffs.sort(new Comparator<Diff>() {
             @Override
             public int compare(Diff o1, Diff o2) {
                 return o1.getPos() - o2.getPos();
@@ -966,7 +959,7 @@ public class WorkingCopy extends CompilationController {
         });
         
         List<int[]> spans = new ArrayList<>(tag2Span.values());
-        Collections.sort(spans, new Comparator<int[]>() {
+        spans.sort(new Comparator<int[]>() {
             @Override
             public int compare(int[] o1, int[] o2) {
                 return o1[0] - o2[0];
@@ -1289,6 +1282,8 @@ public class WorkingCopy extends CompilationController {
         return creator.create(template, scratchFolder, name);
     }
 
+    boolean invalidateSourceAfter = false;
+
     List<Difference> getChanges(Map<?, int[]> tag2Span) throws IOException, BadLocationException {
         if (afterCommit)
             throw new IllegalStateException("The commit method can be called only once on a WorkingCopy instance");   //NOI18N
@@ -1329,7 +1324,14 @@ public class WorkingCopy extends CompilationController {
         result.addAll(processExternalCUs(tag2Span, syntheticTrees));
 
         overlay.clearElementsCache();
-        
+
+        if (invalidateSourceAfter) {
+            Source source = impl.getSnapshot() != null ? impl.getSnapshot().getSource() : null;
+            if (source != null) {
+                SourceAccessor.getINSTANCE().invalidate(source, true);
+            }
+        }
+
         return result;
     }
     

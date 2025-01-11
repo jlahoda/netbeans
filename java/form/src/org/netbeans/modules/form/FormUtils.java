@@ -477,7 +477,7 @@ public class FormUtils
     public static boolean getPresetValue(String key, boolean defaultValue) {
         try {
             String s = NbBundle.getMessage(FormUtils.class, key);
-            return "true".equals(s.toLowerCase()); // NOI18N
+            return "true".equalsIgnoreCase(s); // NOI18N
         } catch( MissingResourceException ex) { // ignore
         }
         return defaultValue;
@@ -1373,7 +1373,7 @@ public class FormUtils
 
     // -----
 
-    private static abstract class DefaultValueDeviation {
+    private abstract static class DefaultValueDeviation {
         protected Object[] values;
         DefaultValueDeviation(Object[] values) {
             this.values = values;
@@ -1668,7 +1668,7 @@ public class FormUtils
      * @return "un-generified" type.
      */
     public static Class typeToClass(TypeHelper type) {
-        Class clazz = Object.class;
+        Class<?> clazz = Object.class;
         if (type == null) return clazz;
         Type t = type.getType();
         if (t instanceof Class) {
@@ -1780,7 +1780,7 @@ public class FormUtils
                 }
             } else if (type instanceof ParameterizedType) {
                 ParameterizedType pt = (ParameterizedType)type;
-                Class clazz = (Class)pt.getRawType();
+                Class<?> clazz = (Class)pt.getRawType();
                 Map<String,TypeHelper> newMap = new HashMap<String,TypeHelper>();
                 Type[] args = pt.getActualTypeArguments();
                 TypeVariable[] tvar = clazz.getTypeParameters();

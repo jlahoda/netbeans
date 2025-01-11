@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.58.1
+#Version 1.81
 
 CLSS public abstract interface java.beans.PropertyChangeListener
 intf java.util.EventListener
@@ -9,6 +9,12 @@ CLSS public abstract interface java.io.Serializable
 
 CLSS public abstract interface java.lang.Comparable<%0 extends java.lang.Object>
 meth public abstract int compareTo({java.lang.Comparable%0})
+
+CLSS public abstract interface !annotation java.lang.Deprecated
+ anno 0 java.lang.annotation.Documented()
+ anno 0 java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy value=RUNTIME)
+ anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[CONSTRUCTOR, FIELD, LOCAL_VARIABLE, METHOD, PACKAGE, PARAMETER, TYPE])
+intf java.lang.annotation.Annotation
 
 CLSS public abstract java.lang.Enum<%0 extends java.lang.Enum<{java.lang.Enum%0}>>
 cons protected init(java.lang.String,int)
@@ -25,7 +31,6 @@ meth public final java.lang.String name()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
-hfds name,ordinal
 
 CLSS public java.lang.Object
 cons public init()
@@ -98,7 +103,7 @@ meth public void removeActionsManagerListener(java.lang.String,org.netbeans.api.
 meth public void removeActionsManagerListener(org.netbeans.api.debugger.ActionsManagerListener)
 supr java.lang.Object
 hfds actionListener,actionProviders,actionProvidersInitialized,actionProvidersLock,aps,destroy,doiingDo,lazyListeners,listener,listeners,listerersLoaded,logger,lookup,providersChangeListener
-hcls AsynchActionTask,MyActionListener
+hcls AsynchActionTask
 
 CLSS public org.netbeans.api.debugger.ActionsManagerAdapter
 cons public init()
@@ -213,9 +218,9 @@ supr java.lang.Object
 
 CLSS public final org.netbeans.api.debugger.DebuggerInfo
 intf org.netbeans.spi.debugger.ContextProvider
+meth public !varargs static org.netbeans.api.debugger.DebuggerInfo create(java.lang.String,java.lang.Object[])
 meth public <%0 extends java.lang.Object> java.util.List<? extends {%%0}> lookup(java.lang.String,java.lang.Class<{%%0}>)
 meth public <%0 extends java.lang.Object> {%%0} lookupFirst(java.lang.String,java.lang.Class<{%%0}>)
-meth public static org.netbeans.api.debugger.DebuggerInfo create(java.lang.String,java.lang.Object[])
 supr java.lang.Object
 hfds lookup
 
@@ -511,6 +516,7 @@ meth public abstract void setDestructor(org.netbeans.api.debugger.DebuggerEngine
 supr java.lang.Object
 
 CLSS public abstract org.netbeans.spi.debugger.DelegatingSessionProvider
+ anno 0 java.lang.Deprecated()
 cons public init()
 meth public abstract org.netbeans.api.debugger.Session getSession(org.netbeans.api.debugger.DebuggerInfo)
 supr java.lang.Object

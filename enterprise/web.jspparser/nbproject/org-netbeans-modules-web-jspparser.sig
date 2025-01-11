@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 3.33.1
+#Version 3.55
 
 CLSS public abstract interface java.io.Serializable
 
@@ -26,7 +26,6 @@ intf java.io.Serializable
 meth public java.lang.Object getSource()
 meth public java.lang.String toString()
 supr java.lang.Object
-hfds serialVersionUID
 
 CLSS public abstract org.netbeans.modules.web.jsps.parserapi.ELNode
 cons public init()
@@ -767,9 +766,9 @@ meth public java.util.List getIncludePrelude()
 meth public java.util.List<java.lang.String> getDependants()
 meth public java.util.List<java.lang.String> getImports()
 meth public java.util.Map getApproxXmlPrefixMapper()
-meth public java.util.Map getTagLibraries()
 meth public java.util.Map getXMLPrefixMapper()
 meth public java.util.Map<java.lang.String,java.lang.String> getJspPrefixMapper()
+meth public java.util.Map<java.lang.String,javax.servlet.jsp.tagext.TagLibraryInfo> getTagLibraries()
 meth public javax.servlet.jsp.tagext.TagInfo getTagInfo()
 meth public javax.servlet.jsp.tagext.TagLibraryInfo getTaglib(java.lang.String)
 meth public org.netbeans.modules.web.jsps.parserapi.PageInfo$BeanData[] getBeans()

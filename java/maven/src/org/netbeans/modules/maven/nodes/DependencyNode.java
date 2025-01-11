@@ -75,8 +75,8 @@ import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.annotations.common.NullAllowed;
 import org.netbeans.api.java.queries.JavadocForBinaryQuery;
-import org.netbeans.api.progress.aggregate.AggregateProgressFactory;
 import org.netbeans.api.progress.aggregate.AggregateProgressHandle;
+import org.netbeans.api.progress.aggregate.BasicAggregateProgressFactory;
 import org.netbeans.api.progress.aggregate.ProgressContributor;
 import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.api.project.Project;
@@ -405,7 +405,7 @@ public class DependencyNode extends AbstractNode implements PreferenceChangeList
          */
         acts.add(null);
         acts.add(PropertiesAction.get(PropertiesAction.class));
-        return acts.toArray(new Action[acts.size()]);
+        return acts.toArray(new Action[0]);
     }
 
     
@@ -499,7 +499,7 @@ public class DependencyNode extends AbstractNode implements PreferenceChangeList
                 artifact.getType(),
                 classifier); 
             progress.progress(org.openide.util.NbBundle.getMessage(DependencyNode.class, bundleName,artifact.getId()), 1);
-            online.resolve(sources, prjimpl.getOriginalMavenProject().getRemoteArtifactRepositories(), prjimpl.getEmbedder().getLocalRepository());
+            online.resolveArtifact(sources, prjimpl.getOriginalMavenProject().getRemoteArtifactRepositories(), prjimpl.getEmbedder().getLocalRepository());
             if (artifact.getFile() != null && artifact.getFile().exists()) {
                 List<Coordinates> coordinates = RepositoryForBinaryQueryImpl.getJarMetadataCoordinates(artifact.getFile());
                 if (coordinates != null) {
@@ -511,7 +511,7 @@ public class DependencyNode extends AbstractNode implements PreferenceChangeList
                             "jar",
                             baseClassifier);
                         progress.progress(org.openide.util.NbBundle.getMessage(DependencyNode.class, bundleName, artifact.getId()), 1);
-                        online.resolve(sources, prjimpl.getOriginalMavenProject().getRemoteArtifactRepositories(), prjimpl.getEmbedder().getLocalRepository());
+                        online.resolveArtifact(sources, prjimpl.getOriginalMavenProject().getRemoteArtifactRepositories(), prjimpl.getEmbedder().getLocalRepository());
                     }
                 }
             }
@@ -785,6 +785,7 @@ public class DependencyNode extends AbstractNode implements PreferenceChangeList
                 return null;
             }
             URI uri = org.openide.util.Utilities.toURI(art.getFile());
+            // TODO should be patched, along with other uses of Artifact.getFile among nodes
             return FileOwnerQuery.getOwner(uri);
         }
 
@@ -1055,16 +1056,16 @@ public class DependencyNode extends AbstractNode implements PreferenceChangeList
             }
             RP.post(new Runnable() {
                 public @Override void run() {
-                    ProgressContributor contributor =AggregateProgressFactory.createProgressContributor("multi-1");
+                    ProgressContributor contributor = BasicAggregateProgressFactory.createProgressContributor("multi-1");
                    
                     String label = javadoc ? Progress_Javadoc() : Progress_Source();
-                    AggregateProgressHandle handle = AggregateProgressFactory.createHandle(label, 
+                    AggregateProgressHandle handle = BasicAggregateProgressFactory.createHandle(label, 
                             new ProgressContributor [] {contributor}, ProgressTransferListener.cancellable(), null);
                     handle.start();
                     try {
                         ProgressTransferListener.setAggregateHandle(handle);
                         for (Data data : actionContext.lookupAll(Data.class)) {
-                            ProgressContributor contributor2 = AggregateProgressFactory.createProgressContributor("multi-1");
+                            ProgressContributor contributor2 = BasicAggregateProgressFactory.createProgressContributor("multi-1");
                             handle.addContributor(contributor2);
                             if (javadoc && !data.hasJavadocInRepository()) {
                                 data.getNode().downloadJavadocSources(contributor2, javadoc);
@@ -1401,7 +1402,7 @@ public class DependencyNode extends AbstractNode implements PreferenceChangeList
             result.addAll(Arrays.asList(super.getActions(false)));
             result.add(new OpenJavadocAction());
 
-            return result.toArray(new Action[result.size()]);
+            return result.toArray(new Action[0]);
         }
 
         @Messages("BTN_View_Javadoc=Show Javadoc")
@@ -1489,7 +1490,7 @@ public class DependencyNode extends AbstractNode implements PreferenceChangeList
                             }
                         }
                     }
-                    OpenProjects.getDefault().open(projects.toArray(new NbMavenProjectImpl[projects.size()]), false, true);
+                    OpenProjects.getDefault().open(projects.toArray(new NbMavenProjectImpl[0]), false, true);
                 }
             };
         }

@@ -94,6 +94,7 @@ public class AbstractVariable implements JDIVariable, Customizer, Cloneable {
     private Value   value;
     private JPDADebuggerImpl debugger;
     private String          id;
+    private boolean silent;
     
     private final Set<PropertyChangeListener> listeners = new HashSet<PropertyChangeListener>();
 
@@ -151,11 +152,11 @@ public class AbstractVariable implements JDIVariable, Customizer, Cloneable {
                     "(length=" + ArrayReferenceWrapper.length((ArrayReference) v) + ")";
             }
             return "#" + ObjectReferenceWrapper.uniqueID((ObjectReference) v);
-        } catch (InternalExceptionWrapper iex) {
-            return "";
-        } catch (ObjectCollectedExceptionWrapper oex) {
-            return "";
-        } catch (VMDisconnectedExceptionWrapper dex) {
+        } catch (InternalExceptionWrapper | ObjectCollectedExceptionWrapper |
+                VMDisconnectedExceptionWrapper | ClassNotLoadedException |
+                ClassNotPreparedExceptionWrapper |
+                IncompatibleThreadStateException | InvalidTypeException |
+                InvocationException e) {
             return "";
         }
     }
@@ -413,18 +414,23 @@ public class AbstractVariable implements JDIVariable, Customizer, Cloneable {
     
     protected void setInnerValue (Value v) {
         value = v;
-        // refresh tree
-        PropertyChangeEvent evt = new PropertyChangeEvent(this, "value", null, v);
-        Object[] ls;
-        synchronized (listeners) {
-            ls = listeners.toArray();
+        if (!silent) {
+            // refresh tree
+            PropertyChangeEvent evt = new PropertyChangeEvent(this, "value", null, v);
+            Object[] ls;
+            synchronized (listeners) {
+                ls = listeners.toArray();
+            }
+            for (int i = 0; i < ls.length; i++) {
+                ((PropertyChangeListener) ls[i]).propertyChange(evt);
+            }
+            debugger.varChangeSupport.firePropertyChange(evt);
         }
-        for (int i = 0; i < ls.length; i++) {
-            ((PropertyChangeListener) ls[i]).propertyChange(evt);
-        }
-        debugger.varChangeSupport.firePropertyChange(evt);
-        //pchs.firePropertyChange("value", null, value);
-        //getModel ().fireTableValueChangedChanged (this, null);
+    }
+    
+    /** Changes are silent, no events are fired when value is set. */
+    public void setSilentChange(boolean silent) {
+        this.silent = silent;
     }
     
     @Override

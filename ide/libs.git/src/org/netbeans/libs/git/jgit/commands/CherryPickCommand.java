@@ -35,6 +35,7 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
+import org.eclipse.jgit.attributes.Attributes;
 import org.eclipse.jgit.dircache.DirCacheBuildIterator;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -54,7 +55,6 @@ import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.WorkingTreeIterator;
 import org.eclipse.jgit.util.IO;
-import org.eclipse.jgit.util.io.SafeBufferedOutputStream;
 import org.netbeans.libs.git.GitCherryPickResult;
 import org.netbeans.libs.git.GitClient;
 import org.netbeans.libs.git.GitException;
@@ -210,7 +210,7 @@ public class CherryPickCommand extends GitCommand {
                 org.eclipse.jgit.api.CherryPickCommand command = new Git(repository).cherryPick();
                 command.include(ids.iterator().next());
                 if (workAroundStrategyIssue) {
-                    command.setStrategy(new FailuresDetectRecurciveStrategy());
+                    command.setStrategy(new FailuresDetectRecursiveStrategy());
                 }
                 res = command.call();
                 if (res.getStatus() == CherryPickResult.CherryPickStatus.OK) {
@@ -388,7 +388,7 @@ public class CherryPickCommand extends GitCommand {
     }
 
     private void writeFile (File file, ObjectId id) throws IOException {
-        try (BufferedOutputStream bos = new SafeBufferedOutputStream(new FileOutputStream(file))) {
+        try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(file))) {
             id.copyTo(bos);
             bos.write('\n');
         }
@@ -412,7 +412,8 @@ public class CherryPickCommand extends GitCommand {
         return Collections.<RebaseTodoLine>emptyList();
     }
 
-    private class FailuresDetectRecurciveStrategy extends StrategyRecursive {
+    private static final Attributes NO_ATTRIBUTES = new Attributes();
+    private class FailuresDetectRecursiveStrategy extends StrategyRecursive {
 
         @Override
         public ThreeWayMerger newMerger (Repository db) {
@@ -422,18 +423,31 @@ public class CherryPickCommand extends GitCommand {
         @Override
         public ThreeWayMerger newMerger (Repository db, boolean inCore) {
             return new RecursiveMerger(db, inCore) {
+                @Override
                 protected boolean mergeTreeWalk (TreeWalk treeWalk, boolean ignoreConflicts)
                         throws IOException {
                     boolean ok = true;
                     boolean hasWorkingTreeIterator = tw.getTreeCount() > T_FILE;
+                    boolean hasAttributeNodeProvider = treeWalk.getAttributesNodeProvider() != null;
                     while (treeWalk.next()) {
+                        Attributes[] attributes = hasAttributeNodeProvider ?
+                                new Attributes[] {
+                                    treeWalk.getAttributes(T_BASE),
+                                    treeWalk.getAttributes(T_OURS),
+                                    treeWalk.getAttributes(T_THEIRS)
+                                } : new Attributes[] {
+                                    NO_ATTRIBUTES,
+                                    NO_ATTRIBUTES,
+                                    NO_ATTRIBUTES
+                                };
                         if (!processEntry(
                                 treeWalk.getTree(T_BASE, CanonicalTreeParser.class),
                                 treeWalk.getTree(T_OURS, CanonicalTreeParser.class),
                                 treeWalk.getTree(T_THEIRS, CanonicalTreeParser.class),
                                 treeWalk.getTree(T_INDEX, DirCacheBuildIterator.class),
-                                hasWorkingTreeIterator ? treeWalk.getTree(T_FILE,
-                                                WorkingTreeIterator.class) : null, ignoreConflicts)) {
+                                hasWorkingTreeIterator ? treeWalk.getTree(T_FILE, WorkingTreeIterator.class) : null,
+                                ignoreConflicts,
+                                attributes)) {
                             ok = false;
                         }
                         if (treeWalk.isSubtree() && enterSubtree) {
@@ -441,7 +455,7 @@ public class CherryPickCommand extends GitCommand {
                         }
                     }
                     if (!ok) {
-                        cleanUp();
+                        workTreeUpdater.revertModifiedFiles();
                     }
                     return ok;
                 }

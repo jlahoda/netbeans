@@ -19,11 +19,16 @@
 package org.netbeans.modules.php.editor.codegen;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import org.netbeans.modules.php.api.PhpVersion;
+import org.netbeans.modules.php.editor.CodeUtils;
+import static org.netbeans.modules.php.editor.PredefinedSymbols.Attributes.OVERRIDE;
 import org.netbeans.modules.php.editor.api.elements.BaseFunctionElement;
 import org.netbeans.modules.php.editor.api.elements.MethodElement;
-
+import org.netbeans.modules.php.editor.api.elements.TypeResolver;
 import static org.netbeans.modules.php.editor.codegen.CGSGenerator.NEW_LINE;
+import org.netbeans.modules.php.editor.elements.ElementUtils;
+import org.netbeans.modules.php.editor.model.impl.Type;
 
 /**
  *
@@ -49,21 +54,38 @@ public interface SinglePropertyMethodCreator<T extends Property> {
         public String create(MethodProperty property) {
             final StringBuilder inheritedMethod = new StringBuilder();
             final MethodElement method = property.getMethod();
-            if (method.isAbstract() || method.isMagic() || method.getType().isInterface()) {
+            inheritedMethod.append(getOverrideAttribute(method)); // PHP 8.3
+            Collection<TypeResolver> returnTypes = method.getReturnTypes();
+            if (method.isAbstract() || method.isMagic() || method.getType().isInterface() || method.getType().isTrait()
+                    || ElementUtils.isVoidOrNeverType(returnTypes)) {
                 inheritedMethod.append(method.asString(
                         BaseFunctionElement.PrintAs.DeclarationWithEmptyBody,
                         cgsInfo.createTypeNameResolver(method),
-                        cgsInfo.getPhpVersion()).replace("abstract ", "")); //NOI18N;
+                        cgsInfo.getPhpVersion()).replace("abstract ", CodeUtils.EMPTY_STRING)); //NOI18N;
+                if (ElementUtils.isToStringMagicMethod(method)) {
+                    // GH-6783
+                    inheritedMethod.deleteCharAt(inheritedMethod.length() - 1); // delete "}"
+                    inheritedMethod.append(ElementUtils.getToStringMagicMethodBody(method.getType(), cgsInfo.getIndex()));
+                    inheritedMethod.append("\n}"); // NOI18N
+                }
             } else {
                 inheritedMethod.append(method.asString(
                         BaseFunctionElement.PrintAs.DeclarationWithParentCallInBody,
                         cgsInfo.createTypeNameResolver(method),
-                        cgsInfo.getPhpVersion()).replace("abstract ", "")); //NOI18N;
+                        cgsInfo.getPhpVersion()).replace("abstract ", CodeUtils.EMPTY_STRING)); //NOI18N;
             }
             inheritedMethod.append(NEW_LINE);
             return inheritedMethod.toString();
         }
 
+        private String getOverrideAttribute(MethodElement method) {
+            if (!method.isMagic()
+                    && (!method.getType().isTrait() || ElementUtils.isAbstractTraitMethod(method))
+                    && cgsInfo.getPhpVersion().hasOverrideAttribute()) {
+                return OVERRIDE.asAttributeExpression() + CodeUtils.NEW_LINE;
+            }
+            return CodeUtils.EMPTY_STRING;
+        }
     }
 
     abstract class SinglePropertyMethodCreatorImpl implements SinglePropertyMethodCreator<Property> {
@@ -83,7 +105,7 @@ public interface SinglePropertyMethodCreator<T extends Property> {
             String changedName = cgsInfo.getHowToGenerate() == CGSGenerator.GenWay.WITHOUT_UNDERSCORE
                     ? CodegenUtils.upFirstLetterWithoutUnderscore(property.getName())
                     : CodegenUtils.upFirstLetter(property.getName());
-            return CodegenUtils.getUnusedMethodName(new ArrayList<String>(), changedName);
+            return CodegenUtils.getUnusedMethodName(new ArrayList<>(), changedName);
         }
 
         protected String getAccessModifier() {
@@ -129,8 +151,9 @@ public interface SinglePropertyMethodCreator<T extends Property> {
     final class SingleSetterCreator extends SinglePropertyMethodCreatorImpl {
         private static final String PARAM_TYPE = "${PARAM_TYPE}"; //NOI18N
         private static final String FLUENT_SETTER = "${FluentSetter}"; //NOI18N
+        private static final String RETURN_TYPE = "${ReturnType}"; // NOI18N
         private static final String SETTER_TEMPLATE
-            = CGSGenerator.ACCESS_MODIFIER + FUNCTION_MODIFIER + " function " + TEMPLATE_NAME + "(" + PARAM_TYPE + "$$" + CGSGenerator.PARAM_NAME + ") {"
+            = CGSGenerator.ACCESS_MODIFIER + FUNCTION_MODIFIER + " function " + TEMPLATE_NAME + "(" + PARAM_TYPE + "$$" + CGSGenerator.PARAM_NAME + ")" + RETURN_TYPE + "{"
             + CGSGenerator.ASSIGNMENT_TEMPLATE + CGSGenerator.NEW_LINE + FLUENT_SETTER + "}" + CGSGenerator.NEW_LINE; //NOI18N
 
         private final FluentSetterReturnPartCreator fluentSetterCreator;
@@ -155,12 +178,20 @@ public interface SinglePropertyMethodCreator<T extends Property> {
                     .replace(CGSGenerator.ACCESSOR, property.getAccessor())
                     .replace(CGSGenerator.PROPERTY, property.getAccessedName())
                     .replace(FLUENT_SETTER, fluentSetterCreator.create(property))
+                    .replace(RETURN_TYPE, getReturnType())
                     .replace(CGSGenerator.PARAM_NAME, paramName)
                     .replace(CGSGenerator.UP_FIRST_LETTER_PROPERTY, methodName)
                     .replace(CGSGenerator.UP_FIRST_LETTER_PROPERTY_WITHOUT_UNDERSCORE, methodName)
                     .replace(PARAM_TYPE, type.isEmpty() ? type : property.getTypeForTemplate()));
             setter.append(CGSGenerator.NEW_LINE);
             return setter.toString();
+        }
+
+        private String getReturnType() {
+            if (!cgsInfo.isFluentSetter() && cgsInfo.getPhpVersion().hasVoidReturnType()) {
+                return String.format(": %s ", Type.VOID); // NOI18N
+            }
+            return " "; // NOI18N
         }
 
         private static final class FluentSetterReturnPartCreator {

@@ -26,6 +26,7 @@ import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.ImportTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.ModifiersTree;
+import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.StatementTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.Tree.Kind;
@@ -33,6 +34,7 @@ import com.sun.source.tree.TypeParameterTree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.SourcePositions;
 import com.sun.source.util.TreePath;
+import com.sun.source.util.TreePathScanner;
 import java.beans.PropertyVetoException;
 import java.io.File;
 import java.io.IOException;
@@ -43,6 +45,8 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 import java.util.prefs.Preferences;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -65,6 +69,7 @@ import org.netbeans.api.java.source.JavaSource.Phase;
 import org.netbeans.core.startup.Main;
 import org.netbeans.junit.NbTestCase;
 import org.netbeans.modules.java.JavaDataLoader;
+import org.netbeans.modules.java.source.parsing.JavacParser;
 import org.openide.filesystems.FileLock;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
@@ -335,7 +340,7 @@ public class GeneratorUtilitiesTest extends NbTestCase {
     }
 
     public void testConstructor134673a() throws Exception {
-        performTest("package test;\npublic class Test extends java.io.RandomAccessFile {\n}\n", new ConstructorTask(30, 2, 0), null);
+        performTest("package test;\npublic class Test extends java.io.RandomAccessFile {\n}\n", new ConstructorTask(30, actual -> { if (actual != 2 && actual != 3) throw new AssertionError("Wrong number of constructors: " + actual); }, 0), null);
     }
 
     public void testConstructor134673b() throws Exception {
@@ -576,6 +581,31 @@ public class GeneratorUtilitiesTest extends NbTestCase {
                 assertEquals(0, info.getDiagnostics().size());
                 List<? extends ImportTree> imports = info.getCompilationUnit().getImports();
                 assertEquals(0, imports.size());
+            }
+        }, false);
+    }
+
+    public void testAddImports14() throws Exception {
+        performTest("test/Process.java", "package test;\nimport java.util.Collections;\npublic class Process {\npublic static void main(String... args) {\n" +
+        "Collections.singleton(Process.class).forEach(System.out::println);\n}\n}", "1.5", new AddImportsTask("test.Process"), new Validator() {
+            public void validate(CompilationInfo info) {
+                assertEquals(0, info.getDiagnostics().size());
+                List<? extends ImportTree> imports = info.getCompilationUnit().getImports();
+                assertEquals(1, imports.size());
+                assertEquals("java.util.Collections", imports.get(0).getQualifiedIdentifier().toString());
+            }
+        }, false);
+    }
+
+    public void testAddImportsIncrementallyWithStatic_JIRA3019() throws Exception {
+        JavacParser.DISABLE_SOURCE_LEVEL_DOWNGRADE = true;
+        performTest("package test;\npublic class Test { public static final String CONST = null; }\n", "11", new AddImportsTask(true, "test.Test.CONST", "java.util.List"), new Validator() {
+            public void validate(CompilationInfo info) {
+                assertEquals(0, info.getDiagnostics().size());
+                List<? extends ImportTree> imports = info.getCompilationUnit().getImports();
+                assertEquals(2, imports.size());
+                assertEquals("java.util.List", imports.get(0).getQualifiedIdentifier().toString());
+                assertEquals("test.Test.CONST", imports.get(1).getQualifiedIdentifier().toString());
             }
         }, false);
     }
@@ -925,7 +955,7 @@ public class GeneratorUtilitiesTest extends NbTestCase {
 
     private static class ConstructorTask implements CancellableTask<WorkingCopy> {
 
-        private final int numCtors;
+        private final IntConsumer numCtorsValidator;
         private final int ctorToUse;
         private final int offset;
 
@@ -934,8 +964,12 @@ public class GeneratorUtilitiesTest extends NbTestCase {
         }
 
         public ConstructorTask(int offset, int numCtors, int ctorToUse) {
+            this(offset, actual -> assertEquals(numCtors, actual), ctorToUse);
+        }
+
+        public ConstructorTask(int offset, IntConsumer numCtorsValidator, int ctorToUse) {
             this.offset = offset;
-            this.numCtors = numCtors;
+            this.numCtorsValidator = numCtorsValidator;
             this.ctorToUse = ctorToUse;
         }
 
@@ -955,7 +989,7 @@ public class GeneratorUtilitiesTest extends NbTestCase {
             List<? extends ExecutableElement> ctors = sup.getQualifiedName().contentEquals("java.lang.Object")
                     ? null : ElementFilter.constructorsIn(sup.getEnclosedElements());
             if (ctors != null)
-                assertEquals(numCtors, ctors.size());
+                numCtorsValidator.accept(ctors.size());
             GeneratorUtilities utilities = GeneratorUtilities.get(copy);
             assertNotNull(utilities);
             ClassTree newCt = utilities.insertClassMember(ct, utilities.createConstructor(te, vars, ctors != null ? ctors.get(ctorToUse) : null));
@@ -1120,9 +1154,15 @@ public class GeneratorUtilitiesTest extends NbTestCase {
 
     private static class AddImportsTask implements CancellableTask<WorkingCopy> {
 
+        private final boolean incremental;
         private String[] toImport;
         
         public AddImportsTask(String... toImport) {
+            this(false, toImport);
+        }
+
+        public AddImportsTask(boolean incremental, String... toImport) {
+            this.incremental = incremental;
             this.toImport = toImport;
         }
 
@@ -1134,6 +1174,9 @@ public class GeneratorUtilitiesTest extends NbTestCase {
             CompilationUnitTree cut = copy.getCompilationUnit();
             Elements elements = copy.getElements();
             Set<Element> imports = new HashSet<Element>();
+            GeneratorUtilities utilities = GeneratorUtilities.get(copy);
+            assertNotNull(utilities);
+            CompilationUnitTree newCut = cut;
             for (String imp : toImport) {
                 if (imp.endsWith(".*"))
                     imp = imp.substring(0, imp.length() - 2);
@@ -1156,11 +1199,15 @@ public class GeneratorUtilitiesTest extends NbTestCase {
                     }
                 }
                 assertNotNull(el);
-                imports.add(el);
+                if (incremental) {
+                    newCut = utilities.addImports(newCut, Collections.singleton(el));
+                } else {
+                    imports.add(el);
+                }
             }
-            GeneratorUtilities utilities = GeneratorUtilities.get(copy);
-            assertNotNull(utilities);
-            CompilationUnitTree newCut = utilities.addImports(cut, imports);
+            if (!imports.isEmpty()) {
+                newCut = utilities.addImports(newCut, imports);
+            }
             copy.rewrite(cut, newCut);
         }
     }
@@ -1456,7 +1503,7 @@ public class GeneratorUtilitiesTest extends NbTestCase {
                     "package test; public class Test implements I { } interface I { public default void t() { } } \n",
                     "1.8",
                     new T2(),
-                    new ContentValidator("package test; public class Test implements I { \n\n    @Override\n    public void t() {\n        I.super.t(); //To change body of generated methods, choose Tools | Templates.\n    }\n } interface I { public default void t() { } } \n"),
+                    new ContentValidator("package test; public class Test implements I { \n\n    @Override\n    public void t() {\n        I.super.t(); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/OverriddenMethodBody\n    }\n } interface I { public default void t() { } } \n"),
                     false);
     }
     
@@ -1465,7 +1512,7 @@ public class GeneratorUtilitiesTest extends NbTestCase {
                     "package test; public interface Test extends I { } interface I { public void t(); } \n",
                     "1.8",
                     new T2(),
-                    new ContentValidator("package test; public interface Test extends I { \n\n    @Override\n    public default void t() {\n        throw new UnsupportedOperationException(\"Not supported yet.\"); //To change body of generated methods, choose Tools | Templates.\n    }\n } interface I { public void t(); } \n"),
+                    new ContentValidator("package test; public interface Test extends I { \n\n    @Override\n    public default void t() {\n        throw new UnsupportedOperationException(\"Not supported yet.\"); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody\n    }\n } interface I { public void t(); } \n"),
                     false);
     }
     
@@ -1474,7 +1521,7 @@ public class GeneratorUtilitiesTest extends NbTestCase {
                     "package test; public interface Test extends I { } interface I { public default void t() { } } \n",
                     "1.8",
                     new T2(),
-                    new ContentValidator("package test; public interface Test extends I { \n\n    @Override\n    public default void t() {\n        I.super.t(); //To change body of generated methods, choose Tools | Templates.\n    }\n } interface I { public default void t() { } } \n"),
+                    new ContentValidator("package test; public interface Test extends I { \n\n    @Override\n    public default void t() {\n        I.super.t(); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/OverriddenMethodBody\n    }\n } interface I { public default void t() { } } \n"),
                     false);
     }
     
@@ -1483,7 +1530,7 @@ public class GeneratorUtilitiesTest extends NbTestCase {
                     "package test; public class Test implements I { } interface I { public void t(); } \n",
                     "1.8",
                     new T2(),
-                    new ContentValidator("package test; public class Test implements I { \n\n    @Override\n    public void t() {\n        throw new UnsupportedOperationException(\"Not supported yet.\"); //To change body of generated methods, choose Tools | Templates.\n    }\n } interface I { public void t(); } \n"),
+                    new ContentValidator("package test; public class Test implements I { \n\n    @Override\n    public void t() {\n        throw new UnsupportedOperationException(\"Not supported yet.\"); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody\n    }\n } interface I { public void t(); } \n"),
                     false);
     }
     
@@ -1507,6 +1554,63 @@ public class GeneratorUtilitiesTest extends NbTestCase {
             
             parameter.rewrite(testTree, nueTestTree);
         }
+    }
+
+    public void testGenerateMethodInLambda() throws Exception {
+        performTest("test/Test.java",
+                    """
+                    package test;
+                    public class Test {
+                        private void test(Runnable r) {
+                            test(() -> {
+                                new Base<Void, Void>() {};
+                            });
+                        }
+                    }
+                    class Base<T1, T2> {
+                        public T1 test(T1 p) {}
+                    }
+                    """,
+                    "17",
+                    new Task<WorkingCopy>() {
+                        @Override
+                        public void run(WorkingCopy copy) throws java.lang.Exception {
+                            copy.toPhase(Phase.RESOLVED);
+                            new TreePathScanner<Void, Void>() {
+                                @Override
+                                public Void visitNewClass(NewClassTree node, Void p) {
+                                    if (node.getClassBody() != null) {
+                                        ClassTree clazz = node.getClassBody();
+                                        TypeElement anon = (TypeElement) copy.getTrees().getElement(new TreePath(getCurrentPath(), clazz));
+                                        TypeElement superClass = (TypeElement) ((DeclaredType) anon.getSuperclass()).asElement();
+                                        ExecutableElement method = (ExecutableElement) superClass.getEnclosedElements().stream().filter(el -> el.getSimpleName().contentEquals("test")).findAny().get();
+                                        copy.rewrite(clazz, copy.getTreeMaker().addClassMember(clazz, GeneratorUtilities.get(copy).createOverridingMethod(anon, method)));
+                                    }
+                                    return super.visitNewClass(node, p);
+                                }
+
+                            }.scan(copy.getCompilationUnit(), null);
+                        }
+                    },
+                    new ContentValidator("""
+                                         package test;
+                                         public class Test {
+                                             private void test(Runnable r) {
+                                                 test(() -> {
+                                                     new Base<Void, Void>() {
+                                                         @Override
+                                                         public Void test(Void p) {
+                                                             return super.test(p); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/OverriddenMethodBody
+                                                         }
+                                                     };
+                                                 });
+                                             }
+                                         }
+                                         class Base<T1, T2> {
+                                             public T1 test(T1 p) {}
+                                         }
+                                         """),
+                    false);
     }
     
     private static final class ContentValidator implements Validator {

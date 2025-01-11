@@ -307,14 +307,11 @@ public final class ModuleNames {
                     moduleInfo.getParent(),
                     null,
                     FileEncodingQuery.getEncoding(moduleInfo))));
-            final CompilationUnitTree cu =  jt.parse().iterator().next();
-            final List<? extends Tree> typeDecls = cu.getTypeDecls();
-            if (!typeDecls.isEmpty()) {
-                final Tree typeDecl = typeDecls.get(0);
-                if (typeDecl.getKind() == Tree.Kind.MODULE) {
-                    return ((ModuleTree)typeDecl).getName().toString();
-                }
-            }
+        final CompilationUnitTree cu =  jt.parse().iterator().next();
+        final ModuleTree module = cu.getModule();
+        if (module != null) {
+            return module.getName().toString();
+        }
         return null;
     }
 
@@ -567,7 +564,7 @@ public final class ModuleNames {
         void invalidate() {
             super.invalidate();
             if (this.copsCl != null) {
-                this.cops.removeChangeListener(this.copsCl);;
+                this.cops.removeChangeListener(this.copsCl);
             }
             if (this.resCl != null) {
                 this.res.removeChangeListener(this.resCl);

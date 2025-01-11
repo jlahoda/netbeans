@@ -211,6 +211,7 @@
                 <friend>org.netbeans.modules.html.custom</friend>
                 <friend>org.netbeans.modules.html.editor</friend>
                 <friend>org.netbeans.modules.html.editor.lib</friend>
+                <friend>org.netbeans.modules.html.indexing</friend>
                 <friend>org.netbeans.modules.html.knockout</friend>
                 <friend>org.netbeans.modules.html.ojet</friend>
                 <friend>org.netbeans.modules.html.parser</friend>
@@ -220,6 +221,8 @@
                 <friend>org.netbeans.modules.javaee.project</friend>
                 <friend>org.netbeans.modules.javascript.bower</friend>
                 <friend>org.netbeans.modules.javascript.cdnjs</friend>
+                <friend>org.netbeans.modules.javascript.cdtdebug</friend>
+                <friend>org.netbeans.modules.javascript.cdtdebug.ui</friend>
                 <friend>org.netbeans.modules.javascript.grunt</friend>
                 <friend>org.netbeans.modules.javascript.gulp</friend>
                 <friend>org.netbeans.modules.javascript.jstestdriver</friend>

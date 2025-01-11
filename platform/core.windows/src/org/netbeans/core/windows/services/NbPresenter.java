@@ -26,7 +26,6 @@ import java.awt.Container;
 import java.awt.DefaultKeyboardFocusManager;
 import java.awt.Dialog;
 import java.awt.Dimension;
-import java.awt.EventQueue;
 import java.awt.FlowLayout;
 import java.awt.Frame;
 import java.awt.GraphicsDevice;
@@ -79,16 +78,14 @@ import javax.swing.MenuSelectionManager;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
+import javax.swing.border.Border;
 import javax.swing.event.ChangeListener;
-import javax.swing.plaf.basic.BasicLookAndFeel;
-import javax.swing.plaf.metal.MetalLookAndFeel;
 import org.netbeans.core.windows.Constants;
 import org.openide.DialogDescriptor;
 import org.openide.NotificationLineSupport;
 import org.openide.NotifyDescriptor;
 import org.openide.WizardDescriptor;
 import org.openide.awt.Mnemonics;
-import org.openide.util.ChangeSupport;
 import org.openide.util.HelpCtx;
 import org.openide.util.ImageUtilities;
 import org.openide.util.Mutex;
@@ -104,14 +101,9 @@ import org.openide.util.Utilities;
  */
 class NbPresenter extends JDialog
 implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparator<Object> {
-    
-    /** variable holding current modal dialog in the system */
-    public static NbPresenter currentModalDialog;
-    private static final ChangeSupport cs = new ChangeSupport(NbPresenter.class);
-    private static Boolean isJava17 = null;
-    
+
     protected NotifyDescriptor descriptor;
-    
+
     private final JButton stdYesButton = new JButton(NbBundle.getBundle(NbPresenter.class).getString("YES_OPTION_CAPTION")); // NOI18N
     private final JButton stdNoButton = new JButton(NbBundle.getBundle(NbPresenter.class).getString("NO_OPTION_CAPTION")); // NOI18N
     private final JButton stdOKButton = new JButton(NbBundle.getBundle(NbPresenter.class).getString("OK_OPTION_CAPTION")); // NOI18N
@@ -134,12 +126,12 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
         stdDetailButton.setDefaultCapable(true);
         stdDetailButton.putClientProperty( "defaultButton", Boolean.FALSE ); //NOI18N
         Mnemonics.setLocalizedText (stdHelpButton, NbBundle.getBundle(NbPresenter.class).getString("HELP_OPTION_CAPTION")); // NOI18N
-        
+
         /** Initilizes accessible contexts */
         initAccessibility();
     }
-    private final static String ESCAPE_COMMAND = "Escape"; // NOI18N
-    
+    private static final String ESCAPE_COMMAND = "Escape"; // NOI18N
+
     private Component currentMessage;
     private JScrollPane currentScrollPane;
     private boolean leaf = false;
@@ -147,7 +139,7 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
     private JLabel notificationLine;
     private Component[] currentPrimaryButtons;
     private Component[] currentSecondaryButtons;
-    
+
     private static final int MSG_TYPE_ERROR = 1;
     private static final int MSG_TYPE_WARNING = 2;
     private static final int MSG_TYPE_INFO = 3;
@@ -157,7 +149,7 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
 
     /** useful only for DialogDescriptor */
     private int currentAlign;
-    
+
     private ButtonListener buttonListener;
     /** Help context to actually associate with the dialog, as it is currently known. */
     private transient HelpCtx currentHelp = null;
@@ -165,11 +157,11 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
     private transient boolean haveCalledInitializeButtons = false;
 
     static final Logger LOG = Logger.getLogger(NbPresenter.class.getName());
-    
+
     static final long serialVersionUID =-4508637164126678997L;
-    
+
     private JButton initialDefaultButton;
-    
+
     /** Creates a new Dialog from specified NotifyDescriptor,
      * with given frame owner.
      * @param d The NotifyDescriptor to create the dialog from
@@ -178,7 +170,7 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
         super(owner, d.getTitle(), modal); // modal
         initialize(d);
     }
-    
+
     /** Creates a new Dialog from specified NotifyDescriptor,
      * with given dialog owner.
      * @param d The NotifyDescriptor to create the dialog from
@@ -187,45 +179,45 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
         super(owner, d.getTitle(), modal); // modal
         initialize(d);
     }
-    
+
     boolean isLeaf () {
         return leaf;
     }
-    
+
     private void initAccessibility(){
-        
+
         ResourceBundle bundle;
         bundle = NbBundle.getBundle(NbPresenter.class);
-        
+
         stdYesButton.getAccessibleContext().setAccessibleName(bundle.getString("ACS_YES_OPTION_NAME")); // NOI18N
         stdYesButton.getAccessibleContext().setAccessibleDescription(bundle.getString("ACS_YES_OPTION_DESC")); // NOI18N
-        
+
         stdNoButton.getAccessibleContext().setAccessibleName(bundle.getString("ACS_NO_OPTION_NAME")); // NOI18N
         stdNoButton.getAccessibleContext().setAccessibleDescription(bundle.getString("ACS_NO_OPTION_DESC")); // NOI18N
-        
+
         stdOKButton.getAccessibleContext().setAccessibleName(bundle.getString("ACS_OK_OPTION_NAME")); // NOI18N
         stdOKButton.getAccessibleContext().setAccessibleDescription(bundle.getString("ACS_OK_OPTION_DESC")); // NOI18N
-        
+
         stdCancelButton.getAccessibleContext().setAccessibleName(bundle.getString("ACS_CANCEL_OPTION_NAME")); // NOI18N
         stdCancelButton.getAccessibleContext().setAccessibleDescription(bundle.getString("ACS_CANCEL_OPTION_DESC")); // NOI18N
-        
+
         stdClosedButton.getAccessibleContext().setAccessibleName(bundle.getString("ACS_CLOSED_OPTION_NAME")); // NOI18N
         stdClosedButton.getAccessibleContext().setAccessibleDescription(bundle.getString("ACS_CLOSED_OPTION_DESC")); // NOI18N
-        
+
         stdHelpButton.getAccessibleContext().setAccessibleName(bundle.getString("ACS_HELP_OPTION_NAME")); // NOI18N
         stdHelpButton.getAccessibleContext().setAccessibleDescription(bundle.getString("ACS_HELP_OPTION_DESC")); // NOI18N
-        
+
         stdDetailButton.getAccessibleContext().setAccessibleName(bundle.getString("ACS_HELP_OPTION_NAME")); // NOI18N
         stdDetailButton.getAccessibleContext().setAccessibleDescription(bundle.getString("ACS_HELP_OPTION_DESC")); // NOI18N
     }
-    
+
     private void initialize(NotifyDescriptor d) {
         //Optimization related to jdk bug 4393857 - on pre 1.5 jdk's an
         //extra repaint is caused by the search for an opaque component up
         //to the component root. Post 1.5, root pane will automatically be
         //opaque.
         getRootPane().setOpaque(true);
-        
+
         if (d instanceof WizardDescriptor || d.isNoDefaultClose() ) {
             // #81938: wizard close button shouln't work during finish progress
             setDefaultCloseOperation (WindowConstants.DO_NOTHING_ON_CLOSE);
@@ -242,7 +234,7 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
         buttonListener = new ButtonListener();
         // set leaf by DialogDescriptor, NotifyDescriptor is leaf as default
         leaf = d instanceof DialogDescriptor ? ((DialogDescriptor)d).isLeaf () : true;
-        
+
         getRootPane().getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(
                 KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), ESCAPE_COMMAND);
         getRootPane().getActionMap().put(ESCAPE_COMMAND, new EscapeAction());
@@ -259,7 +251,7 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
      * request first. */
     private void requestFocusForMessage() {
         Component comp = currentMessage;
-        
+
         if(comp == null) {
             return;
         }
@@ -285,7 +277,7 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
             }
         }
     }
-    
+
     private void initializeMessage() {
         Object newMessage = descriptor.getMessage();
         boolean isDefaultOptionPane = false;
@@ -305,7 +297,7 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
             }
             Dimension prefSize = currentMessage.getPreferredSize();
             final Rectangle screenBounds = Utilities.getUsableScreenBounds();
-            
+
             if (prefSize.width > screenBounds.width - 100
                 || prefSize.height > screenBounds.height- 100
                 ) {
@@ -326,7 +318,7 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
             } else {
                 toAdd = currentMessage;
             }
-            
+
             if (! (descriptor instanceof WizardDescriptor) && descriptor.getNotificationLineSupport () != null) {
                 JPanel enlargedToAdd = new JPanel (new BorderLayout ());
                 enlargedToAdd.add (toAdd, BorderLayout.CENTER);
@@ -382,7 +374,7 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
             getContentPane ().add (toAdd, BorderLayout.CENTER);
         }
     }
-    
+
     private static final class FixedHeightLabel extends JLabel {
 
         private static final int ESTIMATED_HEIGHT = 16;
@@ -414,24 +406,24 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
     }
 
     private void initializePresenter() {
-        if (currentMessage != null) 
+        if (currentMessage != null)
             return;
-            
+
         initialDefaultButton = getRootPane().getDefaultButton();
         initializeMessage();
-        
+
         updateHelp();
-        
+
         initializeButtons();
         haveCalledInitializeButtons = true;
-        
+
         descriptor.addPropertyChangeListener(this);
         addWindowListener(this);
-        
+
         initializeClosingOptions ();
     }
-    
-    /** Descriptor can be cached and reused. We need to remove listeners 
+
+    /** Descriptor can be cached and reused. We need to remove listeners
      *  from descriptor, buttons and disconnect componets from container hierarchy.
      */
     private void uninitializePresenter() {
@@ -441,13 +433,13 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
         uninitializeClosingOptions ();
         initialDefaultButton = null;
     }
-    
+
     private final HackTypeAhead hack = new HackTypeAhead();
     @Override
     public void addNotify() {
         super.addNotify();
         initializePresenter();
-        
+
         hack.activate();
     }
 
@@ -455,16 +447,16 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
     public void removeNotify() {
         super.removeNotify();
         uninitializePresenter();
-        
+
     }
 
     /** Creates option pane message.
      */
     private JOptionPane createOptionPane() {
         Object msg = descriptor.getMessage();
-        boolean override = true;
+        boolean limitLineWidth = true;
         String strMsg = null, strMsgLower;
-        
+
         if (msg instanceof String) {
             msg = ((String) msg).replace("\t", "    "); // NOI18N
             msg = ((String) msg).replace("\r", ""); // NOI18N
@@ -473,22 +465,22 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
             //so that html text will be displayed correctly in JOptionPane
             strMsg = (String)msg;
             strMsgLower = strMsg.toLowerCase();
-            override = !strMsgLower.startsWith("<html>"); // NOI18N
+            limitLineWidth = !strMsgLower.startsWith("<html>"); // NOI18N
         }
         if (msg instanceof javax.accessibility.Accessible) {
             strMsg = ((javax.accessibility.Accessible)msg).getAccessibleContext().getAccessibleDescription();
         }
 
         JOptionPane optionPane;
-        if (override) {
+        if (limitLineWidth) {
             // initialize component (override max char count per line in a message)
             optionPane = new JOptionPane(
-            msg,
-            descriptor.getMessageType(),
-            0, // options type
-            null, // icon
-            new Object[0], // options
-            null // value
+                msg,
+                descriptor.getMessageType(),
+                0, // options type
+                null, // icon
+                new Object[0], // options
+                null // value
             ) {
                 @Override
                 public int getMaxCharactersPerLineCount() {
@@ -498,29 +490,23 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
         } else {
             //Do not override JOptionPane.getMaxCharactersPerLineCount for html text
             optionPane = new JOptionPane(
-            msg,
-            descriptor.getMessageType(),
-            0, // options type
-            null, // icon
-            new Object[0], // options
-            null // value
+                msg,
+                descriptor.getMessageType(),
+                0, // options type
+                null, // icon
+                new Object[0], // options
+                null // value
             );
         }
-        
-        if (UIManager.getLookAndFeel().getClass() == MetalLookAndFeel.class ||
-            UIManager.getLookAndFeel().getClass() == BasicLookAndFeel.class) {
-            optionPane.setUI(new javax.swing.plaf.basic.BasicOptionPaneUI() {
-                @Override
-                public Dimension getMinimumOptionPaneSize() {
-                    if (minimumSize == null) {
-                        //minimumSize = UIManager.getDimension("OptionPane.minimumSize");
-                        // this is called before defaults initialized?!!!
-                        return new Dimension(MinimumWidth, 50);
-                    }
-                    return new Dimension(minimumSize.width, 50);
-                }
-            });
+
+        // javax.swing.plaf.basic.BasicOptionPaneUI uses hardcoded min height of 90,
+        // if no other default is set. Min height should be about the size of the
+        // used icon, so that dialogs with single-line messages can size themself properly.
+        Dimension minSize = UIManager.getDimension("OptionPane.minimumSize");
+        if (minSize != null) {
+            minSize.setSize(minSize.getWidth(), 38);
         }
+
         optionPane.setWantsInput(false);
         optionPane.getAccessibleContext().setAccessibleDescription(strMsg);
         if( null != strMsg ) {
@@ -551,6 +537,19 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
 
             } );
         }
+
+        // Netbeans-2667 : bug fix contributed by Experian.
+        // The goal of this change is to retrieve the border which is supposed to be applied at the OptionPane.border
+        // which is displayed around the message area and the button area.
+        // As the JOptionPane is now wrapped on a JPanel and the buttons moved on another panel, we need to
+        // retrieve the border which is applied on the JOptionPane and apply it at the content pane level.
+        // Doing that we reduce inconsistencies between dialogs opened through the Java APIs or through the Netbeans APIs.
+        Border optionPaneBorder = optionPane.getBorder();
+        if (optionPaneBorder != null && getContentPane() instanceof JComponent) {
+            ((JComponent) getContentPane()).setBorder(optionPaneBorder);
+            optionPane.setBorder(null);
+        }
+
         return optionPane;
     }
 
@@ -566,29 +565,29 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
                     modifyListener(currentSecondaryButtons[i], buttonListener, false);
                 }
             }
-            
+
             getContentPane().remove(currentButtonsPanel);
             currentButtonsPanel = null;
         }
     }
-    
+
     private void initializeClosingOptions (boolean init) {
         Object[] options = getClosingOptions ();
-        
+
         if (options == null) return ;
         for (int i = 0; i < options.length; i++) {
             modifyListener (options[i], buttonListener, init);
         }
     }
-    
+
     private void initializeClosingOptions () {
         initializeClosingOptions (true);
     }
-    
+
     private void uninitializeClosingOptions () {
         initializeClosingOptions (false);
     }
-    
+
     /**
      * On Aqua look and feel, options should be sorted such that the default
      * button is always rightmost, and 'yes' options appear to thr right of
@@ -602,7 +601,7 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
         } else {
             result = 0;
         }
-        
+
         if (isDefaultButton) {
             result++;
         } else if( b.equals(descriptor.getDefaultValue ()) ) {
@@ -610,28 +609,28 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
         }
         return result;
     }
-    
+
     protected final void initializeButtons() {
         // -----------------------------------------------------------------------------
         // If there were any buttons previously, remove them and removeActionListener from them
-        
+
         Component focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager ().getFocusOwner ();
 
         boolean dontShowHelp = Constants.DO_NOT_SHOW_HELP_IN_DIALOGS ||
                 ( descriptor instanceof WizardDescriptor && ( Boolean.FALSE.equals (((WizardDescriptor)descriptor).getProperty (WizardDescriptor.PROP_HELP_DISPLAYED)) )); // NOI18N
         boolean helpButtonShown =
             stdHelpButton.isShowing() || ( descriptor instanceof WizardDescriptor && !dontShowHelp );
-        
-        
+
+
         uninitializeButtons();
-        
+
         Object[] primaryOptions = descriptor.getOptions();
         Object[] secondaryOptions = descriptor.getAdditionalOptions();
         currentAlign = getOptionsAlign();
-        
+
         // -----------------------------------------------------------------------------
         // Obtain main (primary) and additional (secondary) buttons
-        
+
         currentPrimaryButtons = null;
         currentSecondaryButtons = null;
 
@@ -641,7 +640,7 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
             //No mac dialogs with buttons on side
             currentAlign = DialogDescriptor.BOTTOM_ALIGN;
         }
-        
+
         // explicitly provided options (AKA buttons)
         // JST: The following line causes only problems,
         //      I hope that my change will not cause additional ones ;-)
@@ -717,7 +716,7 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
                     break;
             }
         }
-        
+
         if ((secondaryOptions != null) && (secondaryOptions.length != 0)) {
             currentSecondaryButtons = new Component [secondaryOptions.length];
             Arrays.sort (secondaryOptions, this);
@@ -745,9 +744,9 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
                 }
             }
         }
-        
+
         // Automatically add a help button if needed.
-        
+
         if (!dontShowHelp && (currentHelp != null || helpButtonShown)) {
             if (helpButtonLeft()) {
                 if (currentSecondaryButtons == null) currentSecondaryButtons = new Component[] { };
@@ -770,15 +769,15 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
             }
             stdHelpButton.setEnabled(currentHelp != null);
         }
-        
+
         // -----------------------------------------------------------------------------
         // Create panels for main (primary) and additional (secondary) buttons and add to content pane
-        
+
         if (currentAlign == DialogDescriptor.BOTTOM_ALIGN || currentAlign == -1) {
-            
+
             JPanel panelForPrimary = null;
             JPanel panelForSecondary = null;
-            
+
 
             if (currentPrimaryButtons != null) {
                 panelForPrimary = new JPanel();
@@ -793,7 +792,7 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
                     panelForPrimary.add(currentPrimaryButtons[i]);
                 }
             }
-            
+
             if (currentSecondaryButtons != null) {
                 panelForSecondary = new JPanel();
                 panelForSecondary.setLayout(new org.openide.awt.EqualFlowLayout(FlowLayout.LEFT));
@@ -802,7 +801,7 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
                     panelForSecondary.add(currentSecondaryButtons[i]);
                 }
             }
-            
+
             // both primary and secondary buttons are used
             if ((panelForPrimary != null) && (panelForSecondary != null)) {
                 currentButtonsPanel = new JPanel();
@@ -814,15 +813,15 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
             } else {
                 currentButtonsPanel = panelForSecondary;
             }
-            
+
             // add final button panel to the dialog
             if ((currentButtonsPanel != null)&&(currentButtonsPanel.getComponentCount() != 0)) {
                 if (currentButtonsPanel.getBorder() == null) {
-                    currentButtonsPanel.setBorder(new javax.swing.border.EmptyBorder(new java.awt.Insets(11, 6, 5, 5)));
+                    currentButtonsPanel.setBorder(new javax.swing.border.EmptyBorder(new java.awt.Insets(5, 0, 5, 5)));
                 }
                 getContentPane().add(currentButtonsPanel, BorderLayout.SOUTH);
             }
-            
+
         } else if (currentAlign == DialogDescriptor.RIGHT_ALIGN) {
             currentButtonsPanel = new JPanel();
             currentButtonsPanel.setLayout(new GridBagLayout());
@@ -831,21 +830,21 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
             gbc.weightx = 1.0f;
             gbc.insets = new Insets(5, 4, 2, 5);
             gbc.fill = GridBagConstraints.HORIZONTAL;
-            
+
             if (currentPrimaryButtons != null) {
                 for (int i = 0; i < currentPrimaryButtons.length; i++) {
                     modifyListener(currentPrimaryButtons[i], buttonListener, true); // add button listener
                     currentButtonsPanel.add(currentPrimaryButtons[i], gbc);
                 }
             }
-            
+
             GridBagConstraints padding = new GridBagConstraints();
             padding.gridwidth = GridBagConstraints.REMAINDER;
             padding.weightx = 1.0f;
             padding.weighty = 1.0f;
             padding.fill = GridBagConstraints.BOTH;
             currentButtonsPanel.add(new JPanel(), padding);
-            
+
             gbc.insets = new Insets(2, 4, 5, 5);
             if (currentSecondaryButtons != null) {
                 for (int i = 0; i < currentSecondaryButtons.length; i++) {
@@ -853,39 +852,39 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
                     currentButtonsPanel.add(currentSecondaryButtons[i], gbc);
                 }
             }
-            
+
             // add final button panel to the dialog
             if (currentButtonsPanel != null) {
                 if (currentButtonsPanel.getBorder() == null) {
-                    currentButtonsPanel.setBorder(new javax.swing.border.EmptyBorder(new java.awt.Insets(6, 7, 5, 5)));
+                    currentButtonsPanel.setBorder(new javax.swing.border.EmptyBorder(new java.awt.Insets(5, 5, 5, 5)));
                 }
                 getContentPane().add(currentButtonsPanel, BorderLayout.EAST);
             }
-            
+
         }
         updateDefaultButton();
-        
-        
+
+
         Component fo = KeyboardFocusManager.getCurrentKeyboardFocusManager ().getFocusOwner ();
-        
+
         if (fo != focusOwner && focusOwner != null) {
             focusOwner.requestFocus();
         }
     }
-    
+
     /** @return returns true if the Help button should be at the left side
      */
     private boolean helpButtonLeft() {
         boolean result = false;
         try {
             String resValue = NbBundle.getMessage(NbPresenter.class, "HelpButtonAtTheLeftSide" ); //NOI18N
-            result = "true".equals( resValue.toLowerCase() ); //NOI18N
+            result = "true".equalsIgnoreCase(resValue); //NOI18N
         } catch( MissingResourceException e ) {
             //ignore
         }
         return result;
     }
-    
+
     /** Checks default button and updates it
      */
     private void updateDefaultButton() {
@@ -893,7 +892,7 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
         if (descriptor.getDefaultValue () != null) {
             if (descriptor.getDefaultValue () instanceof JButton) {
                 JButton b = (JButton)descriptor.getDefaultValue ();
-            if (b.isVisible() && b.isEnabled () && b.isDefaultCapable () 
+            if (b.isVisible() && b.isEnabled () && b.isDefaultCapable ()
                     && !Boolean.FALSE.equals(b.getClientProperty("defaultButton")) ) { //NOI18N
                     getRootPane ().setDefaultButton (b);
                     return ;
@@ -946,7 +945,7 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
         else
             getRootPane().setDefaultButton(null);
     }
-    
+
     private void updateNotificationLine (int msgType, Object o) {
         String msg = o == null ? null : o.toString ();
         if (msg != null && msg.trim().length() > 0) {
@@ -1002,12 +1001,12 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
             }
         }
     }
-    
+
     private void modifyListener(Object comp, ButtonListener l, boolean add) {
         // on JButtons attach simply by method call
         if (comp instanceof JButton) {
             JButton b = (JButton)comp;
-            if (add) { 
+            if (add) {
                 List listeners;
                 listeners = Arrays.asList (b.getActionListeners ());
                 if (!listeners.contains (l)) {
@@ -1052,14 +1051,14 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
             }
         }
     }
-    
+
     /** Shows the dialog, used in method show so no inner class is needed.
      */
     private void superShow() {
         assert SwingUtilities.isEventDispatchThread () : "Invoked super.show() in AWT event thread."; // NOI18N
         super.show();
     }
-    
+
     @Override @Deprecated
     public void show() {
         //Bugfix #29993: Call show() asynchronously for non modal dialogs.
@@ -1077,12 +1076,13 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
             }
         }
     }
-    
+
+    @Override
     public Void run() {
         doShow();
         return null;
     }
-    
+
     private void doShow () {
         //#206802 - dialog windows are hidden behind full screen window
         Window fullScreenWindow = null;
@@ -1094,30 +1094,21 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
                     gd.setFullScreenWindow( null );
             }
         }
-        NbPresenter prev = null;
         try {
             MenuSelectionManager.defaultManager().clearSelectedPath();
         } catch( NullPointerException npE ) {
             //#216184
             LOG.log( Level.FINE, null, npE );
         }
-        if (isModal()) {
-            prev = currentModalDialog;
-            currentModalDialog = this;
-            fireChangeEvent();
-        }
-        
+
         superShow();
 
-        if( null != fullScreenWindow )
+        if( null != fullScreenWindow ) {
             getGraphicsConfiguration().getDevice().setFullScreenWindow( fullScreenWindow );
-        
-        if (currentModalDialog != prev) {
-            currentModalDialog = prev;
-            fireChangeEvent();
         }
     }
-    
+
+    @Override
     public void propertyChange(final java.beans.PropertyChangeEvent evt) {
         if( !SwingUtilities.isEventDispatchThread() ) {
             SwingUtilities.invokeLater(new Runnable() {
@@ -1128,7 +1119,7 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
             return;
         }
         boolean update = false;
-        
+
         if (DialogDescriptor.PROP_OPTIONS.equals(evt.getPropertyName())) {
             initializeButtons();
             update = true;
@@ -1178,7 +1169,7 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
             // XXX: need set update on true?
             updateNotificationLine (MSG_TYPE_ERROR, evt.getNewValue ());
         }
-        
+
         if (update) {
             Dimension sz = getSize();
             Dimension prefSize = getPreferredSize();
@@ -1191,7 +1182,7 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
             repaint();
         }
     }
-    
+
     private void updateHelp() {
         //System.err.println ("Updating help for NbDialog...");
         HelpCtx help = getHelpCtx();
@@ -1214,32 +1205,32 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
             if (haveCalledInitializeButtons) initializeButtons();
         }
     }
-    
+
     /** Options align.
      */
     protected int getOptionsAlign() {
         return DialogDescriptor.DEFAULT_ALIGN;
     }
-    
+
     /** Getter for button listener or null
      */
     protected ActionListener getButtonListener() {
         return null;
     }
-    
+
     /** Closing options.
      */
     protected Object[] getClosingOptions() {
         return null;
     }
-    
+
     /** Updates help.
      */
     protected HelpCtx getHelpCtx() {
         return null;
     }
-    
-    
+
+
     public void windowDeactivated(final java.awt.event.WindowEvent p1) {
     }
     public void windowClosed(final java.awt.event.WindowEvent p1) {
@@ -1259,22 +1250,16 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
     }
     public void windowActivated(final java.awt.event.WindowEvent p1) {
     }
-    
-    // Used by JavaHelp:
+
+    @Deprecated
     public static void addChangeListener(ChangeListener l) {
-        cs.addChangeListener(l);
+        // Does nothing
     }
+    @Deprecated
     public static void removeChangeListener(ChangeListener l) {
-        cs.removeChangeListener(l);
+        // Does nothing
     }
-    private static void fireChangeEvent() {
-        EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                cs.fireChange();
-            }
-        });
-    }
-    
+
     private final class EscapeAction extends AbstractAction {
 
         public EscapeAction () {
@@ -1285,9 +1270,9 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
             if( !descriptor.isNoDefaultClose() )
             buttonListener.actionPerformed(e);
         }
-        
+
     }
-    
+
     /** Button listener
      */
     private class ButtonListener implements ActionListener, ComponentListener, PropertyChangeListener {
@@ -1295,7 +1280,7 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
         public void actionPerformed(ActionEvent evt) {
             boolean isAqua = "Aqua".equals (UIManager.getLookAndFeel().getID()) || //NOI18N
                             "true".equalsIgnoreCase (System.getProperty ("xtest.looks_as_mac"));
-            
+
             Object pressedOption = evt.getSource();
             // handle ESCAPE
             if (ESCAPE_COMMAND.equals (evt.getActionCommand ())) {
@@ -1313,16 +1298,16 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
                     showHelp(currentHelp);
                     return;
                 }
-                
+
                 Object[] options = descriptor.getOptions();
                 if (isAqua && options != null) {
                     Arrays.sort (options, NbPresenter.this);
                 }
-                
+
                 if (
                 options != null &&
                 currentPrimaryButtons != null &&
-                options.length == (currentPrimaryButtons.length - 
+                options.length == (currentPrimaryButtons.length -
                     ((currentHelp != null) ? 1 : 0))
                 ) {
                     int offset = currentHelp != null && isAqua ?
@@ -1333,12 +1318,12 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
                         }
                     }
                 }
-                
+
                 options = descriptor.getAdditionalOptions();
                 if (isAqua && options != null) {
                     Arrays.sort (options, NbPresenter.this);
                 }
-                
+
                 if (
                 options != null &&
                 currentSecondaryButtons != null &&
@@ -1350,7 +1335,7 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
                         }
                     }
                 }
-                
+
                 if (evt.getSource() == stdYesButton) {
                     pressedOption = NotifyDescriptor.YES_OPTION;
                 } else if (evt.getSource() == stdNoButton) {
@@ -1365,10 +1350,10 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
             }
 
             descriptor.setValue(pressedOption);
-            
+
             ActionListener al = getButtonListener();
             if (al != null) {
-                
+
                 if (pressedOption == evt.getSource()) {
                     al.actionPerformed(evt);
                 } else {
@@ -1377,14 +1362,14 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
                     ));
                 }
             }
-            
+
             Object[] arr = getClosingOptions();
             if (arr == null || pressedOption == NotifyDescriptor.CLOSED_OPTION) {
                 // all options should close
                 dispose();
             } else {
                 java.util.List l = java.util.Arrays.asList(arr);
-                
+
                 if (l.contains(pressedOption)) {
                     dispose();
                 }
@@ -1395,21 +1380,21 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
         }
         public void componentResized(final java.awt.event.ComponentEvent p1) {
         }
-        
+
         public void componentHidden(final java.awt.event.ComponentEvent p1) {
             updateDefaultButton();
         }
-        
+
         public void componentMoved(final java.awt.event.ComponentEvent p1) {
         }
-        
+
         public void propertyChange(final java.beans.PropertyChangeEvent p1) {
             if ("enabled".equals(p1.getPropertyName())) {
                 updateDefaultButton();
             }
         }
     }
-    
+
     @Override
     public javax.accessibility.AccessibleContext getAccessibleContext() {
         if (accessibleContext == null) {
@@ -1417,7 +1402,7 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
         }
         return accessibleContext;
     }
-    
+
     private static String getMessageTypeDescription(int messageType) {
         switch(messageType) {
         case NotifyDescriptor.ERROR_MESSAGE:
@@ -1483,20 +1468,20 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
             }
         }
     }
-    
+
     private final class HackTypeAhead implements Runnable {
         private RequestProcessor.Task task = RequestProcessor.getDefault().create(this);
-        
-        
+
+
         public HackTypeAhead() {
         }
-        
+
         public void activate() {
             if (markers != null) {
                 task.schedule(1000);
             }
         }
-        
+
         public void run() {
             if (!SwingUtilities.isEventDispatchThread()) {
                 SwingUtilities.invokeLater(this);
@@ -1577,7 +1562,22 @@ implements PropertyChangeListener, WindowListener, Mutex.Action<Void>, Comparato
      */
     private Window findFocusedWindow() {
         Window w = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusedWindow();
-        while( null != w && !w.isShowing() ) {
+        if( w == null ) {
+            // PR#5280
+            LOG.fine( () -> "No focused window, find mainWindow" );
+            for( Frame f01 : Frame.getFrames() ) {
+                if( "NbMainWindow".equals(f01.getName())) { //NOI18N
+                    if(f01.getWidth() != 0 || f01.getHeight() != 0) {
+                        w = f01;
+                    }
+                    break;
+                }
+            }
+        }
+        while( null != w ) {
+            if ((w instanceof Frame || w instanceof Dialog) && w.isShowing()) {
+                break;
+            }
             w = w.getOwner();
         }
         return w;

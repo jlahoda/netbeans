@@ -239,7 +239,7 @@ public class EarImpl implements EarImplementation, EarImplementation2,
                 "generateApplicationXml", //NOI18N
                 "generate-application-xml", null);//NOI18N
         //either the default or explicitly set generation of application.xml file
-        return (str == null || Boolean.valueOf(str).booleanValue());
+        return (str == null || Boolean.valueOf(str));
     }
 
     boolean isValid() {
@@ -258,6 +258,11 @@ public class EarImpl implements EarImplementation, EarImplementation2,
     @Override
     public String getModuleVersion() {
         Profile prf = getJ2eeProfile();
+        if (prf == Profile.JAKARTA_EE_11_FULL || prf == Profile.JAKARTA_EE_11_FULL) return Application.VERSION_11;
+        if (prf == Profile.JAKARTA_EE_10_FULL || prf == Profile.JAKARTA_EE_10_FULL) return Application.VERSION_10;
+        if (prf == Profile.JAKARTA_EE_9_1_FULL || prf == Profile.JAKARTA_EE_9_FULL) return Application.VERSION_9;
+        if (prf == Profile.JAKARTA_EE_8_FULL || prf == Profile.JAVA_EE_8_FULL) return Application.VERSION_8;
+        if (prf == Profile.JAVA_EE_7_FULL) return Application.VERSION_7;
         if (prf == Profile.JAVA_EE_6_FULL) return Application.VERSION_6;
         if (prf == Profile.JAVA_EE_5) return Application.VERSION_5;
         return Application.VERSION_1_4;
@@ -385,6 +390,10 @@ public class EarImpl implements EarImplementation, EarImplementation2,
         List<Dependency> deps = mp.getRuntimeDependencies();
         String fileNameMapping = PluginPropertyUtils.getPluginProperty(project, Constants.GROUP_APACHE_PLUGINS, Constants.PLUGIN_EAR, "fileNameMapping", "ear", null); //NOI18N
         if (fileNameMapping == null) {
+            // EAR maven plugin property was renamed from fileNameMapping to outputFileNameMapping in version 3.0.0
+            fileNameMapping = PluginPropertyUtils.getPluginProperty(project, Constants.GROUP_APACHE_PLUGINS, Constants.PLUGIN_EAR, "outputFileNameMapping", "ear", null); //NOI18N
+        }
+        if (fileNameMapping == null) {
             fileNameMapping = "standard"; //NOI18N
         }
 
@@ -434,7 +443,7 @@ public class EarImpl implements EarImplementation, EarImplementation2,
                 }
             }
         }
-        return toRet.toArray(new J2eeModule[toRet.size()]);
+        return toRet.toArray(new J2eeModule[0]);
     }
 
     @Override
@@ -716,7 +725,7 @@ public class EarImpl implements EarImplementation, EarImplementation2,
 
     private MavenModule[] checkConfiguration(MavenProject prj, Object conf) {
         List<MavenModule> toRet = new ArrayList<MavenModule>();
-        if (conf != null && conf instanceof Xpp3Dom) {
+        if (conf instanceof Xpp3Dom) {
             ExpressionEvaluator eval = PluginPropertyUtils.createEvaluator(project);
             Xpp3Dom dom = (Xpp3Dom) conf;
             Xpp3Dom modules = dom.getChild("modules"); //NOI18N
@@ -792,7 +801,7 @@ public class EarImpl implements EarImplementation, EarImplementation2,
 
                 // Remove '/' prefix if any so that directory is a relative path
                 if (toRet.startsWith("/")) { //NOI18N
-                    toRet = toRet.substring(1, toRet.length());
+                    toRet = toRet.substring(1);
                 }
 
                 if (toRet.length() > 0 && !toRet.endsWith("/")) { //NOI18N

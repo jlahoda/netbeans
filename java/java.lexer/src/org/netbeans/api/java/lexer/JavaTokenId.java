@@ -127,6 +127,8 @@ public enum JavaTokenId implements TokenId {
     DOUBLE_LITERAL(null, "number"),
     CHAR_LITERAL(null, "character"),
     STRING_LITERAL(null, "string"),
+    /**@since 1.41*/
+    MULTILINE_STRING_LITERAL(null, "string"),
     
     TRUE("true", "literal"),
     FALSE("false", "literal"),
@@ -191,6 +193,7 @@ public enum JavaTokenId implements TokenId {
     LINE_COMMENT(null, "comment"), // Token includes ending new-line
     BLOCK_COMMENT(null, "comment"),
     JAVADOC_COMMENT(null, "comment"),
+    JAVADOC_COMMENT_LINE_RUN(null, "comment"), // A run of "markdown" javadoc comments, includes ending new-line
     
     // Errors
     INVALID_COMMENT_END("*/", "error"),
@@ -260,6 +263,9 @@ public enum JavaTokenId implements TokenId {
                 case JAVADOC_COMMENT:
                     return LanguageEmbedding.create(JavadocTokenId.language(), 3,
                             (token.partType() == PartType.COMPLETE) ? 2 : 0);
+                case JAVADOC_COMMENT_LINE_RUN:
+                    return LanguageEmbedding.create(JavadocTokenId.language(), 3,
+                            (token.partType() == PartType.COMPLETE) ? 1 : 0);
                 case STRING_LITERAL:
                     return LanguageEmbedding.create(JavaStringTokenId.language(), 1,
                             (token.partType() == PartType.COMPLETE) ? 1 : 0);

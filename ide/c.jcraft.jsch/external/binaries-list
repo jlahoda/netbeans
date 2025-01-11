@@ -14,4 +14,4 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-DA3584329A263616E277E15462B387ADDD1B208D com.jcraft:jsch:0.1.54
+470C45A2B42103D48772F877B1C7287619AD490E com.github.mwiede:jsch:0.1.72

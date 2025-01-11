@@ -88,7 +88,7 @@ public final class SystemFileSystemSupport {
         }
 
         synchronized (dataFolder2actionsProvider) {
-            ActionsProvider actionsProvider = (ActionsProvider)dataFolder2actionsProvider.get(dataFolder);
+            ActionsProvider actionsProvider = dataFolder2actionsProvider.get(dataFolder);
             if (actionsProvider == null) {
                 actionsProvider = new DefaultActionsProvider(dataFolder);
                 dataFolder2actionsProvider.put(dataFolder, actionsProvider);
@@ -132,7 +132,7 @@ public final class SystemFileSystemSupport {
         throws IOException, ClassNotFoundException {
             List<Action> actions = new ArrayList<Action>();
             for (int i = 0; i < cookies.length; i++) {
-                Class clazz = cookies[i].instanceClass();
+                Class<?> clazz = cookies[i].instanceClass();
                 if (JSeparator.class.isAssignableFrom(clazz)) {
                     // XXX <code>null</code> is interpreted as a separator.
                     actions.add(null);

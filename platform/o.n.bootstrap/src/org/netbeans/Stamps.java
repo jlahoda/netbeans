@@ -36,6 +36,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -54,6 +55,7 @@ import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import org.openide.modules.Places;
+import org.openide.util.BaseUtilities;
 import org.openide.util.Exceptions;
 import org.openide.util.NbBundle;
 
@@ -61,7 +63,7 @@ import org.openide.util.NbBundle;
  * Support for optimal checking of time stamps of certain files in
  * NetBeans directory structure. 
  *
- * @author Jaroslav Tulach <jaroslav.tulach@netbeans.org>
+ * @author Jaroslav Tulach &lt;jaroslav.tulach@netbeans.org&gt;
  * @since 2.9
  */
 public final class Stamps {
@@ -132,7 +134,7 @@ public final class Stamps {
     }
     
     /** Opens the access to cache object as a stream.
-     * @param name name of the cache
+     * @param cache name of the cache
      * @return stream to read from the cache or null if the cache is not valid
      */
     public InputStream asStream(String cache) {
@@ -156,7 +158,7 @@ public final class Stamps {
      */
    
     /** Opens the access to cache object as a stream.
-     * @param name name of the cache
+     * @param cache name of the cache
      * @return stream to read from the cache or null if the cache is not valid
      */
     public ByteBuffer asByteBuffer(String cache) {
@@ -212,7 +214,7 @@ public final class Stamps {
     
     /** Method for registering updates to caches.
      * @param updater the callback to start when flushing caches
-     * @param file name of the file to store the cache into
+     * @param cache name of the file to store the cache into
      * @param append write from scratch or append?
      */
     public void scheduleSave(Updater updater, String cache, boolean append) {
@@ -336,6 +338,15 @@ public final class Stamps {
             sb.append("branding=").append(NbBundle.getBranding()).append('\n');
             sb.append("java.version=").append(System.getProperty("java.version")).append('\n');
             sb.append("java.vm.version=").append(System.getProperty("java.vm.version")).append('\n');
+            if (BaseUtilities.isWindows()) {
+              /* NETBEANS-1914: On Windows (but not on Linux or MacOS), the cache directory has been
+              observed to contain absolute paths to the NetBeans install directory (netbeans.home).
+              This can cause errors on startup if said directory is later moved. As a workaround,
+              include the netbeans.home path among the values that will cause the cache to be
+              invalidated if changed. (A better solution would be to get rid of the absolute paths;
+              but after some investigation, I could not figure out how to do this.) */
+              sb.append("netbeans.home=").append(home == null ? "" : home).append('\n');
+            }
                     
             File checkSum = new File(Places.getCacheDirectory(), "lastModified/all-checksum.txt");
             if (!compareAndUpdateFile(checkSum, sb.toString(), result)) {
@@ -427,7 +438,7 @@ public final class Stamps {
     
     private static boolean compareAndUpdateFile(File file, String content, AtomicLong result) {
         try {
-            byte[] expected = content.getBytes("UTF-8"); // NOI18N
+            byte[] expected = content.getBytes(StandardCharsets.UTF_8);
             byte[] read = new byte[expected.length];
             FileInputStream is = null;
             boolean areCachesOK;
@@ -914,7 +925,7 @@ public final class Stamps {
     }
 
     static String clusterLocalStamp(File cluster) {
-        return cluster.getName().replaceAll("\\.\\.", "__");
+        return cluster.getName().replace("..", "__");
     }
     
     static String readRelativePath(DataInput dis) throws IOException {
@@ -986,7 +997,8 @@ public final class Stamps {
             dos.writeUTF(codeName);
             dos.writeUTF(relPath);
         } else {
-            Collection coll = (Collection) out;
+            @SuppressWarnings("unchecked")
+            Collection<String> coll = (Collection<String>) out;
             coll.add(codeName);
             coll.add(relPath);
         }

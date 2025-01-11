@@ -44,7 +44,6 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluationException;
 import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluator;
-import org.codehaus.plexus.util.IOUtil;
 import org.codehaus.plexus.util.StringUtils;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.netbeans.api.annotations.common.NonNull;
@@ -112,13 +111,13 @@ public class MavenWhiteListQueryImpl implements WhiteListQueryImplementation {
                         if (newTransitive == null) {
                             newTransitive = Collections.emptySet();
                         }
-                        HashSet oldNotNew1 = new HashSet(oldPrivate);
+                        Set<String> oldNotNew1 = new HashSet<>(oldPrivate);
                         oldNotNew1.removeAll(newPrivate);
-                        HashSet newNotOld1 = new HashSet(newPrivate);
+                        Set<String> newNotOld1 = new HashSet<>(newPrivate);
                         newNotOld1.removeAll(oldPrivate);
-                        HashSet oldNotNew2 = new HashSet(oldTransitive);
+                        Set<String> oldNotNew2 = new HashSet<>(oldTransitive);
                         oldNotNew2.removeAll(newTransitive);
-                        HashSet newNotOld2 = new HashSet(newTransitive);
+                        Set<String> newNotOld2 = new HashSet<>(newTransitive);
                         newNotOld2.removeAll(oldTransitive);
                         
                         boolean privateChanged = !oldNotNew1.isEmpty() || !newNotOld1.isEmpty();
@@ -330,7 +329,7 @@ public class MavenWhiteListQueryImpl implements WhiteListQueryImplementation {
         assert Thread.holdsLock(LOCK);
         final Set<MavenWhiteListImplementation> set;
         synchronized (results) {
-            set = new HashSet(results);
+            set = new HashSet<>(results);
         }
         RP.post(new Runnable() {
             @Override
@@ -367,18 +366,14 @@ public class MavenWhiteListQueryImpl implements WhiteListQueryImplementation {
     private Manifest getManifest(FileObject root) {
         FileObject manifestFo = root.getFileObject("META-INF/MANIFEST.MF");
         if (manifestFo != null) {
-            InputStream is = null;
-            try {
-                is = manifestFo.getInputStream();
-                return new Manifest(is);
+            try (InputStream is = manifestFo.getInputStream()) {
+                Manifest manifest = new Manifest(is);
+                return manifest;
             } catch (IOException ex) {
                 //Exceptions.printStackTrace(ex);
-            } finally {
-                IOUtil.close(is);
             }
         }
         return null;
-
     }
     
     private static class MavenWhiteListImplementation implements WhiteListImplementation {

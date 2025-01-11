@@ -20,6 +20,8 @@ package org.netbeans.modules.payara.tooling.admin;
 
 import java.io.*;
 import java.net.HttpURLConnection;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.logging.Level;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -67,6 +69,9 @@ public class RunnerHttpDeploy extends RunnerHttp {
     /** Deploy command <code>libraries</code> parameter name. */
     private static final String LIBRARIES_PARAM = "libraries";
 
+    /** Deploy command <code>hotDeploy</code> parameter name. */
+    private static final String HOT_DEPLOY_PARAM = "hotDeploy";
+
     /** Deploy command <code>force</code> parameter value. */
     private static final boolean FORCE_VALUE = true;
 
@@ -90,21 +95,47 @@ public class RunnerHttpDeploy extends RunnerHttp {
      * @param command Payara server administration deploy command entity.
      * @return Deploy query string for given command.
      */
-    private static String query(final Command command) {
+    private static String query(final PayaraServer server, final Command command) {
         // Prepare values
         String name; 
         String path;
         String target;
         String ctxRoot;
+        String hotDeploy;
         String force = Boolean.toString(FORCE_VALUE);
+        CommandDeploy deploy;
         if (command instanceof CommandDeploy) {
-            if (((CommandDeploy)command).path == null) {
+            deploy = (CommandDeploy)command;
+            if (deploy.path == null) {
                 throw new CommandException(CommandException.ILLEGAL_NULL_VALUE);
             }
-            name = Utils.sanitizeName(((CommandDeploy)command).name);
-            path = ((CommandDeploy)command).path.getAbsolutePath();
-            target =((CommandDeploy)command).target;
-            ctxRoot = ((CommandDeploy)command).contextRoot;
+            name = Utils.sanitizeName(deploy.name);
+            path = deploy.path.getAbsolutePath();
+            if (server.isDocker()
+                    && server.getHostPath() != null
+                    && !server.getHostPath().isEmpty()
+                    && server.getContainerPath() != null
+                    && !server.getContainerPath().isEmpty()) {
+                try {
+                    Path relativePath = Paths.get(server.getHostPath()).relativize(deploy.path.toPath());
+                    path = Paths.get(server.getContainerPath(), relativePath.toString()).toString();
+                    if (server.getContainerPath().startsWith("/")) {
+                        path = path.replace("\\", "/");
+                    }
+                } catch (IllegalArgumentException ex) {
+                    throw new CommandException(
+                            CommandException.DOCKER_HOST_APPLICATION_PATH);
+                }
+            }
+            if (server.isWSL()) {
+                // Replace backslashes with forward slashes
+                path = path.replace("\\", "/");
+                // Add "mnt" prefix and drive letter
+                path = "/mnt/" + path.substring(0, 1).toLowerCase() + path.substring(2);
+            }
+            target = deploy.target;
+            ctxRoot = deploy.contextRoot;
+            hotDeploy = Boolean.toString(deploy.hotDeploy);
         }
         else {
             throw new CommandException(
@@ -115,9 +146,9 @@ public class RunnerHttpDeploy extends RunnerHttp {
                 DEFAULT_PARAM.length() + 1 + path.length() +
                 1 + FORCE_PARAM.length() + 1 + force.length()
                 + queryPropertiesLength(
-                        ((CommandDeploy)command).properties, PROPERTIES_PARAM)
+                        deploy.properties, PROPERTIES_PARAM)
                 + queryLibrariesLength(
-                        ((CommandDeploy)command).libraries, LIBRARIES_PARAM)
+                        deploy.libraries, LIBRARIES_PARAM)
                 + ( name != null && name.length() > 0
                         ? 1 + NAME_PARAM.length() + 1 + name.length()
                         : 0
@@ -144,10 +175,15 @@ public class RunnerHttpDeploy extends RunnerHttp {
             sb.append(PARAM_SEPARATOR);
             sb.append(CTXROOT_PARAM).append(PARAM_ASSIGN_VALUE).append(ctxRoot);
         }
+        if (((CommandDeploy) command).hotDeploy) {
+            sb.append(PARAM_SEPARATOR);
+            sb.append(HOT_DEPLOY_PARAM);
+            sb.append(PARAM_ASSIGN_VALUE).append(hotDeploy);
+        }
         // Add properties into query string.
-        queryPropertiesAppend(sb, ((CommandDeploy)command).properties,
+        queryPropertiesAppend(sb, deploy.properties,
                 PROPERTIES_PARAM, true);
-        queryLibrariesAppend(sb, ((CommandDeploy)command).libraries,
+        queryLibrariesAppend(sb, deploy.libraries,
                 LIBRARIES_PARAM, true);
         
         return sb.toString();
@@ -174,7 +210,7 @@ public class RunnerHttpDeploy extends RunnerHttp {
      */
     public RunnerHttpDeploy(final PayaraServer server,
             final Command command) {
-        super(server, command, query(command));
+        super(server, command, query(server, command));
         this.command = (CommandDeploy)command;
     }
 

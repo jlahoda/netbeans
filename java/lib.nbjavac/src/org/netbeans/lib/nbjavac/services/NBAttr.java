@@ -18,6 +18,8 @@
  */
 package org.netbeans.lib.nbjavac.services;
 
+import com.sun.tools.javac.code.Symbol.ClassSymbol;
+import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.comp.Attr;
 import com.sun.tools.javac.comp.AttrContext;
 import com.sun.tools.javac.comp.Env;
@@ -27,21 +29,21 @@ import com.sun.tools.javac.tree.JCTree.JCCatch;
 import com.sun.tools.javac.tree.JCTree.JCClassDecl;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
 import com.sun.tools.javac.tree.JCTree.JCMethodDecl;
-import com.sun.tools.javac.tree.JCTree.JCNewClass;
+import com.sun.tools.javac.tree.JCTree.JCVariableDecl;
 import com.sun.tools.javac.tree.TreeMaker;
 import com.sun.tools.javac.util.Context;
+import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
 import com.sun.tools.javac.util.List;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.reflect.Field;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
  * @author lahvac
  */
 public class NBAttr extends Attr {
+
+    public static boolean TEST_DO_SINGLE_FAIL;
 
     public static void preRegister(Context context) {
         context.put(attrKey, new Context.Factory<Attr>() {
@@ -52,12 +54,24 @@ public class NBAttr extends Attr {
     }
 
     private final CancelService cancelService;
+    private final NBResolve rs;
     private final TreeMaker tm;
 
     public NBAttr(Context context) {
         super(context);
         cancelService = CancelService.instance(context);
+        rs = NBResolve.instance(context);
         tm = TreeMaker.instance(context);
+    }
+
+    @Override
+    public void attribClass(DiagnosticPosition pos, ClassSymbol c) {
+        cancelService.abortIfCanceled();
+        if (TEST_DO_SINGLE_FAIL) {
+            TEST_DO_SINGLE_FAIL = false;
+            throw new AssertionError("Test requested failure");
+        }
+        super.attribClass(pos, c);
     }
 
     @Override
@@ -76,6 +90,19 @@ public class NBAttr extends Attr {
     public void visitBlock(JCBlock tree) {
         cancelService.abortIfCanceled();
         super.visitBlock(tree);
+    }
+
+    @Override
+    public void visitVarDef(JCVariableDecl tree) {
+        //for erroneous "var", make sure the synthetic make.Error() has an invalid/synthetic position:
+        tm.at(-1);
+        super.visitVarDef(tree);
+    }
+
+    @Override
+    public Type attribType(JCTree tree, Env<AttrContext> env) {
+        cancelService.abortIfCanceled();
+        return super.attribType(tree, env);
     }
 
     @Override
@@ -100,6 +127,20 @@ public class NBAttr extends Attr {
         }
     }
 
+    protected void breakTreeFound(Env<AttrContext> env, Type result) {
+        if (fullyAttribute) {
+            fullyAttributeResult = env;
+        } else {
+            try {
+                MethodHandles.lookup()
+                             .findSpecial(Attr.class, "breakTreeFound", MethodType.methodType(void.class, Env.class, Type.class), NBAttr.class)
+                             .invokeExact(this, env, result);
+            } catch (Throwable ex) {
+                sneakyThrows(ex);
+            }
+        }
+    }
+
     private <T extends Throwable> void sneakyThrows(Throwable t) throws T {
         throw (T) t;
     }
@@ -109,8 +150,8 @@ public class NBAttr extends Attr {
             fullyAttribute = true;
 
             Env<AttrContext> result = tree instanceof JCExpression ?
-                    attribExprToTree((JCExpression) tree, env, (JCTree) to) :
-                    attribStatToTree((JCTree) tree, env, (JCTree) to);
+                    attribExprToTree((JCExpression) tree, env, to) :
+                    attribStatToTree(tree, env, to);
 
             return fullyAttributeResult != null ? fullyAttributeResult : result;
         } finally {

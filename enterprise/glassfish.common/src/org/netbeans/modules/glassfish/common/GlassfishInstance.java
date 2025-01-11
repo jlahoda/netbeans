@@ -714,19 +714,19 @@ public class GlassfishInstance implements ServerInstanceImplementation,
     private transient volatile Process process;
 
     /** Configuration changes listener watching <code>domain.xml</code> file. */
-    private transient final DomainXMLChangeListener domainXMLListener;
+    private final transient DomainXMLChangeListener domainXMLListener;
 
     private transient InstanceContent ic;
     private transient Lookup localLookup;
     private transient Lookup full;
     private final transient Lookup.Result<GlassfishModuleFactory>
             lookupResult = Lookups.forPath(Util.GF_LOOKUP_PATH).lookupResult(
-            GlassfishModuleFactory.class);;
+            GlassfishModuleFactory.class);
     private transient Collection<? extends GlassfishModuleFactory>
             currentFactories = Collections.emptyList();
     
     /** GlassFish server support API for this instance. */
-    private transient final CommonServerSupport commonSupport;
+    private final transient CommonServerSupport commonSupport;
     // API instance
     private ServerInstance commonInstance;
     private GlassfishInstanceProvider instanceProvider;
@@ -1648,7 +1648,7 @@ public class GlassfishInstance implements ServerInstanceImplementation,
             }
 
             if (!proxies.isEmpty()) {
-                full = new ProxyLookup(proxies.toArray(new Lookup[proxies.size()]));
+                full = new ProxyLookup(proxies.toArray(Lookup[]::new));
             }
         }
 

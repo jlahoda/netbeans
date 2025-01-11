@@ -26,8 +26,6 @@ import java.util.Set;
 import javax.annotation.processing.Messager;
 import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
-import javax.annotation.processing.SupportedSourceVersion;
-import javax.lang.model.SourceVersion;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
@@ -51,10 +49,9 @@ import org.openide.util.lookup.ServiceProvider;
  * Processing annotation <code>@PropertyEditorSearchPath</code> 
  * and <code>@PropertyEditorRegistration</code>
  * 
- * @author Jan Horvath <jhorvath@netbeans.org>
+ * @author Jan Horvath &lt;jhorvath@netbeans.org&gt;
  */
 @ServiceProvider(service=Processor.class)
-@SupportedSourceVersion(SourceVersion.RELEASE_7)
 public class NodesAnnotationProcessor extends LayerGeneratingProcessor {
 
     public NodesAnnotationProcessor() {

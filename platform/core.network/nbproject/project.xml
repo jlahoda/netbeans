@@ -56,8 +56,8 @@
                     <build-prerequisite/>
                     <compile-dependency/>
                     <run-dependency>
-                        <release-version>1</release-version>
-                        <specification-version>1.32</specification-version>
+                        <release-version>2</release-version>
+                        <specification-version>2.1</specification-version>
                     </run-dependency>
                 </dependency>
                 <dependency>
@@ -65,8 +65,8 @@
                     <build-prerequisite/>
                     <compile-dependency/>
                     <run-dependency>
-                        <release-version>1</release-version>
-                        <specification-version>1.16</specification-version>
+                        <release-version>2</release-version>
+                        <specification-version>2.1</specification-version>
                     </run-dependency>
                 </dependency>
                 <dependency>
@@ -149,7 +149,11 @@
                     <test-dependency>
                         <code-name-base>org.netbeans.core.startup</code-name-base>
                         <compile-dependency/>
-                        <test/>
+                    </test-dependency>
+                    <test-dependency>
+                        <code-name-base>org.netbeans.libs.graaljs</code-name-base>
+                        <recursive/>
+                        <compile-dependency/>
                     </test-dependency>
                     <test-dependency>
                         <code-name-base>org.netbeans.libs.junit4</code-name-base>
@@ -179,12 +183,12 @@
                         <test/>
                     </test-dependency>
                     <test-dependency>
-                        <code-name-base>org.openide.util.ui</code-name-base>
-                        <compile-dependency/>
+                        <code-name-base>org.openide.util.lookup</code-name-base>
                         <test/>
                     </test-dependency>
                     <test-dependency>
-                        <code-name-base>org.openide.util.lookup</code-name-base>
+                        <code-name-base>org.openide.util.ui</code-name-base>
+                        <compile-dependency/>
                         <test/>
                     </test-dependency>
                 </test-type>

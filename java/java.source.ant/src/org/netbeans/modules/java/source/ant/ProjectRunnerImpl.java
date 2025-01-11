@@ -122,8 +122,7 @@ public class ProjectRunnerImpl implements JavaRunnerImplementation {
     private static final RequestProcessor RP = new RequestProcessor(ProjectRunnerImpl.class);
     
     public boolean isSupported(String command, Map<String, ?> properties) {
-        return BuildArtifactMapper.isCompileOnSaveSupported() &&
-               locateScript(command) != null;
+        return locateScript(command) != null;
     }
 
     @Override
@@ -494,7 +493,7 @@ public class ProjectRunnerImpl implements JavaRunnerImplementation {
                 roots.add(orig);
             }
         }
-        return ClassPathSupport.createClassPath(roots.toArray(new URL[roots.size()]));
+        return ClassPathSupport.createClassPath(roots.toArray(new URL[0]));
     }
     
     @CheckForNull
@@ -546,7 +545,7 @@ public class ProjectRunnerImpl implements JavaRunnerImplementation {
         }
         return res.isEmpty() ?
                 orig :
-                res.toArray(new URL[res.size()]);
+                res.toArray(new URL[0]);
     }
 
     private static ExecutorTask clean(Map<String, ?> properties) {
@@ -620,8 +619,8 @@ public class ProjectRunnerImpl implements JavaRunnerImplementation {
     }
 
     private static <T> List<T> getMultiValue(Map<String, ?> properties, String name, Class<T> type) {
-        Iterable v = (Iterable) properties.remove(name);
-        List<T>  result = new LinkedList<T>();
+        Iterable<?> v = (Iterable<?>) properties.remove(name);
+        List<T> result = new LinkedList<>();
 
         if (v == null) {
             return Collections.emptyList();
@@ -717,7 +716,7 @@ public class ProjectRunnerImpl implements JavaRunnerImplementation {
                     File sourceFile = FileUtil.toFile(source);
 
                     if (sourceFile == null) {
-                        LOG.log(Level.WARNING, "Source URL: {0} cannot be translated to file, skipped", source.getURL().toExternalForm());
+                        LOG.log(Level.WARNING, "Source URL: {0} cannot be translated to file, skipped", source.toURL().toExternalForm());
                         continue;
                     }
 

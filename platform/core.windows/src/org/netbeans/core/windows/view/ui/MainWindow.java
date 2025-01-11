@@ -83,7 +83,7 @@ public final class MainWindow {
    private JComponent statusBar;
 
    private static final Logger LOGGER = Logger.getLogger(MainWindow.class.getName());
-   
+
    //update main window title bar when current document is modified (Mac OS X only)
    private final RequestProcessor RP = new RequestProcessor( "MainWndMac", 1 ); //NOI18N
 
@@ -159,7 +159,7 @@ public final class MainWindow {
            return;
        }
        inited = true;
-       
+
        JPanel contentPane = new JPanel(new BorderLayout()) {
            @Override
            public void paint(Graphics g) {
@@ -475,8 +475,8 @@ public final class MainWindow {
             statusBarContainer.add( statusBar, BorderLayout.CENTER );
         }
     }
-    
-   static private class StatusLineElementsListener implements LookupListener {
+
+   private static class StatusLineElementsListener implements LookupListener {
        private JPanel decoratingPanel;
        StatusLineElementsListener (JPanel decoratingPanel) {
            this.decoratingPanel = decoratingPanel;
@@ -511,8 +511,8 @@ public final class MainWindow {
    private static final String ICON_1024 = "org/netbeans/core/startup/frame1024.png"; // NOI18N
    static void initFrameIcons(Frame f) {
        List<Image> currentIcons = f.getIconImages();
-       if( !currentIcons.isEmpty() )
-           return; //do not override icons if they have been already provided elsewhere (JDev)
+       if( !currentIcons.isEmpty() || Utilities.isMac())
+           return; //do not override icons if they have been already provided elsewhere (JDev / macOS uses Dock icon)
        f.setIconImages(Arrays.asList(
                ImageUtilities.loadImage(ICON_16, true),
                ImageUtilities.loadImage(ICON_32, true),
@@ -732,7 +732,7 @@ public final class MainWindow {
 
 
    public void setFullScreenMode( boolean fullScreenMode ) {
-       if( isFullScreenMode == fullScreenMode || isSwitchingFullScreenMode 
+       if( isFullScreenMode == fullScreenMode || isSwitchingFullScreenMode
                || Utilities.isMac()) { //Mac OS X has its own built-in full screen support, see applemenu module
            return;
        }
@@ -743,7 +743,7 @@ public final class MainWindow {
            isUndecorated = frame.isUndecorated();
            windowDecorationStyle = frame.getRootPane().getWindowDecorationStyle();
        }
-       
+
        final TopComponent activeTc = TopComponent.getRegistry().getActivated();
 
        GraphicsDevice device = null;
@@ -885,7 +885,7 @@ public final class MainWindow {
         Logger logger = Logger.getLogger( "org.netbeans.ui.metrics.laf" );   // NOI18N
         LogRecord rec = new LogRecord( Level.INFO, "USG_LOOK_AND_FEEL" ); //NOI18N
         String lafId = laf.getID();
-        if( laf.getDefaults().getBoolean( "nb.dark.theme" ) ) //NOI18N
+        if( UIManager.getLookAndFeelDefaults().getBoolean( "nb.dark.theme" ) ) //NOI18N
         {
             lafId = "DARK " + lafId; //NOI18N
         }

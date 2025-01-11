@@ -54,7 +54,7 @@ public class NbObjectOutputStream extends ObjectOutputStream {
     }
 
     private static Map<String,Boolean> examinedClasses = new WeakHashMap<String,Boolean>(250);
-    private final List<Class> serializing = new ArrayList<Class>(50);
+    private final List<Class> serializing = new ArrayList<>(50);
 
     /** Create a new object output.
     * @param os the underlying output stream
@@ -73,6 +73,7 @@ public class NbObjectOutputStream extends ObjectOutputStream {
     /*
     * @param obj is an Object to be checked for replace
     */
+    @Override
     public Object replaceObject(Object obj) throws IOException {
         if (obj instanceof Image) {
             return null;
@@ -111,6 +112,7 @@ public class NbObjectOutputStream extends ObjectOutputStream {
         oo.write(bos.toByteArray());
     }
 
+    @Override
     protected void annotateClass(Class cl) throws IOException {
         super.annotateClass(cl);
 
@@ -145,11 +147,11 @@ public class NbObjectOutputStream extends ObjectOutputStream {
             b.append(classname);
             b.append(" does not declare serialVersionUID field. Encountered while storing: ["); // NOI18N
 
-            Iterator it = serializing.iterator();
+            Iterator<Class> it = serializing.iterator();
             boolean first = true;
 
             while (it.hasNext()) {
-                Class c = (Class) it.next();
+                Class c = it.next();
 
                 if ((c != cl) && serializingUniq.add(c)) {
                     if (first) {

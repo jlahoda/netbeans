@@ -19,10 +19,10 @@
 package org.netbeans.modules.php.editor.verification;
 
 import java.util.ArrayDeque;
-import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -46,8 +46,10 @@ import org.netbeans.modules.php.editor.model.ModelUtils;
 import org.netbeans.modules.php.editor.model.TraitScope;
 import org.netbeans.modules.php.editor.parser.PHPParseResult;
 import org.netbeans.modules.php.editor.parser.astnodes.ASTNode;
+import org.netbeans.modules.php.editor.parser.astnodes.ArrowFunctionDeclaration;
 import org.netbeans.modules.php.editor.parser.astnodes.Assignment;
 import org.netbeans.modules.php.editor.parser.astnodes.Block;
+import org.netbeans.modules.php.editor.parser.astnodes.BodyDeclaration;
 import org.netbeans.modules.php.editor.parser.astnodes.CastExpression;
 import org.netbeans.modules.php.editor.parser.astnodes.CatchClause;
 import org.netbeans.modules.php.editor.parser.astnodes.ClassDeclaration;
@@ -76,6 +78,7 @@ import org.netbeans.modules.php.editor.parser.astnodes.Include;
 import org.netbeans.modules.php.editor.parser.astnodes.InstanceOfExpression;
 import org.netbeans.modules.php.editor.parser.astnodes.InterfaceDeclaration;
 import org.netbeans.modules.php.editor.parser.astnodes.LambdaFunctionDeclaration;
+import org.netbeans.modules.php.editor.parser.astnodes.MatchExpression;
 import org.netbeans.modules.php.editor.parser.astnodes.MethodDeclaration;
 import org.netbeans.modules.php.editor.parser.astnodes.MethodInvocation;
 import org.netbeans.modules.php.editor.parser.astnodes.NamespaceDeclaration;
@@ -92,13 +95,13 @@ import org.netbeans.modules.php.editor.parser.astnodes.ReflectionVariable;
 import org.netbeans.modules.php.editor.parser.astnodes.ReturnStatement;
 import org.netbeans.modules.php.editor.parser.astnodes.Scalar;
 import org.netbeans.modules.php.editor.parser.astnodes.SingleFieldDeclaration;
+import org.netbeans.modules.php.editor.parser.astnodes.SingleUseStatementPart;
 import org.netbeans.modules.php.editor.parser.astnodes.StaticFieldAccess;
 import org.netbeans.modules.php.editor.parser.astnodes.StaticMethodInvocation;
 import org.netbeans.modules.php.editor.parser.astnodes.SwitchStatement;
-import org.netbeans.modules.php.editor.parser.astnodes.ThrowStatement;
+import org.netbeans.modules.php.editor.parser.astnodes.ThrowExpression;
 import org.netbeans.modules.php.editor.parser.astnodes.UnaryOperation;
 import org.netbeans.modules.php.editor.parser.astnodes.UseStatement;
-import org.netbeans.modules.php.editor.parser.astnodes.SingleUseStatementPart;
 import org.netbeans.modules.php.editor.parser.astnodes.Variable;
 import org.netbeans.modules.php.editor.parser.astnodes.WhileStatement;
 import org.netbeans.modules.php.editor.parser.astnodes.visitors.DefaultVisitor;
@@ -217,6 +220,9 @@ public class UnusedVariableHint extends HintRule implements CustomisableRule {
         private boolean isInInheritedMethod;
         private String className = ""; // NOI18N
         private final Map<String, List<String>> allInheritedMethods; // method name, class names
+        private final Map<ArrowFunctionDeclaration, Set<String>> arrowFunctionParameters = new HashMap<>();
+        private ArrowFunctionDeclaration firstArrowFunctionNode = null;
+        private ArrowFunctionDeclaration currentArrowFunctionNode = null;
 
         CheckVisitor(FileObject fileObject, BaseDocument baseDocument, Map<String, List<String>> allInheritedMethods) {
             this.fileObject = fileObject;
@@ -231,7 +237,7 @@ public class UnusedVariableHint extends HintRule implements CustomisableRule {
                     createHint(variable);
                 }
             }
-            return hints;
+            return Collections.unmodifiableList(hints);
         }
 
         @Messages({
@@ -328,6 +334,11 @@ public class UnusedVariableHint extends HintRule implements CustomisableRule {
             }
             Identifier identifier = getIdentifier(node);
             if (identifier != null && !isInGlobalContext()) {
+                if (parentNodes.peek() instanceof ArrowFunctionDeclaration) {
+                    if (!isArrowFunctionParameter(node)) {
+                        return;
+                    }
+                }
                 process(HintVariable.create(node, identifier.getName()));
             }
         }
@@ -336,9 +347,20 @@ public class UnusedVariableHint extends HintRule implements CustomisableRule {
             return (parentNodes.peek() instanceof Program) || (parentNodes.peek() instanceof NamespaceDeclaration);
         }
 
+        private boolean isArrowFunctionParameter(Variable variable) {
+            Set<String> params = arrowFunctionParameters.get(currentArrowFunctionNode);
+            return params != null && params.contains(CodeUtils.extractVariableName(variable));
+        }
+
         private void process(HintVariable hintVariable) {
             if (hintVariable != null && !UNCHECKED_VARIABLES.contains(hintVariable.getName())) {
                 ASTNode parentNode = parentNodes.peek();
+                if (parentNode instanceof ArrowFunctionDeclaration) {
+                    // for nested arrow function
+                    if (currentArrowFunctionNode != null) {
+                        parentNode = currentArrowFunctionNode;
+                    }
+                }
                 String currentVarName = hintVariable.getName();
                 List<HintVariable> usedScopeVariables = getUsedScopeVariables(parentNode);
                 List<HintVariable> unusedScopeVariables = getUnusedScopeVariables(parentNode);
@@ -604,7 +626,18 @@ public class UnusedVariableHint extends HintRule implements CustomisableRule {
         }
 
         @Override
-        public void visit(ThrowStatement node) {
+        public void visit(MatchExpression node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
+            forceVariableAsUsed = true;
+            scan(node.getExpression());
+            forceVariableAsUsed = false;
+            scan(node.getMatchArms());
+        }
+
+        @Override
+        public void visit(ThrowExpression node) {
             if (CancelSupport.getDefault().isCancelled()) {
                 return;
             }
@@ -638,11 +671,12 @@ public class UnusedVariableHint extends HintRule implements CustomisableRule {
             if (CancelSupport.getDefault().isCancelled()) {
                 return;
             }
+            boolean forceVariableAsUsedHolder = forceVariableAsUsed;
             forceVariableAsUsed = true;
             scan(node.getClassName());
             scan(node.ctorParams());
             scan(node.getBody());
-            forceVariableAsUsed = false;
+            forceVariableAsUsed = forceVariableAsUsedHolder;
         }
 
         @Override
@@ -704,7 +738,12 @@ public class UnusedVariableHint extends HintRule implements CustomisableRule {
             if (CancelSupport.getDefault().isCancelled()) {
                 return;
             }
-            if (checkUnusedFormalParameters(preferences) && !isInInheritedMethod) {
+            if (BodyDeclaration.Modifier.isVisibilityModifier(node.getModifier())) {
+                // [NETBEANS-4443] PHP 8.0 Construcotr Property Promotion
+                forceVariableAsUsed = true;
+                scan(node.getParameterName());
+                forceVariableAsUsed = false;
+            } else if (checkUnusedFormalParameters(preferences) && !isInInheritedMethod) {
                 scan(node.getParameterName());
             } else {
                 forceVariableAsUsed = true;
@@ -759,6 +798,66 @@ public class UnusedVariableHint extends HintRule implements CustomisableRule {
             scan(node.getCondition());
             forceVariableAsUsed = false;
             scan(node.getBody());
+        }
+
+        @Override
+        public void visit(ArrowFunctionDeclaration node) {
+            if (CancelSupport.getDefault().isCancelled()) {
+                return;
+            }
+            if (firstArrowFunctionNode == null) {
+                firstArrowFunctionNode = node;
+            }
+            if (currentArrowFunctionNode == null || parentNodes.peek() instanceof LambdaFunctionDeclaration) {
+                currentArrowFunctionNode = node;
+            }
+            isInInheritedMethod = false;
+            collectArrowFunctionParameters(node);
+
+            // avoid scaning formal parameters of Arrow Functions
+            Expression expression = node.getExpression();
+            while (expression instanceof ArrowFunctionDeclaration) {
+                expression = ((ArrowFunctionDeclaration) expression).getExpression();
+            }
+
+            // scaning for current parent node
+            // we have to check whether variables of an arrow function expression are used
+            // e.g. $value is used in the following case:
+            // function myFunction($param1, $param2) {
+            //     $value = 100;
+            //     return fn($x) => ($param1 + $param2) * $x * $value;
+            // }
+            forceVariableAsUsed = true;
+            if (expression instanceof LambdaFunctionDeclaration) {
+                scan(((LambdaFunctionDeclaration) expression).getLexicalVariables());
+            } else {
+                scan(expression);
+            }
+            forceVariableAsUsed = false;
+
+            parentNodes.push(node);
+            scan(node.getFormalParameters());
+            scan(node.getExpression());
+            parentNodes.pop();
+
+            if (firstArrowFunctionNode == node) {
+                // clear
+                firstArrowFunctionNode = null;
+                currentArrowFunctionNode = null;
+                arrowFunctionParameters.clear();
+            }
+        }
+
+        private void collectArrowFunctionParameters(ArrowFunctionDeclaration node) {
+            Set<String> arrowFunctionParams = arrowFunctionParameters.get(currentArrowFunctionNode);
+            if (arrowFunctionParams == null) {
+                arrowFunctionParams = new HashSet<>();
+                arrowFunctionParameters.put(currentArrowFunctionNode, arrowFunctionParams);
+            }
+            node.getFormalParameters().stream()
+                    .map(param -> CodeUtils.extractFormalParameterName(param))
+                    .filter(parameterName -> (parameterName != null))
+                    .forEachOrdered(parameterName -> arrowFunctionParameters.get(currentArrowFunctionNode).add(parameterName));
         }
 
         @Override

@@ -19,6 +19,7 @@
 
 package org.openide.nodes;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Hashtable;
 import org.openide.util.Mutex;
 
@@ -43,7 +44,7 @@ abstract class TMUtil extends Object {
      * @param className name of the class
      * @return the class
      */
-    private static Class loadClass(String className) throws Exception {
+    private static Class<?> loadClass(String className) throws Exception {
         ClassLoader loader = org.openide.util.Lookup.getDefault().lookup(ClassLoader.class);
 
         if (loader == null) {
@@ -159,27 +160,21 @@ abstract class TMUtil extends Object {
 
     /** Executes algorithm of given name.
      * @param name the name of algorithm
-     * @return true iff successfule
+     * @return true if successful
      */
     private static boolean exec(String name) {
         Object obj = algorithms.get(name);
 
         if (obj == null) {
             try {
-                Class c = Class.forName("org.openide.nodes.TMUtil$" + name); // NOI18N
-                obj = c.newInstance();
-            } catch (ClassNotFoundException ex) {
+                Class<?> c = Class.forName("org.openide.nodes.TMUtil$" + name); // NOI18N
+                obj = c.getDeclaredConstructor().newInstance();
+            } catch (ClassNotFoundException | InvocationTargetException | IllegalAccessException ex) {
                 obj = ex;
                 NodeOp.exception(ex);
-            } catch (InstantiationException ex) {
+            } catch (InstantiationException | NoSuchMethodException | NoClassDefFoundError ex) {
                 // that is ok, we should not be able to create an
                 // instance if some classes are missing
-                obj = ex;
-            } catch (IllegalAccessException ex) {
-                obj = ex;
-                NodeOp.exception(ex);
-            } catch (NoClassDefFoundError ex) {
-                // that is ok, some classes need not be found
                 obj = ex;
             }
 
@@ -300,7 +295,7 @@ abstract class TMUtil extends Object {
     /** Finds renderer.
      */
     static final class Rend implements Runnable {
-        private static Class nodeRenderer;
+        private static Class<?> nodeRenderer;
 
         public void run() {
             try {
@@ -308,7 +303,7 @@ abstract class TMUtil extends Object {
                     nodeRenderer = loadClass("org.openide.explorer.view.NodeRenderer"); // NOI18N
                 }
 
-                TALK.set(nodeRenderer.newInstance());
+                TALK.set(nodeRenderer.getDeclaredConstructor().newInstance());
             } catch (Exception ex) {
                 throw new IllegalStateException(ex.getMessage());
             }

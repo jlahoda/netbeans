@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 9.12.1
+#Version 9.36.0
 
 CLSS public abstract interface java.io.Serializable
 
@@ -21,7 +21,6 @@ meth public final java.lang.String name()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
-hfds name,ordinal
 
 CLSS public java.lang.Object
 cons public init()
@@ -164,6 +163,7 @@ innr public final static !enum ErrorKind
 meth public static <%0 extends java.lang.Object> void setErrors(java.net.URL,org.netbeans.modules.parsing.spi.indexing.Indexable,java.lang.Iterable<? extends {%%0}>,org.netbeans.modules.parsing.spi.indexing.ErrorsCache$Convertor<{%%0}>)
 meth public static boolean isInError(org.openide.filesystems.FileObject,boolean)
 meth public static java.util.Collection<? extends java.net.URL> getAllFilesInError(java.net.URL) throws java.io.IOException
+meth public static java.util.Collection<? extends java.net.URL> getAllFilesWithRecord(java.net.URL) throws java.io.IOException
 supr java.lang.Object
 
 CLSS public abstract interface static org.netbeans.modules.parsing.spi.indexing.ErrorsCache$Convertor<%0 extends java.lang.Object>
@@ -180,6 +180,24 @@ fld public final static org.netbeans.modules.parsing.spi.indexing.ErrorsCache$Er
 meth public static org.netbeans.modules.parsing.spi.indexing.ErrorsCache$ErrorKind valueOf(java.lang.String)
 meth public static org.netbeans.modules.parsing.spi.indexing.ErrorsCache$ErrorKind[] values()
 supr java.lang.Enum<org.netbeans.modules.parsing.spi.indexing.ErrorsCache$ErrorKind>
+
+CLSS public abstract interface org.netbeans.modules.parsing.spi.indexing.IndexabilityQueryImplementation
+innr public final static IndexabilityQueryContext
+meth public abstract int getVersion()
+meth public abstract java.lang.String getName()
+meth public abstract java.lang.String getStateIdentifier()
+meth public abstract void addChangeListener(javax.swing.event.ChangeListener)
+meth public abstract void removeChangeListener(javax.swing.event.ChangeListener)
+meth public boolean preventIndexing(org.netbeans.modules.parsing.spi.indexing.IndexabilityQueryImplementation$IndexabilityQueryContext)
+
+CLSS public final static org.netbeans.modules.parsing.spi.indexing.IndexabilityQueryImplementation$IndexabilityQueryContext
+ outer org.netbeans.modules.parsing.spi.indexing.IndexabilityQueryImplementation
+meth public java.lang.String getIndexerName()
+meth public java.net.URL getIndexable()
+meth public java.net.URL getRoot()
+supr java.lang.Object
+hfds indexable,indexerName,root
+hcls Accessor
 
 CLSS public final org.netbeans.modules.parsing.spi.indexing.Indexable
 meth public boolean equals(java.lang.Object)
@@ -253,6 +271,7 @@ meth public org.netbeans.modules.parsing.spi.indexing.support.IndexDocument crea
 meth public org.netbeans.modules.parsing.spi.indexing.support.IndexDocument createDocument(org.openide.filesystems.FileObject)
  anno 0 org.netbeans.api.annotations.common.NonNull()
  anno 1 org.netbeans.api.annotations.common.NonNull()
+meth public static boolean isIndexingTask(org.netbeans.modules.parsing.api.Task)
 meth public static org.netbeans.modules.parsing.spi.indexing.support.IndexingSupport getInstance(org.netbeans.modules.parsing.spi.indexing.Context) throws java.io.IOException
  anno 0 org.netbeans.api.annotations.common.NonNull()
  anno 1 org.netbeans.api.annotations.common.NonNull()

@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.72.1
+#Version 1.94
 
 CLSS public abstract interface java.io.Serializable
 
@@ -21,7 +21,6 @@ meth public final java.lang.String name()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
-hfds name,ordinal
 
 CLSS public java.lang.Object
 cons public init()
@@ -149,6 +148,7 @@ meth public static org.netbeans.modules.css.editor.module.spi.CssCompletionItem 
 meth public static org.netbeans.modules.css.editor.module.spi.CssCompletionItem createPropertyCompletionItem(org.netbeans.modules.css.editor.csl.CssElement,org.netbeans.modules.css.lib.api.properties.PropertyDefinition,java.lang.String,int,boolean)
 meth public static org.netbeans.modules.css.editor.module.spi.CssCompletionItem createRAWCompletionItem(org.netbeans.modules.css.editor.csl.CssElement,java.lang.String,org.netbeans.modules.csl.api.ElementKind,int,boolean)
 meth public static org.netbeans.modules.css.editor.module.spi.CssCompletionItem createSelectorCompletionItem(org.netbeans.modules.css.editor.csl.CssElement,java.lang.String,int,boolean)
+meth public static org.netbeans.modules.css.editor.module.spi.CssCompletionItem createSelectorCompletionItem(org.netbeans.modules.css.editor.csl.CssElement,java.lang.String,int,boolean,boolean)
 meth public static org.netbeans.modules.css.editor.module.spi.CssCompletionItem createValueCompletionItem(org.netbeans.modules.css.editor.csl.CssValueElement,java.lang.String,java.lang.String,int,boolean,boolean)
 meth public static org.netbeans.modules.css.editor.module.spi.CssCompletionItem createValueCompletionItem(org.netbeans.modules.css.editor.csl.CssValueElement,org.netbeans.modules.css.lib.api.properties.GrammarElement,int,boolean,boolean)
 meth public static org.netbeans.modules.css.editor.module.spi.CssCompletionItem createValueCompletionItem(org.netbeans.modules.css.editor.csl.CssValueElement,org.netbeans.modules.css.lib.api.properties.ValueGrammarElement,java.lang.String,int,boolean,boolean)
@@ -286,7 +286,7 @@ meth public void addChangeListener(javax.swing.event.ChangeListener)
 meth public void notifyChange()
 meth public void removeChangeListener(javax.swing.event.ChangeListener)
 supr java.lang.Object
-hfds INDEXES,LOGGER,REGEXP_CHARS_TO_ENCODE,SASS_EXT,SCSS_EXT,allDepsCache,allDepsCache_hashCode,changeSupport,querySupport,sourceRoots
+hfds INDEXES,LOGGER,REGEXP_CHARS_TO_ENCODE,SASS_EXT,SCSS_EXT,VIRTUAL_ELEMENT_MARKER_STR,allDepsCache,allDepsCache_hashCode,changeSupport,querySupport,sourceRoots
 
 CLSS public static org.netbeans.modules.css.indexing.api.CssIndex$AllDependenciesMaps
  outer org.netbeans.modules.css.indexing.api.CssIndex
@@ -313,6 +313,34 @@ meth public static java.util.Collection<org.netbeans.modules.css.refactoring.api
 meth public static java.util.Collection<org.openide.filesystems.FileObject> findAllStyleSheets(org.openide.filesystems.FileObject)
 meth public static java.util.Map<org.openide.filesystems.FileObject,java.util.Collection<org.netbeans.modules.css.refactoring.api.EntryHandle>> findAllOccurances(java.lang.String,org.netbeans.modules.css.refactoring.api.RefactoringElementType,org.openide.filesystems.FileObject,boolean)
 supr java.lang.Object
+
+CLSS public org.netbeans.modules.css.refactoring.api.CssRefactoringExtraInfo
+cons public init()
+meth public boolean isRefactorAll()
+meth public void setRefactorAll(boolean)
+supr java.lang.Object
+hfds refactorAll
+
+CLSS public org.netbeans.modules.css.refactoring.api.CssRefactoringInfo
+cons public init(org.openide.filesystems.FileObject,java.lang.String,org.netbeans.modules.css.refactoring.api.CssRefactoringInfo$Type)
+innr public final static !enum Type
+meth public java.lang.String getElementName()
+meth public org.netbeans.modules.css.refactoring.api.CssRefactoringInfo$Type getType()
+meth public org.openide.filesystems.FileObject getFileObject()
+supr java.lang.Object
+hfds fileObject,name,type
+
+CLSS public final static !enum org.netbeans.modules.css.refactoring.api.CssRefactoringInfo$Type
+ outer org.netbeans.modules.css.refactoring.api.CssRefactoringInfo
+fld public final static org.netbeans.modules.css.refactoring.api.CssRefactoringInfo$Type CLASS
+fld public final static org.netbeans.modules.css.refactoring.api.CssRefactoringInfo$Type ELEMENT
+fld public final static org.netbeans.modules.css.refactoring.api.CssRefactoringInfo$Type HEX_COLOR
+fld public final static org.netbeans.modules.css.refactoring.api.CssRefactoringInfo$Type ID
+fld public final static org.netbeans.modules.css.refactoring.api.CssRefactoringInfo$Type RESOURCE_IDENTIFIER
+fld public final static org.netbeans.modules.css.refactoring.api.CssRefactoringInfo$Type URI
+meth public static org.netbeans.modules.css.refactoring.api.CssRefactoringInfo$Type valueOf(java.lang.String)
+meth public static org.netbeans.modules.css.refactoring.api.CssRefactoringInfo$Type[] values()
+supr java.lang.Enum<org.netbeans.modules.css.refactoring.api.CssRefactoringInfo$Type>
 
 CLSS public abstract interface org.netbeans.modules.css.refactoring.api.Entry
 meth public abstract boolean isValidInSourceDocument()

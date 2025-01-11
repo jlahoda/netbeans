@@ -441,11 +441,11 @@ public class DBReadWriteHelper {
                     }
                         
                 case Types.DOUBLE:
-                    return valueObj instanceof Double ? valueObj : new Double(valueObj.toString());
+                    return valueObj instanceof Double ? valueObj : Double.valueOf(valueObj.toString());
 
                 case Types.FLOAT:
                 case Types.REAL:
-                    return valueObj instanceof Float ? valueObj : new Float(valueObj.toString());
+                    return valueObj instanceof Float ? valueObj : Float.valueOf(valueObj.toString());
 
                 case Types.DECIMAL:
                 case Types.NUMERIC:
@@ -454,7 +454,7 @@ public class DBReadWriteHelper {
                 case Types.INTEGER: {
                     long ldata = Long.parseLong(valueObj.toString());
                         if(ldata >= ((long) Integer.MIN_VALUE) && ldata <= ((long) Integer.MAX_VALUE)) {
-                        return new Integer((int) ldata);
+                        return Integer.valueOf((int) ldata);
                         } else if ( ldata < maxUnsignedInt ) {
                         return new Long(ldata);
                     } else {

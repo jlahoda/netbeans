@@ -18,14 +18,18 @@
  */
 package org.netbeans.modules.java.source.save;
 
+import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.ImportTree;
 import com.sun.source.tree.Tree;
+import com.sun.source.tree.Tree.Kind;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.SourcePositions;
 import com.sun.tools.javac.code.Flags;
+import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCVariableDecl;
+import com.sun.tools.javac.tree.TreeInfo;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -58,7 +62,6 @@ public abstract class PositionEstimator {
      * For JCTree instances that have no associated source position.
      */
     public static final int NOPOS = -2;
-    
     
     final List<? extends Tree> oldL;
     final List<? extends Tree> newL;
@@ -175,8 +178,8 @@ public abstract class PositionEstimator {
     }
     
     static class CasePatternEstimator extends BaseEstimator {
-        CasePatternEstimator(List<? extends ExpressionTree> oldL, 
-                             List<? extends ExpressionTree> newL,
+        CasePatternEstimator(List<? extends Tree> oldL, 
+                             List<? extends Tree> newL,
                              DiffContext diffContext)
         {
             super(CASE, oldL, newL, diffContext);
@@ -189,6 +192,37 @@ public abstract class PositionEstimator {
         
     }
     
+    static class StringTemaplateEstimator extends BaseEstimator {
+        StringTemaplateEstimator(List<? extends Tree> oldL, 
+                             List<? extends Tree> newL,
+                             DiffContext diffContext)
+        {
+            super(DOT, oldL, newL, diffContext);
+        }
+
+        @Override
+        public String head() {
+            return precToken.fixedText();
+        }
+
+        @Override
+        public int getInsertPos(int index) {
+            if (index == oldL.size()) {
+                return diffContext.getEndPosition(diffContext.origUnit, (JCTree) oldL.get(index - 1));
+            }
+            return (int) diffContext.trees.getSourcePositions().getStartPosition(diffContext.origUnit, oldL.get(index));
+        }
+
+        @Override
+        public int[] getPositions(int index) {
+            int start = (int) diffContext.trees.getSourcePositions().getStartPosition(diffContext.origUnit, oldL.get(index));
+            int end = diffContext.getEndPosition(diffContext.origUnit, (JCTree) oldL.get(index));
+
+            return new int[] {start, end};
+        }
+
+    }
+
     static class ExportsOpensToEstimator extends BaseEstimator {
         
         ExportsOpensToEstimator(List<? extends ExpressionTree> oldL,
@@ -778,7 +812,7 @@ public abstract class PositionEstimator {
 
     }
     
-    private static abstract class BaseEstimator extends PositionEstimator {
+    private abstract static class BaseEstimator extends PositionEstimator {
         
         JavaTokenId precToken;
         private ArrayList<String> separatorList;
@@ -969,7 +1003,7 @@ public abstract class PositionEstimator {
                     if (seq.movePrevious() && seq.offset() >= sectionStart && nonRelevant.contains(seq.token().id())) {
                         moveToSrcRelevantBounded(seq, Direction.BACKWARD);
                         seq.moveNext();
-                        treeEnd = seq.offset();
+                        treeEnd = Math.max(seq.offset(), treeStart);
                     }
                 }
 
@@ -1516,7 +1550,18 @@ public abstract class PositionEstimator {
             for (Tree item : oldL) {
                 int treeStart = (int) positions.getStartPosition(compilationUnit, item);
                 int treeEnd = (int) positions.getEndPosition(compilationUnit, item);
-                
+
+                if (treeEnd == (-1) && item.getKind() == Kind.CLASS) {
+                    //unnamed class, use last member, or start pos:
+                    ClassTree clazz = (ClassTree) item;
+                    Tree lastMember = clazz.getMembers().get(clazz.getMembers().size() - 1);
+                    treeEnd = (int) positions.getEndPosition(compilationUnit, lastMember);
+                    if (treeEnd == (-1)) {
+                        //TODO: test
+                        treeEnd = treeStart;
+                    }
+                }
+
                 seq.move(treeStart);
                 seq.moveNext();
                 if (null != moveToSrcRelevant(seq, Direction.BACKWARD)) {
@@ -1904,6 +1949,7 @@ public abstract class PositionEstimator {
             LINE_COMMENT, 
             BLOCK_COMMENT,
             JAVADOC_COMMENT,
+            JAVADOC_COMMENT_LINE_RUN,
             WHITESPACE
     );
 

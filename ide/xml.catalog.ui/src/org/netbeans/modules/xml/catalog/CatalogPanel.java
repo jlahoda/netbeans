@@ -54,9 +54,9 @@ public class CatalogPanel extends TopComponent implements ExplorerManager.Provid
     private ExplorerManager manager;
     private CatalogTreeView view;
     private JTree tree;
-    static private Set newlyCreatedFolders;
+    private static Set newlyCreatedFolders;
     
-    static private FileObject catalogRoot;
+    private static FileObject catalogRoot;
     
     /** Creates new form CatalogPanel */
     public CatalogPanel() {
@@ -97,7 +97,7 @@ public class CatalogPanel extends TopComponent implements ExplorerManager.Provid
         private void invokeInplaceEditing() {
             if (startEditing == null) {
                 Object o = tree.getActionMap().get("startEditing"); // NOI18N
-                if (o != null && o instanceof Action) {
+                if (o instanceof Action) {
                     startEditing = (Action) o;
                 }
             }
@@ -107,6 +107,7 @@ public class CatalogPanel extends TopComponent implements ExplorerManager.Provid
     }
     
     private class SelectionListener implements PropertyChangeListener {
+        @Override
         public void propertyChange(java.beans.PropertyChangeEvent evt) {
             if (ExplorerManager.PROP_SELECTED_NODES.equals(evt.getPropertyName())) {
                 final Node [] nodes = (Node []) evt.getNewValue();
@@ -143,7 +144,8 @@ public class CatalogPanel extends TopComponent implements ExplorerManager.Provid
         return new CatalogRootNode();
     }
     
-    static private final class TemplateFilter implements DataFilter {
+    private static final class TemplateFilter implements DataFilter {
+        @Override
         public boolean acceptDataObject(DataObject obj) {
             return acceptTemplate(obj);
         }
@@ -210,7 +212,7 @@ public class CatalogPanel extends TopComponent implements ExplorerManager.Provid
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
-        gridBagConstraints.insets = new java.awt.Insets(0, 8, 3, 0);
+        gridBagConstraints.insets = new java.awt.Insets(0, 5, 3, 5);
         buttonsPanel.add(addButton, gridBagConstraints);
         addButton.getAccessibleContext().setAccessibleDescription(org.openide.util.NbBundle.getMessage(CatalogPanel.class, "ACD_CatalogPanel_Add")); // NOI18N
 
@@ -225,7 +227,7 @@ public class CatalogPanel extends TopComponent implements ExplorerManager.Provid
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.insets = new java.awt.Insets(0, 8, 3, 0);
+        gridBagConstraints.insets = new java.awt.Insets(0, 5, 3, 5);
         buttonsPanel.add(addLocalButton, gridBagConstraints);
         addLocalButton.getAccessibleContext().setAccessibleDescription(org.openide.util.NbBundle.getMessage(CatalogPanel.class, "ACD_CatalogPanel_AddLocal")); // NOI18N
 
@@ -239,7 +241,7 @@ public class CatalogPanel extends TopComponent implements ExplorerManager.Provid
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 3;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.insets = new java.awt.Insets(0, 8, 3, 0);
+        gridBagConstraints.insets = new java.awt.Insets(0, 5, 3, 5);
         buttonsPanel.add(removeButton, gridBagConstraints);
         removeButton.getAccessibleContext().setAccessibleDescription(org.openide.util.NbBundle.getMessage(CatalogPanel.class, "ACD_CatalogPanel_Remove")); // NOI18N
 
@@ -260,7 +262,7 @@ public class CatalogPanel extends TopComponent implements ExplorerManager.Provid
         gridBagConstraints.gridwidth = java.awt.GridBagConstraints.REMAINDER;
         gridBagConstraints.gridheight = java.awt.GridBagConstraints.REMAINDER;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTH;
-        gridBagConstraints.insets = new java.awt.Insets(0, 11, 11, 8);
+        gridBagConstraints.insets = new java.awt.Insets(0, 5, 11, 5);
         add(buttonsPanel, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
     
@@ -298,24 +300,24 @@ public class CatalogPanel extends TopComponent implements ExplorerManager.Provid
     private javax.swing.JPanel treePanel;
     // End of variables declaration//GEN-END:variables
     
-    static private DataObject getDOFromNode(Node n) {
-        DataObject dobj = (DataObject) n.getLookup().lookup(DataObject.class);
+    private static DataObject getDOFromNode(Node n) {
+        DataObject dobj = n.getLookup().lookup(DataObject.class);
         assert dobj != null : "DataObject for node " + n;
         return dobj;
     }
     
-    static private DataFolder getTargetFolder(Node [] nodes) {
+    private static DataFolder getTargetFolder(Node [] nodes) {
         DataFolder folder = null;
         if (nodes == null || nodes.length == 0) {
             folder = DataFolder.findFolder(getCatalogRoot());
         } else {
             // try if has a data folder (alert: leaf node can be a empty folder)
-            folder = (DataFolder) nodes [0].getLookup().lookup(DataFolder.class);
+            folder = nodes [0].getLookup().lookup(DataFolder.class);
             
             // if not this node then try its parent
             if (folder == null && nodes [0].isLeaf()) {
                 Node parent = nodes [0].getParentNode();
-                folder = (DataFolder) parent.getLookup().lookup(DataFolder.class);
+                folder = parent.getLookup().lookup(DataFolder.class);
             }
         }
         return folder;
@@ -386,7 +388,7 @@ public class CatalogPanel extends TopComponent implements ExplorerManager.Provid
     private int getNodePosition(Node n) {
         Index supp = getIndexSupport(n);
         
-        DataFolder df = (DataFolder) n.getParentNode().getLookup().lookup(DataFolder.class);
+        DataFolder df = n.getParentNode().getLookup().lookup(DataFolder.class);
         df.getNodeDelegate().getChildren().getNodes(true);
         
         int pos = supp.indexOf(n);
@@ -400,7 +402,7 @@ public class CatalogPanel extends TopComponent implements ExplorerManager.Provid
         Node parent = n.getParentNode();
         assert parent != null : "Node " + n + " has a parent.";
         
-        Index index = (Index) parent.getLookup().lookup(Index.class);
+        Index index = parent.getLookup().lookup(Index.class);
         assert index != null : "Node " + parent + " has Index cookie.";
         
         return index;

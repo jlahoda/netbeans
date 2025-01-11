@@ -64,6 +64,9 @@ public final class FeatureInfo {
         this.clusterName = clusterName;
     }
     
+    public String getClusterName() {
+        return clusterName;
+    }
 
     public static FeatureInfo create(String clusterName, URL delegateLayer, URL bundle) throws IOException {
         Properties p = new Properties();
@@ -224,19 +227,26 @@ public final class FeatureInfo {
             if (cnbPattern == null) {
                 break;
             }
-            String rec = properties.getProperty(propName + ".recommended.min.jdk"); // NOI18N
-            s.add(new ExtraModuleInfo(cnbPattern, rec));
+            String recMin = properties.getProperty(propName + ".recommended.min.jdk"); // NOI18N
+            String recMax = properties.getProperty(propName + ".recommended.max.jdk"); // NOI18N
+            s.add(new ExtraModuleInfo(cnbPattern, recMin, recMax));
         }
         return s;
     }
 
+    public final String getExtraProjectMarkerClass() {
+        return properties.getProperty("extra.project.marker.class");
+    }
+
     static final class ExtraModuleInfo {
         private final Pattern cnb;
-        final SpecificationVersion recMinJDK;
+        private final SpecificationVersion recMinJDK;
+        private final SpecificationVersion recMaxJDK;
 
-        ExtraModuleInfo(String cnbPattern, String recommended) {
+        ExtraModuleInfo(String cnbPattern, String recMin, String recMax) {
             this.cnb = Pattern.compile(cnbPattern);
-            this.recMinJDK = recommended != null ? new SpecificationVersion(recommended) : null;
+            this.recMinJDK = recMin != null ? new SpecificationVersion(recMin) : null;
+            this.recMaxJDK = recMax != null ? new SpecificationVersion(recMax) : null;
         }
         
         String displayName() {
@@ -265,9 +275,19 @@ public final class FeatureInfo {
             return this.cnb.matcher(cnb).matches();
         }
 
+        final boolean isRequiredFor(SpecificationVersion jdk) {
+            if (recMinJDK != null && jdk.compareTo(recMinJDK) < 0) {
+                return true;
+            }
+            if (recMaxJDK != null && jdk.compareTo(recMaxJDK) >= 0) {
+                return true;
+            }
+            return false;
+        }
+
         @Override
         public String toString() {
-            return "ExtraModuleInfo{" + "cnb=" + cnb + ", recommended=" + recMinJDK + '}';
+            return "ExtraModuleInfo{" + "cnb=" + cnb + ", recMin=" + recMinJDK + ", recMax=" + recMaxJDK + '}';
         }
     }
 
@@ -383,7 +403,7 @@ public final class FeatureInfo {
             }
         }
         xpaths.add(xpathList.substring(start, i));
-        return xpaths.toArray(new String[xpaths.size()]);
+        return xpaths.toArray(new String[0]);
     }
 
 }

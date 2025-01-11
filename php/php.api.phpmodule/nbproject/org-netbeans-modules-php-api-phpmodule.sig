@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 2.63.1
+#Version 2.98
 
 CLSS public abstract interface java.io.Serializable
 
@@ -21,7 +21,6 @@ meth public final java.lang.String name()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
-hfds name,ordinal
 
 CLSS public java.lang.Exception
 cons protected init(java.lang.String,java.lang.Throwable,boolean,boolean)
@@ -30,7 +29,6 @@ cons public init(java.lang.String)
 cons public init(java.lang.String,java.lang.Throwable)
 cons public init(java.lang.Throwable)
 supr java.lang.Throwable
-hfds serialVersionUID
 
 CLSS public java.lang.Object
 cons public init()
@@ -67,8 +65,6 @@ meth public void printStackTrace(java.io.PrintStream)
 meth public void printStackTrace(java.io.PrintWriter)
 meth public void setStackTrace(java.lang.StackTraceElement[])
 supr java.lang.Object
-hfds CAUSE_CAPTION,EMPTY_THROWABLE_ARRAY,NULL_CAUSE_MESSAGE,SELF_SUPPRESSION_MESSAGE,SUPPRESSED_CAPTION,SUPPRESSED_SENTINEL,UNASSIGNED_STACK,backtrace,cause,detailMessage,serialVersionUID,stackTrace,suppressedExceptions
-hcls PrintStreamOrWriter,SentinelHolder,WrappedPrintStream,WrappedPrintWriter
 
 CLSS public abstract interface java.lang.annotation.Annotation
 meth public abstract boolean equals(java.lang.Object)
@@ -116,7 +112,23 @@ fld public final static org.netbeans.modules.php.api.PhpVersion PHP_70
 fld public final static org.netbeans.modules.php.api.PhpVersion PHP_71
 fld public final static org.netbeans.modules.php.api.PhpVersion PHP_72
 fld public final static org.netbeans.modules.php.api.PhpVersion PHP_73
+fld public final static org.netbeans.modules.php.api.PhpVersion PHP_74
+fld public final static org.netbeans.modules.php.api.PhpVersion PHP_80
+fld public final static org.netbeans.modules.php.api.PhpVersion PHP_81
+fld public final static org.netbeans.modules.php.api.PhpVersion PHP_82
+fld public final static org.netbeans.modules.php.api.PhpVersion PHP_83
+meth public boolean hasConstantsInTraits()
+meth public boolean hasMixedType()
 meth public boolean hasNamespaces()
+meth public boolean hasNeverType()
+meth public boolean hasNullAndFalseAndTrueTypes()
+meth public boolean hasNullableTypes()
+meth public boolean hasObjectType()
+meth public boolean hasOverrideAttribute()
+meth public boolean hasPropertyTypes()
+meth public boolean hasScalarAndReturnTypes()
+meth public boolean hasVoidReturnType()
+meth public boolean isSupportedVersion()
 meth public java.lang.String getDisplayName()
 meth public java.lang.String toString()
 meth public static org.netbeans.modules.php.api.PhpVersion getDefault()
@@ -125,6 +137,7 @@ meth public static org.netbeans.modules.php.api.PhpVersion valueOf(java.lang.Str
 meth public static org.netbeans.modules.php.api.PhpVersion[] values()
 supr java.lang.Enum<org.netbeans.modules.php.api.PhpVersion>
 hfds displayName,namespaces
+hcls Period
 
 CLSS public abstract interface org.netbeans.modules.php.api.phpmodule.PhpModule
 fld public final static java.lang.String PROPERTY_FRAMEWORKS = "PROPERTY_FRAMEWORKS"
@@ -298,6 +311,9 @@ meth public static boolean isEmpty(java.lang.String)
 meth public static java.lang.String capitalize(java.lang.String)
 meth public static java.lang.String decapitalize(java.lang.String)
 meth public static java.lang.String implode(java.util.Collection<java.lang.String>,java.lang.String)
+meth public static java.lang.String truncate(java.lang.String,int,int,java.lang.String)
+ anno 1 org.netbeans.api.annotations.common.NonNull()
+ anno 4 org.netbeans.api.annotations.common.NullAllowed()
 meth public static java.lang.String webalize(java.lang.String)
 meth public static java.util.List<java.lang.String> explode(java.lang.String,java.lang.String)
  anno 1 org.netbeans.api.annotations.common.NullAllowed()
@@ -374,6 +390,10 @@ meth public boolean hasWarnings()
 meth public boolean isFaultless()
 meth public java.util.List<org.netbeans.modules.php.api.validation.ValidationResult$Message> getErrors()
 meth public java.util.List<org.netbeans.modules.php.api.validation.ValidationResult$Message> getWarnings()
+meth public org.netbeans.modules.php.api.validation.ValidationResult$Message getFirstError()
+ anno 0 org.netbeans.api.annotations.common.CheckForNull()
+meth public org.netbeans.modules.php.api.validation.ValidationResult$Message getFirstWarning()
+ anno 0 org.netbeans.api.annotations.common.CheckForNull()
 meth public void addError(org.netbeans.modules.php.api.validation.ValidationResult$Message)
 meth public void addWarning(org.netbeans.modules.php.api.validation.ValidationResult$Message)
 meth public void merge(org.netbeans.modules.php.api.validation.ValidationResult)

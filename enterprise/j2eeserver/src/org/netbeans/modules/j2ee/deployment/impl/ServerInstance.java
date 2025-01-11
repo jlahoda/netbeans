@@ -481,7 +481,7 @@ public class ServerInstance implements Node.Cookie, Comparable {
     /** Is it forbidden to remove this server instance from the server registry? */
     public boolean isRemoveForbidden() {
         String removeForbid = instanceProperties.getProperty(InstanceProperties.REMOVE_FORBIDDEN);
-        return Boolean.valueOf(removeForbid).booleanValue();
+        return Boolean.valueOf(removeForbid);
     }
 
     /**
@@ -1674,7 +1674,7 @@ public class ServerInstance implements Node.Cookie, Comparable {
     }
     
     public boolean isManagerOf(Target target) {
-        return getTargetMap().keySet().contains(target.getName());
+        return getTargetMap().containsKey(target.getName());
     }
     
     public synchronized ServerTarget getCoTarget() {

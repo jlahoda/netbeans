@@ -100,7 +100,9 @@ public final class SerialDataNode extends DataNode {
             getPrimaryFile().getAttribute("beaninfo"))); // NOI18N
     }
      
-    /** @param obj the object to use
+    /**
+     * @param conv convertor to handle serialdata format
+     * @param dobj object to work with
      * @param noBeanInfo info to use
      */
     private SerialDataNode(SerialDataConvertor conv, DataObject dobj, boolean noBeanInfo) {
@@ -118,7 +120,7 @@ public final class SerialDataNode extends DataNode {
         InstanceCookie inst = (InstanceCookie)dobj.getCookie(InstanceCookie.class);
         if (inst == null) return Children.LEAF;
         try {
-            Class clazz = inst.instanceClass();
+            Class<?> clazz = inst.instanceClass();
             if (BeanContext.class.isAssignableFrom(clazz) ||
                 BeanContextProxy.class.isAssignableFrom(clazz)) {
                 return new InstanceChildren ();
@@ -481,7 +483,7 @@ public final class SerialDataNode extends DataNode {
         convertProps (p, descr.expert, this);
         if (bd != null) {
             Object helpID = bd.getValue("expertHelpID"); // NOI18N
-            if (helpID != null && helpID instanceof String) {
+            if (helpID instanceof String) {
                 p.setValue("helpID", helpID); // NOI18N
             }
         }
@@ -497,7 +499,7 @@ public final class SerialDataNode extends DataNode {
         if (bd != null) {
             // #29550: help from the beaninfo on property tabs
             Object helpID = bd.getValue("propertiesHelpID"); // NOI18N
-            if (helpID != null && helpID instanceof String) {
+            if (helpID instanceof String) {
                 props.setValue("helpID", helpID); // NOI18N
             }
         }
@@ -536,7 +538,7 @@ public final class SerialDataNode extends DataNode {
         try {
             InstanceCookie ic = ic();
             if (ic == null) return true;
-            Class clazz = ic.instanceClass();
+            Class<?> clazz = ic.instanceClass();
             return (!SharedClassObject.class.isAssignableFrom(clazz));
         } catch (Exception ex) {
             return true;
@@ -547,7 +549,7 @@ public final class SerialDataNode extends DataNode {
         try {
             InstanceCookie ic = ic();
             if (ic == null) return false;
-            Class clazz = ic.instanceClass();
+            Class<?> clazz = ic.instanceClass();
             return (!SharedClassObject.class.isAssignableFrom(clazz));
         } catch (Exception ex) {
             return false;
@@ -558,7 +560,7 @@ public final class SerialDataNode extends DataNode {
         try {
             InstanceCookie ic = ic();
             if (ic == null) return false;
-            Class clazz = ic.instanceClass();
+            Class<?> clazz = ic.instanceClass();
             return (!SharedClassObject.class.isAssignableFrom(clazz));
         } catch (Exception ex) {
             return false;
@@ -576,7 +578,7 @@ public final class SerialDataNode extends DataNode {
                 return getDataObject().getPrimaryFile().toString();
             }
             
-            Class clazz = ic.instanceClass();
+            Class<?> clazz = ic.instanceClass();
             BeanDescriptor bd = Utilities.getBeanInfo(clazz).getBeanDescriptor();
             String desc = bd.getShortDescription();
             return (desc.equals(bd.getDisplayName()))? getDisplayName(): desc;
@@ -845,7 +847,7 @@ public final class SerialDataNode extends DataNode {
     } // end of I
     
     /** Derived from BeanChildren and allow replace beancontext. */
-    private final static class InstanceChildren extends Children.Keys {
+    private static final class InstanceChildren extends Children.Keys {
         SerialDataNode task;
         DataObject dobj;
         Object bean;
@@ -879,7 +881,7 @@ public final class SerialDataNode extends DataNode {
                     bean = null;
                     return;
                 }
-                Class clazz = ic.instanceClass();
+                Class<?> clazz = ic.instanceClass();
                 if (BeanContext.class.isAssignableFrom(clazz)) {
                     bean = ic.instanceCreate();
                 } else if (BeanContextProxy.class.isAssignableFrom(clazz)) {

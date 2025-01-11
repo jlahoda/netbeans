@@ -184,8 +184,8 @@ implements FileChangeListener {
         String customFSClass = System.getProperty("org.netbeans.core.systemfilesystem.custom"); // NOI18N
         if (customFSClass != null) {
             try {
-                Class clazz = Class.forName(customFSClass);
-                Object instance = clazz.newInstance();
+                Class<?> clazz = Class.forName(customFSClass);
+                Object instance = clazz.getDeclaredConstructor().newInstance();
                 user = (FileSystem)instance;
             } catch (Exception x) {
                 ModuleLayeredFileSystem.err.log(

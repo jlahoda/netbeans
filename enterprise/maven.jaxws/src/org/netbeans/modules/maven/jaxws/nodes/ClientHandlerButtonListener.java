@@ -38,6 +38,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -164,7 +165,7 @@ public class ClientHandlerButtonListener implements ActionListener {
                         FileLock lock = bindingHandlerFO.lock();
                         try {
                             os = bindingHandlerFO.getOutputStream(lock);
-                            osw = new OutputStreamWriter(os, Charset.forName("UTF-8")); //  NOI18N
+                            osw = new OutputStreamWriter(os, StandardCharsets.UTF_8);
                             bw = new BufferedWriter(osw);
                             bw.write(bindingsContent);
                         } finally {
@@ -196,7 +197,7 @@ public class ClientHandlerButtonListener implements ActionListener {
                 FileObject localWsdlFile =
                         support.getWsdlFolder(false).getFileObject(client.getLocalWsdl());
                 File f = FileUtil.toFile(bindingHandlerFO);
-                String relativePath = Utilities.relativize(f.toURI(), new URI(localWsdlFile.getURL().toExternalForm()));
+                String relativePath = Utilities.relativize(f.toURI(), new URI(localWsdlFile.toURL().toExternalForm()));
                 GlobalBindings gb = bindingsModel.getGlobalBindings();
                 try {
                     bindingsModel.startTransaction();
@@ -392,7 +393,7 @@ public class ClientHandlerButtonListener implements ActionListener {
         StringBuilder sb = new StringBuilder();
         try {
             String lineSep = System.getProperty("line.separator");//NOI18N
-            isr = new InputStreamReader(is, Charset.forName("UTF-8"));
+            isr = new InputStreamReader(is, StandardCharsets.UTF_8);
             br = new BufferedReader(isr);
 
             String line = br.readLine();

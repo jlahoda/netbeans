@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,7 +32,6 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.jar.JarFile;
-import static junit.framework.Assert.*;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.types.FileSet;
 import org.apache.tools.ant.types.resources.FileResource;
@@ -47,6 +45,8 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
 import org.osgi.framework.launch.Framework;
 import org.osgi.framework.launch.FrameworkFactory;
+
+import static org.junit.Assert.assertTrue;
 
 class OSGiProcess {
 
@@ -200,7 +200,7 @@ class OSGiProcess {
             if (newModule.manifest != null) {
                 TestFileUtils.writeFile(new File(workDir, "custom" + newModule.counter + ".mf"), newModule.manifest);
             }
-            SetupHid.createTestJAR(workDir, extra, "custom" + newModule.counter, null, cp.toArray(new File[cp.size()]));
+            SetupHid.createTestJAR(workDir, extra, "custom" + newModule.counter, null, cp.toArray(new File[0]));
             File jar = new File(extra, "custom" + newModule.counter + ".jar");
             cp.add(jar); // for use in subsequent modules
             makeosgi.add(new FileResource(jar));
@@ -223,7 +223,7 @@ class OSGiProcess {
         for (File bundle : bundles.listFiles()) {
             installed.add(f.getBundleContext().installBundle(Utilities.toURI(bundle).toString()));
         }
-        Collections.sort(installed, new Comparator<Bundle>() {
+        installed.sort(new Comparator<Bundle>() {
             public @Override int compare(Bundle b1, Bundle b2) {
                 return b1.getSymbolicName().compareTo(b2.getSymbolicName()) * backwards;
             }

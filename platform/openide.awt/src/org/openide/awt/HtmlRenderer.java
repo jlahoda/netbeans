@@ -20,27 +20,25 @@
 package org.openide.awt;
 
 import java.awt.Color;
+import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.Rectangle;
-import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.awt.font.LineMetrics;
 import java.awt.geom.Area;
 import java.awt.geom.Rectangle2D;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Set;
-import java.util.Stack;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.Icon;
 import javax.swing.JLabel;
 import javax.swing.ListCellRenderer;
-import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.tree.TreeCellRenderer;
@@ -81,7 +79,8 @@ import org.openide.util.Utilities;
  * <p>
  * The following tags are supported, in upper or lower (but not mixed) case:
  * </p>
- * <table border="1">
+ * <table>
+ * <caption>table of supported tags</caption>
  * <tr>
  *  <td><code>&lt;b&gt;</code></td>
  *  <td>Boldface text</td>
@@ -177,12 +176,11 @@ import org.openide.util.Utilities;
  * <!-- XXX what does the following mean? <code>getGraphics</code>
  * will always return non-null and non-clipped, and is suitable to pass in such a
  * situation. -->
- * <P>
  *
  * <P>
  * <B>Example usages:</B><BR>
- * <a href="@org-openide-nodes@/org/openide/nodes/Node.html#getHtmlDisplayName()">org.openide.nodes.Node.getHtmlDisplayName</a><BR>
- * <a href="@org-openide-filesystems@/org/openide/filesystems/FileSystem.HtmlStatus.html">org.openide.filesystems.FileSystem.HtmlStatus</a>
+ * <a href="@org-openide-nodes@/org/openide/nodes/Node.html#getHtmlDisplayName--">org.openide.nodes.Node.getHtmlDisplayName</a><BR>
+ * <!-- in v8compat <a href="@org-openide-filesystems@/org/openide/filesystems/FileSystem.HtmlStatus.html"> org.openide.filesystems.FileSystem.HtmlStatus</a> -->
  * </P>
  *
  * @since 4.30
@@ -192,7 +190,7 @@ public final class HtmlRenderer {
 
     /** Stack object used during HTML rendering to hold previous colors in
      * the case of nested color entries. */
-    private static Stack<Color> colorStack = new Stack<Color>();
+    private static LinkedList<Color> colorStack = new LinkedList<Color>();
 
     /**
      * Constant used by {@link #renderString renderString}, {@link #renderPlainString renderPlainString},
@@ -266,7 +264,7 @@ public final class HtmlRenderer {
      * @return A cell renderer that can render HTML.
      */
     public static final Renderer createRenderer() {
-        return new HtmlRendererImpl();
+        return new HtmlRendererImpl(true);
     }
 
     /**
@@ -288,7 +286,7 @@ public final class HtmlRenderer {
      * @return a label which can render a subset of HTML very quickly
      */
     public static final JLabel createLabel() {
-        return new HtmlRendererImpl();
+        return new HtmlRendererImpl(false);
     }
 
     /**
@@ -337,7 +335,7 @@ public final class HtmlRenderer {
             // #54257 - on macosx + chinese/japanese fonts, the getStringBounds() method returns bad value
             wid = fm.stringWidth(s);
         } else {
-            wid = (int)fm.getStringBounds(s, g).getWidth();
+            wid = (int) Math.ceil(fm.getStringBounds(s, g).getWidth());
         }
 
         if (paint) {
@@ -354,7 +352,7 @@ public final class HtmlRenderer {
                 }
 
                 double chWidth = wid / chars.length;
-                int estCharsToPaint = new Double(w / chWidth).intValue();
+                int estCharsToPaint = (int)(w / chWidth);
                 if( estCharsToPaint > chars.length )
                     estCharsToPaint = chars.length;
                 //let's correct the estimate now
@@ -540,13 +538,11 @@ public final class HtmlRenderer {
         }
 
         //Thread safety - avoid allocating memory for the common case
-        Stack<Color> _colorStack = SwingUtilities.isEventDispatchThread() ? HtmlRenderer.colorStack : new Stack<Color>();
+        LinkedList<Color> _colorStack = EventQueue.isDispatchThread() ? HtmlRenderer.colorStack : new LinkedList<Color>();
 
         g.setColor(defaultColor);
         g.setFont(f);
-        if (HtmlLabelUI.antialias && g instanceof Graphics2D) {
-            ((Graphics2D) g).setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        }
+        GraphicsUtils.configureDefaultRenderingHints(g);
 
         char[] chars = s.toCharArray();
         int origX = x;
@@ -1061,7 +1057,7 @@ public final class HtmlRenderer {
                             //Word wrap mode
                             goToNextRow = true;
 
-                            int lastChar = new Double(nextTag - estCharsOver).intValue();
+                            int lastChar = (int)(nextTag - estCharsOver);
 
                             //Unlike Swing's word wrap, which does not wrap on tag boundaries correctly, if we're out of space,
                             //we're out of space
@@ -1112,7 +1108,7 @@ public final class HtmlRenderer {
                                 }
                             } else if (brutalWrap) {
                                 //wrap without checking word boundaries
-                                length = (new Double((w - widthPainted) / chWidth)).intValue();
+                                length = (int)((w - widthPainted) / chWidth);
 
                                 if ((pos + length) > nextTag) {
                                     length = (nextTag - pos);
@@ -1131,7 +1127,7 @@ public final class HtmlRenderer {
 
                     if (strikethrough || underline || link) {
                         LineMetrics lm = fm.getLineMetrics(chars, pos, length - 1, g);
-                        int lineWidth = new Double(x + r.getWidth()).intValue();
+                        int lineWidth = (int)(x + r.getWidth());
 
                         if (paint) {
                             if (strikethrough) {

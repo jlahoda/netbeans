@@ -24,8 +24,10 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.project.MavenProject;
 import org.netbeans.api.j2ee.core.Profile;
@@ -59,7 +61,7 @@ import org.openide.util.Exceptions;
 
 /**
  * war/webapp related apis implementation..
- * @author  Milos Kleint 
+ * @author  Milos Kleint
  */
 public class WebModuleImpl extends BaseEEModuleImpl implements WebModuleImplementation2, J2eeModuleImplementation2 {
 
@@ -73,18 +75,18 @@ public class WebModuleImpl extends BaseEEModuleImpl implements WebModuleImplemen
     public WebModuleImpl(Project project, WebModuleProviderImpl provider) {
         super(project, provider, "web.xml", J2eeModule.WEB_XML); //NOI18N
     }
-    
-        
+
+
     @Override
     public J2eeModule.Type getModuleType() {
         return J2eeModule.Type.WAR;
     }
-    
+
     @Override
     public FileObject getArchive() throws IOException {
         return getArchive(Constants.GROUP_APACHE_PLUGINS, Constants.PLUGIN_WAR, "war", "war");
     }
-    
+
     /*****************************
      *  WebModule related methods
      *****************************/
@@ -111,12 +113,12 @@ public class WebModuleImpl extends BaseEEModuleImpl implements WebModuleImplemen
         }
         return null;
     }
-    
+
     @Override
     public FileObject getDocumentBase() {
         return WebProjectUtils.getDocumentBase(project);
     }
-    
+
     /**
      * to be used to denote that a war:inplace goal is used to build the web app.
      */
@@ -143,6 +145,21 @@ public class WebModuleImpl extends BaseEEModuleImpl implements WebModuleImplemen
             }
             if (Profile.JAVA_EE_8_FULL.equals(pomProfile)) {
                 return Profile.JAVA_EE_8_WEB;
+            }
+            if (Profile.JAKARTA_EE_8_FULL.equals(pomProfile)) {
+                return Profile.JAKARTA_EE_8_WEB;
+            }
+            if (Profile.JAKARTA_EE_9_FULL.equals(pomProfile)) {
+                return Profile.JAKARTA_EE_9_WEB;
+            }
+            if (Profile.JAKARTA_EE_9_1_FULL.equals(pomProfile)) {
+                return Profile.JAKARTA_EE_9_1_WEB;
+            }
+            if (Profile.JAKARTA_EE_10_FULL.equals(pomProfile)) {
+                return Profile.JAKARTA_EE_10_WEB;
+            }
+            if (Profile.JAKARTA_EE_11_FULL.equals(pomProfile)) {
+                return Profile.JAKARTA_EE_11_WEB;
             }
             return pomProfile;
         }
@@ -176,7 +193,16 @@ public class WebModuleImpl extends BaseEEModuleImpl implements WebModuleImplemen
                     return Profile.JAVA_EE_7_WEB;
                 }
                 if (WebApp.VERSION_4_0.equals(waVersion)) {
-                    return Profile.JAVA_EE_8_WEB;
+                    return Profile.JAKARTA_EE_8_WEB;
+                }
+                if (WebApp.VERSION_5_0.equals(waVersion)) {
+                    return Profile.JAKARTA_EE_9_WEB;
+                }
+                if (WebApp.VERSION_6_0.equals(waVersion)) {
+                    return Profile.JAKARTA_EE_10_WEB;
+                }
+                if (WebApp.VERSION_6_1.equals(waVersion)) {
+                    return Profile.JAKARTA_EE_11_WEB;
                 }
             } catch (IOException exc) {
                 ErrorManager.getDefault().notify(exc);
@@ -203,7 +229,7 @@ public class WebModuleImpl extends BaseEEModuleImpl implements WebModuleImplemen
      * </ul>
      * </p>
      */
-    private static Map<Profile, List<DependencyDesc>> javaEEMap = new HashMap<>();
+    private static Map<Profile, List<DependencyDesc>> javaEEMap = new LinkedHashMap<>();
     static {
         List<DependencyDesc> javaEE5 = new ArrayList<>();
         List<DependencyDesc> javaEE6Web = new ArrayList<>();
@@ -212,6 +238,16 @@ public class WebModuleImpl extends BaseEEModuleImpl implements WebModuleImplemen
         List<DependencyDesc> javaEE7Full = new ArrayList<>();
         List<DependencyDesc> javaEE8Web = new ArrayList<>();
         List<DependencyDesc> javaEE8Full = new ArrayList<>();
+        List<DependencyDesc> jakartaEE8Web = new ArrayList<>();
+        List<DependencyDesc> jakartaEE8Full = new ArrayList<>();
+        List<DependencyDesc> jakartaEE9Web = new ArrayList<>();
+        List<DependencyDesc> jakartaEE9Full = new ArrayList<>();
+        List<DependencyDesc> jakartaEE91Web = new ArrayList<>();
+        List<DependencyDesc> jakartaEE91Full = new ArrayList<>();
+        List<DependencyDesc> jakartaEE10Web = new ArrayList<>();
+        List<DependencyDesc> jakartaEE10Full = new ArrayList<>();
+        List<DependencyDesc> jakartaEE11Web = new ArrayList<>();
+        List<DependencyDesc> jakartaEE11Full = new ArrayList<>();
 
         // Java EE specification
         javaEE5.add(new DependencyDesc("javaee", "javaee-api", "5.0"));
@@ -222,16 +258,39 @@ public class WebModuleImpl extends BaseEEModuleImpl implements WebModuleImplemen
         javaEE7Web.add(new DependencyDesc("javax", "javaee-web-api", "7.0"));
         javaEE8Full.add(new DependencyDesc("javax", "javaee-api", "8.0"));
         javaEE8Web.add(new DependencyDesc("javax", "javaee-web-api", "8.0"));
+        jakartaEE8Web.add(new DependencyDesc("jakarta.platform","jakarta.jakartaee-api","8.0.0"));
+        jakartaEE8Full.add(new DependencyDesc("jakarta.platform","jakarta.jakartaee-web-api","8.0.0"));
+        jakartaEE9Web.add(new DependencyDesc("jakarta.platform","jakarta.jakartaee-api","9.0.0"));
+        jakartaEE9Full.add(new DependencyDesc("jakarta.platform","jakarta.jakartaee-web-api","9.0.0"));
+        jakartaEE91Web.add(new DependencyDesc("jakarta.platform","jakarta.jakartaee-api","9.1.0"));
+        jakartaEE91Full.add(new DependencyDesc("jakarta.platform","jakarta.jakartaee-web-api","9.1.0"));
+        jakartaEE10Web.add(new DependencyDesc("jakarta.platform","jakarta.jakartaee-api","10.0.0"));
+        jakartaEE10Full.add(new DependencyDesc("jakarta.platform","jakarta.jakartaee-web-api","10.0.0"));
+        jakartaEE11Web.add(new DependencyDesc("jakarta.platform","jakarta.jakartaee-api","11.0.0-M1"));
+        jakartaEE11Full.add(new DependencyDesc("jakarta.platform","jakarta.jakartaee-web-api","11.0.0-M1"));
 
         // GlassFish implementations
         javaEE5.add(new DependencyDesc("org.glassfish.main.extras", "glassfish-embedded-all", "2"));
         javaEE5.add(new DependencyDesc("org.glassfish.main.extras", "glassfish-embedded-web", "2"));
         javaEE6Full.add(new DependencyDesc("org.glassfish.main.extras", "glassfish-embedded-all", "3"));
         javaEE6Web.add(new DependencyDesc("org.glassfish.main.extras", "glassfish-embedded-web", "3"));
-        javaEE7Full.add(new DependencyDesc("org.glassfish.main.extras", "glassfish-embedded-all", "4"));
-        javaEE7Web.add(new DependencyDesc("org.glassfish.main.extras", "glassfish-embedded-web", "4"));
+        javaEE7Full.add(new DependencyDesc("org.glassfish.main.extras", "glassfish-embedded-all", "4.0"));
+        javaEE7Web.add(new DependencyDesc("org.glassfish.main.extras", "glassfish-embedded-web", "4.0.1"));
+        javaEE7Full.add(new DependencyDesc("org.glassfish.main.extras", "glassfish-embedded-all", "4.1.2"));
+        javaEE7Web.add(new DependencyDesc("org.glassfish.main.extras", "glassfish-embedded-web", "4.1.2"));
         javaEE8Full.add(new DependencyDesc("org.glassfish.main.extras", "glassfish-embedded-all", "5.1.0"));
         javaEE8Web.add(new DependencyDesc("org.glassfish.main.extras", "glassfish-embedded-web", "5.1.0"));
+        jakartaEE8Full.add(new DependencyDesc("org.glassfish.main.extras", "glassfish-embedded-all", "5.1.0"));
+        jakartaEE8Web.add(new DependencyDesc("org.glassfish.main.extras", "glassfish-embedded-web", "5.1.0"));
+        jakartaEE9Full.add(new DependencyDesc("org.glassfish.main.extras", "glassfish-embedded-all", "6.0.0"));
+        jakartaEE9Web.add(new DependencyDesc("org.glassfish.main.extras", "glassfish-embedded-web", "6.0.0"));
+        jakartaEE91Full.add(new DependencyDesc("org.glassfish.main.extras", "glassfish-embedded-all", "6.2.5"));
+        jakartaEE91Web.add(new DependencyDesc("org.glassfish.main.extras", "glassfish-embedded-web", "6.2.5"));
+        jakartaEE10Full.add(new DependencyDesc("org.glassfish.main.extras", "glassfish-embedded-all", "7.0.11"));
+        jakartaEE10Web.add(new DependencyDesc("org.glassfish.main.extras", "glassfish-embedded-web", "7.0.11"));
+        jakartaEE11Full.add(new DependencyDesc("org.glassfish.main.extras", "glassfish-embedded-all", "8.0.0-M1"));
+        jakartaEE11Web.add(new DependencyDesc("org.glassfish.main.extras", "glassfish-embedded-web", "8.0.0-M1"));
+        
 
         // WebLogic implementations
         javaEE5.add(new DependencyDesc("weblogic", "weblogic", "10"));
@@ -243,14 +302,33 @@ public class WebModuleImpl extends BaseEEModuleImpl implements WebModuleImplemen
         javaEE6Full.add(new DependencyDesc("org.jboss.spec", "jboss-javaee-6.0", null));
         javaEE6Full.add(new DependencyDesc("org.jboss.spec", "jboss-javaee-all-6.0", null));
         javaEE6Web.add(new DependencyDesc("org.jboss.spec", "jboss-javaee-web-6.0", null));
+        javaEE7Full.add(new DependencyDesc("org.jboss.spec", "jboss-javaee-7.0", null));
+        javaEE7Full.add(new DependencyDesc("org.jboss.spec", "jboss-javaee-all-7.0", null));
+        javaEE7Web.add(new DependencyDesc("org.jboss.spec", "jboss-javaee-web-7.0", null));
+        javaEE8Full.add(new DependencyDesc("org.jboss.spec", "jboss-javaee-8.0", null));
+        javaEE8Full.add(new DependencyDesc("org.jboss.spec", "jboss-javaee-all-8.0", null));
+        javaEE8Web.add(new DependencyDesc("org.jboss.spec", "jboss-javaee-web-8.0", null));
+        jakartaEE8Full.add(new DependencyDesc("org.jboss.spec", "jboss-jakartaee-8.0", null));
+        jakartaEE8Full.add(new DependencyDesc("org.jboss.spec", "jboss-jakartaee-all-8.0", null));
+        jakartaEE8Web.add(new DependencyDesc("org.jboss.spec", "jboss-jakartaee-web-8.0", null));
 
-        javaEEMap.put(Profile.JAVA_EE_5, javaEE5);
-        javaEEMap.put(Profile.JAVA_EE_6_WEB, javaEE6Web);
-        javaEEMap.put(Profile.JAVA_EE_6_FULL, javaEE6Full);
-        javaEEMap.put(Profile.JAVA_EE_7_WEB, javaEE7Web);
-        javaEEMap.put(Profile.JAVA_EE_7_FULL, javaEE7Full);
-        javaEEMap.put(Profile.JAVA_EE_8_WEB, javaEE8Web);
+        javaEEMap.put(Profile.JAKARTA_EE_11_FULL, jakartaEE11Full);
+        javaEEMap.put(Profile.JAKARTA_EE_11_WEB, jakartaEE11Web);
+        javaEEMap.put(Profile.JAKARTA_EE_10_FULL, jakartaEE10Full);
+        javaEEMap.put(Profile.JAKARTA_EE_10_WEB, jakartaEE10Web);
+        javaEEMap.put(Profile.JAKARTA_EE_9_1_FULL, jakartaEE91Full);
+        javaEEMap.put(Profile.JAKARTA_EE_9_1_WEB, jakartaEE91Web);
+        javaEEMap.put(Profile.JAKARTA_EE_9_FULL, jakartaEE9Full);
+        javaEEMap.put(Profile.JAKARTA_EE_9_WEB, jakartaEE9Web);
+        javaEEMap.put(Profile.JAKARTA_EE_8_FULL, jakartaEE8Full);
+        javaEEMap.put(Profile.JAKARTA_EE_8_WEB, jakartaEE8Web);
         javaEEMap.put(Profile.JAVA_EE_8_FULL, javaEE8Full);
+        javaEEMap.put(Profile.JAVA_EE_8_WEB, javaEE8Web);
+        javaEEMap.put(Profile.JAVA_EE_7_FULL, javaEE7Full);
+        javaEEMap.put(Profile.JAVA_EE_7_WEB, javaEE7Web);
+        javaEEMap.put(Profile.JAVA_EE_6_FULL, javaEE6Full);
+        javaEEMap.put(Profile.JAVA_EE_6_WEB, javaEE6Web);
+        javaEEMap.put(Profile.JAVA_EE_5, javaEE5);
     }
 
     private static class DependencyDesc {
@@ -313,10 +391,10 @@ public class WebModuleImpl extends BaseEEModuleImpl implements WebModuleImplemen
             return null;
         }
         File file = new File(new File(webappDir), path);
-        
+
         return FileUtil.normalizeFile(file);
     }
-    
+
     @Override
     public FileObject getDeploymentDescriptor() {
         File dd = getDDFile(J2eeModule.WEB_XML);
@@ -325,7 +403,7 @@ public class WebModuleImpl extends BaseEEModuleImpl implements WebModuleImplemen
         }
         return null;
     }
-    
+
     @Override
     public String getContextPath() {
         // #170528the javaee6 level might not have a descriptor,
@@ -339,11 +417,11 @@ public class WebModuleImpl extends BaseEEModuleImpl implements WebModuleImplemen
                 }
             } catch (ConfigurationException e) {
                 // TODO #95280: inform the user that the context root cannot be retrieved
-            }        
+            }
         }
         return "/" + mavenproject().getMavenProject().getArtifactId(); //NOI18N;
     }
-    
+
     public void setContextPath(String newPath) {
         //TODO store as pom profile configuration, probably for the deploy-plugin.
         // #170528 the javaee6 level might not have a descriptor,
@@ -357,8 +435,8 @@ public class WebModuleImpl extends BaseEEModuleImpl implements WebModuleImplemen
                 Exceptions.printStackTrace(ex);
             }
         }
-    } 
-    
+    }
+
     @Override
     public String getModuleVersion() {
         WebApp wapp = getWebApp ();
@@ -371,7 +449,7 @@ public class WebModuleImpl extends BaseEEModuleImpl implements WebModuleImplemen
         }
         return version;
     }
-    
+
     private WebApp getWebApp () {
         try {
             FileObject deploymentDescriptor = getDeploymentDescriptor ();
@@ -382,7 +460,7 @@ public class WebModuleImpl extends BaseEEModuleImpl implements WebModuleImplemen
             ErrorManager.getDefault ().log (e.getLocalizedMessage ());
         }
         return null;
-    }    
+    }
 
     @Override
     public FileObject getContentDirectory() throws IOException {
@@ -403,7 +481,7 @@ public class WebModuleImpl extends BaseEEModuleImpl implements WebModuleImplemen
         }
         return webappFO;
     }
-    
+
     @Override
     public <T> MetadataModel<T> getMetadataModel(Class<T> type) {
         if (type == WebAppMetadata.class) {
@@ -417,7 +495,7 @@ public class WebModuleImpl extends BaseEEModuleImpl implements WebModuleImplemen
         }
         return null;
     }
-    
+
     @Override
     public synchronized MetadataModel<WebAppMetadata> getMetadataModel() {
         if (webAppMetadataModel == null) {
@@ -463,7 +541,7 @@ public class WebModuleImpl extends BaseEEModuleImpl implements WebModuleImplemen
     private synchronized void resetMetadataModel() {
         webAppMetadataModel = null;
     }
-    
+
     private synchronized MetadataModel<WebservicesMetadata> getWebservicesMetadataModel() {
         if (webservicesMetadataModel == null) {
             FileObject ddFO = getWebServicesDeploymentDescriptor();
@@ -487,9 +565,9 @@ public class WebModuleImpl extends BaseEEModuleImpl implements WebModuleImplemen
         }
         return null;
     }
-    
+
     /**
-     * The server plugin needs all models to be either merged on annotation-based. 
+     * The server plugin needs all models to be either merged on annotation-based.
      * Currently only the web model does a bit of merging, other models don't. So
      * for web we actually need two models (one for the server plugins and another
      * for everyone else). Temporary solution until merging is implemented
@@ -500,7 +578,7 @@ public class WebModuleImpl extends BaseEEModuleImpl implements WebModuleImplemen
             FileObject ddFO = getDeploymentDescriptor();
             File ddFile = ddFO != null ? FileUtil.toFile(ddFO) : null;
             ProjectSourcesClassPathProvider cpProvider = project.getLookup().lookup(ProjectSourcesClassPathProvider.class);
-            
+
             MetadataUnit metadataUnit = MetadataUnit.create(
                 cpProvider.getProjectSourcesClassPath(ClassPath.BOOT),
                 cpProvider.getProjectSourcesClassPath(ClassPath.COMPILE),
@@ -511,5 +589,5 @@ public class WebModuleImpl extends BaseEEModuleImpl implements WebModuleImplemen
         }
         return webAppAnnMetadataModel;
     }
-    
+
 }

@@ -83,11 +83,10 @@ public class RevertCommand extends GitCommand {
     protected void run() throws GitException {
         Repository repository = getRepository();
         RevCommit revertedCommit = Utils.findCommit(repository, revisionStr);
-        RevWalk revWalk = new RevWalk(repository);
         DirCache dc = null;
         GitRevertResult NO_CHANGE_INSTANCE = getClassFactory().createRevertResult(GitRevertResult.Status.NO_CHANGE, null, null, null);
-        try {
-            Ref headRef = repository.getRef(Constants.HEAD);
+        try(RevWalk revWalk = new RevWalk(repository);) {
+            Ref headRef = repository.findRef(Constants.HEAD);
             if (headRef == null) {
                 throw new GitException.MissingObjectException(Constants.HEAD, GitObjectType.COMMIT);
             }
@@ -105,7 +104,7 @@ public class RevertCommand extends GitCommand {
                     ? "Revert \"" + revertedCommit.getShortMessage() + "\"" + "\n\n" + "This reverts commit " + revertedCommit.getId().getName() + "." //NOI18N
                     : message;
             if (merger.merge(headCommit, srcParent)) {
-                if (AnyObjectId.equals(headCommit.getTree().getId(), merger.getResultTreeId())) {
+                if (AnyObjectId.isEqual(headCommit.getTree().getId(), merger.getResultTreeId())) {
                     result = NO_CHANGE_INSTANCE;
                 } else {
                     DirCacheCheckout dco = new DirCacheCheckout(repository, headCommit.getTree(), dc = repository.lockDirCache(), merger.getResultTreeId());
@@ -124,7 +123,7 @@ public class RevertCommand extends GitCommand {
                             merger.getMergeResults() == null ? null : getFiles(repository.getWorkTree(), merger.getMergeResults().keySet()),
                             getFiles(repository.getWorkTree(), merger.getFailingPaths().keySet()));
                 } else {
-                    String mergeMessageWithConflicts = new MergeMessageFormatter().formatWithConflicts(commitMessage, merger.getUnmergedPaths());
+                    String mergeMessageWithConflicts = new MergeMessageFormatter().formatWithConflicts(commitMessage, merger.getUnmergedPaths(), '#');
                     repository.writeMergeCommitMsg(mergeMessageWithConflicts);
                     result = getClassFactory().createRevertResult(GitRevertResult.Status.CONFLICTING, null, 
                             merger.getMergeResults() == null ? null : getFiles(repository.getWorkTree(), merger.getMergeResults().keySet()),
@@ -139,20 +138,17 @@ public class RevertCommand extends GitCommand {
                 }
             }
             throw new GitException(ex);
-        } catch (IOException ex) {
-            throw new GitException(ex);
-        } catch (GitAPIException ex) {
+        } catch (IOException | GitAPIException ex) {
             throw new GitException(ex);
         } finally {
             if (dc != null) {
                 dc.unlock();
             }
-            revWalk.release();
         }
     }
 
     private List<File> getFiles (File workDir, Set<String> paths) {
-        List<File> files = new LinkedList<File>();
+        List<File> files = new LinkedList<>();
         for (String path : paths) {
             files.add(new File(workDir, path));
         }

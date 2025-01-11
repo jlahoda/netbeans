@@ -30,8 +30,6 @@ import javax.annotation.processing.Completion;
 import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
-import javax.annotation.processing.SupportedSourceVersion;
-import javax.lang.model.SourceVersion;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
@@ -58,7 +56,6 @@ import org.openide.util.lookup.ServiceProvider;
  * @author Jan Lahoda
  */
 @SupportedAnnotationTypes({"org.netbeans.api.editor.mimelookup.MimeRegistration", "org.netbeans.api.editor.mimelookup.MimeRegistrations", "org.netbeans.spi.editor.mimelookup.MimeLocation"})
-@SupportedSourceVersion(SourceVersion.RELEASE_7)
 @ServiceProvider(service=Processor.class)
 public class CreateRegistrationProcessor extends LayerGeneratingProcessor {
 
@@ -280,7 +277,7 @@ public class CreateRegistrationProcessor extends LayerGeneratingProcessor {
                     l = CreateRegistrationProcessor.class.getClassLoader();
                 }
                 try {
-                    COMPLETIONS = (Processor)Class.forName(pathCompletions, true, l).newInstance();
+                    COMPLETIONS = (Processor)Class.forName(pathCompletions, true, l).getDeclaredConstructor().newInstance();
                 } catch (Exception ex) {
                     Exceptions.printStackTrace(ex);
                     // no completions, OK

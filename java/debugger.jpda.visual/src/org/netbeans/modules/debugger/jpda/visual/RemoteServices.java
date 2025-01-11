@@ -54,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.EnumMap;
 import java.util.WeakHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.Lock;
@@ -147,7 +148,7 @@ public class RemoteServices {
          */
         ClassType classLoaderClass = getClass(vm, ClassLoader.class.getName());
         Method getSystemClassLoader = ClassTypeWrapper.concreteMethodByName(classLoaderClass, "getSystemClassLoader", "()Ljava/lang/ClassLoader;");
-        ObjectReference cl = (ObjectReference) ClassTypeWrapper.invokeMethod(classLoaderClass, tawt, getSystemClassLoader, Collections.EMPTY_LIST, ObjectReference.INVOKE_SINGLE_THREADED);
+        ObjectReference cl = (ObjectReference) ClassTypeWrapper.invokeMethod(classLoaderClass, tawt, getSystemClassLoader, Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
         Method getParent = ClassTypeWrapper.concreteMethodByName(classLoaderClass, "getParent", "()Ljava/lang/ClassLoader;");
         ObjectReference bcl;
         do {
@@ -155,7 +156,7 @@ public class RemoteServices {
             if ("sun.misc.Launcher$AppClassLoader".equals(cl.referenceType().name())) {     // NOI18N
                 break;
             }
-            cl = (ObjectReference) ObjectReferenceWrapper.invokeMethod(cl, tawt, getParent, Collections.EMPTY_LIST, ObjectReference.INVOKE_SINGLE_THREADED);
+            cl = (ObjectReference) ObjectReferenceWrapper.invokeMethod(cl, tawt, getParent, Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
         } while (cl != null);
         return bcl;
     }
@@ -163,12 +164,12 @@ public class RemoteServices {
     private static ObjectReference getContextClassLoader(ThreadReference tawt, VirtualMachine vm) throws InvalidTypeException, ClassNotLoadedException, IncompatibleThreadStateException, InvocationException, IOException, PropertyVetoException, InternalExceptionWrapper, VMDisconnectedExceptionWrapper, ObjectCollectedExceptionWrapper, UnsupportedOperationExceptionWrapper, ClassNotPreparedExceptionWrapper {
         ReferenceType threadType = tawt.referenceType();
         Method getContextCl = ClassTypeWrapper.concreteMethodByName((ClassType) threadType, "getContextClassLoader", "()Ljava/lang/ClassLoader;");
-        ObjectReference cl = (ObjectReference) ObjectReferenceWrapper.invokeMethod(tawt, tawt, getContextCl, Collections.EMPTY_LIST, ObjectReference.INVOKE_SINGLE_THREADED);
+        ObjectReference cl = (ObjectReference) ObjectReferenceWrapper.invokeMethod(tawt, tawt, getContextCl, Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
         ClassType classLoaderClass = null;
         if (cl == null) {
             classLoaderClass = getClass(vm, ClassLoader.class.getName());
             Method getSystemClassLoader = ClassTypeWrapper.concreteMethodByName(classLoaderClass, "getSystemClassLoader", "()Ljava/lang/ClassLoader;");
-            cl = (ObjectReference) ClassTypeWrapper.invokeMethod(classLoaderClass, tawt, getSystemClassLoader, Collections.EMPTY_LIST, ObjectReference.INVOKE_SINGLE_THREADED);
+            cl = (ObjectReference) ClassTypeWrapper.invokeMethod(classLoaderClass, tawt, getSystemClassLoader, Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
         }
         return cl;
     }
@@ -273,7 +274,7 @@ public class RemoteServices {
                         ClassType theClass = getClass(vm, Class.class.getName());
                         // Call some method that will prepare the class:
                         Method aMethod = ClassTypeWrapper.concreteMethodByName(theClass, "getConstructors", "()[Ljava/lang/reflect/Constructor;");
-                        ObjectReferenceWrapper.invokeMethod(basicClass, tawt, aMethod, Collections.EMPTY_LIST, ObjectReference.INVOKE_SINGLE_THREADED);
+                        ObjectReferenceWrapper.invokeMethod(basicClass, tawt, aMethod, Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
                     }
                 }
             } finally {
@@ -283,7 +284,7 @@ public class RemoteServices {
                 synchronized (remoteServiceClasses) {
                     Map<ServiceType, ClassObjectReference> basicClassesByType = remoteServiceClasses.get(t.getDebugger());
                     if (basicClassesByType == null) {
-                        basicClassesByType = new HashMap<>();
+                        basicClassesByType = new EnumMap<>(ServiceType.class);
                         remoteServiceClasses.put(t.getDebugger(), basicClassesByType);
                     }
                     basicClassesByType.put(sType, basicClass);
@@ -576,7 +577,7 @@ public class RemoteServices {
                 }
                 Value result;
                 try {
-                    result = ObjectReferenceWrapper.invokeMethod(component, t, m, Collections.EMPTY_LIST, ObjectReference.INVOKE_SINGLE_THREADED);
+                    result = ObjectReferenceWrapper.invokeMethod(component, t, m, Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
                 } catch (ClassNotLoadedException cnlex) {
                     continue;
                 } catch (InvocationException iex) {
@@ -639,7 +640,7 @@ public class RemoteServices {
                 }
                 Value result;
                 try {
-                    result = ObjectReferenceWrapper.invokeMethod(component, t, m, Collections.EMPTY_LIST, ObjectReference.INVOKE_SINGLE_THREADED);
+                    result = ObjectReferenceWrapper.invokeMethod(component, t, m, Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
                     if (result == null) {
                         continue;
                     }
@@ -1066,7 +1067,7 @@ public class RemoteServices {
                             try {
                                 if (attach) {
                                     Method startHierarchyListenerMethod = ClassTypeWrapper.concreteMethodByName(serviceClass, "startHierarchyListener", "()Ljava/lang/String;");
-                                    Value res = ClassTypeWrapper.invokeMethod(serviceClass, tr, startHierarchyListenerMethod, Collections.EMPTY_LIST, ObjectReference.INVOKE_SINGLE_THREADED);
+                                    Value res = ClassTypeWrapper.invokeMethod(serviceClass, tr, startHierarchyListenerMethod, Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
                                     if (res instanceof StringReference) {
                                         String reason = ((StringReference) res).value();
                                         InputOutput io = ((JPDAThreadImpl) t).getDebugger().getConsoleIO().getIO();
@@ -1076,7 +1077,7 @@ public class RemoteServices {
                                     }
                                 } else {
                                     Method stopHierarchyListenerMethod = ClassTypeWrapper.concreteMethodByName(serviceClass, "stopHierarchyListener", "()V");
-                                    ClassTypeWrapper.invokeMethod(serviceClass, tr, stopHierarchyListenerMethod, Collections.EMPTY_LIST, ObjectReference.INVOKE_SINGLE_THREADED);
+                                    ClassTypeWrapper.invokeMethod(serviceClass, tr, stopHierarchyListenerMethod, Collections.emptyList(), ObjectReference.INVOKE_SINGLE_THREADED);
                                 }
                             } catch (VMDisconnectedExceptionWrapper vmd) {                
                             } catch (Exception ex) {

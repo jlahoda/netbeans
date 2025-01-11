@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.69.1
+#Version 1.91
 
 CLSS public abstract interface java.io.Serializable
 
@@ -82,7 +82,6 @@ meth public java.lang.Object[] toArray()
 meth public java.lang.String toString()
 meth public void clear()
 supr java.lang.Object
-hfds MAX_ARRAY_SIZE
 
 CLSS public abstract java.util.AbstractList<%0 extends java.lang.Object>
 cons protected init()
@@ -105,7 +104,6 @@ meth public void clear()
 meth public {java.util.AbstractList%0} remove(int)
 meth public {java.util.AbstractList%0} set(int,{java.util.AbstractList%0})
 supr java.util.AbstractCollection<{java.util.AbstractList%0}>
-hcls Itr,ListItr
 
 CLSS public abstract interface java.util.Collection<%0 extends java.lang.Object>
 intf java.lang.Iterable<{java.util.Collection%0}>
@@ -270,7 +268,6 @@ meth public void die()
 meth public void redo()
 meth public void undo()
 supr java.lang.Object
-hfds alive,hasBeenDone
 
 CLSS public abstract interface javax.swing.undo.UndoableEdit
 meth public abstract boolean addEdit(javax.swing.undo.UndoableEdit)
@@ -373,6 +370,7 @@ meth protected java.lang.CharSequence backingSequence()
 meth public char charAt(int)
 meth public int length()
 meth public static void checkIndexesValid(java.lang.CharSequence,int,int)
+ anno 0 java.lang.Deprecated()
 supr org.netbeans.lib.editor.util.AbstractCharSequence
 hfds backingSequence,length,start
 
@@ -512,6 +510,7 @@ meth public void clear()
 meth public void copyElements(int,int,java.lang.Object[],int)
 meth public void copyElements(int,int,java.util.Collection<{org.netbeans.lib.editor.util.GapList%0}>)
 meth public void copyItems(int,int,java.lang.Object[],int)
+ anno 0 java.lang.Deprecated()
 meth public void ensureCapacity(int)
 meth public void remove(int,int)
 meth public void swap(int,int)
@@ -627,6 +626,7 @@ CLSS public final org.netbeans.lib.editor.util.swing.DocumentUtilities
 meth public static boolean addPriorityDocumentListener(javax.swing.text.Document,javax.swing.event.DocumentListener,org.netbeans.lib.editor.util.swing.DocumentListenerPriority)
 meth public static boolean isReadLocked(javax.swing.text.Document)
 meth public static boolean isTypingModification(javax.swing.event.DocumentEvent)
+ anno 0 java.lang.Deprecated()
 meth public static boolean isTypingModification(javax.swing.text.Document)
 meth public static boolean isWriteLocked(javax.swing.text.Document)
 meth public static boolean putEventPropertyIfSupported(javax.swing.event.DocumentEvent,java.lang.Object,java.lang.Object)

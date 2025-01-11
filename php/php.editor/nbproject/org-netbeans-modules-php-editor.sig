@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.78.1
+#Version 2.41.0
 
 CLSS public abstract interface java.beans.PropertyChangeListener
 intf java.util.EventListener
@@ -25,7 +25,6 @@ meth public final java.lang.String name()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
-hfds name,ordinal
 
 CLSS public java.lang.Object
 cons public init()
@@ -208,6 +207,7 @@ CLSS public abstract static org.netbeans.modules.parsing.spi.Parser$Result
  outer org.netbeans.modules.parsing.spi.Parser
 cons protected init(org.netbeans.modules.parsing.api.Snapshot)
 meth protected abstract void invalidate()
+meth protected boolean processingFinished()
 meth public org.netbeans.modules.parsing.api.Snapshot getSnapshot()
 supr java.lang.Object
 hfds snapshot
@@ -241,6 +241,8 @@ meth public final java.util.Set<org.netbeans.modules.php.editor.api.elements.Typ
 meth public final void addElement(org.netbeans.modules.php.editor.api.elements.PhpElement)
 meth public final void addElements(java.util.Set<? extends org.netbeans.modules.php.editor.api.elements.PhpElement>)
 meth public java.util.LinkedList<org.netbeans.modules.php.editor.api.elements.PhpElement> getElements()
+meth public java.util.Set<org.netbeans.modules.php.editor.api.elements.EnumCaseElement> getEnumCases(org.netbeans.modules.php.editor.api.NameKind$Exact,org.netbeans.modules.php.editor.api.NameKind)
+meth public java.util.Set<org.netbeans.modules.php.editor.api.elements.EnumCaseElement> getEnumCases(org.netbeans.modules.php.editor.api.NameKind)
 meth public java.util.Set<org.netbeans.modules.php.editor.api.elements.VariableElement> getTopLevelVariables(org.netbeans.modules.php.editor.api.NameKind)
 meth public org.netbeans.modules.php.editor.api.ElementQuery$QueryScope getQueryScope()
 supr java.lang.Object
@@ -261,6 +263,8 @@ meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.
 meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.ClassElement> getClasses(org.netbeans.modules.php.editor.api.NameKind)
 meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.ConstantElement> getConstants()
 meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.ConstantElement> getConstants(org.netbeans.modules.php.editor.api.NameKind)
+meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.EnumCaseElement> getEnumCases(org.netbeans.modules.php.editor.api.NameKind$Exact,org.netbeans.modules.php.editor.api.NameKind)
+meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.EnumCaseElement> getEnumCases(org.netbeans.modules.php.editor.api.NameKind)
 meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.FieldElement> getFields(org.netbeans.modules.php.editor.api.NameKind$Exact,org.netbeans.modules.php.editor.api.NameKind)
 meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.FieldElement> getFields(org.netbeans.modules.php.editor.api.NameKind)
 meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.FunctionElement> getFunctions()
@@ -294,10 +298,16 @@ meth public abstract org.openide.filesystems.FileObject getFileObject()
 CLSS public abstract interface static org.netbeans.modules.php.editor.api.ElementQuery$Index
  outer org.netbeans.modules.php.editor.api.ElementQuery
 intf org.netbeans.modules.php.editor.api.ElementQuery
+meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.ClassElement> getAttributeClasses(org.netbeans.modules.php.editor.api.NameKind,java.util.Set<org.netbeans.modules.php.editor.api.AliasedName>,org.netbeans.modules.php.editor.api.elements.AliasedElement$Trait)
 meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.ClassElement> getClasses(org.netbeans.modules.php.editor.api.NameKind,java.util.Set<org.netbeans.modules.php.editor.api.AliasedName>,org.netbeans.modules.php.editor.api.elements.AliasedElement$Trait)
 meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.ClassElement> getDirectInheritedClasses(org.netbeans.modules.php.editor.api.elements.TypeElement)
 meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.ClassElement> getInheritedClasses(org.netbeans.modules.php.editor.api.elements.TypeElement)
 meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.ConstantElement> getConstants(org.netbeans.modules.php.editor.api.NameKind,java.util.Set<org.netbeans.modules.php.editor.api.AliasedName>,org.netbeans.modules.php.editor.api.elements.AliasedElement$Trait)
+meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.EnumCaseElement> getAllEnumCases(org.netbeans.modules.php.editor.api.NameKind$Exact,org.netbeans.modules.php.editor.api.NameKind)
+meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.EnumCaseElement> getAllEnumCases(org.netbeans.modules.php.editor.api.elements.TypeElement)
+meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.EnumCaseElement> getDeclaredEnumCases(org.netbeans.modules.php.editor.api.elements.TypeElement)
+meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.EnumElement> getEnums(org.netbeans.modules.php.editor.api.NameKind)
+meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.EnumElement> getEnums(org.netbeans.modules.php.editor.api.NameKind,java.util.Set<org.netbeans.modules.php.editor.api.AliasedName>,org.netbeans.modules.php.editor.api.elements.AliasedElement$Trait)
 meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.FieldElement> getAccessibleFields(org.netbeans.modules.php.editor.api.elements.TypeElement,org.netbeans.modules.php.editor.api.elements.TypeElement)
 meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.FieldElement> getAccessibleStaticFields(org.netbeans.modules.php.editor.api.elements.TypeElement,org.netbeans.modules.php.editor.api.elements.TypeElement)
 meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.FieldElement> getAlllFields(org.netbeans.modules.php.editor.api.NameKind$Exact,org.netbeans.modules.php.editor.api.NameKind)
@@ -314,6 +324,7 @@ meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.
 meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.MethodElement> getAccessibleStaticMethods(org.netbeans.modules.php.editor.api.elements.TypeElement,org.netbeans.modules.php.editor.api.elements.TypeElement)
 meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.MethodElement> getAllMethods(org.netbeans.modules.php.editor.api.NameKind$Exact,org.netbeans.modules.php.editor.api.NameKind)
 meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.MethodElement> getAllMethods(org.netbeans.modules.php.editor.api.elements.TypeElement)
+meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.MethodElement> getAttributeClassConstructors(org.netbeans.modules.php.editor.api.NameKind,java.util.Set<org.netbeans.modules.php.editor.api.AliasedName>,org.netbeans.modules.php.editor.api.elements.AliasedElement$Trait)
 meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.MethodElement> getConstructors(org.netbeans.modules.php.editor.api.NameKind,java.util.Set<org.netbeans.modules.php.editor.api.AliasedName>,org.netbeans.modules.php.editor.api.elements.AliasedElement$Trait)
 meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.MethodElement> getConstructors(org.netbeans.modules.php.editor.api.elements.ClassElement)
 meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.MethodElement> getDeclaredConstructors(org.netbeans.modules.php.editor.api.elements.ClassElement)
@@ -324,6 +335,7 @@ meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.
 meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.PhpElement> getTopLevelElements(org.netbeans.modules.php.editor.api.NameKind)
 meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.PhpElement> getTopLevelElements(org.netbeans.modules.php.editor.api.NameKind,java.util.Set<org.netbeans.modules.php.editor.api.AliasedName>,org.netbeans.modules.php.editor.api.elements.AliasedElement$Trait)
 meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.TraitElement> getTraits(org.netbeans.modules.php.editor.api.NameKind)
+meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.TraitElement> getTraits(org.netbeans.modules.php.editor.api.NameKind,java.util.Set<org.netbeans.modules.php.editor.api.AliasedName>,org.netbeans.modules.php.editor.api.elements.AliasedElement$Trait)
 meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.TypeConstantElement> getAccessibleMagicConstants(org.netbeans.modules.php.editor.api.elements.TypeElement)
 meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.TypeConstantElement> getAllTypeConstants(org.netbeans.modules.php.editor.api.NameKind$Exact,org.netbeans.modules.php.editor.api.NameKind)
 meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.TypeConstantElement> getAllTypeConstants(org.netbeans.modules.php.editor.api.elements.TypeElement)
@@ -377,6 +389,8 @@ meth public java.util.Set<org.netbeans.modules.php.editor.api.elements.VariableE
 meth public java.util.Set<org.netbeans.modules.php.editor.api.elements.VariableElement> getMethodVariables(org.netbeans.modules.php.editor.api.elements.MethodElement)
 meth public java.util.Set<org.netbeans.modules.php.editor.api.elements.VariableElement> getTopLevelVariables()
 meth public org.netbeans.modules.php.editor.api.elements.ClassElement create(org.netbeans.modules.php.editor.api.elements.NamespaceElement,org.netbeans.modules.php.editor.parser.astnodes.ClassDeclaration)
+meth public org.netbeans.modules.php.editor.api.elements.EnumCaseElement createEnumCase(org.netbeans.modules.php.editor.api.elements.TypeElement,org.netbeans.modules.php.editor.parser.astnodes.CaseDeclaration)
+meth public org.netbeans.modules.php.editor.api.elements.EnumElement create(org.netbeans.modules.php.editor.api.elements.NamespaceElement,org.netbeans.modules.php.editor.parser.astnodes.EnumDeclaration)
 meth public org.netbeans.modules.php.editor.api.elements.FieldElement create(org.netbeans.modules.php.editor.api.elements.TypeElement,org.netbeans.modules.php.editor.parser.astnodes.FieldAccess)
 meth public org.netbeans.modules.php.editor.api.elements.FunctionElement create(org.netbeans.modules.php.editor.api.elements.NamespaceElement,org.netbeans.modules.php.editor.parser.astnodes.FunctionDeclaration)
 meth public org.netbeans.modules.php.editor.api.elements.InterfaceElement create(org.netbeans.modules.php.editor.api.elements.NamespaceElement,org.netbeans.modules.php.editor.parser.astnodes.InterfaceDeclaration)
@@ -445,6 +459,8 @@ fld public final static org.netbeans.modules.php.editor.api.PhpElementKind CLASS
 fld public final static org.netbeans.modules.php.editor.api.PhpElementKind CONSTANT
 fld public final static org.netbeans.modules.php.editor.api.PhpElementKind CONSTRUCTOR
 fld public final static org.netbeans.modules.php.editor.api.PhpElementKind EMPTY
+fld public final static org.netbeans.modules.php.editor.api.PhpElementKind ENUM
+fld public final static org.netbeans.modules.php.editor.api.PhpElementKind ENUM_CASE
 fld public final static org.netbeans.modules.php.editor.api.PhpElementKind FIELD
 fld public final static org.netbeans.modules.php.editor.api.PhpElementKind FUNCTION
 fld public final static org.netbeans.modules.php.editor.api.PhpElementKind GROUP_USE_STATEMENT
@@ -469,6 +485,13 @@ supr java.lang.Enum<org.netbeans.modules.php.editor.api.PhpElementKind>
 CLSS public final org.netbeans.modules.php.editor.api.PhpModifiers
 fld public final static int ALL_FLAGS = -1
 fld public final static int NO_FLAGS = 0
+fld public final static java.lang.String ABSTRACT_MODIFIER = "abstract"
+fld public final static java.lang.String FINAL_MODIFIER = "final"
+fld public final static java.lang.String READONLY_MODIFIER = "readonly"
+fld public final static java.lang.String VISIBILITY_PRIVATE = "private"
+fld public final static java.lang.String VISIBILITY_PROTECTED = "protected"
+fld public final static java.lang.String VISIBILITY_PUBLIC = "public"
+fld public final static java.lang.String VISIBILITY_VAR = "var"
 meth public !varargs static org.netbeans.modules.php.editor.api.PhpModifiers fromBitMask(int[])
 meth public boolean equals(java.lang.Object)
 meth public boolean isAbstract()
@@ -477,6 +500,7 @@ meth public boolean isImplicitPublic()
 meth public boolean isPrivate()
 meth public boolean isProtected()
 meth public boolean isPublic()
+meth public boolean isReadonly()
 meth public boolean isStatic()
 meth public int hashCode()
 meth public int toFlags()
@@ -488,6 +512,7 @@ meth public org.netbeans.modules.php.editor.api.PhpModifiers setImplicitPublic()
 meth public org.netbeans.modules.php.editor.api.PhpModifiers setPrivate()
 meth public org.netbeans.modules.php.editor.api.PhpModifiers setProtected()
 meth public org.netbeans.modules.php.editor.api.PhpModifiers setPublic()
+meth public org.netbeans.modules.php.editor.api.PhpModifiers setReadonly()
 meth public org.netbeans.modules.php.editor.api.PhpModifiers setStatic()
 meth public static org.netbeans.modules.php.editor.api.PhpModifiers noModifiers()
 supr org.netbeans.modules.php.editor.parser.astnodes.BodyDeclaration$Modifier
@@ -514,6 +539,8 @@ meth public org.netbeans.modules.php.editor.api.QualifiedName toNamespaceName()
 meth public org.netbeans.modules.php.editor.api.QualifiedName toNamespaceName(boolean)
 meth public org.netbeans.modules.php.editor.api.QualifiedName toNotFullyQualified()
 meth public org.netbeans.modules.php.editor.api.QualifiedNameKind getKind()
+meth public static java.util.List<org.netbeans.modules.php.editor.api.QualifiedName> create(org.netbeans.modules.php.editor.parser.astnodes.IntersectionType)
+meth public static java.util.List<org.netbeans.modules.php.editor.api.QualifiedName> create(org.netbeans.modules.php.editor.parser.astnodes.UnionType)
 meth public static org.netbeans.modules.php.editor.api.QualifiedName create(boolean,java.util.List<java.lang.String>)
 meth public static org.netbeans.modules.php.editor.api.QualifiedName create(java.lang.String)
 meth public static org.netbeans.modules.php.editor.api.QualifiedName create(org.netbeans.modules.php.editor.model.NamespaceScope)
@@ -526,6 +553,7 @@ meth public static org.netbeans.modules.php.editor.api.QualifiedName createUnqua
 meth public static org.netbeans.modules.php.editor.api.QualifiedName createUnqualifiedName(org.netbeans.modules.php.editor.parser.astnodes.Identifier)
 meth public static org.netbeans.modules.php.editor.api.QualifiedName createUnqualifiedNameInClassContext(java.lang.String,org.netbeans.modules.php.editor.model.ClassScope)
 meth public static org.netbeans.modules.php.editor.api.QualifiedName createUnqualifiedNameInClassContext(org.netbeans.modules.php.editor.parser.astnodes.Expression,org.netbeans.modules.php.editor.model.ClassScope)
+ anno 0 org.netbeans.api.annotations.common.CheckForNull()
 meth public static org.netbeans.modules.php.editor.api.QualifiedName createUnqualifiedNameInClassContext(org.netbeans.modules.php.editor.parser.astnodes.Identifier,org.netbeans.modules.php.editor.model.ClassScope)
 meth public static org.netbeans.modules.php.editor.api.QualifiedName getPrefix(org.netbeans.modules.php.editor.api.QualifiedName,org.netbeans.modules.php.editor.api.QualifiedName,boolean)
 meth public static org.netbeans.modules.php.editor.api.QualifiedName getSuffix(org.netbeans.modules.php.editor.api.QualifiedName,org.netbeans.modules.php.editor.api.QualifiedName,boolean)
@@ -570,7 +598,9 @@ cons public init(org.netbeans.modules.php.editor.api.AliasedName,org.netbeans.mo
 intf org.netbeans.modules.php.editor.api.elements.ClassElement
 meth public boolean isAbstract()
 meth public boolean isAnonymous()
+meth public boolean isAttribute()
 meth public boolean isFinal()
+meth public boolean isReadonly()
 meth public java.util.Collection<org.netbeans.modules.php.editor.api.QualifiedName> getFQMixinClassNames()
 meth public java.util.Collection<org.netbeans.modules.php.editor.api.QualifiedName> getPossibleFQSuperClassNames()
 meth public java.util.Collection<org.netbeans.modules.php.editor.api.QualifiedName> getUsedTraits()
@@ -627,14 +657,24 @@ meth public static org.netbeans.modules.php.editor.api.elements.AliasedElement$T
 meth public static org.netbeans.modules.php.editor.api.elements.AliasedElement$Trait[] values()
 supr java.lang.Enum<org.netbeans.modules.php.editor.api.elements.AliasedElement$Trait>
 
+CLSS public org.netbeans.modules.php.editor.api.elements.AliasedEnum
+cons public init(org.netbeans.modules.php.editor.api.AliasedName,org.netbeans.modules.php.editor.api.elements.EnumElement)
+intf org.netbeans.modules.php.editor.api.elements.EnumElement
+meth public java.util.Collection<org.netbeans.modules.php.editor.api.QualifiedName> getUsedTraits()
+meth public org.netbeans.modules.php.editor.api.QualifiedName getBackingType()
+supr org.netbeans.modules.php.editor.api.elements.AliasedType
+
 CLSS public org.netbeans.modules.php.editor.api.elements.AliasedFunction
 cons public init(org.netbeans.modules.php.editor.api.AliasedName,org.netbeans.modules.php.editor.api.elements.FunctionElement)
 intf org.netbeans.modules.php.editor.api.elements.FunctionElement
 meth protected final org.netbeans.modules.php.editor.api.elements.FunctionElement getRealFunction()
 meth public boolean isAnonymous()
+meth public boolean isReturnIntersectionType()
+meth public boolean isReturnUnionType()
 meth public java.lang.String asString(org.netbeans.modules.php.editor.api.elements.BaseFunctionElement$PrintAs)
 meth public java.lang.String asString(org.netbeans.modules.php.editor.api.elements.BaseFunctionElement$PrintAs,org.netbeans.modules.php.editor.api.elements.TypeNameResolver)
 meth public java.lang.String asString(org.netbeans.modules.php.editor.api.elements.BaseFunctionElement$PrintAs,org.netbeans.modules.php.editor.api.elements.TypeNameResolver,org.netbeans.modules.php.api.PhpVersion)
+meth public java.lang.String getDeclaredReturnType()
 meth public java.util.Collection<org.netbeans.modules.php.editor.api.elements.TypeResolver> getReturnTypes()
 meth public java.util.List<org.netbeans.modules.php.editor.api.elements.ParameterElement> getParameters()
 supr org.netbeans.modules.php.editor.api.elements.AliasedElement
@@ -661,6 +701,7 @@ intf org.netbeans.modules.php.editor.api.elements.TypeElement
 meth protected final org.netbeans.modules.php.editor.api.elements.TypeElement getRealType()
 meth public boolean isTraited()
 meth public final boolean isClass()
+meth public final boolean isEnum()
 meth public final boolean isInterface()
 meth public final boolean isTrait()
 meth public final java.lang.String asString(org.netbeans.modules.php.editor.api.elements.TypeElement$PrintAs)
@@ -671,9 +712,12 @@ supr org.netbeans.modules.php.editor.api.elements.AliasedElement
 CLSS public abstract interface org.netbeans.modules.php.editor.api.elements.BaseFunctionElement
 innr public final static !enum PrintAs
 intf org.netbeans.modules.php.editor.api.elements.PhpElement
+meth public abstract boolean isReturnIntersectionType()
+meth public abstract boolean isReturnUnionType()
 meth public abstract java.lang.String asString(org.netbeans.modules.php.editor.api.elements.BaseFunctionElement$PrintAs)
 meth public abstract java.lang.String asString(org.netbeans.modules.php.editor.api.elements.BaseFunctionElement$PrintAs,org.netbeans.modules.php.editor.api.elements.TypeNameResolver)
 meth public abstract java.lang.String asString(org.netbeans.modules.php.editor.api.elements.BaseFunctionElement$PrintAs,org.netbeans.modules.php.editor.api.elements.TypeNameResolver,org.netbeans.modules.php.api.PhpVersion)
+meth public abstract java.lang.String getDeclaredReturnType()
 meth public abstract java.util.Collection<org.netbeans.modules.php.editor.api.elements.TypeResolver> getReturnTypes()
 meth public abstract java.util.List<org.netbeans.modules.php.editor.api.elements.ParameterElement> getParameters()
 
@@ -695,7 +739,9 @@ fld public final static org.netbeans.modules.php.editor.api.PhpElementKind KIND
 intf org.netbeans.modules.php.editor.api.elements.TraitedElement
 meth public abstract boolean isAbstract()
 meth public abstract boolean isAnonymous()
+meth public abstract boolean isAttribute()
 meth public abstract boolean isFinal()
+meth public abstract boolean isReadonly()
 meth public abstract java.util.Collection<org.netbeans.modules.php.editor.api.QualifiedName> getFQMixinClassNames()
 meth public abstract java.util.Collection<org.netbeans.modules.php.editor.api.QualifiedName> getPossibleFQSuperClassNames()
 meth public abstract org.netbeans.modules.php.editor.api.QualifiedName getSuperClassName()
@@ -756,10 +802,27 @@ meth public static org.netbeans.modules.php.editor.api.elements.ElementTransform
 meth public static org.netbeans.modules.php.editor.api.elements.ElementTransformation<org.netbeans.modules.php.editor.api.elements.VariableElement> fieldsToVariables()
 supr java.lang.Object
 
+CLSS public abstract interface org.netbeans.modules.php.editor.api.elements.EnumCaseElement
+fld public final static org.netbeans.modules.php.editor.api.PhpElementKind KIND
+intf org.netbeans.modules.php.editor.api.elements.TypeMemberElement
+meth public abstract boolean isBacked()
+meth public abstract java.lang.String getValue()
+ anno 0 org.netbeans.api.annotations.common.CheckForNull()
+
+CLSS public abstract interface org.netbeans.modules.php.editor.api.elements.EnumElement
+fld public final static org.netbeans.modules.php.editor.api.PhpElementKind KIND
+intf org.netbeans.modules.php.editor.api.elements.TraitedElement
+meth public abstract org.netbeans.modules.php.editor.api.QualifiedName getBackingType()
+ anno 0 org.netbeans.api.annotations.common.CheckForNull()
+
 CLSS public abstract interface org.netbeans.modules.php.editor.api.elements.FieldElement
 fld public final static org.netbeans.modules.php.editor.api.PhpElementKind KIND
 intf org.netbeans.modules.php.editor.api.elements.TypeMemberElement
 intf org.netbeans.modules.php.editor.api.elements.TypedInstanceElement
+meth public abstract boolean isAnnotation()
+meth public abstract boolean isIntersectionType()
+meth public abstract boolean isUnionType()
+meth public abstract java.lang.String getDeclaredType()
 meth public abstract java.lang.String getName(boolean)
 
 CLSS public abstract interface org.netbeans.modules.php.editor.api.elements.FullyQualifiedElement
@@ -797,22 +860,32 @@ intf org.netbeans.modules.php.editor.api.elements.FullyQualifiedElement
 CLSS public abstract interface org.netbeans.modules.php.editor.api.elements.ParameterElement
 innr public final static !enum OutputType
 meth public abstract boolean hasDeclaredType()
+meth public abstract boolean isIntersectionType()
 meth public abstract boolean isMandatory()
 meth public abstract boolean isReference()
+meth public abstract boolean isUnionType()
 meth public abstract boolean isVariadic()
+meth public abstract int getModifier()
 meth public abstract int getOffset()
 meth public abstract java.lang.String asString(org.netbeans.modules.php.editor.api.elements.ParameterElement$OutputType)
 meth public abstract java.lang.String asString(org.netbeans.modules.php.editor.api.elements.ParameterElement$OutputType,org.netbeans.modules.php.editor.api.elements.TypeNameResolver)
+meth public abstract java.lang.String asString(org.netbeans.modules.php.editor.api.elements.ParameterElement$OutputType,org.netbeans.modules.php.editor.api.elements.TypeNameResolver,org.netbeans.modules.php.api.PhpVersion)
+meth public abstract java.lang.String getDeclaredType()
+ anno 0 org.netbeans.api.annotations.common.CheckForNull()
 meth public abstract java.lang.String getDefaultValue()
  anno 0 org.netbeans.api.annotations.common.CheckForNull()
 meth public abstract java.lang.String getName()
+meth public abstract java.lang.String getPhpdocType()
+ anno 0 org.netbeans.api.annotations.common.CheckForNull()
 meth public abstract java.util.Set<org.netbeans.modules.php.editor.api.elements.TypeResolver> getTypes()
 meth public abstract org.netbeans.modules.csl.api.OffsetRange getOffsetRange()
 
 CLSS public final static !enum org.netbeans.modules.php.editor.api.elements.ParameterElement$OutputType
  outer org.netbeans.modules.php.editor.api.elements.ParameterElement
 fld public final static org.netbeans.modules.php.editor.api.elements.ParameterElement$OutputType COMPLETE_DECLARATION
+fld public final static org.netbeans.modules.php.editor.api.elements.ParameterElement$OutputType COMPLETE_DECLARATION_WITH_MODIFIER
 fld public final static org.netbeans.modules.php.editor.api.elements.ParameterElement$OutputType SHORTEN_DECLARATION
+fld public final static org.netbeans.modules.php.editor.api.elements.ParameterElement$OutputType SHORTEN_DECLARATION_WITH_MODIFIER
 fld public final static org.netbeans.modules.php.editor.api.elements.ParameterElement$OutputType SIMPLE_NAME
 meth public static org.netbeans.modules.php.editor.api.elements.ParameterElement$OutputType valueOf(java.lang.String)
 meth public static org.netbeans.modules.php.editor.api.elements.ParameterElement$OutputType[] values()
@@ -849,6 +922,8 @@ CLSS public abstract interface org.netbeans.modules.php.editor.api.elements.Type
 fld public final static org.netbeans.modules.php.editor.api.PhpElementKind KIND
 intf org.netbeans.modules.php.editor.api.elements.TypeMemberElement
 meth public abstract boolean isMagic()
+meth public abstract java.lang.String getDeclaredType()
+ anno 0 org.netbeans.api.annotations.common.CheckForNull()
 meth public abstract java.lang.String getValue()
  anno 0 org.netbeans.api.annotations.common.CheckForNull()
 
@@ -856,6 +931,7 @@ CLSS public abstract interface org.netbeans.modules.php.editor.api.elements.Type
 innr public final static !enum PrintAs
 intf org.netbeans.modules.php.editor.api.elements.FullyQualifiedElement
 meth public abstract boolean isClass()
+meth public abstract boolean isEnum()
 meth public abstract boolean isInterface()
 meth public abstract boolean isTrait()
 meth public abstract boolean isTraited()
@@ -946,6 +1022,7 @@ CLSS public final org.netbeans.modules.php.editor.lexer.LexUtilities
 innr public final static !enum LineBalance
 meth public !varargs static boolean textEquals(java.lang.CharSequence,char[])
 meth public static boolean isCommentOnlyLine(org.netbeans.editor.BaseDocument,int) throws javax.swing.text.BadLocationException
+meth public static boolean isPHPOperator(org.netbeans.modules.php.editor.lexer.PHPTokenId)
 meth public static char getTokenChar(org.netbeans.editor.BaseDocument,int)
 meth public static int findStartTokenOfExpression(org.netbeans.api.lexer.TokenSequence)
 meth public static int getLineBalance(org.netbeans.editor.BaseDocument,int,org.netbeans.api.lexer.TokenId,org.netbeans.api.lexer.TokenId,org.netbeans.modules.php.editor.lexer.LexUtilities$LineBalance)
@@ -994,8 +1071,10 @@ fld public final static int ST_PHP_IN_SCRIPTING = 2
 fld public final static int ST_PHP_LINE_COMMENT = 36
 fld public final static int ST_PHP_LOOKING_FOR_CONSTANT_NAME = 28
 fld public final static int ST_PHP_LOOKING_FOR_FUNCTION_NAME = 26
+fld public final static int ST_PHP_LOOKING_FOR_PARAMETER_NAME = 44
 fld public final static int ST_PHP_LOOKING_FOR_PROPERTY = 24
 fld public final static int ST_PHP_LOOKING_FOR_STATIC_PROPERTY = 10
+fld public final static int ST_PHP_LOOKING_FOR_TRUE_FALSE_NULL = 42
 fld public final static int ST_PHP_NOWDOC = 18
 fld public final static int ST_PHP_QUOTES_AFTER_VARIABLE = 8
 fld public final static int ST_PHP_START_HEREDOC = 14
@@ -1027,14 +1106,14 @@ meth public org.netbeans.modules.php.editor.lexer.PHPTokenId nextToken() throws 
 meth public void setState(org.netbeans.modules.php.editor.lexer.PHP5ColoringLexer$LexerState)
 meth public void yypushback(int)
 supr java.lang.Object
-hfds ZZ_ACTION,ZZ_ACTION_PACKED_0,ZZ_ATTRIBUTE,ZZ_ATTRIBUTE_PACKED_0,ZZ_BUFFERSIZE,ZZ_CMAP,ZZ_CMAP_PACKED,ZZ_ERROR_MSG,ZZ_LEXSTATE,ZZ_NO_MATCH,ZZ_PUSHBACK_2BIG,ZZ_ROWMAP,ZZ_ROWMAP_PACKED_0,ZZ_TRANS,ZZ_TRANS_PACKED_0,ZZ_UNKNOWN_ERROR,aspTagsAllowed,bracketBalanceInConst,heredoc,hereocLength,input,isInConst,parenBalanceInConst,shortTagsAllowed,stack,yychar,yycolumn,yyline,zzAtBOL,zzAtEOF,zzBuffer,zzCurrentPos,zzEndRead,zzLexicalState,zzMarkedPos,zzPushbackPos,zzReader,zzStartRead,zzState
+hfds ZZ_ACTION,ZZ_ACTION_PACKED_0,ZZ_ATTRIBUTE,ZZ_ATTRIBUTE_PACKED_0,ZZ_BUFFERSIZE,ZZ_CMAP,ZZ_CMAP_PACKED,ZZ_ERROR_MSG,ZZ_LEXSTATE,ZZ_NO_MATCH,ZZ_PUSHBACK_2BIG,ZZ_ROWMAP,ZZ_ROWMAP_PACKED_0,ZZ_TRANS,ZZ_TRANS_PACKED_0,ZZ_UNKNOWN_ERROR,aspTagsAllowed,braceBalanceInConst,bracketBalanceInConst,heredoc,heredocStack,input,isInConst,parenBalanceInConst,parenBalanceInScripting,shortTagsAllowed,stack,yychar,yycolumn,yyline,zzAtBOL,zzAtEOF,zzBuffer,zzCurrentPos,zzEndRead,zzLexicalState,zzMarkedPos,zzPushbackPos,zzReader,zzStartRead,zzState
 
 CLSS public final static org.netbeans.modules.php.editor.lexer.PHP5ColoringLexer$LexerState
  outer org.netbeans.modules.php.editor.lexer.PHP5ColoringLexer
 meth public boolean equals(java.lang.Object)
 meth public int hashCode()
 supr java.lang.Object
-hfds heredoc,hereocLength,stack,zzLexicalState,zzState
+hfds braceBalanceInConst,bracketBalanceInConst,heredoc,heredocStack,parenBalanceInConst,parenBalanceInScripting,stack,zzLexicalState,zzState
 
 CLSS public final org.netbeans.modules.php.editor.lexer.PHPDocCommentLexer
 cons public init(org.netbeans.spi.lexer.LexerRestartInfo<org.netbeans.modules.php.editor.lexer.PHPDocCommentTokenId>)
@@ -1067,6 +1146,7 @@ fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHPDOC_
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_ABSTRACT
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_ARRAY
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_AS
+fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_ATTRIBUTE
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_BREAK
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_CALLABLE
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_CASE
@@ -1098,12 +1178,14 @@ fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_END
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_ENDIF
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_ENDSWITCH
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_ENDWHILE
+fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_ENUM
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_EVAL
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_EXIT
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_EXTENDS
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_FALSE
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_FINAL
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_FINALLY
+fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_FN
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_FOR
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_FOREACH
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_FUNCTION
@@ -1126,6 +1208,7 @@ fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_LIS
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_LOGICAL_AND
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_LOGICAL_OR
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_LOGICAL_XOR
+fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_MATCH
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_NAMESPACE
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_NEW
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_NOT
@@ -1133,6 +1216,7 @@ fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_NOW
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_NOWDOC_TAG_START
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_NS_SEPARATOR
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_NULL
+fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_NULLSAFE_OBJECT_OPERATOR
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_NUMBER
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_OBJECT_OPERATOR
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_OPENTAG
@@ -1143,6 +1227,7 @@ fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_PRI
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_PRIVATE
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_PROTECTED
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_PUBLIC
+fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_READONLY
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_REQUIRE
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_REQUIRE_ONCE
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_RETURN
@@ -1160,6 +1245,8 @@ fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_TRY
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_TYPE_BOOL
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_TYPE_FLOAT
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_TYPE_INT
+fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_TYPE_MIXED
+fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_TYPE_NEVER
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_TYPE_OBJECT
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_TYPE_STRING
 fld public final static org.netbeans.modules.php.editor.lexer.PHPTokenId PHP_TYPE_VOID
@@ -1218,9 +1305,21 @@ meth public static org.netbeans.modules.php.editor.lexer.PHPTopTokenId[] values(
 supr java.lang.Enum<org.netbeans.modules.php.editor.lexer.PHPTopTokenId>
 hfds LANGUAGE,fixedText,primaryCategory
 
+CLSS public abstract interface org.netbeans.modules.php.editor.model.ArrowFunctionScope
+intf org.netbeans.modules.php.editor.model.FunctionScope
+
+CLSS public abstract interface org.netbeans.modules.php.editor.model.CaseElement
+intf org.netbeans.modules.php.editor.model.ClassMemberElement
+intf org.netbeans.modules.php.editor.model.ModelElement
+meth public abstract boolean isBacked()
+meth public abstract java.lang.String getValue()
+ anno 0 org.netbeans.api.annotations.common.CheckForNull()
+
 CLSS public abstract interface org.netbeans.modules.php.editor.model.ClassConstantElement
 intf org.netbeans.modules.php.editor.model.ClassMemberElement
 intf org.netbeans.modules.php.editor.model.ConstantElement
+meth public abstract java.lang.String getDeclaredType()
+ anno 0 org.netbeans.api.annotations.common.CheckForNull()
 meth public abstract java.lang.String getValue()
  anno 0 org.netbeans.api.annotations.common.CheckForNull()
 
@@ -1250,9 +1349,18 @@ intf org.netbeans.modules.php.editor.model.ModelElement
 meth public abstract java.lang.String getValue()
  anno 0 org.netbeans.api.annotations.common.CheckForNull()
 
+CLSS public abstract interface org.netbeans.modules.php.editor.model.EnumScope
+intf org.netbeans.modules.php.editor.api.elements.EnumElement
+intf org.netbeans.modules.php.editor.model.TraitedScope
+intf org.netbeans.modules.php.editor.model.TypeScope
+intf org.netbeans.modules.php.editor.model.VariableScope
+meth public abstract java.util.Collection<? extends org.netbeans.modules.php.editor.model.CaseElement> getDeclaredEnumCases()
+
 CLSS public abstract interface org.netbeans.modules.php.editor.model.FieldElement
 intf org.netbeans.modules.php.editor.model.ClassMemberElement
 intf org.netbeans.modules.php.editor.model.TypeAssignments
+meth public abstract boolean isAnnotation()
+meth public abstract java.lang.String getDefaultType()
 meth public abstract java.util.Collection<? extends java.lang.String> getDefaultTypeNames()
 
 CLSS public abstract interface org.netbeans.modules.php.editor.model.FileScope
@@ -1278,6 +1386,9 @@ intf org.netbeans.modules.php.editor.api.elements.FullyQualifiedElement
 intf org.netbeans.modules.php.editor.model.Scope
 intf org.netbeans.modules.php.editor.model.VariableScope
 meth public abstract boolean isAnonymous()
+meth public abstract boolean isReturnIntersectionType()
+meth public abstract boolean isReturnUnionType()
+meth public abstract java.lang.String getDeclaredReturnType()
 meth public abstract java.util.Collection<? extends java.lang.String> getReturnTypeNames()
 meth public abstract java.util.Collection<? extends org.netbeans.modules.php.editor.model.TypeScope> getReturnTypes()
 meth public abstract java.util.Collection<? extends org.netbeans.modules.php.editor.model.TypeScope> getReturnTypes(boolean,java.util.Collection<? extends org.netbeans.modules.php.editor.model.TypeScope>)
@@ -1300,11 +1411,14 @@ meth public abstract !varargs java.util.List<? extends org.netbeans.modules.php.
 meth public abstract !varargs java.util.List<? extends org.netbeans.modules.php.editor.model.FieldElement> findFields(org.netbeans.modules.php.editor.model.TraitScope,int[])
 meth public abstract !varargs java.util.List<? extends org.netbeans.modules.php.editor.model.FieldElement> findFields(org.netbeans.modules.php.editor.model.TraitScope,java.lang.String,int[])
 meth public abstract !varargs java.util.List<? extends org.netbeans.modules.php.editor.model.MethodScope> findMethods(org.netbeans.modules.php.editor.model.TypeScope,java.lang.String,int[])
+meth public abstract java.util.List<? extends org.netbeans.modules.php.editor.model.CaseElement> findEnumCases(org.netbeans.modules.php.editor.model.TypeScope)
+meth public abstract java.util.List<? extends org.netbeans.modules.php.editor.model.CaseElement> findEnumCases(org.netbeans.modules.php.editor.model.TypeScope,java.lang.String)
 meth public abstract java.util.List<? extends org.netbeans.modules.php.editor.model.ClassConstantElement> findClassConstants(org.netbeans.modules.php.editor.model.TypeScope)
 meth public abstract java.util.List<? extends org.netbeans.modules.php.editor.model.ClassConstantElement> findClassConstants(org.netbeans.modules.php.editor.model.TypeScope,java.lang.String)
 meth public abstract java.util.List<? extends org.netbeans.modules.php.editor.model.ClassConstantElement> findInheritedClassConstants(org.netbeans.modules.php.editor.model.ClassScope,java.lang.String)
 meth public abstract java.util.List<? extends org.netbeans.modules.php.editor.model.ClassScope> findClasses(org.netbeans.modules.php.editor.api.QualifiedName)
 meth public abstract java.util.List<? extends org.netbeans.modules.php.editor.model.ConstantElement> findConstants(org.netbeans.modules.php.editor.api.QualifiedName)
+meth public abstract java.util.List<? extends org.netbeans.modules.php.editor.model.EnumScope> findEnums(org.netbeans.modules.php.editor.api.QualifiedName)
 meth public abstract java.util.List<? extends org.netbeans.modules.php.editor.model.FieldElement> findInheritedFields(org.netbeans.modules.php.editor.model.ClassScope,java.lang.String)
 meth public abstract java.util.List<? extends org.netbeans.modules.php.editor.model.FunctionScope> findFunctions(org.netbeans.modules.php.editor.api.QualifiedName)
 meth public abstract java.util.List<? extends org.netbeans.modules.php.editor.model.InterfaceScope> findInterfaces(org.netbeans.modules.php.editor.api.QualifiedName)
@@ -1395,14 +1509,18 @@ meth public static <%0 extends org.netbeans.modules.php.editor.model.ModelElemen
  anno 0 org.netbeans.api.annotations.common.CheckForNull()
 meth public static <%0 extends org.netbeans.modules.php.editor.model.ModelElement> {%%0} getLast(java.util.List<? extends {%%0}>)
  anno 0 org.netbeans.api.annotations.common.CheckForNull()
+meth public static boolean isAnonymousFunction(org.netbeans.modules.php.editor.model.Scope)
 meth public static java.lang.String getCamelCaseName(org.netbeans.modules.php.editor.model.ModelElement)
 meth public static java.lang.String toCamelCase(java.lang.String)
 meth public static java.util.Collection<? extends org.netbeans.modules.php.editor.model.ClassScope> getDeclaredClasses(org.netbeans.modules.php.editor.model.FileScope)
 meth public static java.util.Collection<? extends org.netbeans.modules.php.editor.model.ConstantElement> getDeclaredConstants(org.netbeans.modules.php.editor.model.FileScope)
+meth public static java.util.Collection<? extends org.netbeans.modules.php.editor.model.EnumScope> getDeclaredEnums(org.netbeans.modules.php.editor.model.FileScope)
 meth public static java.util.Collection<? extends org.netbeans.modules.php.editor.model.FunctionScope> getDeclaredFunctions(org.netbeans.modules.php.editor.model.FileScope)
 meth public static java.util.Collection<? extends org.netbeans.modules.php.editor.model.InterfaceScope> getDeclaredInterfaces(org.netbeans.modules.php.editor.model.FileScope)
 meth public static java.util.Collection<? extends org.netbeans.modules.php.editor.model.TraitScope> getDeclaredTraits(org.netbeans.modules.php.editor.model.FileScope)
 meth public static java.util.Collection<? extends org.netbeans.modules.php.editor.model.TypeScope> getDeclaredTypes(org.netbeans.modules.php.editor.model.FileScope)
+meth public static java.util.Collection<? extends org.netbeans.modules.php.editor.model.TypeScope> resolveType(org.netbeans.modules.php.editor.model.Model,int)
+ anno 0 org.netbeans.api.annotations.common.NonNull()
 meth public static java.util.Collection<? extends org.netbeans.modules.php.editor.model.TypeScope> resolveType(org.netbeans.modules.php.editor.model.Model,org.netbeans.modules.php.editor.parser.astnodes.Assignment)
  anno 0 org.netbeans.api.annotations.common.NonNull()
 meth public static java.util.Collection<? extends org.netbeans.modules.php.editor.model.TypeScope> resolveType(org.netbeans.modules.php.editor.model.Model,org.netbeans.modules.php.editor.parser.astnodes.StaticDispatch)
@@ -1433,11 +1551,13 @@ meth public static org.netbeans.modules.php.editor.model.NamespaceScope getNames
  anno 0 org.netbeans.api.annotations.common.CheckForNull()
 meth public static org.netbeans.modules.php.editor.model.NamespaceScope getNamespaceScope(org.netbeans.modules.php.editor.model.ModelElement)
  anno 0 org.netbeans.api.annotations.common.CheckForNull()
+meth public static org.netbeans.modules.php.editor.model.NamespaceScope getNamespaceScope(org.netbeans.modules.php.editor.parser.PHPParseResult,int)
 meth public static org.netbeans.modules.php.editor.model.NamespaceScope getNamespaceScope(org.netbeans.modules.php.editor.parser.astnodes.NamespaceDeclaration,org.netbeans.modules.php.editor.model.FileScope)
 meth public static org.netbeans.modules.php.editor.model.TypeScope getTypeScope(org.netbeans.modules.php.editor.model.ModelElement)
  anno 0 org.netbeans.api.annotations.common.CheckForNull()
 supr java.lang.Object
 hfds LOGGER,RP
+hcls NamespaceDeclarationVisitor
 
 CLSS public abstract interface static org.netbeans.modules.php.editor.model.ModelUtils$ElementFilter<%0 extends org.netbeans.modules.php.editor.model.ModelElement>
  outer org.netbeans.modules.php.editor.model.ModelUtils
@@ -1449,6 +1569,7 @@ intf org.netbeans.modules.php.editor.model.VariableScope
 meth public abstract boolean isDefaultNamespace()
 meth public abstract java.util.Collection<? extends org.netbeans.modules.php.editor.model.ClassScope> getDeclaredClasses()
 meth public abstract java.util.Collection<? extends org.netbeans.modules.php.editor.model.ConstantElement> getDeclaredConstants()
+meth public abstract java.util.Collection<? extends org.netbeans.modules.php.editor.model.EnumScope> getDeclaredEnums()
 meth public abstract java.util.Collection<? extends org.netbeans.modules.php.editor.model.FunctionScope> getDeclaredFunctions()
 meth public abstract java.util.Collection<? extends org.netbeans.modules.php.editor.model.GroupUseScope> getDeclaredGroupUses()
 meth public abstract java.util.Collection<? extends org.netbeans.modules.php.editor.model.InterfaceScope> getDeclaredInterfaces()
@@ -1496,12 +1617,20 @@ meth public abstract void add(org.netbeans.modules.csl.api.OffsetRange)
 
 CLSS public abstract interface org.netbeans.modules.php.editor.model.Parameter
 meth public abstract boolean hasRawType()
+ anno 0 org.netbeans.api.annotations.common.CheckForNull()
+meth public abstract boolean isIntersectionType()
 meth public abstract boolean isMandatory()
 meth public abstract boolean isReference()
+meth public abstract boolean isUnionType()
 meth public abstract boolean isVariadic()
+meth public abstract int getModifier()
+meth public abstract java.lang.String getDeclaredType()
+ anno 0 org.netbeans.api.annotations.common.CheckForNull()
 meth public abstract java.lang.String getDefaultValue()
 meth public abstract java.lang.String getIndexSignature()
 meth public abstract java.lang.String getName()
+meth public abstract java.lang.String getPhpdocType()
+ anno 0 org.netbeans.api.annotations.common.CheckForNull()
 meth public abstract java.util.List<org.netbeans.modules.php.editor.api.QualifiedName> getTypes()
 meth public abstract org.netbeans.modules.csl.api.OffsetRange getOffsetRange()
 
@@ -1588,6 +1717,7 @@ meth public org.netbeans.modules.php.editor.model.VariableScope find(org.netbean
 meth public org.netbeans.modules.php.editor.model.VariableScope findNearestVarScope(org.netbeans.modules.php.editor.model.Scope,int,org.netbeans.modules.php.editor.model.VariableScope)
 meth public static org.netbeans.modules.php.editor.model.VariableScopeFinder create()
 supr java.lang.Object
+hfds LOGGER
 hcls VariableScopeWrapperImpl
 
 CLSS public abstract interface static org.netbeans.modules.php.editor.model.VariableScopeFinder$ScopeRangeAcceptor
@@ -1600,6 +1730,7 @@ meth public abstract boolean overlaps(org.netbeans.modules.php.editor.model.Vari
 CLSS public abstract interface static org.netbeans.modules.php.editor.model.VariableScopeFinder$VariableScopeWrapper
  outer org.netbeans.modules.php.editor.model.VariableScopeFinder
 fld public final static org.netbeans.modules.php.editor.model.VariableScopeFinder$VariableScopeWrapper NONE
+meth public abstract boolean containsRange(org.netbeans.modules.php.editor.model.VariableScopeFinder$VariableScopeWrapper)
 meth public abstract boolean overlaps(org.netbeans.modules.php.editor.model.VariableScopeFinder$VariableScopeWrapper)
 meth public abstract java.util.List<? extends org.netbeans.modules.php.editor.model.ModelElement> getElements()
 meth public abstract org.netbeans.modules.csl.api.OffsetRange getBlockRange()
@@ -1616,6 +1747,7 @@ fld protected final static java.lang.Integer IMPLICIT_PUBLIC
 fld protected final static java.lang.Integer PRIVATE
 fld protected final static java.lang.Integer PROTECTED
 fld protected final static java.lang.Integer PUBLIC
+fld protected final static java.lang.Integer READONLY
 fld protected final static java.lang.Integer STATIC
 fld protected final static short[][] _action_table
 fld protected final static short[][] _production_table
@@ -1632,11 +1764,11 @@ meth public int start_state()
 meth public java.lang.String getFileName()
 meth public java_cup.runtime.Symbol do_action(int,java_cup.runtime.lr_parser,java.util.Stack,int) throws java.lang.Exception
 meth public org.netbeans.modules.php.editor.parser.ParserErrorHandler getErrorHandler()
-meth public org.netbeans.modules.php.editor.parser.astnodes.VariableBase createDispatch(boolean,org.netbeans.modules.php.editor.parser.astnodes.VariableBase,org.netbeans.modules.php.editor.parser.astnodes.Expression,int,int,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression>,int,java.util.List,java.util.List)
-meth public org.netbeans.modules.php.editor.parser.astnodes.VariableBase createDispatch(org.netbeans.modules.php.editor.parser.astnodes.VariableBase,org.netbeans.modules.php.editor.parser.astnodes.VariableBase)
-meth public org.netbeans.modules.php.editor.parser.astnodes.VariableBase createDispatch(org.netbeans.modules.php.editor.parser.astnodes.VariableBase,org.netbeans.modules.php.editor.parser.astnodes.VariableBase,java.util.List)
-meth public org.netbeans.modules.php.editor.parser.astnodes.VariableBase createDispatch(org.netbeans.modules.php.editor.parser.astnodes.VariableBase,org.openide.util.Pair<org.netbeans.modules.php.editor.parser.astnodes.Expression,java.lang.Boolean>,java.util.List)
-meth public org.openide.util.Pair<org.netbeans.modules.php.editor.parser.astnodes.Expression,java.lang.Boolean> createDispatchProperty(boolean,org.netbeans.modules.php.editor.parser.astnodes.Expression,int,int,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression>,int,java.util.List)
+meth public org.netbeans.modules.php.editor.parser.astnodes.VariableBase createDispatch(org.netbeans.modules.php.editor.parser.ASTPHP5Parser$Access,org.netbeans.modules.php.editor.parser.astnodes.VariableBase,org.netbeans.modules.php.editor.parser.astnodes.Expression,int,int,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression>,int,java.util.List,java.util.List)
+meth public org.netbeans.modules.php.editor.parser.astnodes.VariableBase createDispatch(org.netbeans.modules.php.editor.parser.astnodes.VariableBase,org.netbeans.modules.php.editor.parser.astnodes.VariableBase,java.util.List,org.netbeans.modules.php.editor.parser.ASTPHP5Parser$Access)
+meth public org.netbeans.modules.php.editor.parser.astnodes.VariableBase createDispatch(org.netbeans.modules.php.editor.parser.astnodes.VariableBase,org.netbeans.modules.php.editor.parser.astnodes.VariableBase,org.netbeans.modules.php.editor.parser.ASTPHP5Parser$Access)
+meth public org.netbeans.modules.php.editor.parser.astnodes.VariableBase createDispatch(org.netbeans.modules.php.editor.parser.astnodes.VariableBase,org.openide.util.Pair<org.netbeans.modules.php.editor.parser.astnodes.Expression,org.netbeans.modules.php.editor.parser.ASTPHP5Parser$Access>,java.util.List)
+meth public org.openide.util.Pair<org.netbeans.modules.php.editor.parser.astnodes.Expression,org.netbeans.modules.php.editor.parser.ASTPHP5Parser$Access> createDispatchProperty(org.netbeans.modules.php.editor.parser.ASTPHP5Parser$Access,org.netbeans.modules.php.editor.parser.astnodes.Expression,int,int,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression>,int,java.util.List)
 meth public short[][] action_table()
 meth public short[][] production_table()
 meth public short[][] reduce_table()
@@ -1647,7 +1779,7 @@ meth public void setFileName(java.lang.String)
 meth public void syntax_error(java_cup.runtime.Symbol)
 supr java_cup.runtime.lr_parser
 hfds anonymousClassCounter,defaultStrategy,errorHandler,errorStrategy,fileName
-hcls DefaultErrorStrategy,ErrorStrategy
+hcls Access,DefaultErrorStrategy,ErrorStrategy
 
 CLSS public org.netbeans.modules.php.editor.parser.ASTPHP5Scanner
 cons public init(java.io.InputStream)
@@ -1702,169 +1834,181 @@ meth public void setState(int)
 meth public void setUseAspTagsAsPhp(boolean)
 meth public void yypushback(int)
 supr java.lang.Object
-hfds ZZ_ACTION,ZZ_ACTION_PACKED_0,ZZ_ATTRIBUTE,ZZ_ATTRIBUTE_PACKED_0,ZZ_BUFFERSIZE,ZZ_CMAP,ZZ_CMAP_PACKED,ZZ_ERROR_MSG,ZZ_LEXSTATE,ZZ_NO_MATCH,ZZ_PUSHBACK_2BIG,ZZ_ROWMAP,ZZ_ROWMAP_PACKED_0,ZZ_TRANS,ZZ_TRANS_PACKED_0,ZZ_UNKNOWN_ERROR,asp_tags,bracket,comment,commentList,docParser,heredoc,heredocBody,heredocBodyLength,heredocBodyStart,isEndedPhp,nowdoc,nowdocBody,nowdocBodyLength,nowdocBodyStart,nowdoc_len,short_tags_allowed,stack,varParser,whitespaceEndPosition,yy_old_buffer,yy_old_pushbackPos,yychar,yycolumn,yyline,zzAtBOL,zzAtEOF,zzBuffer,zzCurrentPos,zzEndRead,zzLexicalState,zzMarkedPos,zzPushbackPos,zzReader,zzStartRead,zzState
+hfds ZZ_ACTION,ZZ_ACTION_PACKED_0,ZZ_ATTRIBUTE,ZZ_ATTRIBUTE_PACKED_0,ZZ_BUFFERSIZE,ZZ_CMAP,ZZ_CMAP_PACKED,ZZ_ERROR_MSG,ZZ_LEXSTATE,ZZ_NO_MATCH,ZZ_PUSHBACK_2BIG,ZZ_ROWMAP,ZZ_ROWMAP_PACKED_0,ZZ_TRANS,ZZ_TRANS_PACKED_0,ZZ_UNKNOWN_ERROR,asp_tags,bracket,comment,commentList,docParser,heredoc,heredocBody,heredocBodyLength,heredocBodyStart,heredocStack,isEndedPhp,nowdoc,nowdocBody,nowdocBodyLength,nowdocBodyStart,short_tags_allowed,stack,varParser,whitespaceEndPosition,yy_old_buffer,yy_old_pushbackPos,yychar,yycolumn,yyline,zzAtBOL,zzAtEOF,zzBuffer,zzCurrentPos,zzEndRead,zzLexicalState,zzMarkedPos,zzPushbackPos,zzReader,zzStartRead,zzState
+hcls HeredocInfo
 
 CLSS public abstract interface org.netbeans.modules.php.editor.parser.ASTPHP5Symbols
 fld public final static int EOF = 0
-fld public final static int T_ABSTRACT = 142
-fld public final static int T_AND_EQUAL = 94
-fld public final static int T_ARRAY = 56
-fld public final static int T_ARRAY_CAST = 130
+fld public final static int T_ABSTRACT = 145
+fld public final static int T_AMPERSAND_NOT_FOLLOWED_BY_VAR_OR_VARARG = 167
+fld public final static int T_AND_EQUAL = 97
+fld public final static int T_ARRAY = 59
+fld public final static int T_ARRAY_CAST = 133
 fld public final static int T_AS = 25
-fld public final static int T_AT = 134
-fld public final static int T_BACKQUATE = 152
-fld public final static int T_BOOLEAN_AND = 102
-fld public final static int T_BOOLEAN_OR = 101
-fld public final static int T_BOOL_CAST = 132
-fld public final static int T_BREAK = 30
-fld public final static int T_CALLABLE = 57
-fld public final static int T_CASE = 28
-fld public final static int T_CATCH = 39
-fld public final static int T_CLASS = 49
-fld public final static int T_CLASS_C = 58
+fld public final static int T_AT = 137
+fld public final static int T_ATTRIBUTE = 165
+fld public final static int T_BACKQUATE = 155
+fld public final static int T_BOOLEAN_AND = 105
+fld public final static int T_BOOLEAN_OR = 104
+fld public final static int T_BOOL_CAST = 135
+fld public final static int T_BREAK = 31
+fld public final static int T_CALLABLE = 60
+fld public final static int T_CASE = 29
+fld public final static int T_CATCH = 41
+fld public final static int T_CLASS = 51
+fld public final static int T_CLASS_C = 61
 fld public final static int T_CLONE = 24
-fld public final static int T_CLOSE_PARENTHESE = 148
-fld public final static int T_CLOSE_RECT = 136
-fld public final static int T_COALESCE = 160
-fld public final static int T_COMMA = 82
-fld public final static int T_CONCAT_EQUAL = 92
-fld public final static int T_CONST = 34
+fld public final static int T_CLOSE_PARENTHESE = 151
+fld public final static int T_CLOSE_RECT = 139
+fld public final static int T_COALESCE = 163
+fld public final static int T_COALESCE_EQUAL = 164
+fld public final static int T_COMMA = 85
+fld public final static int T_CONCAT_EQUAL = 95
+fld public final static int T_CONST = 36
 fld public final static int T_CONSTANT_ENCAPSED_STRING = 12
-fld public final static int T_CONTINUE = 31
-fld public final static int T_CURLY_CLOSE = 69
-fld public final static int T_CURLY_OPEN = 68
-fld public final static int T_CURLY_OPEN_WITH_DOLAR = 67
-fld public final static int T_DEC = 126
+fld public final static int T_CONTINUE = 32
+fld public final static int T_CURLY_CLOSE = 72
+fld public final static int T_CURLY_OPEN = 71
+fld public final static int T_CURLY_OPEN_WITH_DOLAR = 70
+fld public final static int T_DEC = 129
 fld public final static int T_DECLARE = 21
-fld public final static int T_DEFAULT = 29
-fld public final static int T_DEFINE = 76
-fld public final static int T_DIR = 73
-fld public final static int T_DIV = 120
-fld public final static int T_DIV_EQUAL = 91
+fld public final static int T_DEFAULT = 30
+fld public final static int T_DEFINE = 79
+fld public final static int T_DIR = 76
+fld public final static int T_DIV = 123
+fld public final static int T_DIV_EQUAL = 94
 fld public final static int T_DNUMBER = 5
 fld public final static int T_DO = 14
-fld public final static int T_DOLLAR = 150
-fld public final static int T_DOLLAR_OPEN_CURLY_BRACES = 66
-fld public final static int T_DOUBLE_ARROW = 54
-fld public final static int T_DOUBLE_CAST = 128
+fld public final static int T_DOLLAR = 153
+fld public final static int T_DOLLAR_OPEN_CURLY_BRACES = 69
+fld public final static int T_DOUBLE_ARROW = 57
+fld public final static int T_DOUBLE_CAST = 131
 fld public final static int T_ECHO = 13
-fld public final static int T_ELLIPSIS = 159
-fld public final static int T_ELSE = 140
-fld public final static int T_ELSEIF = 139
-fld public final static int T_EMPTY = 47
+fld public final static int T_ELLIPSIS = 162
+fld public final static int T_ELSE = 143
+fld public final static int T_ELSEIF = 142
+fld public final static int T_EMPTY = 49
 fld public final static int T_ENCAPSED_AND_WHITESPACE = 11
 fld public final static int T_ENDDECLARE = 22
 fld public final static int T_ENDFOR = 18
 fld public final static int T_ENDFOREACH = 20
-fld public final static int T_ENDIF = 138
+fld public final static int T_ENDIF = 141
 fld public final static int T_ENDSWITCH = 27
 fld public final static int T_ENDWHILE = 16
-fld public final static int T_END_HEREDOC = 65
-fld public final static int T_END_NOWDOC = 154
-fld public final static int T_EQUAL = 87
-fld public final static int T_EVAL = 79
+fld public final static int T_END_HEREDOC = 68
+fld public final static int T_END_NOWDOC = 157
+fld public final static int T_ENUM = 168
+fld public final static int T_EQUAL = 90
+fld public final static int T_EVAL = 82
 fld public final static int T_EXIT = 2
-fld public final static int T_EXTENDS = 51
-fld public final static int T_FILE = 63
-fld public final static int T_FINAL = 143
-fld public final static int T_FINALLY = 41
+fld public final static int T_EXTENDS = 53
+fld public final static int T_FILE = 66
+fld public final static int T_FINAL = 146
+fld public final static int T_FINALLY = 43
+fld public final static int T_FN = 34
 fld public final static int T_FOR = 17
 fld public final static int T_FOREACH = 19
-fld public final static int T_FUNCTION = 33
-fld public final static int T_FUNC_C = 61
-fld public final static int T_GLOBAL = 43
-fld public final static int T_GOTO = 32
-fld public final static int T_HALT_COMPILER = 48
+fld public final static int T_FUNCTION = 35
+fld public final static int T_FUNC_C = 64
+fld public final static int T_GLOBAL = 45
+fld public final static int T_GOTO = 33
+fld public final static int T_HALT_COMPILER = 50
 fld public final static int T_IF = 3
-fld public final static int T_IMPLEMENTS = 52
-fld public final static int T_INC = 125
-fld public final static int T_INCLUDE = 77
-fld public final static int T_INCLUDE_ONCE = 78
+fld public final static int T_IMPLEMENTS = 54
+fld public final static int T_INC = 128
+fld public final static int T_INCLUDE = 80
+fld public final static int T_INCLUDE_ONCE = 81
 fld public final static int T_INLINE_HTML = 10
 fld public final static int T_INSTANCEOF = 23
-fld public final static int T_INSTEADOF = 156
-fld public final static int T_INTERFACE = 50
-fld public final static int T_INT_CAST = 127
-fld public final static int T_ISSET = 46
-fld public final static int T_IS_EQUAL = 106
-fld public final static int T_IS_GREATER_OR_EQUAL = 111
-fld public final static int T_IS_IDENTICAL = 108
-fld public final static int T_IS_NOT_EQUAL = 107
-fld public final static int T_IS_NOT_IDENTICAL = 109
-fld public final static int T_IS_SMALLER_OR_EQUAL = 110
-fld public final static int T_KOVA = 104
-fld public final static int T_LGREATER = 114
-fld public final static int T_LINE = 62
-fld public final static int T_LIST = 55
+fld public final static int T_INSTEADOF = 159
+fld public final static int T_INTERFACE = 52
+fld public final static int T_INT_CAST = 130
+fld public final static int T_ISSET = 48
+fld public final static int T_IS_EQUAL = 109
+fld public final static int T_IS_GREATER_OR_EQUAL = 114
+fld public final static int T_IS_IDENTICAL = 111
+fld public final static int T_IS_NOT_EQUAL = 110
+fld public final static int T_IS_NOT_IDENTICAL = 112
+fld public final static int T_IS_SMALLER_OR_EQUAL = 113
+fld public final static int T_KOVA = 107
+fld public final static int T_LGREATER = 117
+fld public final static int T_LINE = 65
+fld public final static int T_LIST = 58
 fld public final static int T_LNUMBER = 4
-fld public final static int T_LOGICAL_AND = 85
-fld public final static int T_LOGICAL_OR = 83
-fld public final static int T_LOGICAL_XOR = 84
-fld public final static int T_METHOD_C = 60
-fld public final static int T_MINUS = 118
-fld public final static int T_MINUS_EQUAL = 89
-fld public final static int T_MOD_EQUAL = 93
-fld public final static int T_MUL_EQUAL = 90
-fld public final static int T_NAMESPACE = 71
-fld public final static int T_NEKUDA = 124
-fld public final static int T_NEKUDOTAIM = 149
-fld public final static int T_NEW = 137
-fld public final static int T_NOT = 122
-fld public final static int T_NS_C = 72
-fld public final static int T_NS_SEPARATOR = 74
+fld public final static int T_LOGICAL_AND = 88
+fld public final static int T_LOGICAL_OR = 86
+fld public final static int T_LOGICAL_XOR = 87
+fld public final static int T_MATCH = 28
+fld public final static int T_METHOD_C = 63
+fld public final static int T_MINUS = 121
+fld public final static int T_MINUS_EQUAL = 92
+fld public final static int T_MOD_EQUAL = 96
+fld public final static int T_MUL_EQUAL = 93
+fld public final static int T_NAMESPACE = 74
+fld public final static int T_NAME_FULLY_QUALIFIED = 171
+fld public final static int T_NAME_QUALIFIED = 170
+fld public final static int T_NAME_RELATIVE = 169
+fld public final static int T_NEKUDA = 127
+fld public final static int T_NEKUDOTAIM = 152
+fld public final static int T_NEW = 140
+fld public final static int T_NOT = 125
+fld public final static int T_NS_C = 75
+fld public final static int T_NS_SEPARATOR = 77
+fld public final static int T_NULLSAFE_OBJECT_OPERATOR = 56
 fld public final static int T_NUM_STRING = 9
-fld public final static int T_OBJECT_CAST = 131
-fld public final static int T_OBJECT_OPERATOR = 53
-fld public final static int T_OPEN_PARENTHESE = 147
-fld public final static int T_OPEN_RECT = 135
-fld public final static int T_OR = 103
-fld public final static int T_OR_EQUAL = 95
-fld public final static int T_PAAMAYIM_NEKUDOTAYIM = 70
-fld public final static int T_PLUS = 117
-fld public final static int T_PLUS_EQUAL = 88
-fld public final static int T_POW = 157
-fld public final static int T_POW_EQUAL = 158
-fld public final static int T_PRECENT = 121
-fld public final static int T_PRINT = 86
-fld public final static int T_PRIVATE = 144
-fld public final static int T_PROTECTED = 145
-fld public final static int T_PUBLIC = 146
-fld public final static int T_QUATE = 151
-fld public final static int T_QUESTION_MARK = 99
-fld public final static int T_REFERENCE = 105
-fld public final static int T_REQUIRE = 80
-fld public final static int T_REQUIRE_ONCE = 81
-fld public final static int T_RETURN = 35
-fld public final static int T_RGREATER = 113
-fld public final static int T_SEMICOLON = 100
-fld public final static int T_SL = 115
-fld public final static int T_SL_EQUAL = 97
-fld public final static int T_SPACESHIP = 112
-fld public final static int T_SR = 116
-fld public final static int T_SR_EQUAL = 98
-fld public final static int T_START_HEREDOC = 64
-fld public final static int T_START_NOWDOC = 153
-fld public final static int T_STATIC = 141
+fld public final static int T_OBJECT_CAST = 134
+fld public final static int T_OBJECT_OPERATOR = 55
+fld public final static int T_OPEN_PARENTHESE = 150
+fld public final static int T_OPEN_RECT = 138
+fld public final static int T_OR = 106
+fld public final static int T_OR_EQUAL = 98
+fld public final static int T_PAAMAYIM_NEKUDOTAYIM = 73
+fld public final static int T_PLUS = 120
+fld public final static int T_PLUS_EQUAL = 91
+fld public final static int T_POW = 160
+fld public final static int T_POW_EQUAL = 161
+fld public final static int T_PRECENT = 124
+fld public final static int T_PRINT = 89
+fld public final static int T_PRIVATE = 147
+fld public final static int T_PROTECTED = 148
+fld public final static int T_PUBLIC = 149
+fld public final static int T_QUATE = 154
+fld public final static int T_QUESTION_MARK = 102
+fld public final static int T_READONLY = 166
+fld public final static int T_REFERENCE = 108
+fld public final static int T_REQUIRE = 83
+fld public final static int T_REQUIRE_ONCE = 84
+fld public final static int T_RETURN = 37
+fld public final static int T_RGREATER = 116
+fld public final static int T_SEMICOLON = 103
+fld public final static int T_SL = 118
+fld public final static int T_SL_EQUAL = 100
+fld public final static int T_SPACESHIP = 115
+fld public final static int T_SR = 119
+fld public final static int T_SR_EQUAL = 101
+fld public final static int T_START_HEREDOC = 67
+fld public final static int T_START_NOWDOC = 156
+fld public final static int T_STATIC = 144
 fld public final static int T_STRING = 6
-fld public final static int T_STRING_CAST = 129
+fld public final static int T_STRING_CAST = 132
 fld public final static int T_STRING_VARNAME = 7
 fld public final static int T_SWITCH = 26
-fld public final static int T_THROW = 40
-fld public final static int T_TILDA = 123
-fld public final static int T_TIMES = 119
-fld public final static int T_TRAIT = 155
-fld public final static int T_TRAIT_C = 59
-fld public final static int T_TRY = 38
-fld public final static int T_UNSET = 45
-fld public final static int T_UNSET_CAST = 133
-fld public final static int T_USE = 42
-fld public final static int T_VAR = 44
+fld public final static int T_THROW = 42
+fld public final static int T_TILDA = 126
+fld public final static int T_TIMES = 122
+fld public final static int T_TRAIT = 158
+fld public final static int T_TRAIT_C = 62
+fld public final static int T_TRY = 40
+fld public final static int T_UNSET = 47
+fld public final static int T_UNSET_CAST = 136
+fld public final static int T_USE = 44
+fld public final static int T_VAR = 46
 fld public final static int T_VARIABLE = 8
-fld public final static int T_VAR_COMMENT = 75
+fld public final static int T_VAR_COMMENT = 78
 fld public final static int T_WHILE = 15
-fld public final static int T_XOR_EQUAL = 96
-fld public final static int T_YIELD = 36
-fld public final static int T_YIELD_FROM = 37
+fld public final static int T_XOR_EQUAL = 99
+fld public final static int T_YIELD = 38
+fld public final static int T_YIELD_FROM = 39
 fld public final static int error = 1
 
 CLSS public org.netbeans.modules.php.editor.parser.EncodedActionTable1
@@ -1903,7 +2047,43 @@ fld protected final java.lang.StringBuilder sb
 meth public java.lang.String getTableData()
 supr java.lang.Object
 
+CLSS public org.netbeans.modules.php.editor.parser.EncodedActionTable15
+cons protected init()
+fld protected final java.lang.StringBuilder sb
+meth public java.lang.String getTableData()
+supr java.lang.Object
+
+CLSS public org.netbeans.modules.php.editor.parser.EncodedActionTable16
+cons protected init()
+fld protected final java.lang.StringBuilder sb
+meth public java.lang.String getTableData()
+supr java.lang.Object
+
+CLSS public org.netbeans.modules.php.editor.parser.EncodedActionTable17
+cons protected init()
+fld protected final java.lang.StringBuilder sb
+meth public java.lang.String getTableData()
+supr java.lang.Object
+
+CLSS public org.netbeans.modules.php.editor.parser.EncodedActionTable18
+cons protected init()
+fld protected final java.lang.StringBuilder sb
+meth public java.lang.String getTableData()
+supr java.lang.Object
+
+CLSS public org.netbeans.modules.php.editor.parser.EncodedActionTable19
+cons protected init()
+fld protected final java.lang.StringBuilder sb
+meth public java.lang.String getTableData()
+supr java.lang.Object
+
 CLSS public org.netbeans.modules.php.editor.parser.EncodedActionTable2
+cons protected init()
+fld protected final java.lang.StringBuilder sb
+meth public java.lang.String getTableData()
+supr java.lang.Object
+
+CLSS public org.netbeans.modules.php.editor.parser.EncodedActionTable20
 cons protected init()
 fld protected final java.lang.StringBuilder sb
 meth public java.lang.String getTableData()
@@ -2099,6 +2279,7 @@ meth public java.util.List<? extends org.netbeans.modules.csl.api.Error> getDiag
 meth public org.netbeans.modules.csl.api.OffsetRange getErrorRange()
 meth public org.netbeans.modules.php.editor.model.Model getModel()
 meth public org.netbeans.modules.php.editor.model.Model getModel(boolean)
+ anno 0 java.lang.Deprecated()
 meth public org.netbeans.modules.php.editor.model.Model getModel(org.netbeans.modules.php.editor.model.Model$Type)
 meth public org.netbeans.modules.php.editor.parser.astnodes.Program getProgram()
 meth public void setErrors(java.util.List<org.netbeans.modules.csl.api.Error>)
@@ -2168,6 +2349,11 @@ CLSS public org.netbeans.modules.php.editor.parser.astnodes.ASTError
 cons public init(int,int)
 meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
 supr org.netbeans.modules.php.editor.parser.astnodes.Statement
+
+CLSS public org.netbeans.modules.php.editor.parser.astnodes.ASTErrorExpression
+cons public init(int,int)
+meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
+supr org.netbeans.modules.php.editor.parser.astnodes.Expression
 
 CLSS public abstract org.netbeans.modules.php.editor.parser.astnodes.ASTNode
 cons public init(int,int)
@@ -2240,6 +2426,23 @@ meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
 supr org.netbeans.modules.php.editor.parser.astnodes.ASTNode
 hfds key,value
 
+CLSS public org.netbeans.modules.php.editor.parser.astnodes.ArrowFunctionDeclaration
+cons public init(int,int,java.util.List,org.netbeans.modules.php.editor.parser.astnodes.Expression,org.netbeans.modules.php.editor.parser.astnodes.Expression,boolean,boolean)
+intf org.netbeans.modules.php.editor.parser.astnodes.Attributed
+meth public boolean isAttributed()
+meth public boolean isReference()
+meth public boolean isStatic()
+meth public java.lang.String toString()
+meth public java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Attribute> getAttributes()
+meth public java.util.List<org.netbeans.modules.php.editor.parser.astnodes.FormalParameter> getFormalParameters()
+meth public org.netbeans.modules.php.editor.parser.astnodes.Expression getExpression()
+meth public org.netbeans.modules.php.editor.parser.astnodes.Expression getReturnType()
+ anno 0 org.netbeans.api.annotations.common.CheckForNull()
+meth public static org.netbeans.modules.php.editor.parser.astnodes.ArrowFunctionDeclaration create(org.netbeans.modules.php.editor.parser.astnodes.ArrowFunctionDeclaration,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Attribute>)
+meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
+supr org.netbeans.modules.php.editor.parser.astnodes.Expression
+hfds attributes,expression,formalParameters,isReference,isStatic,returnType
+
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.Assignment
 cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.VariableBase,org.netbeans.modules.php.editor.parser.astnodes.Assignment$Type,org.netbeans.modules.php.editor.parser.astnodes.Expression)
 innr public final static !enum Type
@@ -2254,6 +2457,7 @@ hfds leftHandSide,operator,rightHandSide
 CLSS public final static !enum org.netbeans.modules.php.editor.parser.astnodes.Assignment$Type
  outer org.netbeans.modules.php.editor.parser.astnodes.Assignment
 fld public final static org.netbeans.modules.php.editor.parser.astnodes.Assignment$Type AND_EQUAL
+fld public final static org.netbeans.modules.php.editor.parser.astnodes.Assignment$Type COALESCE_EQUAL
 fld public final static org.netbeans.modules.php.editor.parser.astnodes.Assignment$Type CONCAT_EQUAL
 fld public final static org.netbeans.modules.php.editor.parser.astnodes.Assignment$Type DIV_EQUAL
 fld public final static org.netbeans.modules.php.editor.parser.astnodes.Assignment$Type EQUAL
@@ -2271,6 +2475,29 @@ meth public static org.netbeans.modules.php.editor.parser.astnodes.Assignment$Ty
 meth public static org.netbeans.modules.php.editor.parser.astnodes.Assignment$Type[] values()
 supr java.lang.Enum<org.netbeans.modules.php.editor.parser.astnodes.Assignment$Type>
 hfds operator
+
+CLSS public org.netbeans.modules.php.editor.parser.astnodes.Attribute
+cons public init(int,int,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.AttributeDeclaration>)
+meth public java.lang.String toString()
+meth public java.util.List<org.netbeans.modules.php.editor.parser.astnodes.AttributeDeclaration> getAttributeDeclarations()
+meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
+supr org.netbeans.modules.php.editor.parser.astnodes.Expression
+hfds attributeDeclarations
+
+CLSS public org.netbeans.modules.php.editor.parser.astnodes.AttributeDeclaration
+cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.Expression,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression>)
+ anno 4 org.netbeans.api.annotations.common.NullAllowed()
+meth public java.lang.String toString()
+meth public java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression> getParameters()
+ anno 0 org.netbeans.api.annotations.common.CheckForNull()
+meth public org.netbeans.modules.php.editor.parser.astnodes.Expression getAttributeName()
+meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
+supr org.netbeans.modules.php.editor.parser.astnodes.Expression
+hfds attributeName,parameters
+
+CLSS public abstract interface org.netbeans.modules.php.editor.parser.astnodes.Attributed
+meth public abstract boolean isAttributed()
+meth public abstract java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Attribute> getAttributes()
 
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.BackTickExpression
 cons public init(int,int,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression>)
@@ -2294,11 +2521,15 @@ hfds isCurly,statements
 CLSS public abstract org.netbeans.modules.php.editor.parser.astnodes.BodyDeclaration
 cons public init(int,int,int)
 cons public init(int,int,int,boolean)
+cons public init(int,int,int,boolean,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Attribute>)
 innr public static Modifier
+intf org.netbeans.modules.php.editor.parser.astnodes.Attributed
+meth public boolean isAttributed()
 meth public int getModifier()
 meth public java.lang.String getModifierString()
+meth public java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Attribute> getAttributes()
 supr org.netbeans.modules.php.editor.parser.astnodes.Statement
-hfds modifier
+hfds attributes,modifier
 
 CLSS public static org.netbeans.modules.php.editor.parser.astnodes.BodyDeclaration$Modifier
  outer org.netbeans.modules.php.editor.parser.astnodes.BodyDeclaration
@@ -2309,6 +2540,7 @@ fld public final static int IMPLICIT_PUBLIC = 32
 fld public final static int PRIVATE = 2
 fld public final static int PROTECTED = 4
 fld public final static int PUBLIC = 1
+fld public final static int READONLY = 64
 fld public final static int STATIC = 8
 meth public static boolean isAbstract(int)
 meth public static boolean isFinal(int)
@@ -2316,7 +2548,9 @@ meth public static boolean isImplicitPublic(int)
 meth public static boolean isPrivate(int)
 meth public static boolean isProtected(int)
 meth public static boolean isPublic(int)
+meth public static boolean isReadonly(int)
 meth public static boolean isStatic(int)
+meth public static boolean isVisibilityModifier(int)
 meth public static java.lang.String toString(int)
 supr java.lang.Object
 
@@ -2328,6 +2562,19 @@ meth public org.netbeans.modules.php.editor.parser.astnodes.Expression getExpres
 meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
 supr org.netbeans.modules.php.editor.parser.astnodes.Statement
 hfds expression
+
+CLSS public org.netbeans.modules.php.editor.parser.astnodes.CaseDeclaration
+cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.Identifier,org.netbeans.modules.php.editor.parser.astnodes.Expression)
+ anno 3 org.netbeans.api.annotations.common.NonNull()
+ anno 4 org.netbeans.api.annotations.common.NullAllowed()
+meth public java.lang.String toString()
+meth public org.netbeans.modules.php.editor.parser.astnodes.Expression getInitializer()
+ anno 0 org.netbeans.api.annotations.common.CheckForNull()
+meth public org.netbeans.modules.php.editor.parser.astnodes.Identifier getName()
+meth public static org.netbeans.modules.php.editor.parser.astnodes.CaseDeclaration create(org.netbeans.modules.php.editor.parser.astnodes.CaseDeclaration,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Attribute>)
+meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
+supr org.netbeans.modules.php.editor.parser.astnodes.BodyDeclaration
+hfds initializer,name
 
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.CastExpression
 cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.Expression,org.netbeans.modules.php.editor.parser.astnodes.CastExpression$Type)
@@ -2343,6 +2590,7 @@ CLSS public final static !enum org.netbeans.modules.php.editor.parser.astnodes.C
  outer org.netbeans.modules.php.editor.parser.astnodes.CastExpression
 fld public final static org.netbeans.modules.php.editor.parser.astnodes.CastExpression$Type ARRAY
 fld public final static org.netbeans.modules.php.editor.parser.astnodes.CastExpression$Type BOOL
+fld public final static org.netbeans.modules.php.editor.parser.astnodes.CastExpression$Type FLOAT
 fld public final static org.netbeans.modules.php.editor.parser.astnodes.CastExpression$Type INT
 fld public final static org.netbeans.modules.php.editor.parser.astnodes.CastExpression$Type OBJECT
 fld public final static org.netbeans.modules.php.editor.parser.astnodes.CastExpression$Type REAL
@@ -2354,29 +2602,36 @@ supr java.lang.Enum<org.netbeans.modules.php.editor.parser.astnodes.CastExpressi
 
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.CatchClause
 cons public init(int,int,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression>,org.netbeans.modules.php.editor.parser.astnodes.Variable,org.netbeans.modules.php.editor.parser.astnodes.Block)
+ anno 4 org.netbeans.api.annotations.common.NullAllowed()
 meth public java.lang.String toString()
 meth public java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression> getClassNames()
 meth public org.netbeans.modules.php.editor.parser.astnodes.Block getBody()
 meth public org.netbeans.modules.php.editor.parser.astnodes.Variable getVariable()
+ anno 0 org.netbeans.api.annotations.common.CheckForNull()
 meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
 supr org.netbeans.modules.php.editor.parser.astnodes.Statement
 hfds body,classNames,variable
 
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.ClassDeclaration
+cons public init(int,int,java.util.Map<org.netbeans.modules.php.editor.parser.astnodes.ClassDeclaration$Modifier,java.util.Set<org.netbeans.modules.csl.api.OffsetRange>>,org.netbeans.modules.php.editor.parser.astnodes.Identifier,org.netbeans.modules.php.editor.parser.astnodes.Expression,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression>,org.netbeans.modules.php.editor.parser.astnodes.Block)
 cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.ClassDeclaration$Modifier,org.netbeans.modules.php.editor.parser.astnodes.Identifier,org.netbeans.modules.php.editor.parser.astnodes.Expression,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression>,org.netbeans.modules.php.editor.parser.astnodes.Block)
 innr public final static !enum Modifier
 meth public java.lang.String toString()
+meth public java.util.Map<org.netbeans.modules.php.editor.parser.astnodes.ClassDeclaration$Modifier,java.util.Set<org.netbeans.modules.csl.api.OffsetRange>> getModifiers()
 meth public org.netbeans.modules.php.editor.parser.astnodes.ClassDeclaration$Modifier getModifier()
 meth public org.netbeans.modules.php.editor.parser.astnodes.Expression getSuperClass()
+meth public static org.netbeans.modules.php.editor.parser.astnodes.ClassDeclaration create(org.netbeans.modules.php.editor.parser.astnodes.ClassDeclaration,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Attribute>)
 meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
 supr org.netbeans.modules.php.editor.parser.astnodes.TypeDeclaration
-hfds modifier,superClass
+hfds modifier,modifiers,superClass
 
 CLSS public final static !enum org.netbeans.modules.php.editor.parser.astnodes.ClassDeclaration$Modifier
  outer org.netbeans.modules.php.editor.parser.astnodes.ClassDeclaration
 fld public final static org.netbeans.modules.php.editor.parser.astnodes.ClassDeclaration$Modifier ABSTRACT
 fld public final static org.netbeans.modules.php.editor.parser.astnodes.ClassDeclaration$Modifier FINAL
 fld public final static org.netbeans.modules.php.editor.parser.astnodes.ClassDeclaration$Modifier NONE
+fld public final static org.netbeans.modules.php.editor.parser.astnodes.ClassDeclaration$Modifier READONLY
+meth public java.lang.String toString()
 meth public static org.netbeans.modules.php.editor.parser.astnodes.ClassDeclaration$Modifier valueOf(java.lang.String)
 meth public static org.netbeans.modules.php.editor.parser.astnodes.ClassDeclaration$Modifier[] values()
 supr java.lang.Enum<org.netbeans.modules.php.editor.parser.astnodes.ClassDeclaration$Modifier>
@@ -2385,8 +2640,11 @@ CLSS public org.netbeans.modules.php.editor.parser.astnodes.ClassInstanceCreatio
 cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.ClassName,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression>)
  anno 3 org.netbeans.api.annotations.common.NonNull()
  anno 4 org.netbeans.api.annotations.common.NullAllowed()
+intf org.netbeans.modules.php.editor.parser.astnodes.Attributed
 meth public boolean isAnonymous()
+meth public boolean isAttributed()
 meth public java.lang.String toString()
+meth public java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Attribute> getAttributes()
 meth public java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression> ctorParams()
 meth public java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression> getInterfaces()
 meth public org.netbeans.modules.php.editor.parser.astnodes.Block getBody()
@@ -2395,9 +2653,10 @@ meth public org.netbeans.modules.php.editor.parser.astnodes.ClassName getClassNa
 meth public org.netbeans.modules.php.editor.parser.astnodes.Expression getSuperClass()
  anno 0 org.netbeans.api.annotations.common.CheckForNull()
 meth public static org.netbeans.modules.php.editor.parser.astnodes.ClassInstanceCreation anonymous(java.lang.String,int,int,int,int,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression>,org.netbeans.modules.php.editor.parser.astnodes.Expression,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression>,org.netbeans.modules.php.editor.parser.astnodes.Block)
+meth public static org.netbeans.modules.php.editor.parser.astnodes.ClassInstanceCreation anonymous(java.lang.String,int,int,int,int,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression>,org.netbeans.modules.php.editor.parser.astnodes.Expression,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression>,org.netbeans.modules.php.editor.parser.astnodes.Block,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Attribute>)
 meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
 supr org.netbeans.modules.php.editor.parser.astnodes.Expression
-hfds body,classCounter,className,classStartOffset,ctorParams,fileName,interfaces,superClass
+hfds attributes,body,classCounter,className,classStartOffset,ctorParams,fileName,interfaces,superClass
 
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.ClassName
 cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.Expression)
@@ -2466,9 +2725,19 @@ meth public boolean isGlobal()
 meth public java.lang.String toString()
 meth public java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression> getInitializers()
 meth public java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Identifier> getNames()
+meth public org.netbeans.modules.php.editor.parser.astnodes.Expression getConstType()
+ anno 0 org.netbeans.api.annotations.common.CheckForNull()
+meth public static org.netbeans.modules.php.editor.parser.astnodes.ConstantDeclaration create(int,int,int,org.netbeans.modules.php.editor.parser.astnodes.Expression,java.util.List,boolean)
+ anno 4 org.netbeans.api.annotations.common.NullAllowed()
+meth public static org.netbeans.modules.php.editor.parser.astnodes.ConstantDeclaration create(org.netbeans.modules.php.editor.parser.astnodes.ConstantDeclaration,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Attribute>)
 meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
 supr org.netbeans.modules.php.editor.parser.astnodes.BodyDeclaration
-hfds initializers,isGlobal,names
+hfds constType,initializers,isGlobal,names
+
+CLSS public org.netbeans.modules.php.editor.parser.astnodes.ConstantVariable
+cons public init(org.netbeans.modules.php.editor.parser.astnodes.Expression)
+meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
+supr org.netbeans.modules.php.editor.parser.astnodes.Variable
 
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.ContinueStatement
 cons public init(int,int)
@@ -2507,11 +2776,13 @@ hfds dimension
 
 CLSS public abstract org.netbeans.modules.php.editor.parser.astnodes.Dispatch
 cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.VariableBase)
+cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.VariableBase,boolean)
 meth public abstract org.netbeans.modules.php.editor.parser.astnodes.VariableBase getMember()
+meth public boolean isNullsafe()
 meth public java.lang.String toString()
 meth public org.netbeans.modules.php.editor.parser.astnodes.VariableBase getDispatcher()
 supr org.netbeans.modules.php.editor.parser.astnodes.VariableBase
-hfds dispatcher
+hfds dispatcher,isNullsafe
 
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.DoStatement
 cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.Expression,org.netbeans.modules.php.editor.parser.astnodes.Statement)
@@ -2535,6 +2806,17 @@ cons public init(int,int)
 meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
 supr org.netbeans.modules.php.editor.parser.astnodes.Statement
 
+CLSS public org.netbeans.modules.php.editor.parser.astnodes.EnumDeclaration
+cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.Identifier,org.netbeans.modules.php.editor.parser.astnodes.Expression,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression>,org.netbeans.modules.php.editor.parser.astnodes.Block)
+ anno 4 org.netbeans.api.annotations.common.NullAllowed()
+meth public java.lang.String toString()
+meth public org.netbeans.modules.php.editor.parser.astnodes.Expression getBackingType()
+ anno 0 org.netbeans.api.annotations.common.CheckForNull()
+meth public static org.netbeans.modules.php.editor.parser.astnodes.EnumDeclaration create(org.netbeans.modules.php.editor.parser.astnodes.EnumDeclaration,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Attribute>)
+meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
+supr org.netbeans.modules.php.editor.parser.astnodes.TypeDeclaration
+hfds backingType
+
 CLSS public abstract org.netbeans.modules.php.editor.parser.astnodes.Expression
 cons public init(int,int)
 supr org.netbeans.modules.php.editor.parser.astnodes.ASTNode
@@ -2557,7 +2839,7 @@ supr org.netbeans.modules.php.editor.parser.astnodes.Statement
 hfds expression
 
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.FieldAccess
-cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.VariableBase,org.netbeans.modules.php.editor.parser.astnodes.Variable)
+cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.VariableBase,org.netbeans.modules.php.editor.parser.astnodes.Variable,boolean)
 meth public org.netbeans.modules.php.editor.parser.astnodes.Variable getField()
 meth public org.netbeans.modules.php.editor.parser.astnodes.VariableBase getMember()
 meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
@@ -2565,14 +2847,19 @@ supr org.netbeans.modules.php.editor.parser.astnodes.Dispatch
 hfds field
 
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.FieldsDeclaration
-cons public init(int,int,int,java.util.List)
+cons public init(int,int,int,org.netbeans.modules.php.editor.parser.astnodes.Expression,java.util.List)
 meth public java.lang.String toString()
 meth public java.util.List<org.netbeans.modules.php.editor.parser.astnodes.SingleFieldDeclaration> getFields()
+meth public org.netbeans.modules.php.editor.parser.astnodes.Expression getFieldType()
+ anno 0 org.netbeans.api.annotations.common.CheckForNull()
 meth public org.netbeans.modules.php.editor.parser.astnodes.Expression[] getInitialValues()
 meth public org.netbeans.modules.php.editor.parser.astnodes.Variable[] getVariableNames()
+meth public static org.netbeans.modules.php.editor.parser.astnodes.FieldsDeclaration create(org.netbeans.modules.php.editor.parser.astnodes.FieldsDeclaration,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Attribute>)
+meth public static org.netbeans.modules.php.editor.parser.astnodes.FieldsDeclaration create(org.netbeans.modules.php.editor.parser.astnodes.FormalParameter)
+ anno 0 org.netbeans.api.annotations.common.CheckForNull()
 meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
 supr org.netbeans.modules.php.editor.parser.astnodes.BodyDeclaration
-hfds fields
+hfds fieldType,fields
 
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.FinallyClause
 cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.Block)
@@ -2581,6 +2868,12 @@ meth public org.netbeans.modules.php.editor.parser.astnodes.Block getBody()
 meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
 supr org.netbeans.modules.php.editor.parser.astnodes.Statement
 hfds body
+
+CLSS public org.netbeans.modules.php.editor.parser.astnodes.FirstClassCallableArg
+cons public init(int,int)
+meth public java.lang.String toString()
+meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
+supr org.netbeans.modules.php.editor.parser.astnodes.Expression
 
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.ForEachStatement
 cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.Expression,org.netbeans.modules.php.editor.parser.astnodes.Expression,org.netbeans.modules.php.editor.parser.astnodes.Expression,org.netbeans.modules.php.editor.parser.astnodes.Statement)
@@ -2606,35 +2899,49 @@ supr org.netbeans.modules.php.editor.parser.astnodes.Statement
 hfds body,conditions,initializers,updaters
 
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.FormalParameter
+cons public init(int,int,java.lang.Integer,org.netbeans.modules.php.editor.parser.astnodes.Expression,org.netbeans.modules.php.editor.parser.astnodes.Expression)
+cons public init(int,int,java.lang.Integer,org.netbeans.modules.php.editor.parser.astnodes.Expression,org.netbeans.modules.php.editor.parser.astnodes.Expression,org.netbeans.modules.php.editor.parser.astnodes.Expression)
 cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.Expression,org.netbeans.modules.php.editor.parser.astnodes.Expression)
 cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.Expression,org.netbeans.modules.php.editor.parser.astnodes.Expression,org.netbeans.modules.php.editor.parser.astnodes.Expression)
 cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.Expression,org.netbeans.modules.php.editor.parser.astnodes.Reference)
 cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.Expression,org.netbeans.modules.php.editor.parser.astnodes.Reference,org.netbeans.modules.php.editor.parser.astnodes.Expression)
+intf org.netbeans.modules.php.editor.parser.astnodes.Attributed
+meth public boolean isAttributed()
+meth public boolean isIntersectionType()
 meth public boolean isMandatory()
 meth public boolean isNullableType()
 meth public boolean isOptional()
 meth public boolean isReference()
+meth public boolean isUnionType()
 meth public boolean isVariadic()
+meth public int getModifier()
+meth public java.lang.String getModifierString()
 meth public java.lang.String toString()
+meth public java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Attribute> getAttributes()
 meth public org.netbeans.modules.php.editor.parser.astnodes.Expression getDefaultValue()
 meth public org.netbeans.modules.php.editor.parser.astnodes.Expression getParameterName()
 meth public org.netbeans.modules.php.editor.parser.astnodes.Expression getParameterType()
+meth public static org.netbeans.modules.php.editor.parser.astnodes.FormalParameter create(org.netbeans.modules.php.editor.parser.astnodes.FormalParameter,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Attribute>)
 meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
 supr org.netbeans.modules.php.editor.parser.astnodes.ASTNode
-hfds defaultValue,parameterName,parameterType
+hfds attributes,defaultValue,modifier,parameterName,parameterType
 
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.FunctionDeclaration
 cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.Identifier,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.FormalParameter>,org.netbeans.modules.php.editor.parser.astnodes.Expression,org.netbeans.modules.php.editor.parser.astnodes.Block,boolean)
+intf org.netbeans.modules.php.editor.parser.astnodes.Attributed
+meth public boolean isAttributed()
 meth public boolean isReference()
 meth public java.lang.String toString()
+meth public java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Attribute> getAttributes()
 meth public java.util.List<org.netbeans.modules.php.editor.parser.astnodes.FormalParameter> getFormalParameters()
 meth public org.netbeans.modules.php.editor.parser.astnodes.Block getBody()
 meth public org.netbeans.modules.php.editor.parser.astnodes.Expression getReturnType()
  anno 0 org.netbeans.api.annotations.common.CheckForNull()
 meth public org.netbeans.modules.php.editor.parser.astnodes.Identifier getFunctionName()
+meth public static org.netbeans.modules.php.editor.parser.astnodes.FunctionDeclaration create(org.netbeans.modules.php.editor.parser.astnodes.FunctionDeclaration,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Attribute>)
 meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
 supr org.netbeans.modules.php.editor.parser.astnodes.Statement
-hfds body,formalParameters,isReference,name,returnType
+hfds attributes,body,formalParameters,isReference,name,returnType
 
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.FunctionInvocation
 cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.FunctionName,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression>)
@@ -2803,22 +3110,36 @@ hfds className,expression
 
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.InterfaceDeclaration
 cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.Identifier,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression>,org.netbeans.modules.php.editor.parser.astnodes.Block)
+meth public static org.netbeans.modules.php.editor.parser.astnodes.InterfaceDeclaration create(org.netbeans.modules.php.editor.parser.astnodes.InterfaceDeclaration,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Attribute>)
 meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
 supr org.netbeans.modules.php.editor.parser.astnodes.TypeDeclaration
 
+CLSS public org.netbeans.modules.php.editor.parser.astnodes.IntersectionType
+cons public init(int,int,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression>)
+meth public java.lang.String toString()
+meth public java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression> getTypes()
+meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
+supr org.netbeans.modules.php.editor.parser.astnodes.Expression
+hfds types
+
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.LambdaFunctionDeclaration
 cons public init(int,int,java.util.List,org.netbeans.modules.php.editor.parser.astnodes.Expression,java.util.List,org.netbeans.modules.php.editor.parser.astnodes.Block,boolean,boolean)
+intf org.netbeans.modules.php.editor.parser.astnodes.Attributed
+meth public boolean isAttributed()
 meth public boolean isReference()
 meth public boolean isStatic()
 meth public java.lang.String toString()
+meth public java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Attribute> getAttributes()
 meth public java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression> getLexicalVariables()
 meth public java.util.List<org.netbeans.modules.php.editor.parser.astnodes.FormalParameter> getFormalParameters()
 meth public org.netbeans.modules.php.editor.parser.astnodes.Block getBody()
 meth public org.netbeans.modules.php.editor.parser.astnodes.Expression getReturnType()
  anno 0 org.netbeans.api.annotations.common.CheckForNull()
+meth public static org.netbeans.modules.php.editor.parser.astnodes.LambdaFunctionDeclaration create(org.netbeans.modules.php.editor.parser.astnodes.LambdaFunctionDeclaration,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Attribute>)
 meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
+meth public void addAttributes(java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Attribute>)
 supr org.netbeans.modules.php.editor.parser.astnodes.Expression
-hfds body,formalParameters,isReference,isStatic,lexicalVariables,returnType
+hfds attributes,body,formalParameters,isReference,isStatic,lexicalVariables,returnType
 
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.ListVariable
 cons public init(int,int,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.ArrayElement>,org.netbeans.modules.php.editor.parser.astnodes.ListVariable$SyntaxType)
@@ -2838,22 +3159,51 @@ meth public static org.netbeans.modules.php.editor.parser.astnodes.ListVariable$
 meth public static org.netbeans.modules.php.editor.parser.astnodes.ListVariable$SyntaxType[] values()
 supr java.lang.Enum<org.netbeans.modules.php.editor.parser.astnodes.ListVariable$SyntaxType>
 
+CLSS public org.netbeans.modules.php.editor.parser.astnodes.MatchArm
+cons public init(int,int,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression>,org.netbeans.modules.php.editor.parser.astnodes.Expression,boolean)
+meth public boolean isDefault()
+meth public java.lang.String toString()
+meth public java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression> getConditions()
+meth public org.netbeans.modules.php.editor.parser.astnodes.Expression getExpression()
+meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
+supr org.netbeans.modules.php.editor.parser.astnodes.Expression
+hfds conditions,expression,isDefault
+
+CLSS public org.netbeans.modules.php.editor.parser.astnodes.MatchExpression
+cons public init(int,int,org.netbeans.modules.csl.api.OffsetRange,org.netbeans.modules.php.editor.parser.astnodes.Expression,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.MatchArm>)
+meth public java.util.List<org.netbeans.modules.php.editor.parser.astnodes.MatchArm> getMatchArms()
+meth public org.netbeans.modules.csl.api.OffsetRange getBlockRange()
+meth public org.netbeans.modules.php.editor.parser.astnodes.Expression getExpression()
+meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
+supr org.netbeans.modules.php.editor.parser.astnodes.Expression
+hfds blockRange,expression,matchArms
+
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.MethodDeclaration
 cons public init(int,int,int,org.netbeans.modules.php.editor.parser.astnodes.FunctionDeclaration)
 cons public init(int,int,int,org.netbeans.modules.php.editor.parser.astnodes.FunctionDeclaration,boolean)
 meth public java.lang.String toString()
 meth public org.netbeans.modules.php.editor.parser.astnodes.FunctionDeclaration getFunction()
+meth public static org.netbeans.modules.php.editor.parser.astnodes.MethodDeclaration create(org.netbeans.modules.php.editor.parser.astnodes.MethodDeclaration,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Attribute>)
 meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
 supr org.netbeans.modules.php.editor.parser.astnodes.BodyDeclaration
 hfds function
 
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.MethodInvocation
-cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.VariableBase,org.netbeans.modules.php.editor.parser.astnodes.FunctionInvocation)
+cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.VariableBase,org.netbeans.modules.php.editor.parser.astnodes.FunctionInvocation,boolean)
 meth public org.netbeans.modules.php.editor.parser.astnodes.FunctionInvocation getMember()
 meth public org.netbeans.modules.php.editor.parser.astnodes.FunctionInvocation getMethod()
 meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
 supr org.netbeans.modules.php.editor.parser.astnodes.Dispatch
 hfds method
+
+CLSS public org.netbeans.modules.php.editor.parser.astnodes.NamedArgument
+cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.Identifier,org.netbeans.modules.php.editor.parser.astnodes.Expression)
+meth public java.lang.String toString()
+meth public org.netbeans.modules.php.editor.parser.astnodes.Expression getExpression()
+meth public org.netbeans.modules.php.editor.parser.astnodes.Identifier getParameterName()
+meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
+supr org.netbeans.modules.php.editor.parser.astnodes.Expression
+hfds expression,parameterName
 
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.NamespaceDeclaration
 cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.NamespaceName,org.netbeans.modules.php.editor.parser.astnodes.Block,boolean)
@@ -2874,6 +3224,9 @@ meth public boolean isCurrent()
 meth public boolean isGlobal()
 meth public java.lang.String toString()
 meth public java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Identifier> getSegments()
+meth public static org.netbeans.modules.php.editor.parser.astnodes.NamespaceName create(int,int,java.lang.String)
+ anno 0 org.netbeans.api.annotations.common.NonNull()
+ anno 3 org.netbeans.api.annotations.common.NonNull()
 meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
 supr org.netbeans.modules.php.editor.parser.astnodes.Expression
 hfds current,global
@@ -2897,12 +3250,15 @@ hfds description,tags
 
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.PHPDocMethodTag
 cons public init(int,int,org.netbeans.modules.php.spi.annotation.AnnotationParsedLine,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.PHPDocTypeNode>,org.netbeans.modules.php.editor.parser.astnodes.PHPDocNode,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.PHPDocVarTypeTag>,java.lang.String)
+cons public init(int,int,org.netbeans.modules.php.spi.annotation.AnnotationParsedLine,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.PHPDocTypeNode>,org.netbeans.modules.php.editor.parser.astnodes.PHPDocNode,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.PHPDocVarTypeTag>,java.lang.String,boolean)
+meth public boolean isStatic()
 meth public java.lang.String getDocumentation()
+meth public java.lang.String getReturnType()
 meth public java.util.List<org.netbeans.modules.php.editor.parser.astnodes.PHPDocVarTypeTag> getParameters()
 meth public org.netbeans.modules.php.editor.parser.astnodes.PHPDocNode getMethodName()
 meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
 supr org.netbeans.modules.php.editor.parser.astnodes.PHPDocTypeTag
-hfds name,params
+hfds isStatic,name,params,returnType
 hcls CommentExtractor,CommentExtractorImpl
 
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.PHPDocNode
@@ -3097,6 +3453,7 @@ hfds scalarType,stringValue
 
 CLSS public final static !enum org.netbeans.modules.php.editor.parser.astnodes.Scalar$Type
  outer org.netbeans.modules.php.editor.parser.astnodes.Scalar
+fld public final static org.netbeans.modules.php.editor.parser.astnodes.Scalar$Type FLOAT
 fld public final static org.netbeans.modules.php.editor.parser.astnodes.Scalar$Type INT
 fld public final static org.netbeans.modules.php.editor.parser.astnodes.Scalar$Type REAL
 fld public final static org.netbeans.modules.php.editor.parser.astnodes.Scalar$Type STRING
@@ -3117,13 +3474,14 @@ supr java.lang.Object
 hfds children,endOffset,kind,startOffset
 
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.SingleFieldDeclaration
-cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.Variable,org.netbeans.modules.php.editor.parser.astnodes.Expression)
+cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.Variable,org.netbeans.modules.php.editor.parser.astnodes.Expression,org.netbeans.modules.php.editor.parser.astnodes.Expression)
 meth public java.lang.String toString()
+meth public org.netbeans.modules.php.editor.parser.astnodes.Expression getFieldType()
 meth public org.netbeans.modules.php.editor.parser.astnodes.Expression getValue()
 meth public org.netbeans.modules.php.editor.parser.astnodes.Variable getName()
 meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
 supr org.netbeans.modules.php.editor.parser.astnodes.ASTNode
-hfds name,value
+hfds fieldType,name,value
 
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.SingleUseStatementPart
 cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.NamespaceName,org.netbeans.modules.php.editor.parser.astnodes.Identifier)
@@ -3149,13 +3507,15 @@ supr org.netbeans.modules.php.editor.parser.astnodes.ASTNode
 
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.StaticConstantAccess
 cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.Expression,org.netbeans.modules.php.editor.parser.astnodes.Expression)
+cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.Expression,org.netbeans.modules.php.editor.parser.astnodes.Expression,boolean)
 cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.Identifier)
+meth public boolean isDynamicName()
 meth public org.netbeans.modules.php.editor.parser.astnodes.ASTNode getMember()
 meth public org.netbeans.modules.php.editor.parser.astnodes.Expression getConstant()
 meth public org.netbeans.modules.php.editor.parser.astnodes.Identifier getConstantName()
 meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
 supr org.netbeans.modules.php.editor.parser.astnodes.StaticDispatch
-hfds constant
+hfds constant,isDynamicName
 
 CLSS public abstract org.netbeans.modules.php.editor.parser.astnodes.StaticDispatch
 cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.Expression)
@@ -3210,12 +3570,12 @@ meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
 supr org.netbeans.modules.php.editor.parser.astnodes.Statement
 hfds body,expression
 
-CLSS public org.netbeans.modules.php.editor.parser.astnodes.ThrowStatement
+CLSS public org.netbeans.modules.php.editor.parser.astnodes.ThrowExpression
 cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.Expression)
 meth public java.lang.String toString()
 meth public org.netbeans.modules.php.editor.parser.astnodes.Expression getExpression()
 meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
-supr org.netbeans.modules.php.editor.parser.astnodes.Statement
+supr org.netbeans.modules.php.editor.parser.astnodes.Expression
 hfds expression
 
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.TraitConflictResolutionDeclaration
@@ -3230,6 +3590,7 @@ hfds methodName,preferredTraitName,suppressedTraitNames
 
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.TraitDeclaration
 cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.Identifier,org.netbeans.modules.php.editor.parser.astnodes.Block)
+meth public static org.netbeans.modules.php.editor.parser.astnodes.TraitDeclaration create(org.netbeans.modules.php.editor.parser.astnodes.TraitDeclaration,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Attribute>)
 meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
 supr org.netbeans.modules.php.editor.parser.astnodes.TypeDeclaration
 
@@ -3266,12 +3627,18 @@ hfds catchClauses,finallyClause,tryStatement
 
 CLSS public abstract org.netbeans.modules.php.editor.parser.astnodes.TypeDeclaration
 cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.Identifier,org.netbeans.modules.php.editor.parser.astnodes.Expression[],org.netbeans.modules.php.editor.parser.astnodes.Block)
+cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.Identifier,org.netbeans.modules.php.editor.parser.astnodes.Expression[],org.netbeans.modules.php.editor.parser.astnodes.Block,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Attribute>)
+intf org.netbeans.modules.php.editor.parser.astnodes.Attributed
+meth public boolean isAttributed()
 meth public java.lang.String toString()
+meth public java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Attribute> getAttributes()
+meth public java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression> getInterfaces()
 meth public java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression> getInterfaes()
+ anno 0 java.lang.Deprecated()
 meth public org.netbeans.modules.php.editor.parser.astnodes.Block getBody()
 meth public org.netbeans.modules.php.editor.parser.astnodes.Identifier getName()
 supr org.netbeans.modules.php.editor.parser.astnodes.Statement
-hfds body,interfaces,name
+hfds attributes,body,interfaces,name
 
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.UnaryOperation
 cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.Expression,org.netbeans.modules.php.editor.parser.astnodes.UnaryOperation$Operator)
@@ -3294,6 +3661,20 @@ meth public static org.netbeans.modules.php.editor.parser.astnodes.UnaryOperatio
 meth public static org.netbeans.modules.php.editor.parser.astnodes.UnaryOperation$Operator[] values()
 supr java.lang.Enum<org.netbeans.modules.php.editor.parser.astnodes.UnaryOperation$Operator>
 hfds operatorSign
+
+CLSS public org.netbeans.modules.php.editor.parser.astnodes.UnionType
+cons public init(int,int,java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression>)
+meth public java.lang.String toString()
+meth public java.util.List<org.netbeans.modules.php.editor.parser.astnodes.Expression> getTypes()
+meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
+supr org.netbeans.modules.php.editor.parser.astnodes.Expression
+hfds types
+
+CLSS public org.netbeans.modules.php.editor.parser.astnodes.UnpackableArrayElement
+cons public init(int,int,org.netbeans.modules.php.editor.parser.astnodes.Expression)
+meth public java.lang.String toString()
+meth public void accept(org.netbeans.modules.php.editor.parser.astnodes.Visitor)
+supr org.netbeans.modules.php.editor.parser.astnodes.ArrayElement
 
 CLSS public org.netbeans.modules.php.editor.parser.astnodes.UseStatement
 cons public init(int,int,java.util.List)
@@ -3367,16 +3748,21 @@ hfds expression
 
 CLSS public abstract interface org.netbeans.modules.php.editor.parser.astnodes.Visitor
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.ASTError)
+meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.ASTErrorExpression)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.ASTNode)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.AnonymousObjectVariable)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.ArrayAccess)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.ArrayCreation)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.ArrayDimension)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.ArrayElement)
+meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.ArrowFunctionDeclaration)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.Assignment)
+meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.Attribute)
+meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.AttributeDeclaration)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.BackTickExpression)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.Block)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.BreakStatement)
+meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.CaseDeclaration)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.CastExpression)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.CatchClause)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.ClassDeclaration)
@@ -3386,6 +3772,7 @@ meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.Comment)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.ConditionalExpression)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.ConstantDeclaration)
+meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.ConstantVariable)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.ContinueStatement)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.DeclareStatement)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.DereferencableVariable)
@@ -3393,11 +3780,13 @@ meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.DoStatement)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.EchoStatement)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.EmptyStatement)
+meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.EnumDeclaration)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.ExpressionArrayAccess)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.ExpressionStatement)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.FieldAccess)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.FieldsDeclaration)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.FinallyClause)
+meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.FirstClassCallableArg)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.ForEachStatement)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.ForStatement)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.FormalParameter)
@@ -3417,10 +3806,14 @@ meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.InfixExpression)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.InstanceOfExpression)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.InterfaceDeclaration)
+meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.IntersectionType)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.LambdaFunctionDeclaration)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.ListVariable)
+meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.MatchArm)
+meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.MatchExpression)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.MethodDeclaration)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.MethodInvocation)
+meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.NamedArgument)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.NamespaceDeclaration)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.NamespaceName)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.NullableType)
@@ -3450,12 +3843,14 @@ meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.StaticStatement)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.SwitchCase)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.SwitchStatement)
-meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.ThrowStatement)
+meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.ThrowExpression)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.TraitConflictResolutionDeclaration)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.TraitDeclaration)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.TraitMethodAliasDeclaration)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.TryStatement)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.UnaryOperation)
+meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.UnionType)
+meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.UnpackableArrayElement)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.UseStatement)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.UseTraitStatement)
 meth public abstract void visit(org.netbeans.modules.php.editor.parser.astnodes.UseTraitStatementPart)
@@ -3496,15 +3891,20 @@ meth protected void addToPath(org.netbeans.modules.php.editor.parser.astnodes.AS
 meth protected void removeFromPath()
 meth public java.util.List<org.netbeans.modules.php.editor.parser.astnodes.ASTNode> getPath()
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ASTError)
+meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ASTErrorExpression)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ASTNode)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.AnonymousObjectVariable)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ArrayAccess)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ArrayCreation)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ArrayElement)
+meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ArrowFunctionDeclaration)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.Assignment)
+meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.Attribute)
+meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.AttributeDeclaration)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.BackTickExpression)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.Block)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.BreakStatement)
+meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.CaseDeclaration)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.CastExpression)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.CatchClause)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ClassDeclaration)
@@ -3514,11 +3914,13 @@ meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.CloneExpr
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.Comment)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ConditionalExpression)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ConstantDeclaration)
+meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ConstantVariable)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ContinueStatement)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.DeclareStatement)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.DoStatement)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.EchoStatement)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.EmptyStatement)
+meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.EnumDeclaration)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ExpressionStatement)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.FieldAccess)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.FieldsDeclaration)
@@ -3539,9 +3941,13 @@ meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.Include)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.InfixExpression)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.InstanceOfExpression)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.InterfaceDeclaration)
+meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.IntersectionType)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ListVariable)
+meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.MatchArm)
+meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.MatchExpression)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.MethodDeclaration)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.MethodInvocation)
+meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.NamedArgument)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.NamespaceDeclaration)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.PHPDocBlock)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.PHPDocMethodTag)
@@ -3566,12 +3972,13 @@ meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.StaticMet
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.StaticStatement)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.SwitchCase)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.SwitchStatement)
-meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ThrowStatement)
+meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ThrowExpression)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.TraitConflictResolutionDeclaration)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.TraitDeclaration)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.TraitMethodAliasDeclaration)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.TryStatement)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.UnaryOperation)
+meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.UnpackableArrayElement)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.UseStatement)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.UseTraitStatement)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.UseTraitStatementPart)
@@ -3588,16 +3995,21 @@ intf org.netbeans.modules.php.editor.parser.astnodes.Visitor
 meth public void scan(java.lang.Iterable<? extends org.netbeans.modules.php.editor.parser.astnodes.ASTNode>)
 meth public void scan(org.netbeans.modules.php.editor.parser.astnodes.ASTNode)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ASTError)
+meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ASTErrorExpression)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ASTNode)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.AnonymousObjectVariable)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ArrayAccess)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ArrayCreation)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ArrayDimension)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ArrayElement)
+meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ArrowFunctionDeclaration)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.Assignment)
+meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.Attribute)
+meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.AttributeDeclaration)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.BackTickExpression)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.Block)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.BreakStatement)
+meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.CaseDeclaration)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.CastExpression)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.CatchClause)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ClassDeclaration)
@@ -3607,6 +4019,7 @@ meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.CloneExpr
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.Comment)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ConditionalExpression)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ConstantDeclaration)
+meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ConstantVariable)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ContinueStatement)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.DeclareStatement)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.DereferencableVariable)
@@ -3614,11 +4027,13 @@ meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.Dereferen
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.DoStatement)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.EchoStatement)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.EmptyStatement)
+meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.EnumDeclaration)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ExpressionArrayAccess)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ExpressionStatement)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.FieldAccess)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.FieldsDeclaration)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.FinallyClause)
+meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.FirstClassCallableArg)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ForEachStatement)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ForStatement)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.FormalParameter)
@@ -3638,10 +4053,14 @@ meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.Include)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.InfixExpression)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.InstanceOfExpression)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.InterfaceDeclaration)
+meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.IntersectionType)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.LambdaFunctionDeclaration)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ListVariable)
+meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.MatchArm)
+meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.MatchExpression)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.MethodDeclaration)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.MethodInvocation)
+meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.NamedArgument)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.NamespaceDeclaration)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.NamespaceName)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.NullableType)
@@ -3671,12 +4090,14 @@ meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.StaticMet
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.StaticStatement)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.SwitchCase)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.SwitchStatement)
-meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ThrowStatement)
+meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ThrowExpression)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.TraitConflictResolutionDeclaration)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.TraitDeclaration)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.TraitMethodAliasDeclaration)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.TryStatement)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.UnaryOperation)
+meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.UnionType)
+meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.UnpackableArrayElement)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.UseStatement)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.UseTraitStatement)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.UseTraitStatementPart)
@@ -3694,6 +4115,7 @@ meth public org.netbeans.modules.php.editor.api.FileElementQuery getElementQuery
 meth public static org.netbeans.modules.php.editor.api.ElementQuery$File createElementQuery(org.netbeans.modules.php.editor.parser.PHPParseResult)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ClassDeclaration)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.ConstantDeclaration)
+meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.EnumDeclaration)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.FieldAccess)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.FieldsDeclaration)
 meth public void visit(org.netbeans.modules.php.editor.parser.astnodes.FunctionDeclaration)

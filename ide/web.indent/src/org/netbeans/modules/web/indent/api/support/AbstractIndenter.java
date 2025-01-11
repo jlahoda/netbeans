@@ -21,7 +21,6 @@ package org.netbeans.modules.web.indent.api.support;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -56,7 +55,7 @@ import org.openide.util.Lookup;
  *
  * @since org.netbeans.modules.css.editor/1 1.3
  */
-abstract public class AbstractIndenter<T1 extends TokenId> {
+public abstract class AbstractIndenter<T1 extends TokenId> {
 
     private Language<T1> language;
     private Context context;
@@ -152,7 +151,7 @@ abstract public class AbstractIndenter<T1 extends TokenId> {
      *
      * @return offset representing stable start for formatting
      */
-    abstract protected int getFormatStableStart(JoinedTokenSequence<T1> ts, int startOffset, int endOffset,
+    protected abstract int getFormatStableStart(JoinedTokenSequence<T1> ts, int startOffset, int endOffset,
             AbstractIndenter.OffsetRanges rangesToIgnore) throws BadLocationException;
 
     /**
@@ -164,15 +163,15 @@ abstract public class AbstractIndenter<T1 extends TokenId> {
      *  is known about next line yet
      * @return list of indentation commands to apply when formatting this line
      */
-    abstract protected List<IndentCommand> getLineIndent(IndenterContextData<T1> context, 
+    protected abstract List<IndentCommand> getLineIndent(IndenterContextData<T1> context, 
             List<IndentCommand> preliminaryNextLineIndent) throws BadLocationException;
 
     /**
      * Is this whitespace token?
      */
-    abstract protected boolean isWhiteSpaceToken(Token<T1> token);
+    protected abstract boolean isWhiteSpaceToken(Token<T1> token);
 
-    abstract protected void reset();
+    protected abstract void reset();
 
 //    private boolean isWithinLanguage(int startOffset, int endOffset) {
 //        for (Context.Region r : context.indentRegions()) {
@@ -467,7 +466,7 @@ abstract public class AbstractIndenter<T1 extends TokenId> {
             }
         };
 
-        Collections.sort(newBlocks, c);
+        newBlocks.sort(c);
         List<ForeignLanguageBlock> result = new ArrayList<ForeignLanguageBlock>();
         for (ForeignLanguageBlock b : newBlocks) {
             addBlockAndMergeIfNeeded(result, b);
@@ -786,7 +785,7 @@ abstract public class AbstractIndenter<T1 extends TokenId> {
         // which alligns with "class" attribute
         //
         List<LineCommandsPair> s1 = new ArrayList<LineCommandsPair>(pairs);
-        Collections.sort(s1, c);
+        s1.sort(c);
         List<LineCommandsPair> s2 = new ArrayList<LineCommandsPair>();
         LineCommandsPair previous = null;
         // merge commands on one line:

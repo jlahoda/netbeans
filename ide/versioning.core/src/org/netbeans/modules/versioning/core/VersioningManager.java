@@ -284,7 +284,7 @@ public class VersioningManager implements PropertyChangeListener, ChangeListener
 
     VersioningSystem[] getVersioningSystems() {
         synchronized(versioningSystems) {
-            return versioningSystems.toArray(new VersioningSystem[versioningSystems.size()]);
+            return versioningSystems.toArray(new VersioningSystem[0]);
         }
     }
 
@@ -303,7 +303,7 @@ public class VersioningManager implements PropertyChangeListener, ChangeListener
                 owners.add(vs);
             }
         }
-        return (VersioningSystem[]) owners.toArray(new VersioningSystem[owners.size()]);
+        return (VersioningSystem[]) owners.toArray(new VersioningSystem[0]);
     }
 
     /**
@@ -637,7 +637,7 @@ public class VersioningManager implements PropertyChangeListener, ChangeListener
         }
     }
 
-    public synchronized static void statusListener(VCSAnnotationListener listener, boolean add) {
+    public static synchronized void statusListener(VCSAnnotationListener listener, boolean add) {
         WeakSet<VCSAnnotationListener> newSet = new WeakSet<VCSAnnotationListener>(statusListeners);
         if (add) {
             newSet.add(listener);

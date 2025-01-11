@@ -18,14 +18,19 @@
  */
 package org.netbeans.modules.php.editor.model.nodes;
 
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import org.netbeans.modules.csl.api.OffsetRange;
 import org.netbeans.modules.php.editor.CodeUtils;
+import org.netbeans.modules.php.editor.NavUtils;
 import org.netbeans.modules.php.editor.api.PhpElementKind;
 import org.netbeans.modules.php.editor.api.QualifiedName;
-import org.netbeans.modules.php.editor.NavUtils;
 import org.netbeans.modules.php.editor.parser.astnodes.ASTNode;
 import org.netbeans.modules.php.editor.parser.astnodes.ArrayAccess;
 import org.netbeans.modules.php.editor.parser.astnodes.ArrayCreation;
+import org.netbeans.modules.php.editor.parser.astnodes.ArrowFunctionDeclaration;
 import org.netbeans.modules.php.editor.parser.astnodes.ClassInstanceCreation;
 import org.netbeans.modules.php.editor.parser.astnodes.ClassName;
 import org.netbeans.modules.php.editor.parser.astnodes.Expression;
@@ -42,13 +47,15 @@ import org.netbeans.modules.php.editor.parser.astnodes.ParenthesisExpression;
 import org.netbeans.modules.php.editor.parser.astnodes.Reference;
 import org.netbeans.modules.php.editor.parser.astnodes.ReturnStatement;
 import org.netbeans.modules.php.editor.parser.astnodes.Scalar;
+import org.netbeans.modules.php.editor.parser.astnodes.SingleUseStatementPart;
 import org.netbeans.modules.php.editor.parser.astnodes.StaticConstantAccess;
 import org.netbeans.modules.php.editor.parser.astnodes.StaticDispatch;
 import org.netbeans.modules.php.editor.parser.astnodes.StaticFieldAccess;
 import org.netbeans.modules.php.editor.parser.astnodes.StaticMethodInvocation;
-import org.netbeans.modules.php.editor.parser.astnodes.SingleUseStatementPart;
+import org.netbeans.modules.php.editor.parser.astnodes.UseTraitStatementPart;
 import org.netbeans.modules.php.editor.parser.astnodes.Variable;
 import org.netbeans.modules.php.editor.parser.astnodes.Variadic;
+import org.netbeans.modules.php.editor.parser.astnodes.visitors.DefaultVisitor;
 
 /**
  *
@@ -64,7 +71,8 @@ public class ASTNodeInfo<T extends ASTNode> {
         FIELD, STATIC_FIELD,
         CLASS_CONSTANT, STATIC_CLASS_CONSTANT,
         VARIABLE, CONSTANT, FUNCTION, PARAMETER,
-        INCLUDE, RETURN_MARKER, GOTO, TRAIT, USE_ALIAS
+        INCLUDE, RETURN_MARKER, GOTO, TRAIT, USE_ALIAS,
+        ENUM, ENUM_CASE
     }
 
     ASTNodeInfo(T node) {
@@ -164,6 +172,10 @@ public class ASTNodeInfo<T extends ASTNode> {
                 return PhpElementKind.TRAIT;
             case USE_ALIAS:
                 return PhpElementKind.USE_ALIAS;
+            case ENUM:
+                return PhpElementKind.ENUM;
+            case ENUM_CASE:
+                return PhpElementKind.ENUM_CASE;
             default:
                 assert false : k;
         }
@@ -400,6 +412,8 @@ public class ASTNodeInfo<T extends ASTNode> {
             return toOffsetRange(((ParenthesisExpression) node).getExpression());
         } else if (node instanceof LambdaFunctionDeclaration) {
             return new OffsetRange(node.getStartOffset(), node.getEndOffset());
+        } else if (node instanceof ArrowFunctionDeclaration) {
+            return new OffsetRange(node.getStartOffset(), node.getEndOffset());
         } else if (node instanceof ArrayCreation) {
             return new OffsetRange(node.getStartOffset(), node.getEndOffset());
         }
@@ -433,4 +447,25 @@ public class ASTNodeInfo<T extends ASTNode> {
         }
         return new OffsetRange(name.getStartOffset(), name.getEndOffset());
     }
+
+    //~ inner class
+    static class UsedTraitsVisitor extends DefaultVisitor {
+
+        private final List<UseTraitStatementPart> useParts = new LinkedList<>();
+
+        @Override
+        public void visit(UseTraitStatementPart node) {
+            useParts.add(node);
+        }
+
+        public Collection<QualifiedName> getUsedTraits() {
+            Collection<QualifiedName> retval = new HashSet<>();
+            for (UseTraitStatementPart useTraitStatementPart : useParts) {
+                retval.add(QualifiedName.create(useTraitStatementPart.getName()));
+            }
+            return retval;
+        }
+
+    }
+
 }

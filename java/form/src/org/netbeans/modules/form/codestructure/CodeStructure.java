@@ -154,7 +154,7 @@ public class CodeStructure {
             if (originMetaObject.equals(exp.getOrigin().getMetaObject()))
                 list.add(exp);
         }
-        return list.toArray(new CodeExpression[list.size()]);
+        return list.toArray(new CodeExpression[0]);
     }
 
     // --------
@@ -208,7 +208,7 @@ public class CodeStructure {
             if (metaObject.equals(statement.getMetaObject()))
                 list.add(statement);
         }
-        return list.toArray(new CodeStatement[list.size()]);
+        return list.toArray(new CodeStatement[0]);
     }
 
     // --------
@@ -1046,9 +1046,9 @@ public class CodeStructure {
     // ---------------
 
     /** For debugging purposes only. */
-    static private int traceCount = 0;
+    private static int traceCount = 0;
     /** For debugging purposes only. */
-    static private final boolean TRACE = false;
+    private static final boolean TRACE = false;
     /** For debugging purposes only. */
     static void t(String str) {
         if (TRACE)

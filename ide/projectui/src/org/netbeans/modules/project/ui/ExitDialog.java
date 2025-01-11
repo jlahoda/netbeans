@@ -54,7 +54,7 @@ import org.openide.util.NbBundle;
  *
  * @author  Ian Formanek, Petr Hrebejk
  */
-final public class ExitDialog extends JPanel implements ActionListener {
+public final class ExitDialog extends JPanel implements ActionListener {
 
     /*for tests only!*/static boolean SAVE_ALL_UNCONDITIONALLY = false;
 
@@ -67,7 +67,7 @@ final public class ExitDialog extends JPanel implements ActionListener {
     private static boolean result = false;
 
     JList list;
-    DefaultListModel listModel;
+    DefaultListModel<DataObject> listModel;
 
     /** Constructs new dlg for unsaved files in filesystems marked 
      * for unmount.
@@ -75,7 +75,7 @@ final public class ExitDialog extends JPanel implements ActionListener {
     private ExitDialog (Set<DataObject> openedFiles) {
         setLayout (new BorderLayout ());
 
-        listModel = new DefaultListModel();
+        listModel = new DefaultListModel<>();
         
         Set<DataObject> set = getModifiedFiles (openedFiles);
         if (!set.isEmpty ()) {

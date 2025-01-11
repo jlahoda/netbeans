@@ -136,7 +136,7 @@ public abstract class J2eeModuleHelper {
         return secondarySunDDName != null ?
             module.getDeploymentConfigurationFile(secondarySunDDName) : null;
     }
-
+    
     public RootInterface getStandardRootDD(J2eeModule module) {
         RootInterface stdRootDD = null;
         if (standardDDName != null) {
@@ -177,7 +177,7 @@ public abstract class J2eeModuleHelper {
     public static class WebDDHelper extends J2eeModuleHelper {
 
         private WebDDHelper() {
-            this(GF_WEB_XML_V1, null);
+            this(GF_WEB_XML_V2, null);
         }
 
         private WebDDHelper(String dd1, String dd2) {
@@ -200,6 +200,14 @@ public abstract class J2eeModuleHelper {
                 result = ASDDVersion.SUN_APPSERVER_9_0;
             } else if (ServletVersion.SERVLET_3_0.equals(servletVersion)) {
                 result = ASDDVersion.SUN_APPSERVER_10_0;
+            } else if (ServletVersion.SERVLET_4_0.equals(servletVersion)) {
+                result = ASDDVersion.GLASSFISH_5_1;
+            } else if (ServletVersion.SERVLET_5_0.equals(servletVersion)) {
+                result = ASDDVersion.GLASSFISH_6;
+            } else if (ServletVersion.SERVLET_6_0.equals(servletVersion)) {
+                result = ASDDVersion.GLASSFISH_7;
+            } else if (ServletVersion.SERVLET_6_1.equals(servletVersion)) {
+                result = ASDDVersion.GLASSFISH_8;
             }
             return result;
         }
@@ -228,6 +236,14 @@ public abstract class J2eeModuleHelper {
                 result = ASDDVersion.SUN_APPSERVER_9_0;
             } else if (ServletVersion.SERVLET_3_0.equals(servletVersion)) {
                 result = ASDDVersion.SUN_APPSERVER_10_0;
+            } else if (ServletVersion.SERVLET_4_0.equals(servletVersion)) {
+                result = ASDDVersion.GLASSFISH_5_1;
+            } else if (ServletVersion.SERVLET_5_0.equals(servletVersion)) {
+                result = ASDDVersion.GLASSFISH_6;
+            } else if (ServletVersion.SERVLET_6_0.equals(servletVersion)) {
+                result = ASDDVersion.GLASSFISH_7;
+            } else if (ServletVersion.SERVLET_6_1.equals(servletVersion)) {
+                result = ASDDVersion.GLASSFISH_8;
             }
             return result;
         }
@@ -261,6 +277,14 @@ public abstract class J2eeModuleHelper {
                 result = ASDDVersion.SUN_APPSERVER_9_0;
             } else if (EjbJarVersion.EJBJAR_3_1.equals(ejbJarVersion)) {
                 result = ASDDVersion.SUN_APPSERVER_10_0;
+            } else if (EjbJarVersion.EJBJAR_3_2.equals(ejbJarVersion)) {
+                result = ASDDVersion.GLASSFISH_4_1;
+            } else if (EjbJarVersion.EJBJAR_3_2_6.equals(ejbJarVersion)) {
+                result = ASDDVersion.GLASSFISH_5_1;
+            } else if (EjbJarVersion.EJBJAR_4_0.equals(ejbJarVersion)) {
+                result = ASDDVersion.GLASSFISH_7;
+            } else if (EjbJarVersion.EJBJAR_4_0_1.equals(ejbJarVersion)) {
+                result = ASDDVersion.GLASSFISH_8;
             }
             return result;
         }
@@ -292,6 +316,16 @@ public abstract class J2eeModuleHelper {
                 result = ASDDVersion.SUN_APPSERVER_9_0;
             } else if (ApplicationVersion.APPLICATION_6_0.equals(applicationVersion)) {
                 result = ASDDVersion.SUN_APPSERVER_10_0;
+            } else if (ApplicationVersion.APPLICATION_7_0.equals(applicationVersion)) {
+                result = ASDDVersion.GLASSFISH_4_1;
+            } else if (ApplicationVersion.APPLICATION_8_0.equals(applicationVersion)) {
+                result = ASDDVersion.GLASSFISH_5_1;
+            } else if (ApplicationVersion.APPLICATION_9_0.equals(applicationVersion)) {
+                result = ASDDVersion.GLASSFISH_6;
+            } else if (ApplicationVersion.APPLICATION_10_0.equals(applicationVersion)) {
+                result = ASDDVersion.GLASSFISH_7;
+            } else if (ApplicationVersion.APPLICATION_11_0.equals(applicationVersion)) {
+                result = ASDDVersion.GLASSFISH_8;
             }
             return result;
         }
@@ -323,6 +357,16 @@ public abstract class J2eeModuleHelper {
                 result = ASDDVersion.SUN_APPSERVER_9_0;
             } else if (AppClientVersion.APP_CLIENT_6_0.equals(appClientVersion)) {
                 result = ASDDVersion.SUN_APPSERVER_10_0;
+            } else if (AppClientVersion.APP_CLIENT_7_0.equals(appClientVersion)) {
+                result = ASDDVersion.GLASSFISH_4_1;
+            } else if (AppClientVersion.APP_CLIENT_8_0.equals(appClientVersion)) {
+                result = ASDDVersion.GLASSFISH_5_1;
+            } else if (AppClientVersion.APP_CLIENT_9_0.equals(appClientVersion)) {
+                result = ASDDVersion.GLASSFISH_6;
+            } else if (AppClientVersion.APP_CLIENT_10_0.equals(appClientVersion)) {
+                result = ASDDVersion.GLASSFISH_7;
+            } else if (AppClientVersion.APP_CLIENT_11_0.equals(appClientVersion)) {
+                result = ASDDVersion.GLASSFISH_8;
             }
             return result;
         }

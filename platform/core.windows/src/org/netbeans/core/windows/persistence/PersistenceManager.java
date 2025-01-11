@@ -1003,8 +1003,9 @@ public final class PersistenceManager implements PropertyChangeListener {
             return;
         }
 
-        for (Exception e : failedCompsMap.keySet()) {
-            String name = failedCompsMap.get(e);
+        for (Map.Entry<Exception, String> entry : failedCompsMap.entrySet()) {
+            Exception e = entry.getKey();
+            String name = entry.getValue();
             // create message
             String message = NbBundle.getMessage(PersistenceManager.class, 
                     (reading ? "FMT_TCReadError" : "FMT_TCWriteError"),
@@ -1187,7 +1188,7 @@ public final class PersistenceManager implements PropertyChangeListener {
                     l.add(wmc.tcIdViewList[i]);
                 }
             }
-            wmc.tcIdViewList = l.toArray(new String[l.size()]);
+            wmc.tcIdViewList = l.toArray(new String[0]);
         }
         for (int i = 0; i < wmc.modes.length; i++) {
             ModeConfig mc = wmc.modes[i];
@@ -1211,7 +1212,7 @@ public final class PersistenceManager implements PropertyChangeListener {
                         l.add(mc.tcRefConfigs[j]);
                     }
                 }
-                mc.tcRefConfigs = l.toArray(new TCRefConfig[l.size()]);
+                mc.tcRefConfigs = l.toArray(new TCRefConfig[0]);
             }
         }
         for (int i = 0; i < wmc.groups.length; i++) {
@@ -1230,7 +1231,7 @@ public final class PersistenceManager implements PropertyChangeListener {
                         l.add(gc.tcGroupConfigs[j]);
                     }
                 }
-                gc.tcGroupConfigs = l.toArray(new TCGroupConfig[l.size()]);
+                gc.tcGroupConfigs = l.toArray(new TCGroupConfig[0]);
             }
         }
     }
@@ -1360,8 +1361,8 @@ public final class PersistenceManager implements PropertyChangeListener {
      */
     public static String escapeTcId4XmlContent (String tcName) {
         if (tcName.indexOf('&') != -1 || tcName.indexOf('\'') != -1) {
-            tcName = tcName.replaceAll("&", "&amp;");
-            tcName = tcName.replaceAll("'", "&apos;");
+            tcName = tcName.replace("&", "&amp;");
+            tcName = tcName.replace("'", "&apos;");
         }
         return tcName;
     }

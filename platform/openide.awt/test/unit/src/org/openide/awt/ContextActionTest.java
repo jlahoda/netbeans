@@ -21,28 +21,35 @@ package org.openide.awt;
 
 import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ActionMap;
-import static junit.framework.Assert.assertFalse;
-import static junit.framework.Assert.assertTrue;
 import org.netbeans.junit.NbTestCase;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.util.ContextAwareAction;
+import org.openide.util.ContextGlobalProvider;
 import org.openide.util.Lookup;
+import org.openide.util.NbBundle.Messages;
+import org.openide.util.Utilities;
 import org.openide.util.lookup.AbstractLookup;
 import org.openide.util.lookup.InstanceContent;
 import org.openide.util.lookup.Lookups;
 import org.openide.util.lookup.ProxyLookup;
+import org.openide.util.test.MockLookup;
 
 /** Test that cookie actions are in fact sensitive to the correct cookies in the
  * correct numbers, and that changes to either node selection or cookies on the
@@ -66,6 +73,25 @@ implements Lookup.Provider, ContextActionEnabler<ContextActionTest.Openable> {
     
     private int expectedEnabledmentCount = 2;
     
+    private static class CGP implements ContextGlobalProvider, Lookup.Provider {
+        private final Lookup prx = Lookups.proxy(this);
+        
+        volatile Lookup current;
+    
+        @Override
+        public Lookup createGlobalContext() {
+            return prx;
+        }
+
+        @Override
+        public Lookup getLookup() {
+            Lookup c = current;
+            return c != null ? c : Lookup.EMPTY;
+        }
+    }
+    
+    static CGP actionLookup = new CGP();
+    
     @Override
     protected void setUp() throws Exception {
         lookup = Lookup.EMPTY;
@@ -82,6 +108,18 @@ implements Lookup.Provider, ContextActionEnabler<ContextActionTest.Openable> {
         n4 = new LookupWithOpenable(n1.lookup(Openable.class)); // share the same cookie instance with n1
         
         SimpleCookieAction.runOn.clear();
+        
+        actionLookup.current = lookupProxy;
+        
+        MockLookup.setLookup(Lookups.metaInfServices(getClass().getClassLoader()), 
+                lookupProxy, 
+                Lookups.fixed(actionLookup));
+    }
+
+    @Override
+    protected void tearDown() throws Exception {
+        actionLookup.current = null;
+        super.tearDown(); 
     }
     
     @Override
@@ -619,6 +657,13 @@ implements Lookup.Provider, ContextActionEnabler<ContextActionTest.Openable> {
         
         return a1.isEnabled();
     }
+
+    protected boolean getIsChecked(final Action a1) throws InterruptedException, InvocationTargetException {
+        assertTrue("In AWT", EventQueue.isDispatchThread());
+        
+        return Boolean.TRUE.equals(a1.getValue(Action.SELECTED_KEY));
+    }
+
     protected void doActionPerformed(final Action a1, final ActionEvent ev) throws InterruptedException, InvocationTargetException {
         assertTrue("In AWT", EventQueue.isDispatchThread());
         a1.actionPerformed(ev);
@@ -635,8 +680,7 @@ implements Lookup.Provider, ContextActionEnabler<ContextActionTest.Openable> {
     private static <T> ContextAwareAction context(
         ContextActionPerformer<T> a, ContextActionEnabler<T> e, ContextSelection s, Lookup lookupProxy, Class<T> c
     ) {
-        ContextAction.Performer<T> perf = new ContextAction.Performer<T>(a, e);
-        return GeneralAction.context(perf, s, lookupProxy, c);
+        return GeneralAction.context(() -> new ContextAction.Performer<T>(a, e), s, lookupProxy, c);
     }
     
     public static interface Openable {
@@ -696,5 +740,288 @@ implements Lookup.Provider, ContextActionEnabler<ContextActionTest.Openable> {
         }
     }
     
+    private static class TestData {
+
+        private boolean stateValue;
+
+        public static final String PROP_STATEVALUE = "stateValue";
+
+        public boolean isStateValue() {
+            return stateValue;
+        }
+
+        public void setStateValue(boolean stateValue) {
+            boolean oldStateValue = this.stateValue;
+            this.stateValue = stateValue;
+            propertyChangeSupport.firePropertyChange(PROP_STATEVALUE, oldStateValue, stateValue);
+        }
+
+        private final transient PropertyChangeSupport propertyChangeSupport = new PropertyChangeSupport(this);
+
+        public void addPropertyChangeListener(PropertyChangeListener listener) {
+            propertyChangeSupport.addPropertyChangeListener(listener);
+        }
+
+        public void removePropertyChangeListener(PropertyChangeListener listener) {
+            propertyChangeSupport.removePropertyChangeListener(listener);
+        }
+    }
     
+    /**
+     * Test action, whose state is driven by a model
+     */
+    @ActionID(category = "Test", id = "CheckedTest")
+    @ActionRegistration(displayName = "Test Action", 
+        checkedOn = @ActionState(
+            type = TestData.class,
+            property = "stateValue"
+        )
+    )
+    public static class CheckAction extends AbstractAction {
+        private final TestData data;
+
+        public CheckAction(TestData data) {
+            this.data = data;
+        }
+        
+        @Override
+        public void actionPerformed(ActionEvent e) {
+        }
+    }
+    
+    /**
+     * Checks that a stateful action properly changes its state, based
+     * on the supplied data.
+     * @throws Exception 
+     */
+    public void testActionGlobalState() throws Exception {
+        Action baseA = Actions.forID("Test", "CheckedTest");
+        
+        // baseAction is not enabled - no data:
+        assertFalse("No data, action must be disabled", getIsEnabled(baseA));
+        // baseAction is also not checked:
+        assertFalse("No data, action cannot be checked", getIsChecked(baseA));
+
+        // now provide the action:
+        TestData data = new TestData();
+        activate(Lookups.fixed(data));
+        
+        assertTrue("Data was published, action must enable", getIsEnabled(baseA));
+        assertFalse("Data is false, action must be unchedked", getIsChecked(baseA));
+        
+        data.setStateValue(true);
+
+        assertTrue(getIsEnabled(baseA));
+        assertTrue("Data changed to true, action must be checked", getIsChecked(baseA));
+    }
+    
+    public void testActionGlobalStateStartUnchecked() throws Exception {
+        TestData data = new TestData();
+        
+        activate(Lookups.fixed(data));
+        Action baseA = Actions.forID("Test", "CheckedTest");
+        
+        // baseAction is not enabled - no data:
+        assertTrue("Action must start up enabled", getIsEnabled(baseA));
+        assertFalse("Data is false, action must be unchecked", getIsChecked(baseA));
+        
+        data.setStateValue(true);
+        assertTrue("Data changed to true, action checked", getIsChecked(baseA));
+    }
+
+    public void testActionGlobalStateStartChecked() throws Exception {
+        TestData data = new TestData();
+        data.setStateValue(true);
+        
+        activate(Lookups.fixed(data));
+        Action baseA = Actions.forID("Test", "CheckedTest");
+        
+        // baseAction is not enabled - no data:
+        assertTrue(getIsEnabled(baseA));
+        // baseAction is also not checked:
+        assertTrue(getIsChecked(baseA));
+        
+        data.setStateValue(false);
+        assertFalse("Data is false, action must be unchecked", getIsChecked(baseA));
+    }
+    
+    public void testContextDelegate() throws Exception {
+        TestData data = new TestData();
+        data.setStateValue(true);
+        
+        TestData otherData = new TestData();
+        
+        
+        Action baseA = Actions.forID("Test", "CheckedTest");
+
+        // must change main action Lookup after the main delegate exists,
+        // so it gets property change and changes its Action.SELECTED_KEY
+        // otherwise the .map is null and action just delegates to Fallback
+        activate(Lookups.fixed(data));
+        
+        assertSame(data, Utilities.actionsGlobalContext().lookup(TestData.class));
+
+        InstanceContent ic = new InstanceContent();
+        Lookup context = new AbstractLookup(ic);
+        ic.add(data);
+        assertTrue(getIsEnabled(baseA));
+        assertTrue(getIsChecked(baseA));
+        
+        Action actionA = ((ContextAwareAction)baseA).createContextAwareInstance(context);
+        
+        assertTrue(getIsEnabled(actionA));
+        assertTrue(getIsChecked(actionA));
+        
+        // let's have completely different local context:
+        Lookup context2 = Lookups.fixed(otherData);
+        Action actionB = ((ContextAwareAction)baseA).createContextAwareInstance(context2);
+        assertTrue(getIsEnabled(actionB));
+        // in this context, action should be enabled, but UNchecked.
+        assertFalse(getIsChecked(actionB));
+
+        class PCL implements PropertyChangeListener {
+            Set<String> propChanges = Collections.synchronizedSet(new HashSet<>());
+            
+            @Override
+            public void propertyChange(PropertyChangeEvent evt) {
+                String n = evt.getPropertyName();
+                if (n != null) {
+                    propChanges.add(n);
+                }
+            }
+        }
+        
+        PCL listenerBase = new PCL();
+        PCL listenerA = new PCL();
+        PCL listenerB = new PCL();
+        baseA.addPropertyChangeListener(listenerBase);
+        actionA.addPropertyChangeListener(listenerA);
+        actionB.addPropertyChangeListener(listenerB);
+        
+        TestData data3 = new TestData();
+        // the data has property false, so actionA should fire & change, not the other ones
+        ic.set(Collections.singleton(data3), null);
+
+        // also potentially replans to AWT, so the pending change event from lookup 
+        // will be probably processed.
+        assertFalse(getIsChecked(actionA));
+        assertTrue(getIsChecked(baseA));
+
+        assertTrue(listenerBase.propChanges.isEmpty());
+        assertTrue(listenerB.propChanges.isEmpty());
+        
+        assertTrue(listenerA.propChanges.contains(Action.SELECTED_KEY));
+        
+        listenerA.propChanges.clear();
+        
+        otherData.setStateValue(true);
+
+        // again sync with AWT
+        assertTrue(getIsChecked(baseA));
+        assertTrue(getIsChecked(actionB));
+
+        assertTrue(listenerBase.propChanges.isEmpty());
+        assertTrue(listenerA.propChanges.isEmpty());
+        
+        assertTrue(listenerB.propChanges.contains(Action.SELECTED_KEY));
+    }
+
+
+    @ActionID(category = "test", id = "OutputTestAction")
+    @ActionRegistration(displayName = "Dummy", lazy = true)
+    public static class OutputTestAction extends AbstractAction implements ContextAwareAction {
+
+        // Record the result string from the last action invocation
+        public static String actionResult;
+
+        private Lookup ctx;
+
+        public OutputTestAction(String text) {
+            this.ctx = Lookups.fixed(text);
+        }
+
+        private OutputTestAction(Lookup ctx) {
+            this.ctx = ctx;
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent ae) {
+            System.out.println(this.ctx.lookup(String.class));
+            actionResult = this.ctx.lookup(String.class);
+        }
+
+        @Override
+        public Action createContextAwareInstance(Lookup actionContext) {
+            return new OutputTestAction(ctx);
+        }
+
+    }
+
+    public void testContextAwareInstanceInvokesWithCorrectContext() throws InterruptedException, InvocationTargetException {
+        OutputTestAction.actionResult = null;
+
+        ContextAwareAction baseCAA = (ContextAwareAction) Actions.forID("test", "OutputTestAction");
+
+        Lookup l1 = Lookups.fixed("Lookup 1");
+        Lookup l2 = Lookups.fixed("Lookup 2");
+
+        Action cai1 = baseCAA.createContextAwareInstance(l1);
+        Action cai2 = baseCAA.createContextAwareInstance(l2);
+
+        assertNull(OutputTestAction.actionResult);
+        runOnEdt(() -> cai1.actionPerformed(new ActionEvent(new Object(), 1, "blah")));
+        assertEquals("Lookup 1", OutputTestAction.actionResult);
+        runOnEdt(() -> cai2.actionPerformed(new ActionEvent(new Object(), 2, "blah")));
+        assertEquals("Lookup 2", OutputTestAction.actionResult);
+        runOnEdt(() -> cai1.actionPerformed(new ActionEvent(new Object(), 3, "blah")));
+        assertEquals("Lookup 1", OutputTestAction.actionResult);
+    }
+
+    @ActionID(category = "test", id = "OutputTestAction2")
+    @ActionRegistration(displayName = "Dummy2")
+    public static class OutputTestAction2 implements ActionListener {
+
+        // Record the result string from the last action invocation
+        public static String actionResult;
+
+        private final String text;
+
+        public OutputTestAction2(String text) {
+            this.text = text;
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            System.out.println(text);
+            actionResult = text;
+        }
+    }
+
+    public void testActionListenerInvokesWithCorrectContext() throws InterruptedException, InvocationTargetException {
+        OutputTestAction2.actionResult = null;
+
+        ContextAwareAction baseCAA = (ContextAwareAction) Actions.forID("test", "OutputTestAction2");
+
+        Lookup l1 = Lookups.fixed("Lookup 1");
+        Lookup l2 = Lookups.fixed("Lookup 2");
+
+        Action cai1 = baseCAA.createContextAwareInstance(l1);
+        Action cai2 = baseCAA.createContextAwareInstance(l2);
+
+        assertNull(OutputTestAction2.actionResult);
+        runOnEdt(() -> cai1.actionPerformed(new ActionEvent(new Object(), 1, "blah")));
+        assertEquals("Lookup 1", OutputTestAction2.actionResult);
+        runOnEdt(() -> cai2.actionPerformed(new ActionEvent(new Object(), 2, "blah")));
+        assertEquals("Lookup 2", OutputTestAction2.actionResult);
+        runOnEdt(() -> cai1.actionPerformed(new ActionEvent(new Object(), 3, "blah")));
+        assertEquals("Lookup 1", OutputTestAction2.actionResult);
+    }
+
+    private void runOnEdt(Runnable runnable) throws InterruptedException, InvocationTargetException {
+        if(EventQueue.isDispatchThread()) {
+            runnable.run();
+        } else {
+            EventQueue.invokeAndWait(runnable);
+        }
+    }
 }

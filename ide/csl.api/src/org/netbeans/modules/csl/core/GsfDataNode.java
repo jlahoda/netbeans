@@ -71,7 +71,7 @@ public class GsfDataNode extends DataNode {
                 LOG.log(Level.WARNING, "Not an action instance, or broken action: {0}", dob[i].getPrimaryFile());
                 continue;
             }
-            Class clazz = ic.instanceClass();
+            Class<?> clazz = ic.instanceClass();
 
             if (JSeparator.class.isAssignableFrom(clazz)) {
                 actions.add(null);
@@ -116,7 +116,7 @@ public class GsfDataNode extends DataNode {
             }
 
             if (!actions.isEmpty()) {
-                mimeTypeToActions.put(mimeType, actions.toArray(new Action[actions.size()]));
+                mimeTypeToActions.put(mimeType, actions.toArray(new Action[0]));
             } else {
                 mimeTypeToActions.put(mimeType, super.getActions(context));
             }

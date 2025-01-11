@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 9.11.1
+#Version 9.33.0
 
 CLSS public abstract interface java.io.Serializable
 
@@ -21,7 +21,6 @@ meth public final java.lang.String name()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
-hfds name,ordinal
 
 CLSS public java.lang.Exception
 cons protected init(java.lang.String,java.lang.Throwable,boolean,boolean)
@@ -30,7 +29,12 @@ cons public init(java.lang.String)
 cons public init(java.lang.String,java.lang.Throwable)
 cons public init(java.lang.Throwable)
 supr java.lang.Throwable
-hfds serialVersionUID
+
+CLSS public abstract interface !annotation java.lang.FunctionalInterface
+ anno 0 java.lang.annotation.Documented()
+ anno 0 java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy value=RUNTIME)
+ anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[TYPE])
+intf java.lang.annotation.Annotation
 
 CLSS public java.lang.Object
 cons public init()
@@ -67,8 +71,6 @@ meth public void printStackTrace(java.io.PrintStream)
 meth public void printStackTrace(java.io.PrintWriter)
 meth public void setStackTrace(java.lang.StackTraceElement[])
 supr java.lang.Object
-hfds CAUSE_CAPTION,EMPTY_THROWABLE_ARRAY,NULL_CAUSE_MESSAGE,SELF_SUPPRESSION_MESSAGE,SUPPRESSED_CAPTION,SUPPRESSED_SENTINEL,UNASSIGNED_STACK,backtrace,cause,detailMessage,serialVersionUID,stackTrace,suppressedExceptions
-hcls PrintStreamOrWriter,SentinelHolder,WrappedPrintStream,WrappedPrintWriter
 
 CLSS public abstract interface java.lang.annotation.Annotation
 meth public abstract boolean equals(java.lang.Object)
@@ -103,7 +105,6 @@ intf java.io.Serializable
 meth public java.lang.Object getSource()
 meth public java.lang.String toString()
 supr java.lang.Object
-hfds serialVersionUID
 
 CLSS public final org.netbeans.modules.parsing.api.Embedding
 meth public final boolean containsOriginalOffset(int)
@@ -121,6 +122,10 @@ meth public static java.util.concurrent.Future<java.lang.Void> parseWhenScanFini
  anno 0 org.netbeans.api.annotations.common.NonNull()
  anno 1 org.netbeans.api.annotations.common.NonNull()
  anno 2 org.netbeans.api.annotations.common.NonNull()
+meth public static java.util.concurrent.Future<java.lang.Void> parseWhenScanFinished(java.util.Collection<org.netbeans.modules.parsing.api.Source>,org.netbeans.modules.parsing.api.ResultProcessor) throws org.netbeans.modules.parsing.spi.ParseException
+ anno 0 org.netbeans.api.annotations.common.NonNull()
+ anno 1 org.netbeans.api.annotations.common.NonNull()
+ anno 2 org.netbeans.api.annotations.common.NonNull()
 meth public static java.util.concurrent.Future<java.lang.Void> parseWhenScanFinished(java.util.Collection<org.netbeans.modules.parsing.api.Source>,org.netbeans.modules.parsing.api.UserTask) throws org.netbeans.modules.parsing.spi.ParseException
  anno 0 org.netbeans.api.annotations.common.NonNull()
  anno 1 org.netbeans.api.annotations.common.NonNull()
@@ -128,11 +133,13 @@ meth public static java.util.concurrent.Future<java.lang.Void> parseWhenScanFini
 meth public static void parse(java.lang.String,org.netbeans.modules.parsing.api.UserTask) throws org.netbeans.modules.parsing.spi.ParseException
  anno 1 org.netbeans.api.annotations.common.NonNull()
  anno 2 org.netbeans.api.annotations.common.NonNull()
+meth public static void parse(java.util.Collection<org.netbeans.modules.parsing.api.Source>,org.netbeans.modules.parsing.api.ResultProcessor) throws org.netbeans.modules.parsing.spi.ParseException
+ anno 1 org.netbeans.api.annotations.common.NonNull()
+ anno 2 org.netbeans.api.annotations.common.NonNull()
 meth public static void parse(java.util.Collection<org.netbeans.modules.parsing.api.Source>,org.netbeans.modules.parsing.api.UserTask) throws org.netbeans.modules.parsing.spi.ParseException
  anno 1 org.netbeans.api.annotations.common.NonNull()
  anno 2 org.netbeans.api.annotations.common.NonNull()
 supr java.lang.Object
-hfds cachedParsers
 hcls LazySnapshots,MimeTaskAction,MultiUserTaskAction,UserTaskAction
 
 CLSS public final org.netbeans.modules.parsing.api.ResultIterator
@@ -144,6 +151,10 @@ meth public org.netbeans.modules.parsing.spi.Parser$Result getParserResult(int) 
 supr java.lang.Object
 hfds children,embeddingToResultIterator,parser,result,sourceCache,task
 hcls MyAccessor
+
+CLSS public abstract interface org.netbeans.modules.parsing.api.ResultProcessor
+ anno 0 java.lang.FunctionalInterface()
+meth public abstract void run(org.netbeans.modules.parsing.api.ResultIterator) throws java.lang.Exception
 
 CLSS public final org.netbeans.modules.parsing.api.Snapshot
 meth public int getEmbeddedOffset(int)
@@ -182,7 +193,7 @@ supr java.lang.Object
 
 CLSS public abstract org.netbeans.modules.parsing.api.UserTask
 cons public init()
-meth public abstract void run(org.netbeans.modules.parsing.api.ResultIterator) throws java.lang.Exception
+intf org.netbeans.modules.parsing.api.ResultProcessor
 supr org.netbeans.modules.parsing.api.Task
 
 CLSS public org.netbeans.modules.parsing.spi.CursorMovedSchedulerEvent
@@ -258,6 +269,7 @@ CLSS public abstract static org.netbeans.modules.parsing.spi.Parser$Result
  outer org.netbeans.modules.parsing.spi.Parser
 cons protected init(org.netbeans.modules.parsing.api.Snapshot)
 meth protected abstract void invalidate()
+meth protected boolean processingFinished()
 meth public org.netbeans.modules.parsing.api.Snapshot getSnapshot()
 supr java.lang.Object
 hfds snapshot

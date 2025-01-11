@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.77.1
+#Version 2.21
 
 CLSS public abstract java.awt.Component
 cons protected init()
@@ -159,8 +159,6 @@ meth public java.awt.im.InputMethodRequests getInputMethodRequests()
 meth public java.awt.image.ColorModel getColorModel()
 meth public java.awt.image.VolatileImage createVolatileImage(int,int)
 meth public java.awt.image.VolatileImage createVolatileImage(int,int,java.awt.ImageCapabilities) throws java.awt.AWTException
-meth public java.awt.peer.ComponentPeer getPeer()
- anno 0 java.lang.Deprecated()
 meth public java.beans.PropertyChangeListener[] getPropertyChangeListeners()
 meth public java.beans.PropertyChangeListener[] getPropertyChangeListeners(java.lang.String)
 meth public java.lang.String getName()
@@ -274,8 +272,6 @@ meth public void transferFocusUpCycle()
 meth public void update(java.awt.Graphics)
 meth public void validate()
 supr java.lang.Object
-hfds FOCUS_TRAVERSABLE_DEFAULT,FOCUS_TRAVERSABLE_SET,FOCUS_TRAVERSABLE_UNKNOWN,LOCK,acc,actionListenerK,adjustmentListenerK,appContext,autoFocusTransferOnDisposal,background,backgroundEraseDisabled,boundsOp,bufferStrategy,changeSupport,coalesceEventsParams,coalesceMap,coalescingEnabled,componentListener,componentListenerK,componentOrientation,componentSerializedDataVersion,compoundShape,containerListenerK,cursor,dropTarget,enabled,eventCache,eventLog,eventMask,focusListener,focusListenerK,focusLog,focusTraversalKeyPropertyNames,focusTraversalKeys,focusTraversalKeysEnabled,focusable,font,foreground,graphicsConfig,height,hierarchyBoundsListener,hierarchyBoundsListenerK,hierarchyListener,hierarchyListenerK,ignoreRepaint,incRate,inputMethodListener,inputMethodListenerK,isAddNotifyComplete,isFocusTraversableOverridden,isInc,isPacked,itemListenerK,keyListener,keyListenerK,locale,log,maxSize,maxSizeSet,minSize,minSizeSet,mixingCutoutRegion,mixingLog,mouseListener,mouseListenerK,mouseMotionListener,mouseMotionListenerK,mouseWheelListener,mouseWheelListenerK,name,nameExplicitlySet,newEventsOnly,objectLock,ownedWindowK,parent,peer,peerFont,popups,prefSize,prefSizeSet,requestFocusController,serialVersionUID,textListenerK,valid,visible,width,windowClosingException,windowFocusListenerK,windowListenerK,windowStateListenerK,x,y
-hcls AWTTreeLock,BltSubRegionBufferStrategy,DummyRequestFocusController,FlipSubRegionBufferStrategy,ProxyCapabilities,SingleBufferStrategy
 
 CLSS public java.awt.Container
 cons public init()
@@ -360,8 +356,6 @@ meth public void transferFocusDownCycle()
 meth public void update(java.awt.Graphics)
 meth public void validate()
 supr java.awt.Component
-hfds EMPTY_ARRAY,INCLUDE_SELF,SEARCH_HEAVYWEIGHTS,component,containerListener,containerSerializedDataVersion,descendUnconditionallyWhenValidating,descendantsCount,dispatcher,eventLog,focusCycleRoot,focusTraversalPolicy,focusTraversalPolicyProvider,isJavaAwtSmartInvalidate,layoutMgr,listeningBoundsChildren,listeningChildren,log,mixingLog,modalAppContext,modalComp,numOfHWComponents,numOfLWComponents,preserveBackgroundColor,printing,printingThreads,serialPersistentFields,serialVersionUID
-hcls DropTargetEventTargetFilter,EventTargetFilter,MouseEventTargetFilter,WakingRunnable
 
 CLSS public abstract interface java.awt.ItemSelectable
 meth public abstract java.lang.Object[] getSelectedObjects()
@@ -408,7 +402,6 @@ meth public void setPreferred(boolean)
 meth public void setShortDescription(java.lang.String)
 meth public void setValue(java.lang.String,java.lang.Object)
 supr java.lang.Object
-hfds TRANSIENT,classRef,displayName,expert,hidden,name,preferred,shortDescription,table
 
 CLSS public abstract interface java.io.Externalizable
 intf java.io.Serializable
@@ -421,6 +414,12 @@ CLSS public abstract interface java.lang.Cloneable
 
 CLSS public abstract interface java.lang.Comparable<%0 extends java.lang.Object>
 meth public abstract int compareTo({java.lang.Comparable%0})
+
+CLSS public abstract interface !annotation java.lang.Deprecated
+ anno 0 java.lang.annotation.Documented()
+ anno 0 java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy value=RUNTIME)
+ anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[CONSTRUCTOR, FIELD, LOCAL_VARIABLE, METHOD, PACKAGE, PARAMETER, TYPE])
+intf java.lang.annotation.Annotation
 
 CLSS public abstract java.lang.Enum<%0 extends java.lang.Enum<{java.lang.Enum%0}>>
 cons protected init(java.lang.String,int)
@@ -437,7 +436,6 @@ meth public final java.lang.String name()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
-hfds name,ordinal
 
 CLSS public java.lang.Exception
 cons protected init(java.lang.String,java.lang.Throwable,boolean,boolean)
@@ -446,7 +444,6 @@ cons public init(java.lang.String)
 cons public init(java.lang.String,java.lang.Throwable)
 cons public init(java.lang.Throwable)
 supr java.lang.Throwable
-hfds serialVersionUID
 
 CLSS public abstract interface !annotation java.lang.FunctionalInterface
  anno 0 java.lang.annotation.Documented()
@@ -537,8 +534,6 @@ meth public void setContextClassLoader(java.lang.ClassLoader)
 meth public void setUncaughtExceptionHandler(java.lang.Thread$UncaughtExceptionHandler)
 meth public void start()
 supr java.lang.Object
-hfds EMPTY_STACK_TRACE,SUBCLASS_IMPLEMENTATION_PERMISSION,blocker,blockerLock,contextClassLoader,daemon,defaultUncaughtExceptionHandler,eetop,group,inheritableThreadLocals,inheritedAccessControlContext,name,nativeParkEventPointer,parkBlocker,priority,single_step,stackSize,stillborn,target,threadInitNumber,threadLocalRandomProbe,threadLocalRandomSecondarySeed,threadLocalRandomSeed,threadLocals,threadQ,threadSeqNumber,threadStatus,tid,uncaughtExceptionHandler
-hcls Caches,WeakClassKey
 
 CLSS public java.lang.Throwable
 cons protected init(java.lang.String,java.lang.Throwable,boolean,boolean)
@@ -561,8 +556,6 @@ meth public void printStackTrace(java.io.PrintStream)
 meth public void printStackTrace(java.io.PrintWriter)
 meth public void setStackTrace(java.lang.StackTraceElement[])
 supr java.lang.Object
-hfds CAUSE_CAPTION,EMPTY_THROWABLE_ARRAY,NULL_CAUSE_MESSAGE,SELF_SUPPRESSION_MESSAGE,SUPPRESSED_CAPTION,SUPPRESSED_SENTINEL,UNASSIGNED_STACK,backtrace,cause,detailMessage,serialVersionUID,stackTrace,suppressedExceptions
-hcls PrintStreamOrWriter,SentinelHolder,WrappedPrintStream,WrappedPrintWriter
 
 CLSS public abstract interface java.lang.annotation.Annotation
 meth public abstract boolean equals(java.lang.Object)
@@ -607,7 +600,6 @@ meth public static java.net.PasswordAuthentication requestPasswordAuthentication
 meth public static java.net.PasswordAuthentication requestPasswordAuthentication(java.net.InetAddress,int,java.lang.String,java.lang.String,java.lang.String)
 meth public static void setDefault(java.net.Authenticator)
 supr java.lang.Object
-hfds requestingAuthType,requestingHost,requestingPort,requestingPrompt,requestingProtocol,requestingScheme,requestingSite,requestingURL,theAuthenticator
 
 CLSS public abstract interface java.util.Comparator<%0 extends java.lang.Object>
  anno 0 java.lang.FunctionalInterface()
@@ -687,7 +679,6 @@ meth public void putValue(java.lang.String,java.lang.Object)
 meth public void removePropertyChangeListener(java.beans.PropertyChangeListener)
 meth public void setEnabled(boolean)
 supr java.lang.Object
-hfds RECONFIGURE_ON_NULL,arrayTable
 
 CLSS public abstract interface javax.swing.Action
 fld public final static java.lang.String ACCELERATOR_KEY = "AcceleratorKey"
@@ -801,8 +792,6 @@ meth public void updateUI()
 meth public {javax.swing.JComboBox%0} getItemAt(int)
 meth public {javax.swing.JComboBox%0} getPrototypeDisplayValue()
 supr javax.swing.JComponent
-hfds action,actionPropertyChangeListener,firingActionEvent,prototypeDisplayValue,selectingItem,uiClassID
-hcls ComboBoxActionPropertyChangeListener,DefaultKeySelectionManager
 
 CLSS public abstract javax.swing.JComponent
 cons public init()
@@ -960,8 +949,6 @@ meth public void unregisterKeyboardAction(javax.swing.KeyStroke)
 meth public void update(java.awt.Graphics)
 meth public void updateUI()
 supr java.awt.Container
-hfds ACTIONMAP_CREATED,ANCESTOR_INPUTMAP_CREATED,ANCESTOR_USING_BUFFER,AUTOSCROLLS_SET,COMPLETELY_OBSCURED,CREATED_DOUBLE_BUFFER,DEBUG_GRAPHICS_LOADED,FOCUS_INPUTMAP_CREATED,FOCUS_TRAVERSAL_KEYS_BACKWARD_SET,FOCUS_TRAVERSAL_KEYS_FORWARD_SET,INHERITS_POPUP_MENU,INPUT_VERIFIER_SOURCE_KEY,IS_DOUBLE_BUFFERED,IS_OPAQUE,IS_PAINTING_TILE,IS_PRINTING,IS_PRINTING_ALL,IS_REPAINTING,KEYBOARD_BINDINGS_KEY,KEY_EVENTS_ENABLED,NEXT_FOCUS,NOT_OBSCURED,OPAQUE_SET,PARTIALLY_OBSCURED,REQUEST_FOCUS_DISABLED,RESERVED_1,RESERVED_2,RESERVED_3,RESERVED_4,RESERVED_5,RESERVED_6,WHEN_IN_FOCUSED_WINDOW_BINDINGS,WIF_INPUTMAP_CREATED,WRITE_OBJ_COUNTER_FIRST,WRITE_OBJ_COUNTER_LAST,aaTextInfo,actionMap,alignmentX,alignmentY,ancestorInputMap,autoscrolls,border,clientProperties,componentObtainingGraphicsFrom,componentObtainingGraphicsFromLock,defaultLocale,flags,focusController,focusInputMap,inputVerifier,isAlignmentXSet,isAlignmentYSet,managingFocusBackwardTraversalKeys,managingFocusForwardTraversalKeys,paintingChild,popupMenu,readObjectCallbacks,revalidateRunnableScheduled,tempRectangles,uiClassID,verifyInputWhenFocusTarget,vetoableChangeSupport,windowInputMap
-hcls ActionStandin,IntVector,KeyboardState,ReadObjectCallback
 
 CLSS public javax.swing.JPanel
 cons public init()
@@ -977,7 +964,6 @@ meth public javax.swing.plaf.PanelUI getUI()
 meth public void setUI(javax.swing.plaf.PanelUI)
 meth public void updateUI()
 supr javax.swing.JComponent
-hfds uiClassID
 
 CLSS public javax.swing.JTabbedPane
 cons public init()
@@ -1060,8 +1046,6 @@ meth public void setToolTipTextAt(int,java.lang.String)
 meth public void setUI(javax.swing.plaf.TabbedPaneUI)
 meth public void updateUI()
 supr javax.swing.JComponent
-hfds haveRegistered,pages,tabLayoutPolicy,uiClassID,visComp
-hcls Page
 
 CLSS public abstract interface javax.swing.SwingConstants
 fld public final static int BOTTOM = 3
@@ -1148,8 +1132,8 @@ hfds process,profile
 
 CLSS protected static org.netbeans.modules.payara.common.BasicTask$StateChange
  outer org.netbeans.modules.payara.common.BasicTask
-cons protected !varargs init(org.netbeans.modules.payara.common.BasicTask,org.netbeans.modules.payara.tooling.TaskState,org.netbeans.modules.payara.tooling.TaskEvent,java.lang.String,java.lang.String[])
-cons protected init(org.netbeans.modules.payara.common.BasicTask,org.netbeans.modules.payara.tooling.TaskState,org.netbeans.modules.payara.tooling.TaskEvent,java.lang.String)
+cons protected !varargs init(org.netbeans.modules.payara.common.BasicTask<?>,org.netbeans.modules.payara.tooling.TaskState,org.netbeans.modules.payara.tooling.TaskEvent,java.lang.String,java.lang.String[])
+cons protected init(org.netbeans.modules.payara.common.BasicTask<?>,org.netbeans.modules.payara.tooling.TaskState,org.netbeans.modules.payara.tooling.TaskEvent,java.lang.String)
 meth protected org.netbeans.modules.payara.tooling.TaskState fireOperationStateChanged()
 supr java.lang.Object
 hfds event,msgArgs,msgKey,result,task
@@ -1176,8 +1160,6 @@ meth public java.lang.String getDomainName()
  anno 0 java.lang.Deprecated()
 meth public java.lang.String getDomainsRoot()
  anno 0 java.lang.Deprecated()
-meth public java.lang.String getPayaraRoot()
- anno 0 java.lang.Deprecated()
 meth public java.lang.String getHostName()
  anno 0 java.lang.Deprecated()
 meth public java.lang.String getHttpPort()
@@ -1185,6 +1167,8 @@ meth public java.lang.String getHttpPort()
 meth public java.lang.String getInstallRoot()
  anno 0 java.lang.Deprecated()
 meth public java.lang.String getPassword()
+meth public java.lang.String getPayaraRoot()
+ anno 0 java.lang.Deprecated()
 meth public java.lang.String getResourcesXmlName()
 meth public java.lang.String getUserName()
  anno 0 java.lang.Deprecated()
@@ -1202,9 +1186,9 @@ meth public java.util.concurrent.Future<org.netbeans.modules.payara.tooling.admi
 meth public java.util.concurrent.Future<org.netbeans.modules.payara.tooling.admin.ResultString> deploy(org.netbeans.modules.payara.tooling.TaskStateListener,java.io.File,java.lang.String,java.lang.String,java.util.Map<java.lang.String,java.lang.String>,java.io.File[])
 meth public java.util.concurrent.Future<org.netbeans.modules.payara.tooling.admin.ResultString> disable(org.netbeans.modules.payara.tooling.TaskStateListener,java.lang.String)
 meth public java.util.concurrent.Future<org.netbeans.modules.payara.tooling.admin.ResultString> enable(org.netbeans.modules.payara.tooling.TaskStateListener,java.lang.String)
-meth public java.util.concurrent.Future<org.netbeans.modules.payara.tooling.admin.ResultString> redeploy(org.netbeans.modules.payara.tooling.TaskStateListener,java.lang.String,boolean)
-meth public java.util.concurrent.Future<org.netbeans.modules.payara.tooling.admin.ResultString> redeploy(org.netbeans.modules.payara.tooling.TaskStateListener,java.lang.String,java.lang.String,boolean)
-meth public java.util.concurrent.Future<org.netbeans.modules.payara.tooling.admin.ResultString> redeploy(org.netbeans.modules.payara.tooling.TaskStateListener,java.lang.String,java.lang.String,java.io.File[],boolean)
+meth public java.util.concurrent.Future<org.netbeans.modules.payara.tooling.admin.ResultString> redeploy(org.netbeans.modules.payara.tooling.TaskStateListener,java.lang.String,boolean,boolean,java.util.List<java.lang.String>)
+meth public java.util.concurrent.Future<org.netbeans.modules.payara.tooling.admin.ResultString> redeploy(org.netbeans.modules.payara.tooling.TaskStateListener,java.lang.String,java.lang.String,boolean,boolean,java.util.List<java.lang.String>)
+meth public java.util.concurrent.Future<org.netbeans.modules.payara.tooling.admin.ResultString> redeploy(org.netbeans.modules.payara.tooling.TaskStateListener,java.lang.String,java.lang.String,java.io.File[],boolean,boolean,java.util.List<java.lang.String>)
 meth public java.util.concurrent.Future<org.netbeans.modules.payara.tooling.admin.ResultString> restartServer(int,boolean,org.netbeans.modules.payara.tooling.TaskStateListener[])
 meth public java.util.concurrent.Future<org.netbeans.modules.payara.tooling.admin.ResultString> undeploy(org.netbeans.modules.payara.tooling.TaskStateListener,java.lang.String)
 meth public org.netbeans.modules.payara.common.PayaraInstance getInstance()
@@ -1229,7 +1213,7 @@ meth public int getAdminPort()
 meth public int getHttpPort()
 meth public void run()
 supr java.lang.Thread
-hfds PORTBASE,pip,installRootKey,ip,map,platformLocation,pword,register,uname
+hfds PORTBASE,installRootKey,instanceProperties,instanceProvider,map,platformLocation,pword,register,uname
 hcls PDCancel
 
 CLSS public org.netbeans.modules.payara.common.EnableComet
@@ -1239,63 +1223,44 @@ meth public void run()
 supr java.lang.Object
 hfds LOGGER,instance
 
+CLSS public org.netbeans.modules.payara.common.Installer
+cons public init()
+meth public void close()
+supr org.openide.modules.ModuleInstall
+
+CLSS public org.netbeans.modules.payara.common.KillTask
+cons public !varargs init(org.netbeans.modules.payara.common.PayaraInstance,org.netbeans.modules.payara.tooling.TaskStateListener[])
+meth public org.netbeans.modules.payara.tooling.TaskState call()
+supr org.netbeans.modules.payara.common.BasicTask<org.netbeans.modules.payara.tooling.TaskState>
+hfds LOGGER
+
+CLSS public org.netbeans.modules.payara.common.LogViewMgr
+meth public !varargs void readInputStreams(java.util.List<org.netbeans.modules.payara.spi.Recognizer>,boolean,org.netbeans.modules.payara.common.PayaraInstance,org.netbeans.modules.payara.tooling.server.FetchLog[])
+meth public static org.netbeans.modules.payara.common.LogViewMgr getInstance(java.lang.String)
+meth public static org.openide.windows.InputOutput getServerIO(java.lang.String)
+meth public static void displayOutput(org.netbeans.modules.payara.common.PayaraInstance,org.openide.util.Lookup)
+meth public static void removeLog(org.netbeans.modules.payara.common.PayaraInstance)
+meth public void ensureActiveReader(java.util.List<org.netbeans.modules.payara.spi.Recognizer>,org.netbeans.modules.payara.tooling.server.FetchLog,org.netbeans.modules.payara.common.PayaraInstance)
+meth public void selectIO(boolean)
+meth public void stopReaders()
+meth public void write(java.lang.String,boolean)
+meth public void write(java.lang.String,org.openide.windows.OutputListener,boolean,boolean)
+supr java.lang.Object
+hfds COLOR_PATTERN,COLOR_TABLE,DELAY,INSTANCES,LOGGER,LOG_BLUE,LOG_CYAN,LOG_GREEN,LOG_MAGENTA,LOG_RED,LOG_YELLOW,OUTPUT_WINDOW_TCID,VISIBILITY_CHECK_DELAY,io,ioWeakMap,lastVisibleCheck,localizedLevels,outputTCRef,readers,serverInputStreams,setClosedMethod,strictFilter,uri,visibleCheck
+hcls Filter,LogFileFilter,LogStateListener,LoggerRunnable,Message,StateFilter,StreamFilter
+
+CLSS public org.netbeans.modules.payara.common.PartialCompletionException
+cons public init(java.lang.String)
+meth public java.lang.String getMessage()
+supr java.lang.Exception
+hfds failedUpdates
+
 CLSS public org.netbeans.modules.payara.common.PayaraExecutors
 cons public init()
 meth public static java.util.concurrent.ExecutorService fetchLogExecutor()
 supr java.lang.Object
 hfds FETCH_LOG_EXECUTOR_POOL_KEEPALIVE_TIME,FETCH_LOG_EXECUTOR_POOL_MAX_SIZE,FETCH_LOG_EXECUTOR_POOL_MIN_SIZE,THREAD_GROUP_NAME_LOG,THREAD_GROUP_NAME_STAT,THREAD_GROUP_NAME_TOP,fetchLogExecutor,tgLog,tgStat,tgTop
 hcls FetchLogThreadFactory,StatusThreadFactory
-
-CLSS public final !enum org.netbeans.modules.payara.common.PayaraJvmMode
-fld public final static int length
-fld public final static org.netbeans.modules.payara.common.PayaraJvmMode DEBUG
-fld public final static org.netbeans.modules.payara.common.PayaraJvmMode NORMAL
-fld public final static org.netbeans.modules.payara.common.PayaraJvmMode PROFILE
-meth public java.lang.String toString()
-meth public static org.netbeans.modules.payara.common.PayaraJvmMode toValue(java.lang.String)
-meth public static org.netbeans.modules.payara.common.PayaraJvmMode valueOf(java.lang.String)
-meth public static org.netbeans.modules.payara.common.PayaraJvmMode[] values()
-supr java.lang.Enum<org.netbeans.modules.payara.common.PayaraJvmMode>
-hfds DEBUG_STR,LOGGER,NORMAL_STR,PROFILE_STR,stringValuesMap
-
-CLSS public org.netbeans.modules.payara.common.PayaraLogger
-cons public init()
-meth public static java.util.logging.Logger get(java.lang.Class)
-supr java.lang.Object
-
-CLSS public org.netbeans.modules.payara.common.PayaraSettings
-cons public init()
-meth public static boolean getGf312WarningShowAgain()
-meth public static boolean getGfKillWarningShowAgain()
-meth public static boolean getGfShowPasswordInPropertiesForm()
-meth public static boolean showWindowSystem()
-meth public static void setGf312WarningShowAgain(boolean)
-meth public static void setGfKillWarningShowAgain(boolean)
-meth public static void setGfShowPasswordInPropertiesForm(boolean)
-supr java.lang.Object
-hfds LBL_GF312_WARNING_SHOW_AGAIN,LBL_GF_KILL_SHOW_AGAIN,LBL_GF_SHOW_PASSWORD_IN_PROPERTIES_FORM,NB_PREFERENCES_NODE
-
-CLSS public org.netbeans.modules.payara.common.PayaraState
-cons public init()
-innr public final static !enum Mode
-meth public static boolean canStart(org.netbeans.modules.payara.tooling.data.PayaraServer)
-meth public static boolean isOffline(org.netbeans.modules.payara.tooling.data.PayaraServer)
-meth public static boolean isOnline(org.netbeans.modules.payara.tooling.data.PayaraServer)
-meth public static boolean monitor(org.netbeans.modules.payara.tooling.data.PayaraServer)
-meth public static org.netbeans.modules.payara.tooling.data.PayaraServerStatus getStatus(org.netbeans.modules.payara.tooling.data.PayaraServer)
-meth public static org.netbeans.modules.payara.tooling.data.PayaraServerStatus getStatus(org.netbeans.modules.payara.tooling.data.PayaraServer,long)
-supr java.lang.Object
-hfds INIT_MONITORING_TIMEOUT,LOGGER
-
-CLSS public final static !enum org.netbeans.modules.payara.common.PayaraState$Mode
- outer org.netbeans.modules.payara.common.PayaraState
-fld public final static org.netbeans.modules.payara.common.PayaraState$Mode DEFAULT
-fld public final static org.netbeans.modules.payara.common.PayaraState$Mode REFRESH
-fld public final static org.netbeans.modules.payara.common.PayaraState$Mode STARTUP
-meth public java.lang.String toString()
-meth public static org.netbeans.modules.payara.common.PayaraState$Mode valueOf(java.lang.String)
-meth public static org.netbeans.modules.payara.common.PayaraState$Mode[] values()
-supr java.lang.Enum<org.netbeans.modules.payara.common.PayaraState$Mode>
 
 CLSS public org.netbeans.modules.payara.common.PayaraInstance
 fld public final static int DEFAULT_ADMIN_PORT = 4848
@@ -1314,9 +1279,13 @@ intf org.netbeans.spi.server.ServerInstanceImplementation
 intf org.openide.util.Lookup$Provider
 intf org.openide.util.LookupListener
 meth public boolean equals(java.lang.Object)
+meth public boolean isDocker()
+meth public boolean isHotDeployEnabled()
+meth public boolean isHotDeployFeatureAvailable()
 meth public boolean isProcessRunning()
 meth public boolean isRemote()
 meth public boolean isRemovable()
+meth public boolean isWSL()
 meth public final org.netbeans.modules.payara.common.CommonServerSupport getCommonSupport()
 meth public final org.netbeans.modules.payara.spi.PayaraModule$ServerState getServerState()
  anno 0 java.lang.Deprecated()
@@ -1327,13 +1296,14 @@ meth public int hashCode()
 meth public java.lang.Process getProcess()
 meth public java.lang.String getAdminPassword()
 meth public java.lang.String getAdminUser()
+meth public java.lang.String getContainerPath()
 meth public java.lang.String getDeployerUri()
 meth public java.lang.String getDisplayName()
 meth public java.lang.String getDomainName()
 meth public java.lang.String getDomainsFolder()
 meth public java.lang.String getDomainsRoot()
-meth public java.lang.String getPayaraRoot()
 meth public java.lang.String getHost()
+meth public java.lang.String getHostPath()
 meth public java.lang.String getHttpAdminPort()
 meth public java.lang.String getHttpPort()
 meth public java.lang.String getInstallRoot()
@@ -1341,6 +1311,7 @@ meth public java.lang.String getJavaHome()
 meth public java.lang.String getJvmModeAsString()
 meth public java.lang.String getName()
 meth public java.lang.String getPassword()
+meth public java.lang.String getPayaraRoot()
 meth public java.lang.String getProperty(java.lang.String)
 meth public java.lang.String getServerDisplayName()
 meth public java.lang.String getServerHome()
@@ -1356,17 +1327,21 @@ meth public java.util.Map<java.lang.String,java.lang.String> getProperties()
 meth public javax.swing.JComponent getCustomizer()
 meth public org.netbeans.api.java.platform.JavaPlatform getJavaPlatform()
 meth public org.netbeans.api.server.ServerInstance getCommonInstance()
-meth public org.netbeans.modules.payara.common.PayaraJvmMode getJvmMode()
 meth public org.netbeans.modules.payara.common.PayaraInstanceProvider getInstanceProvider()
+meth public org.netbeans.modules.payara.common.PayaraJvmMode getJvmMode()
 meth public org.netbeans.modules.payara.common.parser.DomainXMLChangeListener getDomainXMLChangeListener()
 meth public org.netbeans.modules.payara.tooling.data.PayaraAdminInterface getAdminInterface()
+meth public org.netbeans.modules.payara.tooling.data.PayaraPlatformVersionAPI getPlatformVersion()
 meth public org.netbeans.modules.payara.tooling.data.PayaraVersion getVersion()
+ anno 0 java.lang.Deprecated()
 meth public org.openide.nodes.Node getBasicNode()
 meth public org.openide.nodes.Node getFullNode()
 meth public org.openide.util.Lookup getLookup()
 meth public static java.lang.String getPasswordFromKeyring(java.lang.String,java.lang.String)
 meth public static java.lang.String passwordKey(java.lang.String,java.lang.String)
+meth public static org.netbeans.modules.payara.common.PayaraInstance create(java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,int,int,java.lang.String,java.lang.String,boolean,boolean,java.lang.String,java.lang.String,java.lang.String,java.lang.String,org.netbeans.modules.payara.common.PayaraInstanceProvider)
 meth public static org.netbeans.modules.payara.common.PayaraInstance create(java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,int,int,java.lang.String,java.lang.String,java.lang.String,java.lang.String,org.netbeans.modules.payara.common.PayaraInstanceProvider)
+ anno 0 java.lang.Deprecated()
 meth public static org.netbeans.modules.payara.common.PayaraInstance create(java.util.Map<java.lang.String,java.lang.String>,org.netbeans.modules.payara.common.PayaraInstanceProvider)
 meth public static org.netbeans.modules.payara.common.PayaraInstance create(java.util.Map<java.lang.String,java.lang.String>,org.netbeans.modules.payara.common.PayaraInstanceProvider,boolean)
 meth public static org.netbeans.modules.payara.common.PayaraInstance readInstanceFromFile(org.openide.filesystems.FileObject,boolean) throws java.io.IOException
@@ -1378,14 +1353,16 @@ meth public void setAdminPassword(java.lang.String)
 meth public void setAdminPort(int)
 meth public void setAdminPort(java.lang.String)
 meth public void setAdminUser(java.lang.String)
+meth public void setContainerPath(java.lang.String)
 meth public void setHost(java.lang.String)
+meth public void setHostPath(java.lang.String)
 meth public void setHttpPort(int)
 meth public void setHttpPort(java.lang.String)
 meth public void setJavaHome(java.lang.String)
 meth public void setProcess(java.lang.Process)
 meth public void setProperties(org.netbeans.modules.payara.common.PayaraInstance$Props)
 supr java.lang.Object
-hfds INSTANCE_FO_ATTR,KEYRING_IDENT_SEPARATOR,KEYRING_NAME_SEPARATOR,KEYRING_NAME_SPACE,LOGGER,LOWEST_USER_PORT,commonInstance,commonSupport,currentFactories,domainXMLListener,full,fullNode,ic,instanceProvider,localLookup,lookupResult,process,properties,removable,version
+hfds INSTANCE_FO_ATTR,KEYRING_IDENT_SEPARATOR,KEYRING_NAME_SEPARATOR,KEYRING_NAME_SPACE,LOGGER,LOWEST_USER_PORT,commonInstance,commonSupport,currentFactories,domainXMLListener,full,fullNode,ic,instanceProvider,localLookup,lookupResult,platformVersion,process,properties,removable,version
 
 CLSS public org.netbeans.modules.payara.common.PayaraInstance$Props
  outer org.netbeans.modules.payara.common.PayaraInstance
@@ -1434,39 +1411,65 @@ meth public void addServerInstance(org.netbeans.modules.payara.common.PayaraInst
 meth public void removeChangeListener(javax.swing.event.ChangeListener)
 meth public void resultChanged(org.openide.util.LookupEvent)
 supr java.lang.Object
-hfds AUTOINSTANCECOPIED,EE6WC_INSTANCES_PATH,EE6_INSTANCES_PATH,LOGGER,activeDisplayNames,cf,displayName,glassFishProvider,instanceMap,instancesDirNames,lookupResult,needsJdk6,noPasswordOptions,support,uriFragments
+hfds AUTOINSTANCECOPIED,EE6WC_INSTANCES_PATH,EE6_INSTANCES_PATH,LOGGER,activeDisplayNames,cf,displayName,instanceMap,instancesDirNames,lookupResult,needsJdk6,noPasswordOptions,payaraProvider,support,uriFragments
 
-CLSS public org.netbeans.modules.payara.common.Installer
+CLSS public final !enum org.netbeans.modules.payara.common.PayaraJvmMode
+fld public final static int length
+fld public final static org.netbeans.modules.payara.common.PayaraJvmMode DEBUG
+fld public final static org.netbeans.modules.payara.common.PayaraJvmMode NORMAL
+fld public final static org.netbeans.modules.payara.common.PayaraJvmMode PROFILE
+meth public java.lang.String toString()
+meth public static org.netbeans.modules.payara.common.PayaraJvmMode toValue(java.lang.String)
+meth public static org.netbeans.modules.payara.common.PayaraJvmMode valueOf(java.lang.String)
+meth public static org.netbeans.modules.payara.common.PayaraJvmMode[] values()
+supr java.lang.Enum<org.netbeans.modules.payara.common.PayaraJvmMode>
+hfds DEBUG_STR,LOGGER,NORMAL_STR,PROFILE_STR,stringValuesMap
+
+CLSS public org.netbeans.modules.payara.common.PayaraLogger
 cons public init()
-meth public void close()
-supr org.openide.modules.ModuleInstall
-
-CLSS public org.netbeans.modules.payara.common.KillTask
-cons public !varargs init(org.netbeans.modules.payara.common.PayaraInstance,org.netbeans.modules.payara.tooling.TaskStateListener[])
-meth public org.netbeans.modules.payara.tooling.TaskState call()
-supr org.netbeans.modules.payara.common.BasicTask<org.netbeans.modules.payara.tooling.TaskState>
-hfds LOGGER
-
-CLSS public org.netbeans.modules.payara.common.LogViewMgr
-meth public !varargs void readInputStreams(java.util.List<org.netbeans.modules.payara.spi.Recognizer>,boolean,org.netbeans.modules.payara.common.PayaraInstance,org.netbeans.modules.payara.tooling.server.FetchLog[])
-meth public static org.netbeans.modules.payara.common.LogViewMgr getInstance(java.lang.String)
-meth public static org.openide.windows.InputOutput getServerIO(java.lang.String)
-meth public static void displayOutput(org.netbeans.modules.payara.common.PayaraInstance,org.openide.util.Lookup)
-meth public static void removeLog(org.netbeans.modules.payara.common.PayaraInstance)
-meth public void ensureActiveReader(java.util.List<org.netbeans.modules.payara.spi.Recognizer>,org.netbeans.modules.payara.tooling.server.FetchLog,org.netbeans.modules.payara.common.PayaraInstance)
-meth public void selectIO(boolean)
-meth public void stopReaders()
-meth public void write(java.lang.String,boolean)
-meth public void write(java.lang.String,org.openide.windows.OutputListener,boolean,boolean)
+meth public static java.util.logging.Logger get(java.lang.Class)
 supr java.lang.Object
-hfds DELAY,LOGGER,LOG_BLUE,LOG_CYAN,LOG_GREEN,LOG_MAGENTA,LOG_RED,LOG_YELLOW,OUTPUT_WINDOW_TCID,VISIBILITY_CHECK_DELAY,colorPattern,colorTable,instances,io,ioWeakMap,lastVisibleCheck,localizedLevels,localizedSevere,localizedWarning,logBundleName,logLocale,outputTCRef,readers,serverInputStreams,setClosedMethod,strictFilter,uri,visibleCheck
-hcls Filter,LogFileFilter,LogStateListener,LoggerRunnable,Message,StateFilter,StreamFilter
 
-CLSS public org.netbeans.modules.payara.common.PartialCompletionException
-cons public init(java.lang.String)
-meth public java.lang.String getMessage()
-supr java.lang.Exception
-hfds failedUpdates
+CLSS public org.netbeans.modules.payara.common.PayaraPlatformDetails
+cons public init()
+meth public static boolean isInstalledInDirectory(org.netbeans.modules.payara.tooling.data.PayaraPlatformVersionAPI,java.io.File)
+meth public static java.util.Optional<org.netbeans.modules.payara.tooling.data.PayaraPlatformVersionAPI> getVersionFromInstallDirectory(java.io.File)
+meth public static org.openide.WizardDescriptor$InstantiatingIterator getInstantiatingIterator()
+supr java.lang.Object
+
+CLSS public org.netbeans.modules.payara.common.PayaraSettings
+cons public init()
+meth public static boolean getGf312WarningShowAgain()
+meth public static boolean getGfKillWarningShowAgain()
+meth public static boolean getGfShowPasswordInPropertiesForm()
+meth public static boolean showWindowSystem()
+meth public static void setGf312WarningShowAgain(boolean)
+meth public static void setGfKillWarningShowAgain(boolean)
+meth public static void setGfShowPasswordInPropertiesForm(boolean)
+supr java.lang.Object
+hfds LBL_GF312_WARNING_SHOW_AGAIN,LBL_PF_KILL_SHOW_AGAIN,LBL_PF_SHOW_PASSWORD_IN_PROPERTIES_FORM,NB_PREFERENCES_NODE
+
+CLSS public org.netbeans.modules.payara.common.PayaraState
+cons public init()
+innr public final static !enum Mode
+meth public static boolean canStart(org.netbeans.modules.payara.tooling.data.PayaraServer)
+meth public static boolean isOffline(org.netbeans.modules.payara.tooling.data.PayaraServer)
+meth public static boolean isOnline(org.netbeans.modules.payara.tooling.data.PayaraServer)
+meth public static boolean monitor(org.netbeans.modules.payara.tooling.data.PayaraServer)
+meth public static org.netbeans.modules.payara.tooling.data.PayaraServerStatus getStatus(org.netbeans.modules.payara.tooling.data.PayaraServer)
+meth public static org.netbeans.modules.payara.tooling.data.PayaraServerStatus getStatus(org.netbeans.modules.payara.tooling.data.PayaraServer,long)
+supr java.lang.Object
+hfds INIT_MONITORING_TIMEOUT,LOGGER
+
+CLSS public final static !enum org.netbeans.modules.payara.common.PayaraState$Mode
+ outer org.netbeans.modules.payara.common.PayaraState
+fld public final static org.netbeans.modules.payara.common.PayaraState$Mode DEFAULT
+fld public final static org.netbeans.modules.payara.common.PayaraState$Mode REFRESH
+fld public final static org.netbeans.modules.payara.common.PayaraState$Mode STARTUP
+meth public java.lang.String toString()
+meth public static org.netbeans.modules.payara.common.PayaraState$Mode valueOf(java.lang.String)
+meth public static org.netbeans.modules.payara.common.PayaraState$Mode[] values()
+supr java.lang.Enum<org.netbeans.modules.payara.common.PayaraState$Mode>
 
 CLSS public org.netbeans.modules.payara.common.PortCollection
 cons public init()
@@ -1484,13 +1487,6 @@ meth public java.lang.String getLocalizedMessage()
 supr java.lang.Exception
 hfds args,messageName
 
-CLSS public org.netbeans.modules.payara.common.RegisteredDerbyServerImpl
-cons public init()
-intf org.netbeans.modules.payara.spi.RegisteredDerbyServer
-meth public void initialize(java.lang.String)
-meth public void start()
-supr java.lang.Object
-
 CLSS public org.netbeans.modules.payara.common.RestartTask
 cons public !varargs init(org.netbeans.modules.payara.common.CommonServerSupport,org.netbeans.modules.payara.tooling.TaskStateListener[])
 meth public org.netbeans.modules.payara.tooling.TaskState call()
@@ -1499,20 +1495,61 @@ supr org.netbeans.modules.payara.common.BasicTask<org.netbeans.modules.payara.to
 hfds LOGGER,RESTART_DELAY,support
 
 CLSS public final !enum org.netbeans.modules.payara.common.ServerDetails
+ anno 0 java.lang.Deprecated()
+fld public final static org.netbeans.modules.payara.common.ServerDetails PAYARA_SERVER_4_1_144
+fld public final static org.netbeans.modules.payara.common.ServerDetails PAYARA_SERVER_4_1_151
+fld public final static org.netbeans.modules.payara.common.ServerDetails PAYARA_SERVER_4_1_152
+fld public final static org.netbeans.modules.payara.common.ServerDetails PAYARA_SERVER_4_1_153
+fld public final static org.netbeans.modules.payara.common.ServerDetails PAYARA_SERVER_4_1_1_154
+fld public final static org.netbeans.modules.payara.common.ServerDetails PAYARA_SERVER_4_1_1_161
+fld public final static org.netbeans.modules.payara.common.ServerDetails PAYARA_SERVER_4_1_1_162
+fld public final static org.netbeans.modules.payara.common.ServerDetails PAYARA_SERVER_4_1_1_163
+fld public final static org.netbeans.modules.payara.common.ServerDetails PAYARA_SERVER_4_1_1_164
+fld public final static org.netbeans.modules.payara.common.ServerDetails PAYARA_SERVER_4_1_1_171
+fld public final static org.netbeans.modules.payara.common.ServerDetails PAYARA_SERVER_4_1_2_172
+fld public final static org.netbeans.modules.payara.common.ServerDetails PAYARA_SERVER_4_1_2_173
+fld public final static org.netbeans.modules.payara.common.ServerDetails PAYARA_SERVER_4_1_2_174
+fld public final static org.netbeans.modules.payara.common.ServerDetails PAYARA_SERVER_4_1_2_181
+fld public final static org.netbeans.modules.payara.common.ServerDetails PAYARA_SERVER_5_181
+fld public final static org.netbeans.modules.payara.common.ServerDetails PAYARA_SERVER_5_182
+fld public final static org.netbeans.modules.payara.common.ServerDetails PAYARA_SERVER_5_183
+fld public final static org.netbeans.modules.payara.common.ServerDetails PAYARA_SERVER_5_184
+fld public final static org.netbeans.modules.payara.common.ServerDetails PAYARA_SERVER_5_191
+fld public final static org.netbeans.modules.payara.common.ServerDetails PAYARA_SERVER_5_192
+fld public final static org.netbeans.modules.payara.common.ServerDetails PAYARA_SERVER_5_193
+fld public final static org.netbeans.modules.payara.common.ServerDetails PAYARA_SERVER_5_194
+fld public final static org.netbeans.modules.payara.common.ServerDetails PAYARA_SERVER_5_201
+fld public final static org.netbeans.modules.payara.common.ServerDetails PAYARA_SERVER_5_202
+intf org.netbeans.modules.payara.tooling.data.PayaraPlatformVersionAPI
+meth public boolean equals(org.netbeans.modules.payara.tooling.data.PayaraPlatformVersionAPI)
+meth public boolean equalsMajorMinor(org.netbeans.modules.payara.tooling.data.PayaraPlatformVersionAPI)
+meth public boolean isDownloadable()
+meth public boolean isEE10Supported()
+meth public boolean isEE7Supported()
+meth public boolean isEE8Supported()
+meth public boolean isEE9Supported()
 meth public boolean isInstalledInDirectory(java.io.File)
-meth public int getVersion()
+meth public boolean isMinimumSupportedVersion()
+meth public int getVersionInt()
+meth public java.lang.String getBuild()
 meth public java.lang.String getDirectUrl()
 meth public java.lang.String getIndirectUrl()
 meth public java.lang.String getLicenseUrl()
 meth public java.lang.String getUriFragment()
+meth public java.lang.String toFullString()
 meth public java.lang.String toString()
+meth public org.netbeans.modules.payara.tooling.data.PayaraVersion getVersion()
+meth public short getMajor()
+meth public short getMinor()
+meth public short getUpdate()
 meth public static int getVersionFromDomainXml(java.io.File)
+ anno 0 java.lang.Deprecated()
 meth public static int getVersionFromInstallDirectory(java.io.File)
 meth public static org.netbeans.modules.payara.common.ServerDetails valueOf(java.lang.String)
 meth public static org.netbeans.modules.payara.common.ServerDetails[] values()
 meth public static org.openide.WizardDescriptor$InstantiatingIterator getInstantiatingIterator()
 supr java.lang.Enum<org.netbeans.modules.payara.common.ServerDetails>
-hfds directUrl,displayName,indirectUrl,licenseUrl,uriFragment,versionInt
+hfds CDDL_LICENSE,DOWNLOAD_URL,directUrl,displayName,downloadable,indirectUrl,licenseUrl,uriFragment,version,versionInt
 hcls DomainParser
 
 CLSS public org.netbeans.modules.payara.common.SimpleIO
@@ -1660,6 +1697,13 @@ meth protected java.util.List<java.awt.Component> getDataComponents()
 meth public void initializeData(java.lang.String,java.util.Map<java.lang.String,java.lang.String>)
 supr org.netbeans.modules.payara.common.ui.BasePanel
 
+CLSS public org.netbeans.modules.payara.common.ui.ConnectionPoolAdvancedAttributesCustomizer
+cons public init()
+meth protected java.lang.String getPrefix()
+meth protected java.util.List<java.awt.Component> getDataComponents()
+supr org.netbeans.modules.payara.common.ui.BasePanel
+hfds logJDBCCallsCheckBox,logJDBCCallsLabel,logJDBCCallsLayeredPane,rootPanel,secondsLabel,slowQueryLogThresholdLabel,slowQueryLogThresholdLayeredPane,slowQueryLogThresholdLayeredPane2,slowQueryLogThresholdTextField,sqlTraceListenersLabel,sqlTraceListenersLayeredPane,sqlTraceListenersLayeredPane2,sqlTraceListenersTextField
+
 CLSS public org.netbeans.modules.payara.common.ui.ConnectionPoolCustomizer
 cons public init()
 meth protected java.lang.String getPrefix()
@@ -1693,27 +1737,6 @@ meth public void insertString(javax.swing.text.DocumentFilter$FilterBypass,int,j
 meth public void replace(javax.swing.text.DocumentFilter$FilterBypass,int,int,java.lang.String,javax.swing.text.AttributeSet) throws javax.swing.text.BadLocationException
 supr javax.swing.text.DocumentFilter
 
-CLSS public org.netbeans.modules.payara.common.ui.PayaraCredentials
-cons public init(org.openide.NotifyDescriptor,org.netbeans.modules.payara.common.PayaraInstance,java.lang.String)
-meth public static boolean setCredentials(org.netbeans.modules.payara.common.PayaraInstance)
-meth public static boolean setCredentials(org.netbeans.modules.payara.common.PayaraInstance,java.lang.String)
-meth public void clear()
-supr javax.swing.JPanel
-hfds LOGGER,messageLabel,password,passwordLabel,userLabel,userText
-
-CLSS public org.netbeans.modules.payara.common.ui.PayaraPassword
-cons public init(org.openide.NotifyDescriptor,org.netbeans.modules.payara.common.PayaraInstance,java.lang.String)
-meth public static java.lang.String setPassword(org.netbeans.modules.payara.common.PayaraInstance)
-meth public void clear()
-supr javax.swing.JPanel
-hfds LOGGER,messageLabel,password,passwordLabel,passwordVerify,passwordVerifyLabel,passwordVerifyLabelText,userLabel,userText
-
-CLSS public org.netbeans.modules.payara.common.ui.PayaraPropertiesCustomizer
-cons public init(org.netbeans.modules.payara.common.PayaraInstance,org.openide.util.Lookup)
-supr javax.swing.JTabbedPane
-hfds LOGGER,customizerListener
-hcls CustomizerListener
-
 CLSS public org.netbeans.modules.payara.common.ui.InstanceLocalPanel
 cons public init(org.netbeans.modules.payara.common.PayaraInstance)
 meth protected java.lang.String getHost()
@@ -1727,26 +1750,27 @@ CLSS public abstract org.netbeans.modules.payara.common.ui.InstancePanel
 cons protected init(org.netbeans.modules.payara.common.PayaraInstance)
 fld protected boolean cometSupportFlag
 fld protected boolean configFileParsed
+fld protected boolean hotDeployFlag
 fld protected boolean httpMonitorFlag
 fld protected boolean jdbcDriverDeploymentFlag
 fld protected boolean loopbackFlag
 fld protected boolean preserverSessionsFlag
 fld protected boolean showPasswordFlag
-fld protected boolean startDerbyFlag
 fld protected final org.netbeans.modules.payara.common.PayaraInstance instance
 fld protected java.util.Set<? extends java.net.InetAddress> ips
 fld protected javax.swing.JCheckBox commetSupport
+fld protected javax.swing.JCheckBox hotDeploy
 fld protected javax.swing.JCheckBox httpMonitor
 fld protected javax.swing.JCheckBox jdbcDriverDeployment
 fld protected javax.swing.JCheckBox localIpCB
 fld protected javax.swing.JCheckBox preserveSessions
-fld protected javax.swing.JCheckBox showPassword
-fld protected javax.swing.JCheckBox startDerby
 fld protected javax.swing.JComboBox hostLocalField
+fld protected javax.swing.JLabel containerPathLabel
 fld protected javax.swing.JLabel dasPortLabel
 fld protected javax.swing.JLabel domainLabel
 fld protected javax.swing.JLabel domainsFolderLabel
 fld protected javax.swing.JLabel hostLocalLabel
+fld protected javax.swing.JLabel hostPathLabel
 fld protected javax.swing.JLabel hostRemoteLabel
 fld protected javax.swing.JLabel httpPortLabel
 fld protected javax.swing.JLabel installationLocationLabel
@@ -1754,14 +1778,17 @@ fld protected javax.swing.JLabel passwordLabel
 fld protected javax.swing.JLabel targetLabel
 fld protected javax.swing.JLabel userNameLabel
 fld protected javax.swing.JPasswordField passwordField
+fld protected javax.swing.JTextField containerPathField
 fld protected javax.swing.JTextField dasPortField
 fld protected javax.swing.JTextField domainField
 fld protected javax.swing.JTextField domainsFolderField
+fld protected javax.swing.JTextField hostPathField
 fld protected javax.swing.JTextField hostRemoteField
 fld protected javax.swing.JTextField httpPortField
 fld protected javax.swing.JTextField installationLocationField
 fld protected javax.swing.JTextField targetField
 fld protected javax.swing.JTextField userNameField
+fld protected javax.swing.JToggleButton showPassword
 innr protected static CheckBoxProperties
 meth protected abstract java.lang.String getHost()
 meth protected abstract void initHost()
@@ -1771,11 +1798,13 @@ meth protected void enableFields()
 meth protected void initCheckBoxes()
 meth protected void initCredentials()
 meth protected void initDirectoriesFields()
+meth protected void initDockerVolume()
 meth protected void initDomainAndTarget()
 meth protected void initFlagsFromProperties(org.netbeans.modules.payara.common.ui.InstancePanel$CheckBoxProperties)
 meth protected void initFormFields()
 meth protected void storeCheckBoxes()
 meth protected void storeCredentials()
+meth protected void storeDockerVolume()
 meth protected void storeFormFields()
 meth protected void storeHost()
 meth protected void storePorts()
@@ -1790,15 +1819,15 @@ CLSS protected static org.netbeans.modules.payara.common.ui.InstancePanel$CheckB
  outer org.netbeans.modules.payara.common.ui.InstancePanel
 cons protected init(org.netbeans.modules.payara.common.PayaraInstance)
 meth protected boolean getCommetSupportProperty()
+meth protected boolean getHotDeployProperty()
 meth protected boolean getHttpMonitorProperty()
 meth protected boolean getJdbcDriverDeploymentProperty()
 meth protected boolean getLoopbackProperty()
 meth protected boolean getPreserveSessionsProperty()
-meth protected boolean getStartDerbyProperty()
 meth protected void store(boolean,boolean,boolean,boolean,boolean,boolean,org.netbeans.modules.payara.common.PayaraInstance)
 meth protected void storeBooleanProperty(java.lang.String,boolean,org.netbeans.modules.payara.common.PayaraInstance)
 supr java.lang.Object
-hfds cometSupportProperty,httpMonitorProperty,jdbcDriverDeploymentProperty,loopbackProperty,preserveSessionsProperty,startDerbyProperty
+hfds cometSupportProperty,hotDeployProperty,httpMonitorProperty,jdbcDriverDeploymentProperty,loopbackProperty,preserveSessionsProperty
 
 CLSS public org.netbeans.modules.payara.common.ui.InstanceRemotePanel
 cons public init(org.netbeans.modules.payara.common.PayaraInstance)
@@ -1812,9 +1841,12 @@ hfds LOGGER
 CLSS public org.netbeans.modules.payara.common.ui.IpComboBox
 cons public init(boolean)
 cons public init(java.lang.Object[])
+ anno 0 java.lang.Deprecated()
 cons public init(java.util.Set<? extends java.net.InetAddress>,boolean)
 cons public init(java.util.Vector<?>)
+ anno 0 java.lang.Deprecated()
 cons public init(javax.swing.ComboBoxModel)
+ anno 0 java.lang.Deprecated()
 fld public final static java.lang.String IP_4_127_0_0_1_NAME = "localhost"
 innr public static InetAddr
 innr public static InetAddrComparator
@@ -1854,8 +1886,11 @@ hfds mailHostField,mailHostLabel,resourceEnabledCB,returnField,returnLabel,userF
 CLSS public org.netbeans.modules.payara.common.ui.JavaPlatformsComboBox
 cons public init()
 cons public init(java.lang.Object[])
+ anno 0 java.lang.Deprecated()
 cons public init(java.util.Vector<?>)
+ anno 0 java.lang.Deprecated()
 cons public init(javax.swing.ComboBoxModel)
+ anno 0 java.lang.Deprecated()
 cons public init(org.netbeans.api.java.platform.JavaPlatform[])
 fld public final static java.lang.String EMPTY_DISPLAY_NAME
 innr public static Platform
@@ -1894,6 +1929,27 @@ meth protected java.lang.String getPrefix()
 meth protected java.util.List<java.awt.Component> getDataComponents()
 supr org.netbeans.modules.payara.common.ui.BasePanel
 hfds poolNameCombo,poolNameLabel,resourceEnabledCB
+
+CLSS public org.netbeans.modules.payara.common.ui.PayaraCredentials
+cons public init(org.openide.NotifyDescriptor,org.netbeans.modules.payara.common.PayaraInstance,java.lang.String)
+meth public static boolean setCredentials(org.netbeans.modules.payara.common.PayaraInstance)
+meth public static boolean setCredentials(org.netbeans.modules.payara.common.PayaraInstance,java.lang.String)
+meth public void clear()
+supr javax.swing.JPanel
+hfds LOGGER,messageLabel,password,passwordLabel,userLabel,userText
+
+CLSS public org.netbeans.modules.payara.common.ui.PayaraPassword
+cons public init(org.openide.NotifyDescriptor,org.netbeans.modules.payara.common.PayaraInstance,java.lang.String)
+meth public static java.lang.String setPassword(org.netbeans.modules.payara.common.PayaraInstance)
+meth public void clear()
+supr javax.swing.JPanel
+hfds LOGGER,messageLabel,password,passwordLabel,passwordVerify,passwordVerifyLabel,passwordVerifyLabelText,userLabel,userText
+
+CLSS public org.netbeans.modules.payara.common.ui.PayaraPropertiesCustomizer
+cons public init(org.netbeans.modules.payara.common.PayaraInstance,org.openide.util.Lookup)
+supr javax.swing.JTabbedPane
+hfds LOGGER,customizerListener
+hcls CustomizerListener
 
 CLSS public org.netbeans.modules.payara.common.ui.VmCustomizer
 cons public init(org.netbeans.modules.payara.common.PayaraInstance)
@@ -1953,7 +2009,7 @@ meth public static org.netbeans.api.java.platform.JavaPlatform[] findSupportedPl
  anno 1 org.netbeans.api.annotations.common.NonNull()
 meth public static org.netbeans.api.java.platform.JavaPlatform[] getInstalledJavaSEPlatforms()
 supr java.lang.Object
-hfds PF_PLATFORM_DISPLAY_NAME_PREFIX,PF_PLATFORM_DISPLAY_NAME_SUFFIX,LOGGER
+hfds LOGGER,PF_PLATFORM_DISPLAY_NAME_PREFIX,PF_PLATFORM_DISPLAY_NAME_SUFFIX
 
 CLSS public org.netbeans.modules.payara.common.utils.ServerUtils
 cons public init()
@@ -2001,6 +2057,8 @@ CLSS public abstract org.netbeans.modules.payara.spi.Decorator
 cons public init()
 fld public final static java.awt.Image DISABLED_BADGE
 fld public final static java.lang.String DISABLED = "disabled "
+meth public boolean canCDIProbeDisable()
+meth public boolean canCDIProbeEnable()
 meth public boolean canCopy()
 meth public boolean canDeployTo()
 meth public boolean canDisable()
@@ -2035,6 +2093,9 @@ meth public void run()
 supr java.lang.Thread
 hfds autoflush,done,is,os
 
+CLSS public abstract interface org.netbeans.modules.payara.spi.JrePicker
+meth public abstract javax.swing.JPanel component(org.netbeans.modules.payara.spi.PayaraModule)
+
 CLSS public abstract interface org.netbeans.modules.payara.spi.PayaraModule
 fld public final static int PROPERTIES_FETCH_TIMEOUT = 10000
 fld public final static java.lang.String ADMINOBJECT_RESOURCE = "admin-object"
@@ -2045,10 +2106,12 @@ fld public final static java.lang.String CONNECTORS = "CONNECTORS"
 fld public final static java.lang.String CONNECTOR_CONTAINER = "connector"
 fld public final static java.lang.String CONN_CONNECTION_POOL = "connector-connection-pool"
 fld public final static java.lang.String CONN_RESOURCE = "connector-resource"
+fld public final static java.lang.String CONTAINER_PATH_ATTR = "containerPath"
 fld public final static java.lang.String DEBUG_MEM = "debugMem"
 fld public final static java.lang.String DEBUG_MODE
 fld public final static java.lang.String DEBUG_PORT = "debugPort"
 fld public final static java.lang.String DISPLAY_NAME_ATTR = "displayName"
+fld public final static java.lang.String DOCKER_ATTR = "docker"
 fld public final static java.lang.String DOMAINS_FOLDER_ATTR = "domainsfolder"
 fld public final static java.lang.String DOMAIN_NAME_ATTR = "domainname"
 fld public final static java.lang.String DRIVER_DEPLOY_FLAG = "driverDeployOn"
@@ -2056,8 +2119,9 @@ fld public final static java.lang.String EAR_CONTAINER = "ear"
 fld public final static java.lang.String EJB_CONTAINER = "ejb"
 fld public final static java.lang.String GEM_HOME = "GEM_HOME"
 fld public final static java.lang.String GEM_PATH = "GEM_PATH"
-fld public final static java.lang.String PAYARA_FOLDER_ATTR = "homefolder"
 fld public final static java.lang.String HOSTNAME_ATTR = "host"
+fld public final static java.lang.String HOST_PATH_ATTR = "hostPath"
+fld public final static java.lang.String HOT_DEPLOY = "hotDeploy"
 fld public final static java.lang.String HTTPHOST_ATTR = "httphostname"
 fld public final static java.lang.String HTTPPORT_ATTR = "httpportnumber"
 fld public final static java.lang.String HTTP_MONITOR_FLAG = "httpMonitorOn"
@@ -2076,15 +2140,16 @@ fld public final static java.lang.String NB73_IMPORT_FIXED = "nb73ImportFixed"
 fld public final static java.lang.String NORMAL_MODE
 fld public final static java.lang.String PASSWORD_ATTR = "password"
 fld public final static java.lang.String PASSWORD_CONVERTED_FLAG = "this really long string is used to identify a password that has been stored in the Keyring"
+fld public final static java.lang.String PAYARA_FOLDER_ATTR = "homefolder"
 fld public final static java.lang.String PROFILE_MODE
 fld public final static java.lang.String SESSION_PRESERVATION_FLAG = "preserveSessionsOn"
-fld public final static java.lang.String START_DERBY_FLAG = "derbyStartOn"
 fld public final static java.lang.String TARGET_ATTR = "target"
 fld public final static java.lang.String URL_ATTR = "url"
 fld public final static java.lang.String USERNAME_ATTR = "username"
 fld public final static java.lang.String USE_IDE_PROXY_FLAG = "useIDEProxyOn"
 fld public final static java.lang.String USE_SHARED_MEM_ATTR = "use.shared.mem"
 fld public final static java.lang.String WEB_CONTAINER = "web"
+fld public final static java.lang.String WSL_ATTR = "wsl"
 innr public final static !enum ServerState
 meth public abstract boolean isRemote()
 meth public abstract boolean isRestfulLogAccessSupported()
@@ -2104,8 +2169,8 @@ meth public abstract java.util.concurrent.Future<org.netbeans.modules.payara.too
 meth public abstract java.util.concurrent.Future<org.netbeans.modules.payara.tooling.admin.ResultString> deploy(org.netbeans.modules.payara.tooling.TaskStateListener,java.io.File,java.lang.String,java.lang.String,java.util.Map<java.lang.String,java.lang.String>)
 meth public abstract java.util.concurrent.Future<org.netbeans.modules.payara.tooling.admin.ResultString> disable(org.netbeans.modules.payara.tooling.TaskStateListener,java.lang.String)
 meth public abstract java.util.concurrent.Future<org.netbeans.modules.payara.tooling.admin.ResultString> enable(org.netbeans.modules.payara.tooling.TaskStateListener,java.lang.String)
-meth public abstract java.util.concurrent.Future<org.netbeans.modules.payara.tooling.admin.ResultString> redeploy(org.netbeans.modules.payara.tooling.TaskStateListener,java.lang.String,boolean)
-meth public abstract java.util.concurrent.Future<org.netbeans.modules.payara.tooling.admin.ResultString> redeploy(org.netbeans.modules.payara.tooling.TaskStateListener,java.lang.String,java.lang.String,boolean)
+meth public abstract java.util.concurrent.Future<org.netbeans.modules.payara.tooling.admin.ResultString> redeploy(org.netbeans.modules.payara.tooling.TaskStateListener,java.lang.String,boolean,boolean,java.util.List<java.lang.String>)
+meth public abstract java.util.concurrent.Future<org.netbeans.modules.payara.tooling.admin.ResultString> redeploy(org.netbeans.modules.payara.tooling.TaskStateListener,java.lang.String,java.lang.String,boolean,boolean,java.util.List<java.lang.String>)
 meth public abstract java.util.concurrent.Future<org.netbeans.modules.payara.tooling.admin.ResultString> undeploy(org.netbeans.modules.payara.tooling.TaskStateListener,java.lang.String)
 meth public abstract org.netbeans.modules.payara.common.PayaraInstanceProvider getInstanceProvider()
 meth public abstract org.netbeans.modules.payara.spi.AppDesc[] getModuleList(java.lang.String)
@@ -2133,7 +2198,7 @@ supr java.lang.Enum<org.netbeans.modules.payara.spi.PayaraModule$ServerState>
 CLSS public abstract interface org.netbeans.modules.payara.spi.PayaraModule2
 intf org.netbeans.modules.payara.spi.PayaraModule
 meth public abstract java.util.concurrent.Future<org.netbeans.modules.payara.tooling.admin.ResultString> deploy(org.netbeans.modules.payara.tooling.TaskStateListener,java.io.File,java.lang.String,java.lang.String,java.util.Map<java.lang.String,java.lang.String>,java.io.File[])
-meth public abstract java.util.concurrent.Future<org.netbeans.modules.payara.tooling.admin.ResultString> redeploy(org.netbeans.modules.payara.tooling.TaskStateListener,java.lang.String,java.lang.String,java.io.File[],boolean)
+meth public abstract java.util.concurrent.Future<org.netbeans.modules.payara.tooling.admin.ResultString> redeploy(org.netbeans.modules.payara.tooling.TaskStateListener,java.lang.String,java.lang.String,java.io.File[],boolean,boolean,java.util.List<java.lang.String>)
 
 CLSS public abstract interface org.netbeans.modules.payara.spi.PayaraModule3
 intf org.netbeans.modules.payara.spi.PayaraModule2
@@ -2142,9 +2207,6 @@ meth public abstract org.openide.util.RequestProcessor$Task refresh()
 CLSS public abstract interface org.netbeans.modules.payara.spi.PayaraModuleFactory
 meth public abstract boolean isModuleSupported(java.lang.String,java.util.Properties)
 meth public abstract java.lang.Object createModule(org.openide.util.Lookup)
-
-CLSS public abstract interface org.netbeans.modules.payara.spi.JrePicker
-meth public abstract javax.swing.JPanel component(org.netbeans.modules.payara.spi.PayaraModule)
 
 CLSS public abstract interface org.netbeans.modules.payara.spi.PluggableNodeProvider
 meth public abstract org.openide.nodes.Node getPluggableNode(java.util.Map<java.lang.String,java.lang.String>)
@@ -2155,22 +2217,9 @@ meth public abstract org.openide.windows.OutputListener processLine(java.lang.St
 CLSS public abstract interface org.netbeans.modules.payara.spi.RecognizerCookie
 meth public abstract java.util.Collection<? extends org.netbeans.modules.payara.spi.Recognizer> getRecognizers()
 
-CLSS public org.netbeans.modules.payara.spi.RegisterDatabase
-cons public init()
-meth public static org.netbeans.modules.payara.spi.RegisterDatabase getDefault()
-meth public void configureDatabase()
-meth public void setupDerby(java.lang.String)
-supr java.lang.Object
-hfds reg
-hcls DerbyLibraryRegistrar
-
 CLSS public abstract interface org.netbeans.modules.payara.spi.RegisteredDDCatalog
 meth public abstract void refreshRunTimeDDCatalog(org.netbeans.spi.server.ServerInstanceProvider,java.lang.String)
 meth public abstract void registerRunTimeDDCatalog(org.netbeans.spi.server.ServerInstanceProvider)
-
-CLSS public abstract interface org.netbeans.modules.payara.spi.RegisteredDerbyServer
-meth public abstract void initialize(java.lang.String)
-meth public abstract void start()
 
 CLSS public abstract interface org.netbeans.modules.payara.spi.RemoveCookie
 meth public abstract void removeInstance(java.lang.String)
@@ -2197,8 +2246,8 @@ fld public final static int ACTION_TIMEOUT = 15000
 fld public final static java.lang.String GF_JAR_MATCHER = "glassfish(?:-[0-9bSNAPHOT]+(?:\u005c.[0-9]+(?:_[0-9]+|)|).*|).jar"
 fld public final static java.lang.String PF_LIB_DIR_NAME = "lib"
 fld public final static java.lang.String PF_MODULES_DIR_NAME = "modules"
-fld public final static java.lang.String VERSION_MATCHER = "(?:-[0-9bSNAPHOT]+(?:\u005c.[0-9]+(?:_[0-9]+|)|).*|).jar"
 fld public final static java.lang.String PROP_FIRST_RUN = "first_run"
+fld public final static java.lang.String VERSION_MATCHER = "(?:-[0-9bSNAPHOT]+(?:\u005c.[0-9]+(?:_[0-9]+|)|).*|).jar"
 fld public final static java.util.concurrent.TimeUnit ACTION_TIMEOUT_UNIT
 meth public <%0 extends java.lang.Object> java.util.List<{%%0}> getInstancesByCapability(java.lang.Class<{%%0}>)
 meth public <%0 extends java.lang.Object> {%%0} getInstanceByCapability(java.lang.String,java.lang.Class<{%%0}>)
@@ -2214,9 +2263,11 @@ meth public static java.io.File getWsJarName(java.lang.String,java.lang.String)
 meth public static java.net.URL fileToUrl(java.io.File) throws java.net.MalformedURLException
 meth public static java.util.List<java.lang.String> filterByManifest(java.util.List<java.lang.String>,org.openide.filesystems.FileObject,int,boolean)
 meth public static org.netbeans.modules.payara.spi.ServerUtilities getEe6Utilities()
+meth public static org.netbeans.modules.payara.spi.ServerUtilities getEe7Utilities()
+meth public static org.netbeans.modules.payara.spi.ServerUtilities getEe8Utilities()
 meth public static org.openide.WizardDescriptor$InstantiatingIterator getInstantiatingIterator()
 supr java.lang.Object
-hfds pip,gwp
+hfds pip,pwp
 
 CLSS public org.netbeans.modules.payara.spi.Utils
 cons public init()
@@ -2225,7 +2276,7 @@ meth public final static java.lang.String escapePath(java.lang.String)
 meth public static boolean canWrite(java.io.File)
 meth public static boolean isLocalPortOccupied(int)
 meth public static boolean isSecurePort(java.lang.String,int) throws java.io.IOException
-meth public static boolean usePayaraPrefix(java.lang.String)
+meth public static boolean useGlassFishPrefix(java.lang.String)
 meth public static java.io.File getFileFromPattern(java.lang.String,java.io.File)
 meth public static java.lang.String getHttpListenerProtocol(java.lang.String,int)
 meth public static java.lang.String getHttpListenerProtocol(java.lang.String,java.lang.String)
@@ -2254,21 +2305,47 @@ meth public abstract void error(org.netbeans.modules.payara.tooling.data.PayaraS
 meth public abstract void newState(org.netbeans.modules.payara.tooling.data.PayaraServer,org.netbeans.modules.payara.tooling.PayaraStatus,org.netbeans.modules.payara.tooling.data.PayaraStatusTask)
 meth public abstract void removed()
 
+CLSS public abstract interface org.netbeans.modules.payara.tooling.data.PayaraPlatformVersionAPI
+fld public final static char SEPARATOR = '.'
+fld public final static java.lang.String SEPARATOR_PATTERN = "\u005c."
+meth public abstract boolean equals(org.netbeans.modules.payara.tooling.data.PayaraPlatformVersionAPI)
+meth public abstract boolean equalsMajorMinor(org.netbeans.modules.payara.tooling.data.PayaraPlatformVersionAPI)
+meth public abstract boolean isEE10Supported()
+meth public abstract boolean isEE7Supported()
+meth public abstract boolean isEE8Supported()
+meth public abstract boolean isEE9Supported()
+meth public abstract boolean isMinimumSupportedVersion()
+meth public abstract java.lang.String getBuild()
+meth public abstract java.lang.String getDirectUrl()
+meth public abstract java.lang.String getIndirectUrl()
+meth public abstract java.lang.String getLicenseUrl()
+meth public abstract java.lang.String getUriFragment()
+meth public abstract java.lang.String toFullString()
+meth public abstract short getMajor()
+meth public abstract short getMinor()
+meth public abstract short getUpdate()
+
 CLSS public abstract interface org.netbeans.modules.payara.tooling.data.PayaraServer
+meth public abstract boolean isDocker()
 meth public abstract boolean isRemote()
+meth public abstract boolean isWSL()
 meth public abstract int getAdminPort()
 meth public abstract int getPort()
 meth public abstract java.lang.String getAdminPassword()
 meth public abstract java.lang.String getAdminUser()
+meth public abstract java.lang.String getContainerPath()
 meth public abstract java.lang.String getDomainName()
 meth public abstract java.lang.String getDomainsFolder()
 meth public abstract java.lang.String getHost()
+meth public abstract java.lang.String getHostPath()
 meth public abstract java.lang.String getName()
 meth public abstract java.lang.String getServerHome()
 meth public abstract java.lang.String getServerRoot()
 meth public abstract java.lang.String getUrl()
 meth public abstract org.netbeans.modules.payara.tooling.data.PayaraAdminInterface getAdminInterface()
+meth public abstract org.netbeans.modules.payara.tooling.data.PayaraPlatformVersionAPI getPlatformVersion()
 meth public abstract org.netbeans.modules.payara.tooling.data.PayaraVersion getVersion()
+ anno 0 java.lang.Deprecated()
 
 CLSS public abstract interface org.netbeans.spi.server.ServerInstanceImplementation
 meth public abstract boolean isRemovable()

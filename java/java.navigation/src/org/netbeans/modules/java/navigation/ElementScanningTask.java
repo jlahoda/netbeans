@@ -52,6 +52,7 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Elements.Origin;
 import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.annotations.common.NullAllowed;
@@ -322,7 +323,7 @@ public class ElementScanningTask implements CancellableTask<CompilationInfo>{
             final boolean isParentInherited, final CompilationInfo info,
             final Context ctx, boolean  fqn) {
         final ElementUtilities eu = info.getElementUtilities();
-        if(eu.isSynthetic(e)) {
+        if(info.getElements().getOrigin(e) == Origin.SYNTHETIC) {//show mandatory elements
             return null;
         }
         boolean inherited = isParentInherited || (null != parent && !parent.equals( e.getEnclosingElement() ));
@@ -358,7 +359,7 @@ public class ElementScanningTask implements CancellableTask<CompilationInfo>{
         } else if( e instanceof ExecutableElement ) {
             d.htmlHeader = createHtmlHeader(info,  (ExecutableElement)e, info.getElements().isDeprecated(e),d.isInherited, fqn, overridenFrom);
         } else if( e instanceof VariableElement ) {
-            if( !(e.getKind() == ElementKind.FIELD || e.getKind() == ElementKind.ENUM_CONSTANT) )
+            if( !(e.getKind() == ElementKind.FIELD || e.getKind() == ElementKind.ENUM_CONSTANT || e.getKind() == ElementKind.RECORD_COMPONENT) )
                 return null;
             d.htmlHeader = createHtmlHeader(info,  (VariableElement)e, info.getElements().isDeprecated(e),d.isInherited, fqn );
         } else if (isModule) {

@@ -118,11 +118,6 @@ public class BridgingServerInstance implements ServerInstanceImplementation, Loo
     }
 
     @Override
-    public String getProperty(String key) {
-        return instance.getInstanceProperties().getProperty(key);
-    }
-
-    @Override
     public Lookup getLookup() {
         // FIXME why is the platform written in such strange way ?
         J2eePlatform platform = Deployment.getDefault().getJ2eePlatform(instance.getUrl());
@@ -211,7 +206,7 @@ public class BridgingServerInstance implements ServerInstanceImplementation, Loo
                 freshActions.add(null);
                 freshActions.add(SystemAction.get(BridgingCustomizerAction.class));
             }
-            return freshActions.toArray(new Action[freshActions.size()]);
+            return freshActions.toArray(new Action[0]);
         }
     }
 

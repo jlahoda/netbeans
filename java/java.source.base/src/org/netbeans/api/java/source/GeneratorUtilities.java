@@ -121,6 +121,7 @@ import org.netbeans.api.lexer.TokenHierarchy;
 import org.netbeans.api.lexer.TokenSequence;
 import org.netbeans.api.queries.FileEncodingQuery;
 import org.netbeans.api.scripting.Scripting;
+import org.netbeans.modules.java.source.GeneratorUtilitiesAccessor;
 import org.netbeans.modules.java.source.builder.CommentHandlerService;
 import org.netbeans.modules.java.source.builder.CommentSetImpl;
 import org.netbeans.modules.java.source.parsing.AbstractSourceFileObject;
@@ -132,6 +133,7 @@ import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.util.Exceptions;
 
+
 /**
  *
  * @author Jan Lahoda, Dusan Balek
@@ -139,7 +141,7 @@ import org.openide.util.Exceptions;
  */
 public final class GeneratorUtilities {
 
-    private WorkingCopy copy;
+    private final WorkingCopy copy;
 
     private  GeneratorUtilities(WorkingCopy copy) {
         this.copy = copy;
@@ -184,7 +186,7 @@ public final class GeneratorUtilities {
 
     /**
      * Inserts a member to a class. Using the rules specified in the {@link CodeStyle}
-     * it finds the proper place for the member and calls {@link TreeMaker.insertClassMember}
+     * it finds the proper place for the member and calls {@link TreeMaker#insertClassMember}
      *
      * @param clazz the class to insert the member to
      * @param member the member to add
@@ -314,7 +316,7 @@ public final class GeneratorUtilities {
 
     /**
      * Inserts members to a class. Using the rules specified in the {@link CodeStyle}
-     * it finds the proper place for each of the members and calls {@link TreeMaker.insertClassMember}
+     * it finds the proper place for each of the members and calls {@link TreeMaker#insertClassMember}
      *
      * @param clazz the class to insert the members to
      * @param members the members to insert
@@ -375,7 +377,7 @@ public final class GeneratorUtilities {
     
     /**
      * Inserts a member to a class. Using the rules specified in the {@link CodeStyle}
-     * it finds the proper place for the member and calls {@link TreeMaker.insertClassMember}
+     * it finds the proper place for the member and calls {@link TreeMaker#insertClassMember}
      *
      * @param clazz the class to insert the member to
      * @param member the member to add
@@ -493,7 +495,7 @@ public final class GeneratorUtilities {
      * if 'collectNames' is set, it collects field names from the class definition. If
      * 'insertedName' is not null, it also collects references to that name in 
      * 'revDependencies'.
-     * <p/>
+     * <p>
      * For the secondPass, set 'collectNames' to false: the visitor will collect
      * dependencies of the scanned node into 'dependencies'. After 2 passes,
      * the revDependencies and dependencies can be used to determine partial order
@@ -662,7 +664,7 @@ public final class GeneratorUtilities {
     
     /**
      * Inserts members to a class. Using the rules specified in the {@link CodeStyle}
-     * it finds the proper place for each of the members and calls {@link TreeMaker.insertClassMember}
+     * it finds the proper place for each of the members and calls {@link TreeMaker#insertClassMember}
      *
      * @param clazz the class to insert the members to
      * @param members the members to insert
@@ -749,7 +751,7 @@ public final class GeneratorUtilities {
         return createMethod(method, clazz, false);
     }
 
-    /**Create a new method tree for the given method element. The method will be created as if it were member of {@link asMemberOf} type
+    /**Create a new method tree for the given method element. The method will be created as if it were member of {@code asMemberOf} type
      * (see also {@link Types#asMemberOf(javax.lang.model.type.DeclaredType,javax.lang.model.element.Element)}).
      * The new method will have an empty body.
      *
@@ -1047,6 +1049,22 @@ public final class GeneratorUtilities {
         } catch (Exception e) {}
         return copy.getTreeMaker().Block(Collections.emptyList(), false);
     }
+
+    /**
+     * Creates a default lambda expression.
+     *
+     * @param lambda a lambda to generate the expression for
+     * @param method a method of a functional interface to be implemented by the lambda expression
+     * @return the lambda expression
+     * @since 2.57
+     */
+    public ExpressionTree createDefaultLambdaExpression(LambdaExpressionTree lambda, ExecutableElement method) {
+        try {
+            String bodyTemplate = readFromTemplate(LAMBDA_EXPRESSION, createBindings(null, method)); //NOI18N
+            return copy.getTreeMaker().createLambdaExpression(lambda, bodyTemplate);
+        } catch (Exception e) {}
+        return null;
+    }
     
     private boolean isStarImport(ImportTree imp) {
         Tree qualIdent = imp.getQualifiedIdentifier();        
@@ -1067,6 +1085,10 @@ public final class GeneratorUtilities {
      * @since 0.86
      */
     public CompilationUnitTree addImports(CompilationUnitTree cut, Set<? extends Element> toImport) {
+        return addImports(cut, cut.getImports(), toImport);
+    }
+
+    private CompilationUnitTree addImports(CompilationUnitTree cut, List<? extends ImportTree> cutImports, Set<? extends Element> toImport) {
         assert cut != null && toImport != null && toImport.size() > 0;
 
         ArrayList<Element> elementsToImport = new ArrayList<Element>(toImport.size());
@@ -1079,8 +1101,12 @@ public final class GeneratorUtilities {
                 case METHOD:
                 case ENUM_CONSTANT:
                 case FIELD:
-                    StringBuilder name = new StringBuilder(((TypeElement)e.getEnclosingElement()).getQualifiedName()).append('.').append(e.getSimpleName());
-                    if (!staticImportNames.add(name.toString()))
+                    String name = new StringBuilder(((TypeElement)e.getEnclosingElement()).getQualifiedName()).append('.').append(e.getSimpleName()).toString();
+                    // skip default static imports
+                    if ("java.lang.StringTemplate.STR".equals(name)) {
+                        break;
+                    }
+                    if (!staticImportNames.add(name))
                         break;
                 default:
                     elementsToImport.add(e);
@@ -1132,6 +1158,7 @@ public final class GeneratorUtilities {
                 case CLASS:
                 case ENUM:
                 case INTERFACE:
+                case RECORD:
                     if (e.getEnclosingElement().getKind() == ElementKind.PACKAGE)
                         el = e.getEnclosingElement();
                     break;
@@ -1168,7 +1195,7 @@ public final class GeneratorUtilities {
                 }
             }
         }
-        List<ImportTree> imports = new ArrayList<ImportTree>(cut.getImports());
+        List<ImportTree> imports = new ArrayList<ImportTree>(cutImports);
         for (ImportTree imp : imports) {
             Element e = getImportedElement(cut, imp);
             if (!elementsToImport.contains(e)) {
@@ -1249,14 +1276,13 @@ public final class GeneratorUtilities {
         // check for possible name clashes originating from adding the package imports
         Set<Element> explicitNamedImports = new HashSet<Element>();
         for (Element element : elementsToImport) {
-            if (element.getKind().isClass() || element.getKind().isInterface()) {
+            if (element.getEnclosingElement() != pkg && (element.getKind().isClass() || element.getKind().isInterface())) {
                 for (Symbol sym : importScope.getSymbolsByName((com.sun.tools.javac.util.Name)element.getSimpleName())) {
                     if (sym.getKind().isClass() || sym.getKind().isInterface()) {
                         if (sym != element) {
                             explicitNamedImports.add(element);
+                            break;// break if explicitNameImport was added
                         }
-                        // break if explicitNameImport was added, or when the symbol is correctly resolved.
-                        break;
                     }
                 }
             }
@@ -1305,7 +1331,7 @@ public final class GeneratorUtilities {
 
         // sort the elements to import
         ImportsComparator comparator = new ImportsComparator(cs);
-        Collections.sort(elementsToImport, comparator);
+        elementsToImport.sort(comparator);
         
         // merge the elements to import with the existing import statemetns
         TreeMaker make = copy.getTreeMaker();
@@ -1323,6 +1349,7 @@ public final class GeneratorUtilities {
                 case CLASS:
                 case ENUM:
                 case INTERFACE:
+                case RECORD:
                     if (currentToImportElement.getEnclosingElement().getKind() == ElementKind.PACKAGE)
                         el = currentToImportElement.getEnclosingElement();
                     break;
@@ -1426,7 +1453,7 @@ public final class GeneratorUtilities {
                         break;
                     }
                    switch (p2.getLeaf().getKind()) {
-                       case CLASS: case INTERFACE: case ENUM:
+                       case CLASS: case INTERFACE: case ENUM: case RECORD:
                        case METHOD:
                        case BLOCK:
                        case VARIABLE:
@@ -1494,7 +1521,8 @@ public final class GeneratorUtilities {
      * converted from a single value into an array.
      *
      * The typical trees passed as {@code attributeValuesToAdd} are:
-     * <table border="1">
+     * <table>
+     * <caption>Typical tree</caption>
      *     <tr>
      *         <th>attribute type</th>
      *         <th>expected tree type</th>
@@ -1547,7 +1575,8 @@ public final class GeneratorUtilities {
      * {@link CompilationUnitTree} from {@code package-info.java}.
      *
      * The typical trees passed as {@code attributeValuesToAdd} are:
-     * <table border="1">
+     * <table>
+     * <caption>Typical tree</caption>
      *     <tr>
      *         <th>attribute type</th>
      *         <th>expected tree type</th>
@@ -1709,7 +1738,8 @@ public final class GeneratorUtilities {
         if (isImplement && clazz.getKind().isInterface()) {
             mt = make.addModifiersModifier(mt, Modifier.DEFAULT);                                
         }
-        boolean isAbstract = element.getModifiers().contains(Modifier.ABSTRACT);
+        boolean replaceable = copy.getTrees().getTree(clazz).getKind() == Kind.RECORD && copy.getElementUtilities().isSynthetic(element);
+        boolean isAbstract = element.getModifiers().contains(Modifier.ABSTRACT) || replaceable;
         if (isImplement || clazz.getKind().isClass() && (!isAbstract || !clazz.getModifiers().contains(Modifier.ABSTRACT))) {
             try {
                 bodyTemplate = "{" + readFromTemplate(isAbstract ? GENERATED_METHOD_BODY : OVERRIDDEN_METHOD_BODY, createBindings(clazz, element)) + "\n}"; //NOI18N
@@ -1821,7 +1851,7 @@ public final class GeneratorUtilities {
             if (parent == null)
                 parent = getElementByFQN(cut, ((MemberSelectTree)qualIdent).getExpression().toString());
             if (parent != null && (parent.getKind().isClass() || parent.getKind().isInterface())) {
-                Scope s = trees.getScope(new TreePath(cut));
+                Scope s = trees.getScope(new TreePath(copy.getCompilationUnit()));
                 for (Element e : parent.getEnclosedElements()) {
                     if (name == e.getSimpleName() && e.getModifiers().contains(Modifier.STATIC) && trees.isAccessible(s, e, (DeclaredType)parent.asType()))
                         return e;
@@ -1909,6 +1939,7 @@ public final class GeneratorUtilities {
         if (clazz != null) {
             bindings.put(CLASS_NAME, clazz.getQualifiedName().toString());
             bindings.put(SIMPLE_CLASS_NAME, clazz.getSimpleName().toString());
+            bindings.put(CLASS_KIND, clazz.getKind().toString());
         }
         if (element != null) {
             bindings.put(METHOD_NAME, element.getSimpleName().toString());
@@ -1930,7 +1961,11 @@ public final class GeneratorUtilities {
                 default:
                     value = "null"; //NOI18N
             }
-            bindings.put(DEFAULT_RETURN_TYPE_VALUE, value);
+            if (clazz != null && clazz.getKind() == ElementKind.RECORD) {
+                bindings.put(DEFAULT_RETURN_TYPE_VALUE, element.getSimpleName());
+            } else {
+                bindings.put(DEFAULT_RETURN_TYPE_VALUE, value);
+            }
         }
         if (clazz != null && element != null) {
             StringBuilder sb = new StringBuilder();
@@ -2169,12 +2204,14 @@ public final class GeneratorUtilities {
     private static final String GENERATED_METHOD_BODY = "Templates/Classes/Code/GeneratedMethodBody"; //NOI18N
     private static final String OVERRIDDEN_METHOD_BODY = "Templates/Classes/Code/OverriddenMethodBody"; //NOI18N
     private static final String LAMBDA_BODY = "Templates/Classes/Code/LambdaBody"; //NOI18N
+    private static final String LAMBDA_EXPRESSION = "Templates/Classes/Code/LambdaExpression"; //NOI18N
     private static final String METHOD_RETURN_TYPE = "method_return_type"; //NOI18N
     private static final String DEFAULT_RETURN_TYPE_VALUE = "default_return_value"; //NOI18N
     private static final String SUPER_METHOD_CALL = "super_method_call"; //NOI18N
     private static final String METHOD_NAME = "method_name"; //NOI18N
     private static final String CLASS_NAME = "class_name"; //NOI18N
     private static final String SIMPLE_CLASS_NAME = "simple_class_name"; //NOI18N
+    private static final String CLASS_KIND = "class_kind"; //NOI18N
     private static final String SCRIPT_ENGINE_ATTR = "javax.script.ScriptEngine"; //NOI18N    
     private static final String STRING_OUTPUT_MODE_ATTR = "com.sun.script.freemarker.stringOut"; //NOI18N
     private static ScriptEngineManager manager;
@@ -2184,20 +2221,14 @@ public final class GeneratorUtilities {
         Charset sourceEnc = FileEncodingQuery.getEncoding(template);
 
         ScriptEngine eng = engine(template);
-        Bindings bind = eng.getContext().getBindings(ScriptContext.ENGINE_SCOPE);
-        bind.putAll(values);
+        ScriptContext context = eng.getContext();
+        context.getBindings(ScriptContext.ENGINE_SCOPE).putAll(values);
+        context.setAttribute(FileObject.class.getName(), template, ScriptContext.ENGINE_SCOPE);
+        context.setAttribute(ScriptEngine.FILENAME, template.getNameExt(), ScriptContext.ENGINE_SCOPE);
+        context.setAttribute(STRING_OUTPUT_MODE_ATTR, true, ScriptContext.ENGINE_SCOPE);
 
-        Reader is = null;
-        try {
-            eng.getContext().setAttribute(FileObject.class.getName(), template, ScriptContext.ENGINE_SCOPE);
-            eng.getContext().setAttribute(ScriptEngine.FILENAME, template.getNameExt(), ScriptContext.ENGINE_SCOPE);
-            eng.getContext().setAttribute(STRING_OUTPUT_MODE_ATTR, true, ScriptContext.ENGINE_SCOPE);
-            is = new InputStreamReader(template.getInputStream(), sourceEnc);
+        try (Reader is = new InputStreamReader(template.getInputStream(), sourceEnc)) {
             return (String)eng.eval(is);
-        } finally {
-            if (is != null) {
-                is.close();
-            }
         }
     }
 
@@ -2239,5 +2270,14 @@ public final class GeneratorUtilities {
             }
         }.scan(tree, false);
         return b != null ? b : false;
+    }
+
+    static {
+        GeneratorUtilitiesAccessor.setInstance(new GeneratorUtilitiesAccessor() {
+            @Override
+            public CompilationUnitTree addImports(GeneratorUtilities gu, CompilationUnitTree cut, List<? extends ImportTree> cutImports, Set<? extends Element> toImport) {
+                return gu.addImports(cut, cutImports, toImport);
+            }
+        });
     }
 }

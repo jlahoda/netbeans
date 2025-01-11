@@ -67,7 +67,6 @@ import org.netbeans.modules.bugzilla.Bugzilla;
 import org.netbeans.modules.bugzilla.BugzillaConfig;
 import org.netbeans.modules.bugzilla.repository.BugzillaRepository;
 import org.netbeans.modules.bugzilla.issue.BugzillaIssue;
-import org.netbeans.modules.bugzilla.kenai.KenaiRepository;
 import org.netbeans.modules.bugzilla.query.QueryParameter.AllWordsTextFieldParameter;
 import org.netbeans.modules.bugzilla.util.BugzillaUtil;
 import org.netbeans.modules.bugzilla.query.QueryParameter.CheckBoxParameter;
@@ -258,9 +257,7 @@ public class QueryController implements org.netbeans.modules.bugtracking.spi.Que
     public void opened() {
         wasOpened = true;
         if(query.isSaved()) {
-            setIssueCount(query.getSize()); // XXX this probably won't work
-                                            // if the query is alredy open and
-                                            // a refresh is invoked on kenai
+            setIssueCount(query.getSize());
             if(!query.wasRun()) {
                 onRefresh();
             }
@@ -706,7 +703,7 @@ public class QueryController implements org.netbeans.modules.bugtracking.spi.Que
             public void run() {
                 handle.start();
                 try {
-                    openIssue((BugzillaIssue)repository.getIssue(id));
+                    openIssue(repository.getIssue(id));
                 } finally {
                     handle.finish();
                 }
@@ -828,7 +825,7 @@ public class QueryController implements org.netbeans.modules.bugtracking.spi.Que
             public void run() {
                 Collection<BugzillaIssue> issues = query.getIssues();
                 for (BugzillaIssue issue : issues) {
-                    ((BugzillaIssue) issue).setUpToDate(true);
+                    issue.setUpToDate(true);
                 }
             }
         });
@@ -947,7 +944,7 @@ public class QueryController implements org.netbeans.modules.bugtracking.spi.Que
             int idx = p.indexOf("="); // NOI18N
             if(idx > -1) {
                 String parameter = p.substring(0, idx);
-                String value = p.substring(idx + 1, p.length());
+                String value = p.substring(idx + 1);
 
                 ParameterValue pv = new ParameterValue(value, value);
                 List<ParameterValue> values = normalizedParams.get(parameter);
@@ -972,7 +969,7 @@ public class QueryController implements org.netbeans.modules.bugtracking.spi.Que
                     versionPV = e.getValue();
                 } else {
                     List<ParameterValue> pvs = e.getValue();
-                    qp.setValues(pvs.toArray(new ParameterValue[pvs.size()]));
+                    qp.setValues(pvs.toArray(new ParameterValue[0]));
                 }
             }
         }
@@ -982,7 +979,7 @@ public class QueryController implements org.netbeans.modules.bugtracking.spi.Que
                 
     private void setDependentParameter(QueryParameter qp, List<ParameterValue> values) {
         if(values != null) {
-            qp.setValues(values.toArray(new ParameterValue[values.size()]));
+            qp.setValues(values.toArray(new ParameterValue[0]));
         }
     }
 
@@ -1045,7 +1042,7 @@ public class QueryController implements org.netbeans.modules.bugtracking.spi.Que
     }
 
     private List<String> getQueryResolutions(BugzillaConfiguration bc) {
-        List<String> l = new ArrayList(bc.getResolutions());
+        List<String> l = new ArrayList<>(bc.getResolutions());
         l.add(0, "---");
         return l;
     }

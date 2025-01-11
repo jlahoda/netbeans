@@ -53,7 +53,7 @@ import org.openide.util.ChangeSupport;
  * @author Tomas Stupka
  */
 public abstract class QueryParameter {
-    final static ParameterValue[] EMPTY_PARAMETER_VALUE = new ParameterValue[] {new ParameterValue("", "")}; // NOI18N
+    static final ParameterValue[] EMPTY_PARAMETER_VALUE = new ParameterValue[] {new ParameterValue("", "")}; // NOI18N
 
     static final ParameterValue PV_CONTAINS_ALL_KEYWORDS = new ParameterValue("contains all keywords",  "allwords"); // NOI18N
     static final ParameterValue PV_CONTAINS_ANY_KEYWORDS = new ParameterValue("contains any keywords",  "anywords"); // NOI18N
@@ -324,10 +324,10 @@ public abstract class QueryParameter {
             return ret;
         }
         public void setParameterValues(List<ParameterValue> values) {
-            setParameterValues(values.toArray(new ParameterValue[values.size()]));
+            setParameterValues(values.toArray(new ParameterValue[0]));
         }
         public void setParameterValues(ParameterValue[] values) {
-            DefaultListModel m = new DefaultListModel();
+            DefaultListModel<ParameterValue> m = new DefaultListModel<>();
             for (ParameterValue pv : values) {
                 m.addElement(pv);
             }
@@ -345,7 +345,7 @@ public abstract class QueryParameter {
                 // need case sensitive compare
                 for(int j = 0; j < model.getSize(); j++) {
                     ParameterValue pv = (ParameterValue) model.getElementAt(j);
-                    if(pv.getValue().toLowerCase().equals(values[i].getValue().toLowerCase())) {
+                    if(pv.getValue().equalsIgnoreCase(values[i].getValue())) {
                         selectionList.add(j);
                         break;
                     }

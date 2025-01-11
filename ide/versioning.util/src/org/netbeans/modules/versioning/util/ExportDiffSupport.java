@@ -27,6 +27,7 @@ import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.prefs.Preferences;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
@@ -203,7 +204,7 @@ public abstract class ExportDiffSupport {
     }
 
     protected File createTempFile () throws IOException {
-        return File.createTempFile("vcs-diff", ".patch"); // NOI18N
+        return Files.createTempFile("vcs-diff", ".patch").toFile(); // NOI18N
     }
 
     protected String getMessage (String resourceName) {
@@ -293,9 +294,9 @@ public abstract class ExportDiffSupport {
         return chooser;
     }
 
-    public static abstract class ExportDiffProvider {
+    public abstract static class ExportDiffProvider {
         private PropertyChangeSupport support = new PropertyChangeSupport(this);
-        private final static String EVENT_DATA_CHANGED = "ExportDiff.data.changed";
+        private static final String EVENT_DATA_CHANGED = "ExportDiff.data.changed";
 
         /**
          * Sets the files for which this provider should provide
@@ -341,7 +342,7 @@ public abstract class ExportDiffSupport {
      * Abstract ancestor of an output diff panel.
      * @author Ondra Vrabec
      */
-    public static abstract class AbstractExportDiffPanel extends JPanel {
+    public abstract static class AbstractExportDiffPanel extends JPanel {
 
         /**
          * Implement this method to access diff output file path field's text.

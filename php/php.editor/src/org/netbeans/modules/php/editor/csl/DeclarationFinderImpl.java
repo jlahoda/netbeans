@@ -21,7 +21,9 @@ package org.netbeans.modules.php.editor.csl;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -48,6 +50,7 @@ import org.netbeans.modules.parsing.api.ResultIterator;
 import org.netbeans.modules.parsing.api.Source;
 import org.netbeans.modules.parsing.api.UserTask;
 import org.netbeans.modules.parsing.spi.Parser.Result;
+import org.netbeans.modules.php.editor.CodeUtils;
 import org.netbeans.modules.php.editor.api.QualifiedName;
 import org.netbeans.modules.php.editor.api.elements.FullyQualifiedElement;
 import org.netbeans.modules.php.editor.api.elements.PhpElement;
@@ -57,6 +60,7 @@ import org.netbeans.modules.php.editor.model.Model;
 import org.netbeans.modules.php.editor.model.Occurence;
 import org.netbeans.modules.php.editor.model.OccurencesSupport;
 import org.netbeans.modules.php.editor.model.VariableScope;
+import org.netbeans.modules.php.editor.model.impl.Type;
 import org.netbeans.modules.php.editor.model.nodes.ASTNodeInfo.Kind;
 import org.netbeans.modules.php.editor.model.nodes.MagicMethodDeclarationInfo;
 import org.netbeans.modules.php.editor.model.nodes.PhpDocTypeTagInfo;
@@ -234,7 +238,7 @@ public class DeclarationFinderImpl implements DeclarationFinder {
     private static class ReferenceSpanFinder {
 
         private static final int RECURSION_LIMIT = 100;
-        // e.g.  @var VarType $variable 
+        // e.g.  @var VarType $variable
         private static final Pattern INLINE_PHP_VAR_COMMENT_PATTERN = Pattern.compile("^[ \t]*@var[ \t]+.+[ \t]+\\$.+$"); // NOI18N
         private static final Logger LOGGER = Logger.getLogger(DeclarationFinderImpl.class.getName());
 
@@ -317,19 +321,20 @@ public class DeclarationFinderImpl implements DeclarationFinder {
                                 if (node != null) {
                                     return node.getRange().containsInclusive(caretOffset) ? node.getRange() : OffsetRange.NONE;
                                 }
+                                if (typeTag instanceof PHPDocMethodTag) {
+                                    OffsetRange magicMethodRange = getMagicMethodRange((PHPDocMethodTag) typeTag, caretOffset);
+                                    if (magicMethodRange != OffsetRange.NONE) {
+                                        return magicMethodRange;
+                                    }
+                                }
                             }
                         } else {
                             List<PHPDocTag> tags = docBlock.getTags();
                             for (PHPDocTag phpDocTag : tags) {
                                 if (phpDocTag instanceof PHPDocMethodTag) {
-                                    PHPDocMethodTag methodTag = (PHPDocMethodTag) phpDocTag;
-                                    MagicMethodDeclarationInfo methodInfo = MagicMethodDeclarationInfo.create(methodTag);
-                                    if (methodInfo != null) {
-                                        if (methodInfo.getRange().containsInclusive(caretOffset)) {
-                                            return methodInfo.getRange();
-                                        } else if (methodInfo.getTypeRange().containsInclusive(caretOffset)) {
-                                            return methodInfo.getTypeRange();
-                                        }
+                                    OffsetRange magicMethodRange = getMagicMethodRange((PHPDocMethodTag) phpDocTag, caretOffset);
+                                    if (magicMethodRange != OffsetRange.NONE) {
+                                        return magicMethodRange;
                                     }
                                 }
                             }
@@ -356,23 +361,37 @@ public class DeclarationFinderImpl implements DeclarationFinder {
             return OffsetRange.NONE;
         }
 
+        private OffsetRange getMagicMethodRange(PHPDocMethodTag methodTag, final int caretOffset) {
+            OffsetRange offsetRange = OffsetRange.NONE;
+            MagicMethodDeclarationInfo methodInfo = MagicMethodDeclarationInfo.create(methodTag);
+            if (methodInfo != null) {
+                if (methodInfo.getRange().containsInclusive(caretOffset)) {
+                    offsetRange = methodInfo.getRange();
+                } else if (methodInfo.getTypeRange().containsInclusive(caretOffset)) {
+                    offsetRange = methodInfo.getTypeRange();
+                }
+            }
+            return offsetRange;
+        }
+
         @CheckForNull
         private OffsetRange getVarCommentOffsetRange(TokenSequence<PHPTokenId> ts, String text, int caretOffset) {
-            final String dollaredVar = "@var"; // NOI18N
-            if (text.contains(dollaredVar)) {
-                String[] segments = text.split("[ \t]+"); // NOI18N
+            if (text.contains(CodeUtils.VAR_TAG)) {
+                String[] segments = CodeUtils.WHITE_SPACES_PATTERN.split(text.trim());
                 for (int i = 0; i < segments.length; i++) {
                     String seg = segments[i];
-                    if (seg.equals(dollaredVar) && segments.length > i + 2) {
+                    // e.g. /** @var Type1|Type2 $varName */ or /* @var $varName Type1|Type2 */
+                    if (seg.equals(CodeUtils.VAR_TAG) && segments.length > i + 2) { // 2: type and variable name
                         for (int j = 1; j <= 2; j++) {
                             seg = segments[i + j];
                             if (seg != null && seg.trim().length() > 0) {
-                                int indexOf = text.indexOf(seg);
-                                assert indexOf != -1;
-                                indexOf += ts.offset();
-                                OffsetRange range = new OffsetRange(indexOf, indexOf + seg.length());
-                                if (range.containsInclusive(caretOffset)) {
-                                    return range;
+                                int indexOfType = text.indexOf(seg);
+                                assert indexOfType != -1;
+                                indexOfType += ts.offset();
+                                for (OffsetRange range : getTypeRanges(seg, indexOfType)) {
+                                    if (range.containsInclusive(caretOffset)) {
+                                        return range;
+                                    }
                                 }
                             }
                         }
@@ -381,6 +400,29 @@ public class DeclarationFinderImpl implements DeclarationFinder {
                 }
             }
             return null;
+        }
+
+        private Set<OffsetRange> getTypeRanges(String types, int startOffset) {
+            String[] splitTypes = Type.splitTypes(types);
+            Set<OffsetRange> ranges = new HashSet<>((int) (splitTypes.length * 1.5));
+            // to avoid adding the same type range as the first one,
+            // keep the end index of the last type
+            // e.g. (Foo&Bar)|(Foo&Baz)
+            int fromEndIndexOfLastType = 0;
+            for (String splitType : splitTypes) {
+                String type = splitType;
+                int indexOfType = types.indexOf(type, fromEndIndexOfLastType);
+                assert indexOfType != -1;
+                if (CodeUtils.isNullableType(type)) {
+                    indexOfType++;
+                    type = type.substring(1);
+                }
+                int rangeStart = startOffset + indexOfType;
+                int rangeEnd = rangeStart + type.length();
+                ranges.add(new OffsetRange(rangeStart, rangeEnd));
+                fromEndIndexOfLastType = indexOfType + type.length();
+            }
+            return ranges;
         }
 
         private void logRecursion(TokenSequence<PHPTokenId> ts) {

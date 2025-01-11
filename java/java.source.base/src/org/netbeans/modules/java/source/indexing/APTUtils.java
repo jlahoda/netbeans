@@ -18,6 +18,8 @@
  */
 package org.netbeans.modules.java.source.indexing;
 
+import com.sun.tools.javac.util.Abort;
+import com.sun.tools.javac.util.ClientCodeException;
 import com.sun.tools.javac.util.Context;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -31,6 +33,7 @@ import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -50,9 +53,18 @@ import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import javax.annotation.processing.Completion;
+import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.Processor;
+import javax.annotation.processing.RoundEnvironment;
+import javax.lang.model.SourceVersion;
+import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.TypeElement;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import javax.tools.Diagnostic;
 import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.annotations.common.NullAllowed;
@@ -77,6 +89,7 @@ import org.openide.util.Exceptions;
 import org.openide.util.Lookup;
 import org.openide.util.RequestProcessor;
 import org.openide.util.BaseUtilities;
+import org.openide.util.NbBundle.Messages;
 import org.openide.util.Pair;
 import org.openide.util.WeakListeners;
 import org.openide.util.lookup.Lookups;
@@ -134,6 +147,9 @@ public class APTUtils implements ChangeListener, PropertyChangeListener {
                     false);
         });
         usedRoots = new UsedRoots(root.toURL());
+        if (compilePath != null) {
+            compilePath.addPropertyChangeListener(this);
+        }
     }
 
     @CheckForNull
@@ -196,9 +212,7 @@ public class APTUtils implements ChangeListener, PropertyChangeListener {
     }
 
     public static void sourceRootUnregistered(Iterable<? extends URL> roots) {
-        for (URL root : roots) {
-            knownSourceRootsMap.remove(root);
-        }
+        roots.forEach(knownSourceRootsMap::remove);
         //XXX hack make sure we are not holding APTUtils for any unknown roots
         //just in case something goes wrong:
         for (URL unknown : PathRegistry.getDefault().getUnknownRoots()) {
@@ -298,12 +312,16 @@ public class APTUtils implements ChangeListener, PropertyChangeListener {
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
         if (ClassPath.PROP_ROOTS.equals(evt.getPropertyName())) {
-            classLoaderCache = null;
-            ROOT_CHANGE_RP.execute(()-> {
-                if (verifyProcessorPath(root, usedRoots, PROCESSOR_MODULE_PATH) || verifyProcessorPath(root, usedRoots, PROCESSOR_PATH)) {
-                    slidingRefresh.schedule(SLIDING_WINDOW);
-                }
-            });
+            if (evt.getSource() == compilePath) {
+                stateChanged(null);
+            } else {
+                classLoaderCache = null;
+                ROOT_CHANGE_RP.execute(()-> {
+                    if (verifyProcessorPath(root, usedRoots, PROCESSOR_MODULE_PATH) || verifyProcessorPath(root, usedRoots, PROCESSOR_PATH)) {
+                        slidingRefresh.schedule(SLIDING_WINDOW);
+                    }
+                });
+            }
         }
     }
 
@@ -340,7 +358,13 @@ public class APTUtils implements ChangeListener, PropertyChangeListener {
             pp = ClassPath.getClassPath(root, JavaClassPathConstants.PROCESSOR_PATH);
             if (pp != null && processorPath.compareAndSet(null, pp)) {
                 bootPath = ClassPath.getClassPath(root, ClassPath.BOOT);
+                if (compilePath != null) {
+                    compilePath.removePropertyChangeListener(this);
+                }
                 compilePath = ClassPath.getClassPath(root, ClassPath.COMPILE);
+                if (compilePath != null) {
+                    compilePath.addPropertyChangeListener(this);
+                }
                 listenOnProcessorPath(pp, this);
                 classLoaderCache = null;
             }
@@ -357,9 +381,9 @@ public class APTUtils implements ChangeListener, PropertyChangeListener {
         for (String name : processorNames) {
             try {
                 Class<?> clazz = Class.forName(name, true, cl);
-                Object instance = clazz.newInstance();
+                Object instance = clazz.getDeclaredConstructor().newInstance();
                 if (instance instanceof Processor) {
-                    result.add((Processor) instance);
+                    result.add(new ErrorToleratingProcessor((Processor) instance));
                 }
             } catch (ThreadDeath td) {
                 throw td;
@@ -393,7 +417,7 @@ public class APTUtils implements ChangeListener, PropertyChangeListener {
                         try {
                             final URLConnection uc = resources.nextElement().openConnection();
                             uc.setUseCaches(false);
-                            ins = new BufferedReader(new InputStreamReader(uc.getInputStream(), "UTF-8")); //NOI18N
+                            ins = new BufferedReader(new InputStreamReader(uc.getInputStream(), StandardCharsets.UTF_8));
                             String line;
                             while ((line = ins.readLine()) != null) {
                                 int hash = line.indexOf('#');
@@ -928,5 +952,93 @@ public class APTUtils implements ChangeListener, PropertyChangeListener {
                 }
             }
         }
+    }
+
+    private static final class ErrorToleratingProcessor implements Processor {
+
+        private final Processor delegate;
+        private ProcessingEnvironment processingEnv;
+        private boolean initFailed = false;
+        private boolean processFailed = false;
+
+        public ErrorToleratingProcessor(Processor delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public Set<String> getSupportedOptions() {
+            if (initFailed) {
+                return Collections.emptySet();
+            }
+            return delegate.getSupportedOptions();
+        }
+
+        @Override
+        public Set<String> getSupportedAnnotationTypes() {
+            if (initFailed) {
+                return Collections.emptySet();
+            }
+            return delegate.getSupportedAnnotationTypes();
+        }
+
+        @Override
+        public SourceVersion getSupportedSourceVersion() {
+            if (initFailed) {
+                return SourceVersion.latest();
+            }
+            return delegate.getSupportedSourceVersion();
+        }
+
+        @Override
+        public void init(ProcessingEnvironment processingEnv) {
+            try {
+                delegate.init(processingEnv);
+            } catch (ClientCodeException | ThreadDeath | Abort err) {
+                initFailed = true;
+                throw err;
+            } catch (Throwable t) {
+                initFailed = true;
+                StringBuilder exception = new StringBuilder();
+                exception.append(t.getMessage()).append("\n");
+                for (StackTraceElement ste : t.getStackTrace()) {
+                    exception.append(ste).append("\n");
+                }
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, Bundle.ERR_ProcessorException(delegate.getClass().getName(), exception.toString()));
+            }
+            this.processingEnv = processingEnv;
+        }
+
+        @Override
+        @Messages("ERR_ProcessorException=Annotation processor {0} failed with an exception: {1}")
+        public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
+            if (initFailed || processFailed) {
+                return false;
+            }
+            try {
+                return delegate.process(annotations, roundEnv);
+            } catch (ClientCodeException | ThreadDeath | Abort err) {
+                processFailed = true;
+                throw err;
+            } catch (Throwable t) {
+                processFailed = true;
+                Element el = roundEnv.getRootElements().isEmpty() ? null : roundEnv.getRootElements().iterator().next();
+                StringBuilder exception = new StringBuilder();
+                exception.append(t.getMessage()).append("\n");
+                for (StackTraceElement ste : t.getStackTrace()) {
+                    exception.append(ste).append("\n");
+                }
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, Bundle.ERR_ProcessorException(delegate.getClass().getName(), exception.toString()), el);
+                return false;
+            }
+        }
+
+        @Override
+        public Iterable<? extends Completion> getCompletions(Element element, AnnotationMirror annotation, ExecutableElement member, String userText) {
+            if (initFailed) {
+                return Collections.emptySet();
+            }
+            return delegate.getCompletions(element, annotation, member, userText);
+        }
+
     }
 }

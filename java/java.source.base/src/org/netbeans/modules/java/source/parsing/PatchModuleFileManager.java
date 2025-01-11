@@ -21,6 +21,7 @@ package org.netbeans.modules.java.source.parsing;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -29,6 +30,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -43,11 +45,14 @@ import javax.tools.StandardLocation;
 import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.java.classpath.ClassPath;
+import org.netbeans.api.java.queries.BinaryForSourceQuery;
 import org.netbeans.modules.java.source.indexing.JavaIndex;
 import org.netbeans.modules.java.source.util.Iterators;
 import org.netbeans.spi.java.classpath.support.ClassPathSupport;
+import org.openide.filesystems.FileUtil;
 import org.openide.filesystems.URLMapper;
 import org.openide.util.BaseUtilities;
+import org.openide.util.Exceptions;
 import org.openide.util.Pair;
 
 /**
@@ -62,6 +67,7 @@ final class PatchModuleFileManager implements JavaFileManager {
     private final Map<String,List<URL>> patches;
     private final Map<URL, String> roots;
     private Set<PatchLocation> moduleLocations;
+    private String overrideModuleName;
 
     PatchModuleFileManager(
             @NonNull final JavaFileManager binDelegate,
@@ -160,7 +166,8 @@ final class PatchModuleFileManager implements JavaFileManager {
                 return true;
             }
         } else if (head.startsWith(JavacParser.NB_X_MODULE)) {
-            addModulePatches(head.substring(JavacParser.NB_X_MODULE.length()),
+            overrideModuleName = head.substring(JavacParser.NB_X_MODULE.length());
+            addModulePatches(overrideModuleName,
                              src.entries().stream().map(e -> e.getURL()).collect(Collectors.toList()));
             return true;
         }
@@ -212,6 +219,8 @@ final class PatchModuleFileManager implements JavaFileManager {
 
     @Override
     public Iterable<JavaFileObject> list(Location location, String packageName, Set<JavaFileObject.Kind> kinds, boolean recurse) throws IOException {
+        location = fixLocation(location);
+
         if (PatchLocation.isInstance(location)) {
             final PatchLocation pl = PatchLocation.cast(location);
             final ModuleLocation bin = pl.getBin();
@@ -247,6 +256,8 @@ final class PatchModuleFileManager implements JavaFileManager {
 
     @Override
     public JavaFileObject getJavaFileForInput(Location location, String className, JavaFileObject.Kind kind) throws IOException {
+        location = fixLocation(location);
+
         if (PatchLocation.isInstance(location)) {
             final PatchLocation pl = PatchLocation.cast(location);
             final ModuleLocation bin = pl.getBin();
@@ -283,14 +294,23 @@ final class PatchModuleFileManager implements JavaFileManager {
     }
     //</editor-fold>
 
-    private Set<PatchLocation> moduleLocations(final Location baseLocation) {
+    private Location fixLocation(Location input) throws IOException {
+        if (input == StandardLocation.CLASS_OUTPUT && overrideModuleName != null) {
+            return moduleLocations(StandardLocation.PATCH_MODULE_PATH)
+                    .stream().filter(pl -> overrideModuleName.equals(pl.getModuleName())).map(pl -> (Location) pl).findAny().orElse(input);
+        } else {
+            return input;
+        }
+    }
+
+    private Set<PatchLocation> moduleLocations(final Location baseLocation) throws IOException {
         if (baseLocation != StandardLocation.PATCH_MODULE_PATH) {
             throw new IllegalStateException(baseLocation.toString());
         }
         if (moduleLocations == null) {
             Set<PatchLocation> res = new HashSet<>();
             for (Map.Entry<String,List<URL>> patch : patches.entrySet()) {
-                res.add(createPatchLocation(patch.getKey(), patch.getValue()));
+                res.add(createPatchLocation(patch.getKey(), patch.getValue(), patch.getKey().equals(overrideModuleName)));
             }
             moduleLocations = Collections.unmodifiableSet(res);
         }
@@ -300,14 +320,20 @@ final class PatchModuleFileManager implements JavaFileManager {
     @NonNull
     private static PatchLocation createPatchLocation(
             @NonNull final String modName,
-            @NonNull final List<? extends URL> roots) {
+            @NonNull final List<? extends URL> roots,
+                     final boolean sourceOverride) throws IOException {
         Collection<URL> bin = new ArrayList<>(roots.size());
         Collection<URL> src = new ArrayList<>(roots.size());
         for (URL root : roots) {
             if (JavaIndex.hasSourceCache(root, false)) {
                 src.add(root);
+                bin.add(FileUtil.urlForArchiveOrDir(JavaIndex.getClassFolder(root)));
             } else {
-                bin.add(root);
+                if (sourceOverride) {
+                    bin.addAll(Arrays.asList(BinaryForSourceQuery.findBinaryRoots(root).getRoots()));
+                } else {
+                    bin.add(root);
+                }
             }
         }
         return new PatchLocation(

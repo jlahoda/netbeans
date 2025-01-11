@@ -19,6 +19,8 @@
 
 package org.netbeans.modules.maven.customizer;
 
+import java.awt.Color;
+import org.netbeans.modules.maven.runjar.PropertySplitter;
 import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -41,7 +43,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
-import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
@@ -61,7 +62,7 @@ import javax.swing.event.DocumentListener;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.JTextComponent;
 import org.codehaus.plexus.util.StringUtils;
-import org.jdom.Verifier;
+import org.jdom2.Verifier;
 import org.netbeans.api.annotations.common.NullAllowed;
 import org.netbeans.api.java.platform.JavaPlatform;
 import org.netbeans.api.java.platform.JavaPlatformManager;
@@ -107,7 +108,7 @@ public class ActionMappings extends javax.swing.JPanel implements HelpCtx.Provid
     private static final RequestProcessor RP = new RequestProcessor(ActionMappings.class);
     private NbMavenProjectImpl project;
     private ModelHandle2 handle;
-    private final HashMap<String, String> titles = new HashMap<String, String>();
+    private final HashMap<String, String> titles = new HashMap<>();
     
     private final GoalsListener goalsListener;
     private final TextValueCompleter goalcompleter;
@@ -155,7 +156,6 @@ public class ActionMappings extends javax.swing.JPanel implements HelpCtx.Provid
         txtPackagings.addFocusListener(focus);
         goalcompleter = new TextValueCompleter(Collections.<String>emptyList(), txtGoals, " "); //NOI18N
         profilecompleter = new TextValueCompleter(Collections.<String>emptyList(), txtProfiles, " "); //NOI18N
-
         if( "Aqua".equals(UIManager.getLookAndFeel().getID()) ) { //NOI18N
             this.lblHint.setOpaque(true);
             jScrollPane2.setBorder(null);
@@ -186,22 +186,24 @@ public class ActionMappings extends javax.swing.JPanel implements HelpCtx.Provid
         titles.put(ActionProvider.COMMAND_CLEAN, NbBundle.getMessage(ActionMappings.class, "COM_Clean_project"));
         titles.put(ActionProvider.COMMAND_COMPILE_SINGLE, NbBundle.getMessage(ActionMappings.class, "COM_Compile_file"));
         titles.put(ActionProvider.COMMAND_DEBUG, NbBundle.getMessage(ActionMappings.class, "COM_Debug_project"));
-        titles.put(ActionProvider.COMMAND_DEBUG_SINGLE + ".main", NbBundle.getMessage(ActionMappings.class, "COM_Debug_file_main"));
+        titles.put(ActionProviderImpl.COMMAND_DEBUG_MAIN, NbBundle.getMessage(ActionMappings.class, "COM_Debug_file_main"));
         titles.put(ActionProvider.COMMAND_DEBUG_SINGLE + ".deploy", NbBundle.getMessage(ActionMappings.class, "COM_Debug_file_deploy"));
         titles.put(ActionProvider.COMMAND_DEBUG_STEP_INTO, null);
         titles.put(ActionProvider.COMMAND_DEBUG_TEST_SINGLE, NbBundle.getMessage(ActionMappings.class, "COM_Debug_test"));
         titles.put(ActionProvider.COMMAND_REBUILD, NbBundle.getMessage(ActionMappings.class, "COM_ReBuild_project"));
         titles.put(ActionProvider.COMMAND_RUN, NbBundle.getMessage(ActionMappings.class, "COM_Run_project"));
-        titles.put(ActionProvider.COMMAND_RUN_SINGLE + ".main", NbBundle.getMessage(ActionMappings.class, "COM_Run_file_main"));
+        titles.put(ActionProviderImpl.COMMAND_RUN_MAIN, NbBundle.getMessage(ActionMappings.class, "COM_Run_file_main"));
         titles.put(ActionProvider.COMMAND_RUN_SINGLE + ".deploy", NbBundle.getMessage(ActionMappings.class, "COM_Run_file_deploy"));
         titles.put(ActionProvider.COMMAND_TEST, NbBundle.getMessage(ActionMappings.class, "COM_Test_project"));
         titles.put(ActionProvider.COMMAND_TEST_SINGLE, NbBundle.getMessage(ActionMappings.class, "COM_Test_file"));
         titles.put(ActionProvider.COMMAND_PROFILE, NbBundle.getMessage(ActionMappings.class, "COM_Profile_project"));
-        titles.put(ActionProvider.COMMAND_PROFILE_SINGLE + ".main", NbBundle.getMessage(ActionMappings.class, "COM_Profile_file_main"));
+        titles.put(ActionProviderImpl.COMMAND_PROFILE_MAIN, NbBundle.getMessage(ActionMappings.class, "COM_Profile_file_main"));
         titles.put(ActionProvider.COMMAND_PROFILE_SINGLE + ".deploy", NbBundle.getMessage(ActionMappings.class, "COM_Profile_file_deploy"));
         titles.put(ActionProvider.COMMAND_PROFILE_TEST_SINGLE, NbBundle.getMessage(ActionMappings.class, "COM_Profile_test"));
         titles.put("javadoc", NbBundle.getMessage(ActionMappings.class, "COM_Javadoc_project"));
         titles.put(ActionProviderImpl.BUILD_WITH_DEPENDENCIES, NbBundle.getMessage(ActionMappings.class, "COM_Build_WithDeps_project"));
+        titles.put(ActionProviderImpl.COMMAND_INTEGRATION_TEST_SINGLE, NbBundle.getMessage(ActionMappings.class, "COM_Integration_Test_file"));
+        titles.put(ActionProviderImpl.COMMAND_DEBUG_INTEGRATION_TEST_SINGLE, NbBundle.getMessage(ActionMappings.class, "COM_Debug_Integration_test"));
 
         comConfiguration.setEditable(false);
         comConfiguration.setRenderer(new DefaultListCellRenderer() {
@@ -220,12 +222,10 @@ public class ActionMappings extends javax.swing.JPanel implements HelpCtx.Provid
         
         loadMappings();
         clearFields();
-        comboListener = new ActionListener() {
-            @Override public void actionPerformed(ActionEvent e) {
-                clearFields();
-                loadMappings();
-                addListeners();
-            }
+        comboListener = (ActionEvent e) -> {
+            clearFields();
+            loadMappings();
+            addListeners();
         };
     }
     
@@ -267,7 +267,7 @@ public class ActionMappings extends javax.swing.JPanel implements HelpCtx.Provid
         addListeners();
         RP.post(new Runnable() {
             @Override public void run() {
-                final Set<String> strs = new HashSet<String>();
+                final Set<String> strs = new HashSet<>();
                 final GoalsProvider provider = Lookup.getDefault().lookup(GoalsProvider.class);
                 if (provider != null) {
                     strs.addAll(provider.getAvailableGoals());
@@ -286,12 +286,10 @@ public class ActionMappings extends javax.swing.JPanel implements HelpCtx.Provid
                 }
                 final List<String> profiles = allProfiles;
 
-                SwingUtilities.invokeLater(new Runnable() {
-                    @Override public void run() {
-                        goalcompleter.setValueList(strs, false); //do not bother about partial results, too many intermediate apis..
-                        if (profiles != null) {
-                            profilecompleter.setValueList(profiles, false);
-                        }
+                SwingUtilities.invokeLater(() -> {
+                    goalcompleter.setValueList(strs, false); //do not bother about partial results, too many intermediate apis..
+                    if (profiles != null) {
+                        profilecompleter.setValueList(profiles, false);
                     }
                 });
             }
@@ -346,6 +344,7 @@ public class ActionMappings extends javax.swing.JPanel implements HelpCtx.Provid
         gridBagConstraints.gridy = 0;
         gridBagConstraints.gridwidth = 4;
         gridBagConstraints.gridheight = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.ipadx = 427;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
         gridBagConstraints.insets = new java.awt.Insets(0, 18, 0, 12);
@@ -424,6 +423,7 @@ public class ActionMappings extends javax.swing.JPanel implements HelpCtx.Provid
         gridBagConstraints.gridy = 7;
         gridBagConstraints.gridwidth = 4;
         gridBagConstraints.gridheight = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.ipadx = 455;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
         gridBagConstraints.insets = new java.awt.Insets(18, 18, 0, 12);
@@ -444,6 +444,7 @@ public class ActionMappings extends javax.swing.JPanel implements HelpCtx.Provid
         gridBagConstraints.gridy = 9;
         gridBagConstraints.gridwidth = 4;
         gridBagConstraints.gridheight = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.ipadx = 455;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
         gridBagConstraints.insets = new java.awt.Insets(6, 18, 0, 12);
@@ -490,10 +491,8 @@ public class ActionMappings extends javax.swing.JPanel implements HelpCtx.Provid
         gridBagConstraints.gridwidth = 4;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.ipadx = 436;
-        gridBagConstraints.ipady = 117;
+        gridBagConstraints.ipady = 120;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
-        gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.weighty = 1.0;
         gridBagConstraints.insets = new java.awt.Insets(2, 18, 0, 12);
         add(jScrollPane2, gridBagConstraints);
 
@@ -555,6 +554,7 @@ public class ActionMappings extends javax.swing.JPanel implements HelpCtx.Provid
         gridBagConstraints.gridy = 11;
         gridBagConstraints.gridwidth = 4;
         gridBagConstraints.gridheight = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.ipadx = 455;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
         gridBagConstraints.insets = new java.awt.Insets(6, 18, 0, 12);
@@ -638,16 +638,36 @@ private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-HEADER
         }
     }//GEN-LAST:event_btnRemoveActionPerformed
     
-    private void lstMappingsValueChanged(javax.swing.event.ListSelectionEvent evt) {//GEN-FIRST:event_lstMappingsValueChanged
-        Object obj = lstMappings.getSelectedValue();//GEN-HEADEREND:event_lstMappingsValueChanged
-        if (obj == null) {
-            clearFields();
-        } else {
-            MappingWrapper wr = (MappingWrapper)obj;
-            NetbeansActionMapping mapp = wr.getMapping();
+    private void updateEnabledControls(MappingWrapper wr) {
+        boolean notEmpty = wr != null;
+        if (notEmpty) {
+            lblGoals.setEnabled(true);
+            lblHint.setEnabled(true);
+            lblPackagings.setEnabled(true);
+            lblProfiles.setEnabled(true);
+            lblProperties.setEnabled(true);
+            
             txtGoals.setEnabled(true);
             epProperties.setEnabled(true);
             txtProfiles.setEnabled(true);
+            cbRecursively.setEnabled(true);
+            cbBuildWithDeps.setEnabled(true);
+            btnAddProps.setEnabled(true);
+            btnRemove.setEnabled(true);
+            if (isGlobal()) {
+                txtPackagings.setEnabled(true);
+            }            
+        } else {
+            clearFields();
+            btnRemove.setEnabled(false);
+        }
+    }
+    
+    private void lstMappingsValueChanged(javax.swing.event.ListSelectionEvent evt) {//GEN-FIRST:event_lstMappingsValueChanged
+        MappingWrapper wr = (MappingWrapper)lstMappings.getSelectedValue();
+        updateEnabledControls(wr);
+        if (wr != null) {
+            NetbeansActionMapping mapp = wr.getMapping();
             
             txtGoals.getDocument().removeDocumentListener(goalsListener);
             txtProfiles.getDocument().removeDocumentListener(profilesListener);
@@ -656,7 +676,6 @@ private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-HEADER
             cbBuildWithDeps.removeActionListener(depsListener);
             
             if (isGlobal()) {
-                txtPackagings.setEnabled(true);
                 txtPackagings.getDocument().removeDocumentListener(packagingsListener);
                 txtPackagings.setText(createSpaceSeparatedList(mapp != null ? mapp.getPackagings() : Collections.<String>emptyList()));
                 txtPackagings.getDocument().addDocumentListener(packagingsListener);
@@ -714,11 +733,11 @@ private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-HEADER
                     }
                 }
 
-                DefaultComboBoxModel<String> cbModel = new DefaultComboBoxModel<String>(allIcons.toArray(new String[0]));
+                DefaultComboBoxModel<String> cbModel = new DefaultComboBoxModel<>(allIcons.toArray(String[]::new));
                 boolean hasAvailable;
                 if (cbModel.getSize() != 0) {
                     hasAvailable = true;
-                    JComboBox<String> cb = new JComboBox<String>();
+                    JComboBox<String> cb = new JComboBox<>();
                     cb.setModel(cbModel);
                     pnl.add(cb);
                     cb.setRenderer(new DefaultListCellRenderer() {
@@ -759,7 +778,7 @@ private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-HEADER
     })
     private void loadMappings() {
         DefaultListModel model = new DefaultListModel();
-
+        fixedActions = new HashSet<>();
         if (handle != null) {
             boolean isWar = NbMavenProject.TYPE_WAR.equalsIgnoreCase(project.getProjectWatcher().getPackagingType());
             addSingleAction(ActionProvider.COMMAND_BUILD, model);
@@ -768,6 +787,7 @@ private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-HEADER
             addSingleAction(ActionProviderImpl.BUILD_WITH_DEPENDENCIES, model);
             addSingleAction(ActionProvider.COMMAND_TEST, model);
             addSingleAction(ActionProvider.COMMAND_TEST_SINGLE, model);
+            addSingleAction(ActionProviderImpl.COMMAND_INTEGRATION_TEST_SINGLE, model);
             addSingleAction(ActionProvider.COMMAND_RUN, model);
             addSingleAction(ActionProvider.COMMAND_RUN_SINGLE + ".main", model); //NOI18N
             if (isWar) {
@@ -779,12 +799,17 @@ private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-HEADER
                 addSingleAction(ActionProvider.COMMAND_DEBUG_SINGLE + ".deploy", model); //NOI18N
             }
             addSingleAction(ActionProvider.COMMAND_DEBUG_TEST_SINGLE, model);
+            addSingleAction(ActionProviderImpl.COMMAND_DEBUG_INTEGRATION_TEST_SINGLE, model);
             addSingleAction(ActionProvider.COMMAND_PROFILE, model);
             addSingleAction(ActionProvider.COMMAND_PROFILE_SINGLE + ".main", model); // NOI18N
             if (isWar) {
                 addSingleAction(ActionProvider.COMMAND_PROFILE_SINGLE + ".deploy", model); //NOI18N
             }
             addSingleAction("javadoc", model); //NOI18N
+            
+            for (String a : CustomizerProviderImpl.ACCESSOR2.getAllActions(handle)) {
+                addSingleAction(a, model, true); //NOI18N
+            }
         }
         for (NetbeansActionMapping elem : getActionMappings().getActions()) {
             if (elem.getActionName().startsWith(CUSTOM_ACTION_PREFIX)) {
@@ -796,7 +821,13 @@ private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-HEADER
         lstMappings.setModel(model);
     }
     
+    private Set<String> fixedActions = new HashSet<>();
+    
     private void addSingleAction(String action, DefaultListModel model) {
+        addSingleAction(action, model, false);
+    }
+    
+    private void addSingleAction(String action, DefaultListModel model, boolean ignoreIfNotExist) {
         NetbeansActionMapping mapp = null;
         for (NetbeansActionMapping elem : getActionMappings().getActions()) {
             if (action.equals(elem.getActionName())) {
@@ -806,17 +837,24 @@ private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-HEADER
         }
         boolean userDefined = true;
         if (mapp == null) {
+            if (fixedActions.contains(action)) {
+                return;
+            }
             mapp = ActionToGoalUtils.getDefaultMapping(action, project);
             userDefined = false;
         }
         MappingWrapper wr;
         if (mapp == null) {
+            if (ignoreIfNotExist) {
+                return;
+            }
             wr = new MappingWrapper(action);
         } else {
             wr = new MappingWrapper(mapp);
         }
         wr.setUserDefined(userDefined);
         model.addElement(wr);
+        fixedActions.add(action);
     }
     
     private String createSpaceSeparatedList(List<String> list) {
@@ -862,12 +900,19 @@ private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-HEADER
         txtPackagings.setEnabled(false);
         updateColor(null);
         cbRecursively.setEnabled(false);
+        cbBuildWithDeps.setEnabled(false);
         btnAddProps.setEnabled(false);
         if (handle == null) { //only global settings
             jButton1.setEnabled(false);
             jButton1.setIcon(null);
             jButton1.setText(BTN_ShowToolbar());
         }
+        
+        lblGoals.setEnabled(false);
+        lblHint.setEnabled(false);
+        lblPackagings.setEnabled(false);
+        lblProfiles.setEnabled(false);
+        lblProperties.setEnabled(false);
     }
     
     private void updateColor(MappingWrapper wr) {
@@ -936,7 +981,7 @@ private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-HEADER
     public static Map<String, String> convertStringToActionProperties(String text) {
         PropertySplitter split = new PropertySplitter(text);
         String tok = split.nextPair();
-        Map<String,String> props = new LinkedHashMap<String,String>();
+        Map<String,String> props = new LinkedHashMap<>();
         while (tok != null) {
             String[] prp = StringUtils.split(tok, "=", 2); //NOI18N
             if (prp.length >= 1 ) {
@@ -951,7 +996,7 @@ private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-HEADER
                 if (key.endsWith("=")) {
                     key = key.substring(0, key.length() - 1);
                 }
-                if (key.trim().length() > 0 && Verifier.checkElementName(key.trim()) == null) {
+                if (!key.isBlank() && Verifier.checkElementName(key.trim()) == null) {
                     props.put(key.trim(), prp.length > 1 ? prp[1] : "");
                 }
             }
@@ -1008,7 +1053,11 @@ private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-HEADER
                 
                 
     }
-    
+
+    @NbBundle.Messages({
+        "# {0} - disabled action name",
+        "FMT_DisabledAction={0} - disabled"
+    })
     private static class Renderer extends DefaultListCellRenderer {
         
     
@@ -1024,6 +1073,10 @@ private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-HEADER
                     lbl.setFont(lbl.getFont().deriveFont(Font.BOLD));
                 } else {
                     lbl.setFont(lbl.getFont().deriveFont(Font.PLAIN));
+                }
+                if (ActionToGoalUtils.isDisabledMapping(wr.getMapping())) {
+                    lbl.setForeground(Color.lightGray);
+                    lbl.setText(Bundle.FMT_DisabledAction(lbl.getText()));
                 }
             }
             return supers;
@@ -1143,11 +1196,12 @@ private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-HEADER
         @Override
         protected MappingWrapper doUpdate() {
             MappingWrapper wr = super.doUpdate();
+            boolean wasEnabled = ActionToGoalUtils.isDisabledMapping(wr.getMapping());
             if (wr != null) {
                 String text = txtGoals.getText();
                 StringTokenizer tok = new StringTokenizer(text, " "); //NOI18N
                 NetbeansActionMapping mapp = wr.getMapping();
-                List<String> goals = new ArrayList<String>();
+                List<String> goals = new ArrayList<>();
                 while (tok.hasMoreTokens()) {
                     String token = tok.nextToken();
                     goals.add(token);
@@ -1155,6 +1209,9 @@ private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-HEADER
                 mapp.setGoals(goals);
                 if (handle != null) {
                     handle.markAsModified(getActionMappings());
+                }
+                if (ActionToGoalUtils.isDisabledMapping(wr.getMapping()) != wasEnabled) {
+                    lstMappings.repaint();
                 }
             }
             return wr;
@@ -1169,7 +1226,7 @@ private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-HEADER
                 String text = txtProfiles.getText();
                 StringTokenizer tok = new StringTokenizer(text, " ,"); //NOI18N
                 NetbeansActionMapping mapp = wr.getMapping();
-                List<String> profs = new ArrayList<String>();
+                List<String> profs = new ArrayList<>();
                 while (tok.hasMoreTokens()) {
                     String token = tok.nextToken();
                     profs.add(token);
@@ -1191,7 +1248,7 @@ private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-HEADER
                 String text = txtPackagings.getText().trim();
                 StringTokenizer tok = new StringTokenizer(text, " ,"); //NOI18N
                 NetbeansActionMapping mapp = wr.getMapping();
-                List<String> packs = new ArrayList<String>();
+                List<String> packs = new ArrayList<>();
                 while (tok.hasMoreTokens()) {
                     String token = tok.nextToken();
                     packs.add(token.trim());
@@ -1356,7 +1413,7 @@ private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-HEADER
                     if (expr != null) {
                         String props = area.getText();
                         String sep = "\n";//NOI18N
-                        if (props.endsWith("\n") || props.trim().length() == 0) {//NOI18N
+                        if (props.endsWith("\n") || props.isBlank()) {//NOI18N
                             sep = "";//NOI18N
                         }
                         props = props + sep + expr + "="; //NOI18N
@@ -1382,7 +1439,7 @@ private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-HEADER
         @Override public void actionPerformed(ActionEvent e) {
             String props = area.getText();
             String sep = "\n";//NOI18N
-            if (props.endsWith("\n") || props.trim().length() == 0) {//NOI18N
+            if (props.endsWith("\n") || props.isBlank()) {//NOI18N
                 sep = "";//NOI18N
             }
             props = props + sep + "Env.FOO=bar"; //NOI18N
@@ -1439,7 +1496,7 @@ private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-HEADER
         @Override public void actionPerformed(ActionEvent e) {
             String props = area.getText();
             String sep = "\n";//NOI18N
-            if (props.endsWith("\n") || props.trim().length() == 0) {//NOI18N
+            if (props.endsWith("\n") || props.isBlank()) {//NOI18N
                 sep = "";//NOI18N
             }
             String val = "Env.JAVA_HOME=" + value;
@@ -1525,7 +1582,7 @@ private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-HEADER
             }
         } else {
             String sep = "\n";//NOI18N
-            if (props.endsWith("\n") || props.trim().length() == 0) {//NOI18N
+            if (props.endsWith("\n") || props.isBlank()) {//NOI18N
                 sep = "";//NOI18N
             }
             props = props + sep + replace; //NOI18N
@@ -1561,7 +1618,7 @@ private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-HEADER
         }
 
         private void checkValid () {
-            setValid(textField.getText() != null && textField.getText().trim().length() > 0);
+            setValid(textField.getText() != null && !textField.getText().isBlank());
         }
 
     }

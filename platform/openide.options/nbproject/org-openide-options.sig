@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 6.41.1
+#Version 6.63
 
 CLSS public abstract java.awt.Component
 cons protected init()
@@ -159,8 +159,6 @@ meth public java.awt.im.InputMethodRequests getInputMethodRequests()
 meth public java.awt.image.ColorModel getColorModel()
 meth public java.awt.image.VolatileImage createVolatileImage(int,int)
 meth public java.awt.image.VolatileImage createVolatileImage(int,int,java.awt.ImageCapabilities) throws java.awt.AWTException
-meth public java.awt.peer.ComponentPeer getPeer()
- anno 0 java.lang.Deprecated()
 meth public java.beans.PropertyChangeListener[] getPropertyChangeListeners()
 meth public java.beans.PropertyChangeListener[] getPropertyChangeListeners(java.lang.String)
 meth public java.lang.String getName()
@@ -274,8 +272,6 @@ meth public void transferFocusUpCycle()
 meth public void update(java.awt.Graphics)
 meth public void validate()
 supr java.lang.Object
-hfds FOCUS_TRAVERSABLE_DEFAULT,FOCUS_TRAVERSABLE_SET,FOCUS_TRAVERSABLE_UNKNOWN,LOCK,acc,actionListenerK,adjustmentListenerK,appContext,autoFocusTransferOnDisposal,background,backgroundEraseDisabled,boundsOp,bufferStrategy,changeSupport,coalesceEventsParams,coalesceMap,coalescingEnabled,componentListener,componentListenerK,componentOrientation,componentSerializedDataVersion,compoundShape,containerListenerK,cursor,dropTarget,enabled,eventCache,eventLog,eventMask,focusListener,focusListenerK,focusLog,focusTraversalKeyPropertyNames,focusTraversalKeys,focusTraversalKeysEnabled,focusable,font,foreground,graphicsConfig,height,hierarchyBoundsListener,hierarchyBoundsListenerK,hierarchyListener,hierarchyListenerK,ignoreRepaint,incRate,inputMethodListener,inputMethodListenerK,isAddNotifyComplete,isFocusTraversableOverridden,isInc,isPacked,itemListenerK,keyListener,keyListenerK,locale,log,maxSize,maxSizeSet,minSize,minSizeSet,mixingCutoutRegion,mixingLog,mouseListener,mouseListenerK,mouseMotionListener,mouseMotionListenerK,mouseWheelListener,mouseWheelListenerK,name,nameExplicitlySet,newEventsOnly,objectLock,ownedWindowK,parent,peer,peerFont,popups,prefSize,prefSizeSet,requestFocusController,serialVersionUID,textListenerK,valid,visible,width,windowClosingException,windowFocusListenerK,windowListenerK,windowStateListenerK,x,y
-hcls AWTTreeLock,BltSubRegionBufferStrategy,DummyRequestFocusController,FlipSubRegionBufferStrategy,ProxyCapabilities,SingleBufferStrategy
 
 CLSS public java.awt.Container
 cons public init()
@@ -360,8 +356,6 @@ meth public void transferFocusDownCycle()
 meth public void update(java.awt.Graphics)
 meth public void validate()
 supr java.awt.Component
-hfds EMPTY_ARRAY,INCLUDE_SELF,SEARCH_HEAVYWEIGHTS,component,containerListener,containerSerializedDataVersion,descendUnconditionallyWhenValidating,descendantsCount,dispatcher,eventLog,focusCycleRoot,focusTraversalPolicy,focusTraversalPolicyProvider,isJavaAwtSmartInvalidate,layoutMgr,listeningBoundsChildren,listeningChildren,log,mixingLog,modalAppContext,modalComp,numOfHWComponents,numOfLWComponents,preserveBackgroundColor,printing,printingThreads,serialPersistentFields,serialVersionUID
-hcls DropTargetEventTargetFilter,EventTargetFilter,MouseEventTargetFilter,WakingRunnable
 
 CLSS public abstract interface java.awt.MenuContainer
 meth public abstract boolean postEvent(java.awt.Event)
@@ -428,7 +422,6 @@ meth public void setAsText(java.lang.String)
 meth public void setSource(java.lang.Object)
 meth public void setValue(java.lang.Object)
 supr java.lang.Object
-hfds listeners,source,value
 
 CLSS public java.beans.SimpleBeanInfo
 cons public init()
@@ -480,7 +473,6 @@ meth public final java.lang.String name()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
-hfds name,ordinal
 
 CLSS public java.lang.Object
 cons public init()
@@ -708,8 +700,6 @@ meth public void unregisterKeyboardAction(javax.swing.KeyStroke)
 meth public void update(java.awt.Graphics)
 meth public void updateUI()
 supr java.awt.Container
-hfds ACTIONMAP_CREATED,ANCESTOR_INPUTMAP_CREATED,ANCESTOR_USING_BUFFER,AUTOSCROLLS_SET,COMPLETELY_OBSCURED,CREATED_DOUBLE_BUFFER,DEBUG_GRAPHICS_LOADED,FOCUS_INPUTMAP_CREATED,FOCUS_TRAVERSAL_KEYS_BACKWARD_SET,FOCUS_TRAVERSAL_KEYS_FORWARD_SET,INHERITS_POPUP_MENU,INPUT_VERIFIER_SOURCE_KEY,IS_DOUBLE_BUFFERED,IS_OPAQUE,IS_PAINTING_TILE,IS_PRINTING,IS_PRINTING_ALL,IS_REPAINTING,KEYBOARD_BINDINGS_KEY,KEY_EVENTS_ENABLED,NEXT_FOCUS,NOT_OBSCURED,OPAQUE_SET,PARTIALLY_OBSCURED,REQUEST_FOCUS_DISABLED,RESERVED_1,RESERVED_2,RESERVED_3,RESERVED_4,RESERVED_5,RESERVED_6,WHEN_IN_FOCUSED_WINDOW_BINDINGS,WIF_INPUTMAP_CREATED,WRITE_OBJ_COUNTER_FIRST,WRITE_OBJ_COUNTER_LAST,aaTextInfo,actionMap,alignmentX,alignmentY,ancestorInputMap,autoscrolls,border,clientProperties,componentObtainingGraphicsFrom,componentObtainingGraphicsFromLock,defaultLocale,flags,focusController,focusInputMap,inputVerifier,isAlignmentXSet,isAlignmentYSet,managingFocusBackwardTraversalKeys,managingFocusForwardTraversalKeys,paintingChild,popupMenu,readObjectCallbacks,revalidateRunnableScheduled,tempRectangles,uiClassID,verifyInputWhenFocusTarget,vetoableChangeSupport,windowInputMap
-hcls ActionStandin,IntVector,KeyboardState,ReadObjectCallback
 
 CLSS public abstract interface javax.swing.text.Document
 fld public final static java.lang.String StreamDescriptionProperty = "stream"
@@ -787,27 +777,37 @@ supr java.lang.Object
 hfds err,name,serialVersionUID,supp
 
 CLSS public org.openide.explorer.propertysheet.PropertySheetSettings
+ anno 0 java.lang.Deprecated()
 cons public init()
 meth public boolean getDisplayWritableOnly()
+ anno 0 java.lang.Deprecated()
 meth public boolean getPlastic()
+ anno 0 java.lang.Deprecated()
 meth public int getPropertyPaintingStyle()
+ anno 0 java.lang.Deprecated()
 meth public int getSortingMode()
 meth public java.awt.Color getDisabledPropertyColor()
+ anno 0 java.lang.Deprecated()
 meth public java.awt.Color getValueColor()
 meth public java.lang.String displayName()
 meth public org.openide.util.HelpCtx getHelpCtx()
 meth public void setDisabledPropertyColor(java.awt.Color)
+ anno 0 java.lang.Deprecated()
 meth public void setDisplayWritableOnly(boolean)
 meth public void setPlastic(boolean)
+ anno 0 java.lang.Deprecated()
 meth public void setPropertyPaintingStyle(int)
+ anno 0 java.lang.Deprecated()
 meth public void setSortingMode(int)
 meth public void setValueColor(java.awt.Color)
+ anno 0 java.lang.Deprecated()
 supr org.openide.options.SystemOption
 hfds disabledColor,displayWritableOnly,plastic,propertyPaintingStyle,propertySheetSettings,serialVersionUID,sortingMode,valueColor
 
 CLSS public abstract org.openide.options.ContextSystemOption
 cons public init()
 fld protected java.beans.beancontext.BeanContext beanContext
+ anno 0 java.lang.Deprecated()
 intf java.beans.beancontext.BeanContextProxy
 meth protected void initialize()
 meth public final java.beans.beancontext.BeanContextChild getBeanContextProxy()
@@ -827,6 +827,7 @@ meth public java.beans.PropertyDescriptor[] getPropertyDescriptors()
 supr java.beans.SimpleBeanInfo
 
 CLSS public abstract org.openide.options.SystemOption
+ anno 0 java.lang.Deprecated()
 cons public init()
 intf org.openide.util.HelpCtx$Provider
 meth protected boolean clearSharedData()
@@ -1323,6 +1324,7 @@ meth public abstract void addAnnotation(javax.swing.text.Position,int,org.openid
 meth public abstract void removeAnnotation(org.openide.text.Annotation)
 
 CLSS public final org.openide.text.NbDocument$Colors
+ anno 0 java.lang.Deprecated()
 cons public init()
 fld public final static java.lang.String PROP_BREAKPOINT = "NbBreakpointStyle"
 fld public final static java.lang.String PROP_CURRENT = "NbCurrentStyle"
@@ -1444,6 +1446,7 @@ meth public int getHeaderAlignment()
 meth public java.awt.Font getFooterFont()
 meth public java.awt.Font getHeaderFont()
 meth public java.awt.print.PageFormat getPageFormat()
+ anno 0 java.lang.Deprecated()
 meth public java.lang.String displayName()
 meth public java.lang.String getFooterFormat()
 meth public java.lang.String getHeaderFormat()

@@ -144,6 +144,8 @@ public class SQLEditorSupport extends DataEditorSupport
 
     @Override
     protected void initializeCloneableEditor(CloneableEditor editor) {
+        // Invoked when SQLCloneableEditor is deserialized and from the 
+        // SQLCloneableEditor(Lookup) constructor.
         super.initializeCloneableEditor(editor);
         ((SQLCloneableEditor) editor).initialize();
     }
@@ -465,30 +467,32 @@ public class SQLEditorSupport extends DataEditorSupport
         ConnectionManager.getDefault().refreshConnectionInExplorer(dbconn);
     }
     
-    private SQLExecutionLoggerImpl createLogger() {
+    private SQLExecutionLoggerImpl getOrCreateLogger() {
         synchronized (loggerLock) {
-            closeLogger();
-
-            String loggerDisplayName;
-            if (isConsole()) {
-                loggerDisplayName = getDataObject().getName();
-            } else {
-                loggerDisplayName = getDataObject().getNodeDelegate().getDisplayName();
+            if (logger == null) {
+                String loggerDisplayName;
+                if (isConsole()) {
+                    loggerDisplayName = getDataObject().getName();
+                } else {
+                    loggerDisplayName = getDataObject().getNodeDelegate().getDisplayName();
+                }
+                logger = new SQLExecutionLoggerImpl(loggerDisplayName, this);
             }
 
-            return new SQLExecutionLoggerImpl(loggerDisplayName, this);
+            return logger;
         }
     }
     
-    private synchronized void closeLogger() {
+    private void closeLogger() {
         synchronized (loggerLock) {
             if (logger != null) {
                 logger.close();
+                logger = null;
             }
         }
     }
 
-    private final static class SQLExecutor implements Runnable, Cancellable {
+    private static final class SQLExecutor implements Runnable, Cancellable {
         private final SQLCloneableEditor editor;
         private final SQLEditorSupport parent;
 
@@ -586,7 +590,7 @@ public class SQLEditorSupport extends DataEditorSupport
                     }
                     parent.closeExecutionResult();
 
-                    SQLExecutionLoggerImpl logger = parent.createLogger();
+                    SQLExecutionLoggerImpl logger = parent.getOrCreateLogger();
                     SQLExecutionResults executionResults = SQLExecuteHelper.execute(
                             sql, startOffset, endOffset, dbconn, logger, pageSize);
                     handleExecutionResults(executionResults, logger);

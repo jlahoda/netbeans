@@ -59,8 +59,7 @@ public class StringPrefixTree<Type> {
          *         with case sensitive settings rules applied.
          */
         Character toCharacter(final char c) {
-            return Character.valueOf(
-                    caseSensitive ? c : Character.toUpperCase(c));
+            return caseSensitive ? c : Character.toUpperCase(c);
         }
 
         /**
@@ -69,7 +68,7 @@ public class StringPrefixTree<Type> {
          */
         Node() {
             this.finalState = false;
-            this.next = new TreeMap();
+            this.next = new TreeMap<>();
         }
 
         /**
@@ -80,7 +79,7 @@ public class StringPrefixTree<Type> {
          */
         Node(Type value) {
             this.finalState = true;
-            this.next = new TreeMap();
+            this.next = new TreeMap<>();
             this.value = value;
         }
 
@@ -188,7 +187,7 @@ public class StringPrefixTree<Type> {
             sb.append("Value=");
             sb.append(value != null ? value.toString() : "null");
             sb.append(" Transitions=[");
-            for (Iterator i = next.keySet().iterator(); i.hasNext(); ) {
+            for (Iterator<Character> i = next.keySet().iterator(); i.hasNext(); ) {
                 sb.append(i.next());
                 if (i.hasNext()) {
                     sb.append(',');
@@ -320,7 +319,7 @@ public class StringPrefixTree<Type> {
         while((item = stack.getLast())!= null) {
             // Tree step down.
             if (item.child.hasNext()) {
-                stack.addLast(new StackItem((Node)item.child.next()));
+                stack.addLast(new StackItem(item.child.next()));
             // Current node processing and tree setep up.
             } else {
                 item.node.destroy();

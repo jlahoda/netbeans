@@ -94,6 +94,7 @@ public final class PrintSettings extends ContextSystemOption {
     }
 
     /** @deprecated Use {@link #getPageFormat(PrinterJob)} instead. */
+    @Deprecated
     public PageFormat getPageFormat() {
         return getPageFormat(PrinterJob.getPrinterJob());
     }
@@ -207,7 +208,7 @@ public final class PrintSettings extends ContextSystemOption {
     */
     public void setLineAscentCorrection(float correction) {
         PrintPreferences.setLineAscentCorrection(correction);
-        firePropertyChange(PROP_LINE_ASCENT_CORRECTION, null, new Float(correction));
+        firePropertyChange(PROP_LINE_ASCENT_CORRECTION, null, correction);
     }
 
     public void writeExternal(ObjectOutput obtos) throws IOException {
@@ -230,14 +231,17 @@ public final class PrintSettings extends ContextSystemOption {
                 sRIGHT = NbBundle.getMessage(PrintSettings.class, "CTL_RIGHT")
             };
 
+        @Override
         public String[] getTags() {
             return tags;
         }
 
+        @Override
         public String getAsText() {
             return tags[((Integer) getValue()).intValue()];
         }
 
+        @Override
         public void setAsText(String s) {
             if (s.equals(sLEFT)) {
                 setValue(new Integer(0));
@@ -252,11 +256,13 @@ public final class PrintSettings extends ContextSystemOption {
     /** Property editor for PageFormat instances */
     public static class PageFormatEditor extends java.beans.PropertyEditorSupport {
         /** No text */
+        @Override
         public String getAsText() {
             return null;
         }
 
         /* @return <tt>true</tt> */
+        @Override
         public boolean supportsCustomEditor() {
             return true;
         }
@@ -264,13 +270,14 @@ public final class PrintSettings extends ContextSystemOption {
         /**
         * @return <tt>null</tt> Shows pageDialog, however.
         */
+        @Override
         public java.awt.Component getCustomEditor() {
             PageFormat pf = (PageFormat) getValue();
             PrinterJob pj = PrinterJob.getPrinterJob();
             PageFormat npf = pj.pageDialog(pf);
 
             //setValue(npf);
-            ((PrintSettings)PrintSettings.findObject(PrintSettings.class)).setPageFormat((PageFormat) npf.clone());
+            (PrintSettings.findObject(PrintSettings.class)).setPageFormat((PageFormat) npf.clone());
             pj.cancel();
 
             return null;

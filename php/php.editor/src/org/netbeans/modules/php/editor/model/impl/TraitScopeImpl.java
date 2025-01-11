@@ -29,9 +29,11 @@ import org.netbeans.modules.php.editor.api.PhpElementKind;
 import org.netbeans.modules.php.editor.api.QualifiedName;
 import org.netbeans.modules.php.editor.api.elements.MethodElement;
 import org.netbeans.modules.php.editor.api.elements.TraitElement;
+import org.netbeans.modules.php.editor.api.elements.TypeConstantElement;
 import org.netbeans.modules.php.editor.api.elements.TypeElement;
 import org.netbeans.modules.php.editor.index.PHPIndexer;
 import org.netbeans.modules.php.editor.index.Signature;
+import org.netbeans.modules.php.editor.model.CaseElement;
 import org.netbeans.modules.php.editor.model.ClassConstantElement;
 import org.netbeans.modules.php.editor.model.FieldElement;
 import org.netbeans.modules.php.editor.model.IndexScope;
@@ -70,6 +72,7 @@ class TraitScopeImpl extends TypeScopeImpl implements TraitScope, VariableNameFa
     void addElement(ModelElementImpl element) {
         assert element instanceof TypeScope || element instanceof VariableName
                 || element instanceof MethodScope || element instanceof FieldElement
+                || element instanceof CaseElement // allowed by parser although trait can't have cases
                 || element instanceof ClassConstantElement : element.getPhpElementKind();
         if (element instanceof TypeScope) {
             Scope inScope = getInScope();
@@ -106,7 +109,20 @@ class TraitScopeImpl extends TypeScopeImpl implements TraitScope, VariableNameFa
 
     @Override
     public Collection<? extends ClassConstantElement> getInheritedConstants() {
-        return Collections.EMPTY_SET;
+        // show items in Navigator Window
+        // [GH-4725] PHP 8.2 Support: Constatns in Traits
+        Set<ClassConstantElement> allConstants = new HashSet<>();
+        IndexScope indexScope = ModelUtils.getIndexScope(this);
+        ElementQuery.Index index = indexScope.getIndex();
+        Set<TraitScope> traits = new HashSet<>(getTraits());
+        for (TraitScope trait : traits) {
+            // do not filter private constants (private constants are available)
+            Set<TypeConstantElement> indexedConstants = index.getAllTypeConstants(trait);
+            for (TypeConstantElement constant : indexedConstants) {
+                allConstants.add(new ClassConstantElementImpl(trait, constant));
+            }
+        }
+        return allConstants;
     }
 
     @Override
@@ -138,6 +154,10 @@ class TraitScopeImpl extends TypeScopeImpl implements TraitScope, VariableNameFa
         for (FieldElement fieldElement : getDeclaredFields()) {
             fieldElement.addSelfToIndex(indexDocument);
         }
+        // [GH-4725] PHP 8.2 Support: Constants in Traits
+        for (ClassConstantElement constantElement : getDeclaredConstants()) {
+            constantElement.addSelfToIndex(indexDocument);
+        }
     }
 
     @Override
@@ -147,8 +167,8 @@ class TraitScopeImpl extends TypeScopeImpl implements TraitScope, VariableNameFa
         sb.append(getName()).append(Signature.ITEM_DELIMITER);
         sb.append(getOffset()).append(Signature.ITEM_DELIMITER);
         NamespaceScope namespaceScope = ModelUtils.getNamespaceScope(this);
-        assert namespaceScope != null;
-        QualifiedName qualifiedName = namespaceScope.getQualifiedName();
+        // if inScope is IndexScope, namespaceScope is null
+        QualifiedName qualifiedName = namespaceScope != null ? namespaceScope.getQualifiedName() : QualifiedName.create(""); // NOI18N
         sb.append(qualifiedName.toString()).append(Signature.ITEM_DELIMITER);
         if (!usedTraits.isEmpty()) {
             StringBuilder traitSb = new StringBuilder();
@@ -191,7 +211,7 @@ class TraitScopeImpl extends TypeScopeImpl implements TraitScope, VariableNameFa
 
     @Override
     public Collection<QualifiedName> getUsedTraits() {
-        return usedTraits;
+        return Collections.unmodifiableCollection(usedTraits);
     }
 
     @Override
@@ -252,7 +272,7 @@ class TraitScopeImpl extends TypeScopeImpl implements TraitScope, VariableNameFa
         StringBuilder sb = new StringBuilder();
         sb.append(super.toString());
         Collection<? extends TraitScope> traits = getTraits();
-        if (traits.size() > 0) {
+        if (!traits.isEmpty()) {
             sb.append(" uses "); //NOI18N
             for (TraitScope traitScope : traits) {
                 sb.append(traitScope.getName()).append(" ");

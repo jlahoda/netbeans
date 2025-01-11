@@ -24,6 +24,7 @@ import java.awt.event.KeyEvent;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Iterator;
 import javax.swing.JComponent;
 import javax.swing.JToolBar;
@@ -264,7 +265,7 @@ public class EditorOperator extends TopComponentOperator {
     private Object getLine(int lineNumber) {
         Document doc = txtEditorPane().getDocument();
         DataObject od = (DataObject) doc.getProperty(Document.StreamDescriptionProperty);
-        Set set = ((LineCookie) od.getCookie(LineCookie.class)).getLineSet();
+        Set set = (od.getCookie(LineCookie.class)).getLineSet();
         try {
             return set.getCurrent(lineNumber - 1);
         } catch (IndexOutOfBoundsException e) {
@@ -628,7 +629,7 @@ public class EditorOperator extends TopComponentOperator {
                 return result;
             }
         });
-        return result.toArray(new Annotation[result.size()]);
+        return result.toArray(new Annotation[0]);
     }
 
     /**Gets all annotations for current editor (Document).
@@ -649,7 +650,7 @@ public class EditorOperator extends TopComponentOperator {
                     Class annotationsClass = Class.forName("org.netbeans.editor.Annotations");
                     Field lineAnnotationsArrayField = annotationsClass.getDeclaredField("lineAnnotationsArray");
                     lineAnnotationsArrayField.setAccessible(true);
-                    ArrayList lineAnnotationsArray = (ArrayList) lineAnnotationsArrayField.get(getAnnotationsInstance());
+                    List lineAnnotationsArray = (List) lineAnnotationsArrayField.get(getAnnotationsInstance());
                     // loop through all lines
                     for (int i = 0; i < lineAnnotationsArray.size(); i++) {
                         result.addAll(getAnnotations(lineAnnotationsArray.get(i)));
@@ -660,7 +661,7 @@ public class EditorOperator extends TopComponentOperator {
                 return result;
             }
         });
-        return result.toArray(new Annotation[result.size()]);
+        return result.toArray(new Annotation[0]);
     }
 
     /** Returns instance of org.netbeans.editor.Annotations object for this
@@ -752,7 +753,7 @@ public class EditorOperator extends TopComponentOperator {
         if (combo != null) {
             index++;
         }
-        return new AbstractButtonOperator(AbstractButtonOperator.waitAbstractButton((Container) toolbar,
+        return new AbstractButtonOperator(AbstractButtonOperator.waitAbstractButton(toolbar,
                 ComponentSearcher.getTrueChooser("AbstractButton"), index));
     }
 

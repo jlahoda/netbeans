@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.89.1
+#Version 1.112.0
 
 CLSS public abstract interface java.io.Serializable
 
@@ -21,7 +21,6 @@ meth public final java.lang.String name()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
-hfds name,ordinal
 
 CLSS public java.lang.Object
 cons public init()
@@ -72,7 +71,6 @@ intf java.io.Serializable
 meth public java.lang.Object getSource()
 meth public java.lang.String toString()
 supr java.lang.Object
-hfds serialVersionUID
 
 CLSS public final org.netbeans.api.project.ui.OpenProjects
 fld public final static java.lang.String PROPERTY_MAIN_PROJECT = "MainProject"
@@ -83,6 +81,8 @@ meth public org.netbeans.api.project.Project getMainProject()
 meth public org.netbeans.api.project.Project[] getOpenProjects()
 meth public org.netbeans.api.project.ui.ProjectGroup getActiveProjectGroup()
  anno 0 org.netbeans.api.annotations.common.CheckForNull()
+meth public org.openide.explorer.ExplorerManager createLogicalView()
+meth public org.openide.explorer.ExplorerManager createPhysicalView()
 meth public static org.netbeans.api.project.ui.OpenProjects getDefault()
 meth public void addProjectGroupChangeListener(org.netbeans.api.project.ui.ProjectGroupChangeListener)
  anno 1 org.netbeans.api.annotations.common.NonNull()

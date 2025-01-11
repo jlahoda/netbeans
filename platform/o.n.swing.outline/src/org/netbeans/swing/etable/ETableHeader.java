@@ -40,7 +40,7 @@ import javax.swing.table.TableColumnModel;
 
 /**
  * The ETable header renderer.
- * Delegating to the original default renderer should assure L&F compliance.
+ * Delegating to the original default renderer should assure L&amp;F compliance.
  * The rendering logic moved from {@link ETableColumn}.ETableHeaderRenderer.
  * 
  * @author Martin Entlicher
@@ -158,8 +158,7 @@ class ETableHeader extends JTableHeader {
                             Integer.toString(sortRank) :
                             sortRank+" "+valueString;
                     }
-                    // don't use deriveFont() - see #49973 for details
-                    label.setFont (new Font (label.getFont ().getName (), Font.BOLD, label.getFont ().getSize ()));
+                    label.setFont(label.getFont().deriveFont(Font.BOLD));
 
                     if (ascending) {
                         sortIcon = UIManager.getIcon("ETableHeader.ascendingIcon");

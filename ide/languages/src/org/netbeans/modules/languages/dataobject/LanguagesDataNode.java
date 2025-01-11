@@ -80,7 +80,7 @@ public class LanguagesDataNode extends DataNode {
                     int i, k = dob.length;
                     for (i = 0; i < k; i++) {
                         InstanceCookie ic = dob [i].getCookie(InstanceCookie.class);
-                        Class clazz = ic.instanceClass ();
+                        Class<?> clazz = ic.instanceClass ();
                         if (JSeparator.class.isAssignableFrom (clazz))
                             actions.add (null);
                         else
@@ -93,7 +93,7 @@ public class LanguagesDataNode extends DataNode {
                 ErrorManager.getDefault ().notify (ex);
             }
             if (!actions.isEmpty ())
-                mimeTypeToActions.put (mimeType, actions.toArray (new Action [actions.size ()]));
+                mimeTypeToActions.put (mimeType, actions.toArray (new Action [0]));
             else
                 mimeTypeToActions.put (mimeType, super.getActions (context));
         }

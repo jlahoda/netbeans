@@ -60,13 +60,10 @@ import org.openide.util.NbBundle;
  *
  */
 class EnableBeansFilter {
-    
-    static final String DECORATOR = "javax.decorator.Decorator";            // NOI18N
-    
-    static final String EXTENSION = "javax.enterprise.inject.spi.Extension";// NOI18N
-    
-    static String SCOPE = "javax.inject.Scope";                             // NOI18N
-    
+
+    private static final String EXTENSION = "javax.enterprise.inject.spi.Extension";// NOI18N
+    private static final String EXTENSION_JAKARTA = "jakarta.enterprise.inject.spi.Extension";// NOI18N
+
      private final HashSet<String> predefinedBeans;
      {
          predefinedBeans = new HashSet<>();
@@ -80,14 +77,55 @@ class EnableBeansFilter {
          predefinedBeans.add("javax.transaction.UserTransaction");//NOI18N
          predefinedBeans.add("java.security.Principal");//NOI18N
          predefinedBeans.add("javax.validation.ValidatorFactory");//NOI18N
+         predefinedBeans.add("javax.faces.application.Application");//NOI18N
+         predefinedBeans.add("javax.faces.annotation.ApplicationMap");//NOI18N
+         predefinedBeans.add("javax.faces.annotation.FlowMap");//NOI18N
+         predefinedBeans.add("javax.faces.annotation.HeaderMap");//NOI18N
+         predefinedBeans.add("javax.faces.annotation.HeaderValuesMap");//NOI18N
+         predefinedBeans.add("javax.faces.annotation.InitParameterMap");//NOI18N
+         predefinedBeans.add("javax.faces.annotation.ManagedProperty");//NOI18N
+         predefinedBeans.add("javax.faces.annotation.RequestCookieMap");//NOI18N
+         predefinedBeans.add("javax.faces.annotation.RequestMap");//NOI18N
+         predefinedBeans.add("javax.faces.annotation.RequestParameterMap");//NOI18N
+         predefinedBeans.add("javax.faces.annotation.RequestParameterValuesMap");//NOI18N
+         predefinedBeans.add("javax.faces.annotation.SessionMap");//NOI18N
+         predefinedBeans.add("javax.faces.annotation.ViewMap");//NOI18N
+         predefinedBeans.add("javax.faces.context.ExternalContext");//NOI18N
+         predefinedBeans.add("javax.faces.context.FacesContext");//NOI18N
+         predefinedBeans.add(EventInjectionPointLogic.EVENT_INTERFACE_JAKARTA);
+         predefinedBeans.add("jakarta.servlet.http.HttpServletRequest");//NOI18N
+         predefinedBeans.add("jakarta.servlet.http.HttpSession");//NOI18N
+         predefinedBeans.add("jakarta.servlet.ServletContext");//NOI18N
+         predefinedBeans.add("jakarta.jms.JMSContext");//NOI18N
+         predefinedBeans.add(AnnotationUtil.INJECTION_POINT_JAKARTA);//NOI18N
+         predefinedBeans.add("jakarta.enterprise.inject.spi.BeanManager");//NOI18N
+         predefinedBeans.add("jakarta.transaction.UserTransaction");//NOI18N
+         predefinedBeans.add("java.security.Principal");//NOI18N
+         predefinedBeans.add("jakarta.validation.ValidatorFactory");//NOI18N
+         predefinedBeans.add("jakarta.faces.application.Application");//NOI18N
+         predefinedBeans.add("jakarta.faces.annotation.ApplicationMap");//NOI18N
+         predefinedBeans.add("jakarta.faces.annotation.FlowMap");//NOI18N
+         predefinedBeans.add("jakarta.faces.annotation.HeaderMap");//NOI18N
+         predefinedBeans.add("jakarta.faces.annotation.HeaderValuesMap");//NOI18N
+         predefinedBeans.add("jakarta.faces.annotation.InitParameterMap");//NOI18N
+         predefinedBeans.add("jakarta.faces.annotation.ManagedProperty");//NOI18N
+         predefinedBeans.add("jakarta.faces.annotation.RequestCookieMap");//NOI18N
+         predefinedBeans.add("jakarta.faces.annotation.RequestMap");//NOI18N
+         predefinedBeans.add("jakarta.faces.annotation.RequestParameterMap");//NOI18N
+         predefinedBeans.add("jakarta.faces.annotation.RequestParameterValuesMap");//NOI18N
+         predefinedBeans.add("jakarta.faces.annotation.SessionMap");//NOI18N
+         predefinedBeans.add("jakarta.faces.annotation.ViewMap");//NOI18N
+         predefinedBeans.add("jakarta.faces.context.ExternalContext");//NOI18N
+         predefinedBeans.add("jakarta.faces.context.FacesContext");//NOI18N
     };
-     
+
      private final HashMap<String, String> predefinedBeanAnnotationPairs;
      {
          predefinedBeanAnnotationPairs = new HashMap<>();
          predefinedBeanAnnotationPairs.put("javax.faces.flow.builder.FlowBuilder","javax.faces.flow.builder.FlowBuilderParameter");//NOI18N
+         predefinedBeanAnnotationPairs.put("jakarta.faces.flow.builder.FlowBuilder","jakarta.faces.flow.builder.FlowBuilderParameter");//NOI18N
      };
-     
+
     EnableBeansFilter(ResultImpl result, WebBeansModelImplementation model ,
             boolean programmatic )
     {
@@ -97,16 +135,16 @@ class EnableBeansFilter {
         myModel = model;
         isProgrammatic = programmatic;
     }
-    
+
     DependencyInjectionResult filter(AtomicBoolean cancel){
         myAlternatives = new HashSet<Element>();
         myEnabledAlternatives = new HashSet<Element>();
-        
+
         PackagingFilter filter = new PackagingFilter(getWebBeansModel());
         Set<TypeElement> typeElements = getResult().getTypeElements();
-        
+
         TypeElement firstElement = typeElements.size()>0 ? typeElements.iterator().next() : null;
-        
+
         // remove elements defined in compile class path which doesn't have beans.xml
         filter.filter( typeElements, cancel );
         for (TypeElement typeElement : typeElements) {
@@ -117,7 +155,7 @@ class EnableBeansFilter {
         }
         // remove elements defined in compile class path which doesn't have beans.xml
         Set<Element> productions = packagedFilterProductions ( );
-        
+
         for (Element element : productions) {
             TypeElement enclosingTypeElement = myHelper.getCompilationController().
                 getElementUtilities().enclosingTypeElement(element);
@@ -126,27 +164,27 @@ class EnableBeansFilter {
                 addEnabledAlternative( enclosingTypeElement , element );
             }
         }
-        
+
         Set<Element> enabledTypeElements = new HashSet<Element>( typeElements );
         Set<Element> enabledProductions = new HashSet<Element>( productions );
         myAlternatives.removeAll(myEnabledAlternatives);
         // now myAlternative contains only disabled alternatives.
         enabledProductions.removeAll( myAlternatives );
         enabledTypeElements.removeAll( myAlternatives );
-        
+
         int typesSize = enabledTypeElements.size();
         int productionsSize = enabledProductions.size();
-        
+
         // filter enabled/disabled beans
         Set<Element> enabledTypes = findEnabledTypes( enabledTypeElements );
         findEnabledProductions( enabledProductions);
         int commonSize = enabledTypes.size() + enabledProductions.size();
         if ( commonSize == 1 ){
-            Element injectable = enabledTypes.size() ==0 ? 
-                    enabledProductions.iterator().next(): 
+            Element injectable = enabledTypes.size() ==0 ?
+                    enabledProductions.iterator().next():
                         enabledTypes.iterator().next();
             enabledTypes.addAll( enabledProductions);
-            return new InjectableResultImpl( getResult(), injectable, enabledTypes ); 
+            return new InjectableResultImpl( getResult(), injectable, enabledTypes );
         }
         if ( commonSize ==0 ){
             //no implementation on classpath/sources or it's fileterd by common logic(for usual beans)
@@ -160,16 +198,16 @@ class EnableBeansFilter {
             }
             //
             if ( typeElements.size() == 0 && productions.size() == 0 ){
-                return new ErrorImpl(getResult().getVariable(), 
+                return new ErrorImpl(getResult().getVariable(),
                         getResult().getVariableType(), NbBundle.getMessage(
                                 EnableBeansFilter.class, "ERR_NoFound"));   // NOI18N
             }
             if ( typesSize==0 && productionsSize == 0 )
             {
-                /* no elements was eliminated after check for "enabling" 
-                 * ( by the spec ). So they are all alternatives that 
-                 * was not turned on in beans.xml. 
-                 */  
+                /* no elements was eliminated after check for "enabling"
+                 * ( by the spec ). So they are all alternatives that
+                 * was not turned on in beans.xml.
+                 */
                 return new ResolutionErrorImpl(getResult(), NbBundle.getMessage(
                         EnableBeansFilter.class, "ERR_AlternativesOnly"));  // NOI18N
             }
@@ -182,18 +220,18 @@ class EnableBeansFilter {
         boolean hasSingleAlternative = allElements.size() == 1;
         if ( hasSingleAlternative ){
             /*
-             * Spec : When an ambiguous dependency exists, the container attempts 
+             * Spec : When an ambiguous dependency exists, the container attempts
              * to resolve the ambiguity:
-             * - If any matching beans are alternatives, the container 
+             * - If any matching beans are alternatives, the container
              * eliminates all matching beans that are not alternatives.
-             * If there is exactly one bean remaining, the container will select 
+             * If there is exactly one bean remaining, the container will select
              * this bean, and the ambiguous dependency is called resolvable.
              */
             enabledTypes.addAll( enabledProductions);
-            return new InjectableResultImpl( getResult(), 
+            return new InjectableResultImpl( getResult(),
                     allElements.iterator().next(), enabledTypes );
         }
-        
+
         enabledTypes.addAll( enabledProductions);
         if ( isProgrammatic ){
             return new InjectablesResultImpl(getResult() , enabledTypes );
@@ -204,18 +242,18 @@ class EnableBeansFilter {
             return new ResolutionErrorImpl(getResult(), message, enabledTypes);
         }
     }
-    
+
     /*
      * This method should filter production elements which are defined
      * in the classes inside compile class path without beans.xml.
      * But NB doesn't perform indexing and search for fields and methods
-     * inside compile class path at all so there will be no production 
-     * elements inside compile class path.  
+     * inside compile class path at all so there will be no production
+     * elements inside compile class path.
      * So I commented out this block of logic to avoid wasting time .
      */
     private Set<Element> packagedFilterProductions() {
         return getResult().getProductions();
-        /*Map<Element, List<DeclaredType>> productions = 
+        /*Map<Element, List<DeclaredType>> productions =
             getResult().getAllProductions();
         List<Element> filtered = new ArrayList<Element>( productions.size());
         for (Entry<Element, List<DeclaredType>> entry : productions.entrySet()) {
@@ -241,10 +279,10 @@ class EnableBeansFilter {
          * A bean is said to be enabled if:
          * - it is not a producer method or field of a disabled bean
          * Full check for enabled/disabled bean is very complicated.
-         * Here is check only for enabled alternatives if any. 
+         * Here is check only for enabled alternatives if any.
          */
-        for (Iterator<Element> iterator =  productions.iterator(); 
-            iterator.hasNext(); ) 
+        for (Iterator<Element> iterator =  productions.iterator();
+            iterator.hasNext(); )
         {
             Element element = iterator.next();
             TypeElement enclosingTypeElement = getHelper().
@@ -278,13 +316,13 @@ class EnableBeansFilter {
         }
         return result;
     }
-    
+
     private boolean checkClass( TypeElement element ){
         if ( element.getKind() != ElementKind.CLASS ){
             return false;
         }
         Set<Modifier> modifiers = element.getModifiers();
-        
+
         Element enclosing = element.getEnclosingElement();
         if ( !( enclosing instanceof PackageElement) ){
             /*
@@ -296,19 +334,23 @@ class EnableBeansFilter {
         }
         Elements elements = getHelper().getCompilationController().getElements();
         Types types = getHelper().getCompilationController().getTypes();
-        
+
         List<? extends AnnotationMirror> allAnnotations = elements.
             getAllAnnotationMirrors(element);
-        
-        if ( modifiers.contains( Modifier.ABSTRACT ) &&
-                !getHelper().hasAnnotation(allAnnotations, DECORATOR ) )
+
+        if ( modifiers.contains( Modifier.ABSTRACT ) 
+                && !getHelper().hasAnnotation(allAnnotations, AnnotationUtil.DECORATOR )
+                && !getHelper().hasAnnotation(allAnnotations, AnnotationUtil.DECORATOR_JAKARTA ))
         {
             /*
              * If class is abstract it should be Decorator.
              */
             return false;
         }
-        TypeElement extensionElement = elements.getTypeElement( EXTENSION );
+        TypeElement extensionElement = elements.getTypeElement(EXTENSION_JAKARTA);
+        if (extensionElement == null) {
+            extensionElement = elements.getTypeElement(EXTENSION);
+        }
         if ( extensionElement!= null ){
             TypeMirror extensionType = extensionElement.asType();
             /*
@@ -321,7 +363,7 @@ class EnableBeansFilter {
         /*
          * There should be either no parameters CTOR or CTOR is annotated with @Inject
          */
-        List<ExecutableElement> constructors = ElementFilter.constructorsIn( 
+        List<ExecutableElement> constructors = ElementFilter.constructorsIn(
                 element.getEnclosedElements());
         boolean foundCtor = constructors.size() ==0;
         for (ExecutableElement ctor : constructors) {
@@ -329,8 +371,8 @@ class EnableBeansFilter {
                 foundCtor = true;
                 break;
             }
-            if ( getHelper().hasAnnotation(allAnnotations, 
-                    FieldInjectionPointLogic.INJECT_ANNOTATION))
+            if ( getHelper().hasAnnotation(allAnnotations, FieldInjectionPointLogic.INJECT_ANNOTATION)
+                    || getHelper().hasAnnotation(allAnnotations, FieldInjectionPointLogic.INJECT_ANNOTATION_JAKARTA))
             {
                 foundCtor = true;
                 break;
@@ -343,18 +385,18 @@ class EnableBeansFilter {
             LinkedList<Element> types , Set<Element> elements)
     {
         try {
-            String scope = ParameterInjectionPointLogic.getScope(typeElement, 
+            String scope = ParameterInjectionPointLogic.getScope(typeElement,
                     getWebBeansModel().getHelper());
             Elements elementsUtil = getHelper().getCompilationController().
                 getElements();
             TypeElement scopeElement = elementsUtil.getTypeElement(scope);
             /*
-             * Client proxies are never required for a bean whose 
+             * Client proxies are never required for a bean whose
              * scope is a pseudo-scope such as @Dependent.
              */
-            if ( scopeElement == null ||
-                    getHelper().hasAnnotation( elementsUtil.getAllAnnotationMirrors( 
-                    scopeElement), SCOPE) )
+            if ( scopeElement == null
+                    || getHelper().hasAnnotation( elementsUtil.getAllAnnotationMirrors(scopeElement), AnnotationUtil.SCOPE_FQN)
+                    || getHelper().hasAnnotation( elementsUtil.getAllAnnotationMirrors(scopeElement), AnnotationUtil.SCOPE_FQN_JAKARTA))
             {
                 return;
             }
@@ -377,7 +419,7 @@ class EnableBeansFilter {
             return;
         }
         checkFinalMethods(typeElement, types, elements);
-        
+
         List<ExecutableElement> constructors = ElementFilter.constructorsIn(
                 typeElement.getEnclosedElements()) ;
         boolean appropriateCtor = false;
@@ -390,7 +432,7 @@ class EnableBeansFilter {
                 break;
             }
         }
-        
+
         if ( !appropriateCtor){
             types.remove(typeElement);
             elements.remove( typeElement );
@@ -425,7 +467,7 @@ class EnableBeansFilter {
                 return;
             }
             Element overloaded = getHelper().getCompilationController().
-                getElementUtilities().getImplementationOf(executableElement, 
+                getElementUtilities().getImplementationOf(executableElement,
                         typeElement);
             if ( overloaded == null ){
                 continue;
@@ -437,7 +479,7 @@ class EnableBeansFilter {
             }
         }
     }
-    
+
     private DeclaredType getDeclaredType( TypeMirror type ){
         if ( type instanceof DeclaredType && type.getKind()!= TypeKind.ERROR){
             return (DeclaredType)type;
@@ -452,24 +494,24 @@ class EnableBeansFilter {
         }
         return null;
     }
-    
+
     private boolean hasModifier ( Element element , Modifier mod){
         Set<Modifier> modifiers = element.getModifiers();
         for (Modifier modifier : modifiers) {
-            if ( modifier.equals( mod )){
+            if (modifier == mod) {
                 return true;
             }
         }
         return false;
     }
 
-    private void checkSpecializes( TypeElement typeElement, 
-            LinkedList<Element> beans, Set<Element> resultElementSet, 
+    private void checkSpecializes( TypeElement typeElement,
+            LinkedList<Element> beans, Set<Element> resultElementSet,
             Set<Element> originalElements)
     {
         TypeElement current = typeElement;
         while( current != null ){
-            TypeMirror superClass = current.getSuperclass(); 
+            TypeMirror superClass = current.getSuperclass();
             if (!(superClass instanceof DeclaredType)) {
                 break;
             }
@@ -496,11 +538,11 @@ class EnableBeansFilter {
                 return;
             }
             /*
-             * I have commented the code below but I'm not sure is it 
-             * correct. Specification doesn't mention the case 
-             * when @Alternative annotation presents along with 
+             * I have commented the code below but I'm not sure is it
+             * correct. Specification doesn't mention the case
+             * when @Alternative annotation presents along with
              * alternative Stereotypes.
-             * 
+             *
              * if ( getModel().getAlternativeClasses().contains( name ) ){
              *  myEnabledAlternatives.add( element );
                 return;
@@ -511,7 +553,7 @@ class EnableBeansFilter {
             myEnabledAlternatives.add( element );
         }
     }
-    
+
     private boolean alternativeStereotypesEnabled( Element element ){
         List<AnnotationMirror> stereotypes = getResult().getStereotypes(element);
         for (AnnotationMirror annotationMirror : stereotypes) {
@@ -535,19 +577,19 @@ class EnableBeansFilter {
     private ResultImpl getResult(){
         return myResult;
     }
-    
+
     private BeansModel getModel(){
         return myBeansModel;
     }
-    
+
     private AnnotationModelHelper getHelper(){
         return myHelper;
     }
-    
+
     private WebBeansModelImplementation getWebBeansModel(){
         return myModel;
     }
-   
+
     private Set<Element> myAlternatives;
     private Set<Element> myEnabledAlternatives;
     private ResultImpl myResult;

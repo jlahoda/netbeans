@@ -22,6 +22,8 @@ package org.netbeans.modules.settings;
 import java.beans.PropertyChangeEvent;
 import java.lang.ref.SoftReference;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.netbeans.modules.settings.convertors.SerialDataNode;
@@ -203,7 +205,7 @@ implements java.beans.PropertyChangeListener, FileSystem.AtomicAction {
     Convertor getConvertor() throws IOException {
         if (convertor == null) {
             Object attrb = providerFO.getAttribute(Env.EA_CONVERTOR);
-            if (attrb == null || !(attrb instanceof Convertor)) {
+            if (!(attrb instanceof Convertor)) {
                 throw new IOException("cannot create convertor: " + attrb + ", provider:" +providerFO); //NOI18N
             }
             convertor = (Convertor) attrb;
@@ -215,7 +217,7 @@ implements java.beans.PropertyChangeListener, FileSystem.AtomicAction {
     private synchronized String getInstanceClassName() {
         if (instanceClassName == null) {
             Object name = providerFO.getAttribute(Env.EA_INSTANCE_CLASS_NAME);
-            if (name != null && name instanceof String) {
+            if (name instanceof String) {
                 instanceClassName = org.openide.util.Utilities.translate((String) name);
             } else {
                 instanceClassName = null;
@@ -286,9 +288,7 @@ implements java.beans.PropertyChangeListener, FileSystem.AtomicAction {
             try {
                 synchronized (READWRITE_LOCK) {
                     java.io.Reader r = ContextProvider.createReaderContextProvider(
-                        new java.io.InputStreamReader(settingFO.getInputStream(),"UTF-8"), //NOI18N
-                        getFile()
-                    );
+                        new InputStreamReader(settingFO.getInputStream(), StandardCharsets.UTF_8), getFile());
                     inst = getConvertor().read(r);
                 }
             } catch (IOException ex) {

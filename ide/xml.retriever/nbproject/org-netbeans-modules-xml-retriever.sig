@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.35.1
+#Version 1.57
 
 CLSS public abstract interface java.io.Serializable
 
@@ -21,7 +21,6 @@ meth public final java.lang.String name()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
-hfds name,ordinal
 
 CLSS public abstract interface !annotation java.lang.FunctionalInterface
  anno 0 java.lang.annotation.Documented()
@@ -116,6 +115,7 @@ cons public init()
 meth public abstract java.io.File getProjectCatalog()
  anno 0 java.lang.Deprecated()
 meth public abstract java.io.File retrieveResource(java.io.File,java.net.URI) throws java.io.IOException,java.net.URISyntaxException
+ anno 0 java.lang.Deprecated()
 meth public abstract java.util.Map<org.netbeans.modules.xml.retriever.RetrieveEntry,java.lang.Exception> getRetrievedResourceExceptionMap()
 meth public abstract org.openide.filesystems.FileObject retrieveResource(org.openide.filesystems.FileObject,java.net.URI) throws java.io.IOException,java.net.URISyntaxException
 meth public abstract org.openide.filesystems.FileObject retrieveResource(org.openide.filesystems.FileObject,java.net.URI,java.net.URI) throws java.io.IOException,java.net.URISyntaxException

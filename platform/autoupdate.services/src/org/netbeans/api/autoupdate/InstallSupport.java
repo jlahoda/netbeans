@@ -53,7 +53,7 @@ import org.netbeans.modules.autoupdate.services.InstallSupportImpl;
  *      support.doRestart(r, null);
  * }
  * </pre>
- * </p>
+ *
  * @author Radek Matous, Jiri Rechtacek
  */
 public final class InstallSupport {
@@ -69,6 +69,7 @@ public final class InstallSupport {
      * @throws org.netbeans.api.autoupdate.OperationException
      * @deprecated Use {@link #doDownload(ProgressHandle, Boolean, boolean)} instead.
      */
+    @Deprecated
     public Validator doDownload(ProgressHandle progress/*or null*/, boolean isGlobal) throws OperationException {
         if (impl.doDownload (progress, isGlobal ? Boolean.TRUE : null, false)) {
             return new Validator ();
@@ -179,7 +180,7 @@ public final class InstallSupport {
      * @param uElement <code>UpdateElement</code> 
      * @return true for trusted <code>UpdateElement</code>
      * @see #doValidate
-     * @see <a href="http://java.sun.com/j2se/1.5.0/docs/api/java/security/cert/Certificate.html">java.security.cert.Certificate</a>
+     * @see <a href="@JDK@/java/security/cert/Certificate.html">java.security.cert.Certificate</a>
      */
     public boolean isTrusted(Installer validator, UpdateElement uElement) {
         return impl.isTrusted(validator, uElement);
@@ -190,7 +191,7 @@ public final class InstallSupport {
      * @param validator  <code>Installer</code> an instance of Installer has been returned by {link @doValidate}
      * @param uElement <code>UpdateElement</code> 
      * @return true for signed <code>UpdateElement</code>
-     * @see <a href="http://java.sun.com/j2se/1.5.0/docs/api/java/security/cert/Certificate.html">java.security.cert.Certificate</a>
+     * @see <a href="@JDK@/java/security/cert/Certificate.html">java.security.cert.Certificate</a>
      * @see #doValidate
      */
     public boolean isSigned(Installer validator, UpdateElement uElement) {
@@ -202,7 +203,7 @@ public final class InstallSupport {
      * @param validator  <code>Installer</code> an instance of Installer has been returned by {link @doValidate}
      * @param uElement <code>UpdateElement</code> 
      * @return true for signed and verified <code>UpdateElement</code>
-     * @see <a href="http://java.sun.com/j2se/1.5.0/docs/api/java/security/cert/Certificate.html">java.security.cert.Certificate</a>
+     * @see <a href="@JDK@/java/security/cert/Certificate.html">java.security.cert.Certificate</a>
      * @see #doValidate
      * @since 1.50
      */
@@ -215,7 +216,7 @@ public final class InstallSupport {
      * @param validator  <code>Installer</code> an instance of Installer has been returned by {link @doValidate}
      * @param uElement <code>UpdateElement</code> 
      * @return true for signed but not verified <code>UpdateElement</code>
-     * @see <a href="http://java.sun.com/j2se/1.5.0/docs/api/java/security/cert/Certificate.html">java.security.cert.Certificate</a>
+     * @see <a href="@JDK@/java/security/cert/Certificate.html">java.security.cert.Certificate</a>
      * @see #doValidate
      * @since 1.50
      */
@@ -228,7 +229,7 @@ public final class InstallSupport {
      * @param validator  <code>Installer</code> an instance of Installer has been returned by {link @doValidate}
      * @param uElement <code>UpdateElement</code> 
      * @return true for modified <code>UpdateElement</code>
-     * @see <a href="http://java.sun.com/j2se/1.5.0/docs/api/java/security/cert/Certificate.html">java.security.cert.Certificate</a>
+     * @see <a href="@JDK@/java/security/cert/Certificate.html">java.security.cert.Certificate</a>
      * @see #doValidate
      * @since 1.50
      */

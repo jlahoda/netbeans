@@ -423,7 +423,7 @@ final class ProjectImportLocationPanel extends JPanel implements HelpCtx.Provide
         chooser.setMultiSelectionEnabled(false);
         chooser.setAcceptAllFileFilterUsed(false);
         chooser.setDialogTitle(NbBundle.getMessage(ProjectImportLocationPanel.class, "LBL_IW_BrowseProjectFolder"));
-        File lastUsed = (File) UserProjectSettings.getDefault().getLastChooserLocation();
+        File lastUsed = UserProjectSettings.getDefault().getLastChooserLocation();
         if (lastUsed != null) {
             chooser.setCurrentDirectory(lastUsed.getParentFile());
         } else {
@@ -456,7 +456,7 @@ final class ProjectImportLocationPanel extends JPanel implements HelpCtx.Provide
             if (currentDirectory != null) {
                 chooser.setCurrentDirectory(currentDirectory);
             } else {
-                File lastUsedImportLoc = (File) UserProjectSettings.getDefault().getLastUsedImportLocation();
+                File lastUsedImportLoc = UserProjectSettings.getDefault().getLastUsedImportLocation();
                 if (lastUsedImportLoc != null)
                     chooser.setCurrentDirectory(lastUsedImportLoc.getParentFile());
                 else                    
@@ -573,7 +573,7 @@ private void browseLibrariesActionPerformed(java.awt.event.ActionEvent evt) {//G
     }
     
     private String validFreeProjectName (final File parentFolder, final String formater, final int index) {
-        String name = MessageFormat.format (formater, new Object[]{Integer.valueOf(index)});                
+        String name = MessageFormat.format (formater, new Object[]{index});                
         File file = new File (parentFolder, name);
         return file.exists() ? null : name;
     }

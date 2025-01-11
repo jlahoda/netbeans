@@ -32,6 +32,16 @@ public final class PhpModifiers extends Modifier {
 
     private static final PhpModifiers EMPTY = new PhpModifiers(NO_FLAGS);
 
+    // visibility
+    public static final String VISIBILITY_VAR = "var"; // NOI18N
+    public static final String VISIBILITY_PUBLIC = "public"; // NOI18N
+    public static final String VISIBILITY_PRIVATE = "private"; // NOI18N
+    public static final String VISIBILITY_PROTECTED = "protected"; // NOI18N
+
+    public static final String FINAL_MODIFIER = "final"; // NOI18N
+    public static final String ABSTRACT_MODIFIER = "abstract"; // NOI18N
+    public static final String READONLY_MODIFIER = "readonly"; // NOI18N
+
     public static PhpModifiers noModifiers() {
         return fromBitMask(new int[]{});
     }
@@ -73,6 +83,11 @@ public final class PhpModifiers extends Modifier {
 
     public PhpModifiers setAbstract() {
         mod |= Modifier.ABSTRACT;
+        return this;
+    }
+
+    public PhpModifiers setReadonly() {
+        mod |= Modifier.READONLY;
         return this;
     }
 
@@ -136,6 +151,10 @@ public final class PhpModifiers extends Modifier {
 
     public boolean isAbstract() {
         return Modifier.isAbstract(mod);
+    }
+
+    public boolean isReadonly() {
+        return Modifier.isReadonly(mod);
     }
 
     @Override

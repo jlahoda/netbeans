@@ -633,19 +633,20 @@ public class WindowsRegistry {
     public void setAdditionalValues(int section, String key, Map<String,Object> values) throws NativeException {
         LogManager.log("setting " + values.size() + " values");
         
-        for (String name: values.keySet()) {
-            final Object value = values.get(name);
+        for (Map.Entry<String,Object> entry: values.entrySet()) {
+            final Object value = entry.getValue();
+            String name = entry.getKey();
             
             LogManager.log(name + " = " + value.toString());
             
             if (value instanceof Short) {
                 LogManager.log("Type is short. Set REG_DWORD value");
-                
+
                 set32BitValue(section, key, name, ((Short) value).intValue());
             } else if (value instanceof Integer) {
                 LogManager.log("Type is integer. Set REG_DWORD value");
                 
-                set32BitValue(section, key, name, ((Integer) value).intValue());
+                set32BitValue(section, key, name, (Integer) value);
             } else if (value instanceof Long) {
                 LogManager.log("Type is long. Set REG_DWORD value");
                 
@@ -786,9 +787,9 @@ public class WindowsRegistry {
     }
     public boolean IsWow64Process() {
         if(wow64process == null) {
-            wow64process = new Boolean(IsWow64Process0());
+            wow64process = IsWow64Process0();
         }
-        return wow64process.booleanValue();
+        return wow64process;
     }
     
     // private //////////////////////////////////////////////////////////////////////
@@ -796,9 +797,9 @@ public class WindowsRegistry {
         if(im==MODE_DEFAULT) {
             return null;
         } else if(im==MODE_32BIT) {
-            return new Boolean(System.getProperty("os.arch").equals("amd64"));
+            return System.getProperty("os.arch").equals("amd64");
         } else if(im==MODE_64BIT) {
-            return new Boolean(IsWow64Process());
+            return IsWow64Process();
         } else {
             return null;
         }
@@ -809,11 +810,11 @@ public class WindowsRegistry {
         }
         //running 32-bit application in Windows x64
         if(IsWow64Process()) {
-            return bm.booleanValue() ? MODE_64BIT : MODE_32BIT;
+            return bm ? MODE_64BIT : MODE_32BIT;
         }
         //running 64-bit application in Windows x64
         if(System.getProperty("os.arch").equals("amd64")) {
-            return !bm.booleanValue() ? MODE_64BIT : MODE_32BIT;
+            return !bm ? MODE_64BIT : MODE_32BIT;
         }
         return MODE_DEFAULT;
     }

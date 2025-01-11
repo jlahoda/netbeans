@@ -191,7 +191,13 @@ public abstract class IOProvider {
     /** Fallback implementation. */
     private static final class Trivial extends IOProvider {
         
-        private static final Reader in = new BufferedReader(new InputStreamReader(System.in));
+        private static final Reader in = new BufferedReader(new InputStreamReader(System.in)) {
+            @Override
+            public void close() {
+                // do nothing, prevent blocking between System.in.read() and System.in.close();
+            }
+        };
+        
         private static final PrintStream out = System.out;
         private static final PrintStream err = System.err;
 

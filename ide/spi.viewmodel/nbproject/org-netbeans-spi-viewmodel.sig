@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.55.1
+#Version 1.77
 
 CLSS public abstract interface java.io.Serializable
 
@@ -21,7 +21,6 @@ meth public final java.lang.String name()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
-hfds name,ordinal
 
 CLSS public java.lang.Exception
 cons protected init(java.lang.String,java.lang.Throwable,boolean,boolean)
@@ -30,7 +29,6 @@ cons public init(java.lang.String)
 cons public init(java.lang.String,java.lang.Throwable)
 cons public init(java.lang.Throwable)
 supr java.lang.Throwable
-hfds serialVersionUID
 
 CLSS public java.lang.Object
 cons public init()
@@ -67,8 +65,6 @@ meth public void printStackTrace(java.io.PrintStream)
 meth public void printStackTrace(java.io.PrintWriter)
 meth public void setStackTrace(java.lang.StackTraceElement[])
 supr java.lang.Object
-hfds CAUSE_CAPTION,EMPTY_THROWABLE_ARRAY,NULL_CAUSE_MESSAGE,SELF_SUPPRESSION_MESSAGE,SUPPRESSED_CAPTION,SUPPRESSED_SENTINEL,UNASSIGNED_STACK,backtrace,cause,detailMessage,serialVersionUID,stackTrace,suppressedExceptions
-hcls PrintStreamOrWriter,SentinelHolder,WrappedPrintStream,WrappedPrintWriter
 
 CLSS public abstract interface java.util.EventListener
 
@@ -79,7 +75,6 @@ intf java.io.Serializable
 meth public java.lang.Object getSource()
 meth public java.lang.String toString()
 supr java.lang.Object
-hfds serialVersionUID
 
 CLSS public abstract interface org.netbeans.spi.viewmodel.AsynchronousModelFilter
 fld public final static java.util.concurrent.Executor CURRENT_THREAD
@@ -143,8 +138,11 @@ meth public int getColumnWidth()
 meth public int getCurrentOrderNumber()
 meth public java.beans.PropertyEditor getPropertyEditor()
 meth public java.lang.Character getDisplayedMnemonic()
+ anno 0 java.lang.Deprecated()
 meth public java.lang.String getNextColumnID()
+ anno 0 java.lang.Deprecated()
 meth public java.lang.String getPreviuosColumnID()
+ anno 0 java.lang.Deprecated()
 meth public java.lang.String getShortDescription()
 meth public void setColumnWidth(int)
 meth public void setCurrentOrderNumber(int)

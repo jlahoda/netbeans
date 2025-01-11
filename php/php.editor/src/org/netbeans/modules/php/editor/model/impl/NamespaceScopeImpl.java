@@ -28,6 +28,7 @@ import org.netbeans.modules.php.editor.index.PHPIndexer;
 import org.netbeans.modules.php.editor.index.Signature;
 import org.netbeans.modules.php.editor.model.ClassScope;
 import org.netbeans.modules.php.editor.model.ConstantElement;
+import org.netbeans.modules.php.editor.model.EnumScope;
 import org.netbeans.modules.php.editor.model.FunctionScope;
 import org.netbeans.modules.php.editor.model.GroupUseScope;
 import org.netbeans.modules.php.editor.model.InterfaceScope;
@@ -44,6 +45,7 @@ import org.netbeans.modules.php.editor.model.nodes.FunctionDeclarationInfo;
 import org.netbeans.modules.php.editor.model.nodes.GroupUseStatementPartInfo;
 import org.netbeans.modules.php.editor.model.nodes.NamespaceDeclarationInfo;
 import org.netbeans.modules.php.editor.model.nodes.SingleUseStatementPartInfo;
+import org.netbeans.modules.php.editor.parser.astnodes.Expression;
 import org.netbeans.modules.php.editor.parser.astnodes.FunctionDeclaration;
 import org.netbeans.modules.php.editor.parser.astnodes.Program;
 import org.netbeans.modules.php.editor.parser.astnodes.Scalar;
@@ -85,8 +87,14 @@ final class NamespaceScopeImpl extends ScopeImpl implements NamespaceScope, Vari
     }
 
     FunctionScopeImpl createElement(Program program, FunctionDeclaration node) {
+        // NETBEANS-1859 add qualified return type
+        Expression returnType = node.getReturnType();
+        String qualifiedReturnType = VariousUtils.getReturnType(program, node);
+        if (returnType != null) {
+            qualifiedReturnType = VariousUtils.qualifyTypeNames(VariousUtils.getReturnType(program, node), returnType.getStartOffset(), this);
+        }
         FunctionScopeImpl retval = new FunctionScopeImpl(this, FunctionDeclarationInfo.create(program, node),
-                VariousUtils.getReturnType(program, node), VariousUtils.isDeprecatedFromPHPDoc(program, node));
+                qualifiedReturnType, VariousUtils.isDeprecated(getFileScope(), program, node));
         return retval;
     }
 
@@ -139,6 +147,11 @@ final class NamespaceScopeImpl extends ScopeImpl implements NamespaceScope, Vari
                 return element.getPhpElementKind().equals(PhpElementKind.TRAIT);
             }
         });
+    }
+
+    @Override
+    public Collection<? extends EnumScope> getDeclaredEnums() {
+        return filter(getElements(), (ModelElement element) -> element.getPhpElementKind() == PhpElementKind.ENUM);
     }
 
     @Override
@@ -203,7 +216,8 @@ final class NamespaceScopeImpl extends ScopeImpl implements NamespaceScope, Vari
         Collection<? extends ClassScope> classes = getDeclaredClasses();
         Collection<? extends InterfaceScope> interfaces = getDeclaredInterfaces();
         Collection<? extends TraitScope> traits = getDeclaredTraits();
-        return ModelUtils.merge(classes, interfaces, traits);
+        Collection<? extends EnumScope> enums = getDeclaredEnums();
+        return ModelUtils.merge(classes, interfaces, traits, enums);
     }
 
 

@@ -172,7 +172,7 @@ public class BugzillaRepository {
 
     public void remove() {
         Collection<BugzillaQuery> qs = getQueries();
-        BugzillaQuery[] toRemove = qs.toArray(new BugzillaQuery[qs.size()]);
+        BugzillaQuery[] toRemove = qs.toArray(new BugzillaQuery[0]);
         for (BugzillaQuery q : toRemove) {
             removeQuery(q);
         }
@@ -642,7 +642,7 @@ public class BugzillaRepository {
                 Collection<BugzillaQuery> qs = getQueries();
                 for (BugzillaQuery q : qs) {
                     Bugzilla.LOG.log(Level.FINER, "preparing to refresh query {0} - {1}", new Object[] {q.getDisplayName(), getDisplayName()}); // NOI18N
-                    QueryController qc = ((BugzillaQuery) q).getController();
+                    QueryController qc = q.getController();
                     qc.onRefresh();
                 }
             }

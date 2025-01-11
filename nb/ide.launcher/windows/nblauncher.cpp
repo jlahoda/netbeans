@@ -25,6 +25,7 @@
 #endif
 
 #include <shlobj.h>
+#include <winnls.h>
 #include "nblauncher.h"
 #include "../../../platform/o.n.bootstrap/launcher/windows/utilsfuncs.h"
 #include "../../../platform/o.n.bootstrap/launcher/windows/argnames.h"
@@ -157,6 +158,20 @@ int NbLauncher::start(int argc, char *argv[]) {
     return loader.start(nbexecPath.c_str(), newArgs.getCount(), newArgs.getArgs());
 }
 
+UINT GetAnsiCodePageForLocale(LCID lcid) {
+    // See https://devblogs.microsoft.com/oldnewthing/20161007-00/?p=94475
+    UINT acp;
+    int sizeInChars = sizeof(acp) / sizeof(TCHAR);
+    if (GetLocaleInfo(lcid,
+                      LOCALE_IDEFAULTANSICODEPAGE | LOCALE_RETURN_NUMBER,
+                      reinterpret_cast<LPTSTR>(&acp),
+                      sizeInChars) != sizeInChars)
+    {
+        return 0;
+    }
+    return acp;
+}
+
 bool NbLauncher::initBaseNames() {
     char path[MAX_PATH] = "";
     getCurrentModulePath(path, MAX_PATH);
@@ -181,16 +196,23 @@ bool NbLauncher::initBaseNames() {
     }
     *bslash = '\0';        
 
+    /* Useful messages for debugging character set issues. On Java versions where
+    https://bugs.openjdk.org/browse/JDK-8272352 has been fixed, NetBeans should now run fine when
+    there are Unicode characters in the NetBeans installation path, the JDK path, the user/cache
+    directory paths, or in the java.io.tmpdir path (the latter sometimes being a problem for JNA,
+    which is used by FlatLAF). Since the JVM is started in-process via JNI, the Java environment
+    will inherit the UTF-8 code page setting that we have set in the launcher's application
+    manifest, without requiring the user to change regional settings in the Control Panel. (JEP 400
+    might eventually do something similar for the java.exe/javaw.exe executables. See
+    https://www.mail-archive.com/core-libs-dev@openjdk.java.net/msg80489.html .) */
+    logMsg("ANSI code page per GetACP()              : %d", GetACP());
+    logMsg("ANSI code page per GetConsoleCP()        : %d", GetConsoleCP());
+    logMsg("ANSI code page for GetThreadLocale()     : %d", GetAnsiCodePageForLocale(GetThreadLocale()));
+    logMsg("ANSI code page for GetUserDefaultLCID()  : %d", GetAnsiCodePageForLocale(GetUserDefaultLCID()));
+    logMsg("ANSI code page for GetSystemDefaultLCID(): %d", GetAnsiCodePageForLocale(GetSystemDefaultLCID()));
+
     baseDir = path;
-    
-    //check baseDir for non-ASCII chars
-    for (size_t i = 0; i < baseDir.size(); ++i) {
-        if (!(baseDir[i]>=' ' && baseDir[i]<='~')) {
-            logErr(false, true, "Cannot be run from folder that contains non-ASCII characters in path.");
-            return false;
-        }
-    }
-    
+
     logMsg("Base dir: %s", baseDir.c_str());
     return true;
 }

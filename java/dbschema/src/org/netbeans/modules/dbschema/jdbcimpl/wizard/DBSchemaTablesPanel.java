@@ -304,7 +304,7 @@ public class DBSchemaTablesPanel extends JPanel implements ListDataListener {
         return params.getResult();
     }
 
-    private void invokeHandlers(final List/*<Handler>*/ handlers, final Parameters params) {
+    private void invokeHandlers(final List<Handler> handlers, final Parameters params) {
         final ProgressPanel progressPanel = new ProgressPanel();
         
         ProgressHandle progressHandle = ProgressHandleFactory.createHandle(null);
@@ -339,12 +339,12 @@ public class DBSchemaTablesPanel extends JPanel implements ListDataListener {
         }
     }
     
-    private int invokeHandlers(List/*<Handler>*/ handlers, int start, Parameters params, final ProgressPanel progressPanel) {
+    private int invokeHandlers(List<Handler> handlers, int start, Parameters params, final ProgressPanel progressPanel) {
         boolean isEDT = SwingUtilities.isEventDispatchThread();
         int i;
         
         for (i = start; i < handlers.size(); i++) {
-            Handler h = (Handler)handlers.get(i);
+            Handler h = handlers.get(i);
             if (!h.isRunnable()) {
                 if (LOG) {
                     LOGGER.log(Level.FINE, "Skipping " + h);
@@ -709,7 +709,7 @@ public class DBSchemaTablesPanel extends JPanel implements ListDataListener {
         }
     }
     
-    private static abstract class Handler {
+    private abstract static class Handler {
         
         public abstract void handle(Parameters params);
         

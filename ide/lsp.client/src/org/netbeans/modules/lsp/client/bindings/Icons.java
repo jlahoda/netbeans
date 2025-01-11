@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -60,7 +60,11 @@ public final class Icons {
         
     }
     
-    public static String getSymbolIconBase(SymbolKind symbolKind) {
+    public static String getSymbolIconBase(Enum<?> symbolKind) {
+        if (symbolKind == null) {
+            return ICON_BASE + "empty.png";
+        }
+
         for (String variant : new String[] {
             ICON_BASE + symbolKind.name().toLowerCase(Locale.US) + PNG_EXTENSION,
             ICON_BASE + symbolKind.name().toLowerCase(Locale.US) + GIF_EXTENSION,
@@ -70,5 +74,9 @@ public final class Icons {
                 return variant;
         }
         return null;
+    }
+
+    public static Icon getSymbolIcon(SymbolKind symbolKind) {
+        return ImageUtilities.loadImageIcon(getSymbolIconBase(symbolKind), false);
     }
 }

@@ -324,7 +324,7 @@ public class ClientSideProjectLogicalView implements LogicalViewProvider {
             List<Action> actions = new LinkedList<>(Arrays.asList(CommonProjectActions.forType("org-netbeans-modules-web-clientproject"))); // NOI18N
             addBuildActions(actions);
             addCodeCoverageAction(actions);
-            return actions.toArray(new Action[actions.size()]);
+            return actions.toArray(new Action[0]);
         }
 
         @Override
@@ -780,7 +780,7 @@ public class ClientSideProjectLogicalView implements LogicalViewProvider {
             actions.add(SystemAction.get(ToolsAction.class));
             actions.add(null);
             actions.add(CommonProjectActions.customizeProjectAction());
-            return actions.toArray(new Action[actions.size()]);
+            return actions.toArray(new Action[0]);
         }
 
         @Override
@@ -928,7 +928,7 @@ public class ClientSideProjectLogicalView implements LogicalViewProvider {
         public void stateChanged(ChangeEvent event) {
             Node[] children = original.getChildren().getNodes();
             if (event instanceof VisibilityQueryChangeEvent) {
-                Set<FileObject> fileObjects = new HashSet(Arrays.asList(((VisibilityQueryChangeEvent) event).getFileObjects()));
+                Set<FileObject> fileObjects = new HashSet<>(Arrays.asList(((VisibilityQueryChangeEvent) event).getFileObjects()));
                 for (Node child : children) {
                     if (fileObjects.contains(child.getLookup().lookup(FileObject.class))) {
                         refreshNodes(new Node[] {child});

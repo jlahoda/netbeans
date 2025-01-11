@@ -37,6 +37,7 @@ import org.openide.util.NbBundle;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.logging.Level;
 import org.openide.util.Exceptions;
 
@@ -116,15 +117,15 @@ public class NbDdeBrowserImpl extends ExtBrowserImpl {
         logFine("NbDdeBrowserImpl created with factory:", extBrowserFactory); // NOI18N
     }
     
-    native private byte [] reqDdeMessage (String srv, String topic, String item, int timeout) throws NbBrowserException;
+    private native byte [] reqDdeMessage (String srv, String topic, String item, int timeout) throws NbBrowserException;
     
     /** finds registry entry for browser opening */
-    public native static String getBrowserPath (String browser) throws NbBrowserException;
+    public static native String getBrowserPath (String browser) throws NbBrowserException;
     
     /** returns the command that executes default application for opening of 
      *  .html files
      */
-    public native static String getDefaultOpenCommand() throws NbBrowserException;
+    public static native String getDefaultOpenCommand() throws NbBrowserException;
     
     /** Sets current URL.
      *
@@ -413,7 +414,7 @@ public class NbDdeBrowserImpl extends ExtBrowserImpl {
             while ((f == null) && (retries > 0)) {
                 retries--;
                 try {
-                    f = File.createTempFile("extbrowser", ".html");             // NOI18N
+                    f = Files.createTempFile("extbrowser", ".html").toFile();             // NOI18N
                     logFine("file:", f); // NOI18N
                     if (f != null) { 
                         fw = new FileWriter(f);

@@ -141,7 +141,7 @@ public class ServerLocationManager  {
      * may return null if no platform is available...
      **/
     
-    static public File getLatestPlatformLocation(){
+    public static File getLatestPlatformLocation(){
         Iterator i = serverLocationAndClassLoaderMap.entrySet().iterator();
         File ret =null;
         while (i.hasNext()){
@@ -180,7 +180,7 @@ public class ServerLocationManager  {
         	return data.serverOnlyClassLoader;
 
     }
-    public synchronized static DeploymentFactory getDeploymentFactory(File platformLocation) {
+    public static synchronized DeploymentFactory getDeploymentFactory(File platformLocation) {
 	CacheData data =(CacheData) serverLocationAndClassLoaderMap.get(platformLocation.getAbsolutePath());
 	if (data==null){// try to initialize it
 	    getNetBeansAndServerClassLoader(platformLocation);
@@ -193,7 +193,7 @@ public class ServerLocationManager  {
     
     }
     
-    public synchronized static ClassLoader getNetBeansAndServerClassLoader(File platformLocation) {
+    public static synchronized ClassLoader getNetBeansAndServerClassLoader(File platformLocation) {
 	CacheData data =(CacheData) serverLocationAndClassLoaderMap.get(platformLocation.getAbsolutePath());
 	if (data==null){
 	    if (!isGoodAppServerLocation(platformLocation)){
@@ -210,7 +210,7 @@ public class ServerLocationManager  {
 	    try {
 		data.cachedClassLoader =new ExtendedClassLoader( new Empty().getClass().getClassLoader());
 		updatePluginLoader( platformLocation, data.cachedClassLoader);
-		data.deploymentFactory =  (DeploymentFactory) data.cachedClassLoader.loadClass("com.sun.enterprise.deployapi.SunDeploymentFactory").newInstance();//NOI18N
+		data.deploymentFactory =  (DeploymentFactory) data.cachedClassLoader.loadClass("com.sun.enterprise.deployapi.SunDeploymentFactory").getDeclaredConstructor().newInstance();//NOI18N
                 data.serverOnlyClassLoader = new ExtendedClassLoader();
                 updatePluginLoader(platformLocation, data.serverOnlyClassLoader);
 	    } catch (Exception ex2) {

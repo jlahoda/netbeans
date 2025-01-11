@@ -146,7 +146,7 @@ public final class GitRevisionInfo {
                 listFiles();
             }
         }
-        Map<File, GitFileInfo> files = new HashMap<File, GitFileInfo>(modifiedFiles.length);
+        Map<File, GitFileInfo> files = new HashMap<>(modifiedFiles.length);
         for (GitFileInfo info : modifiedFiles) {
             files.put(info.getFile(), info);
         }
@@ -173,9 +173,8 @@ public final class GitRevisionInfo {
     }
     
     private void listFiles() throws GitException {
-        RevWalk revWalk = new RevWalk(repository);
-        TreeWalk walk = new TreeWalk(repository);
-        try {
+        try (RevWalk revWalk = new RevWalk(repository);
+            TreeWalk walk = new TreeWalk(repository)) {
             List<GitFileInfo> result;
             walk.reset();
             walk.setRecursive(true);
@@ -198,17 +197,14 @@ public final class GitRevisionInfo {
             if (parentCommit != null) {
                 result = Utils.getDiffEntries(repository, walk, GitClassFactoryImpl.getInstance());
             } else {
-                result = new ArrayList<GitFileInfo>();
+                result = new ArrayList<>();
                 while (walk.next()) {
                     result.add(new GitFileInfo(new File(repository.getWorkTree(), walk.getPathString()), walk.getPathString(), GitFileInfo.Status.ADDED, null, null));
                 }
             }
-            this.modifiedFiles = result.toArray(new GitFileInfo[result.size()]);
+            this.modifiedFiles = result.toArray(new GitFileInfo[0]);
         } catch (IOException ex) {
             throw new GitException(ex);
-        } finally {
-            revWalk.release();
-            walk.release();
         }
     }
 

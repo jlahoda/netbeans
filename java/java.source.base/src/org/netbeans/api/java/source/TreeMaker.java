@@ -30,6 +30,7 @@ import com.sun.source.doctree.EntityTree;
 import com.sun.source.doctree.InheritDocTree;
 import com.sun.source.doctree.LinkTree;
 import com.sun.source.doctree.ParamTree;
+import com.sun.source.doctree.RawTextTree;
 import com.sun.source.doctree.ReferenceTree;
 import com.sun.source.doctree.SeeTree;
 import com.sun.source.doctree.SerialDataTree;
@@ -66,6 +67,7 @@ import javax.tools.JavaFileObject;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.annotations.common.NullAllowed;
@@ -91,7 +93,7 @@ import org.openide.util.Parameters;
  * You can obtain appropriate instance of this class by getting it from working
  * copy:
  *
- * <pre>
+ * <pre>{@code
  * CancellableTask task = new CancellableTask<WorkingCopy>() {
  *
  *        public void run(WorkingCopy workingCopy) throws Exception {
@@ -100,9 +102,9 @@ import org.openide.util.Parameters;
  *        }
  *        ...
  *    }; 
- * </pre>
+ * }</pre>
  *
- * @see <a href="http://wiki.netbeans.org/wiki/view/JavaHT_Modification">How do I do modification to a source file?</a> 
+ * @see <a href="https://netbeans.apache.org/wiki/JavaHT_Modification">How do I do modification to a source file?</a>
  *
  * @author Tom Ball
  * @author Pavel Flaska
@@ -110,6 +112,7 @@ import org.openide.util.Parameters;
  * 
  * @since 0.44.0
  */
+
 public final class TreeMaker {
     
     private TreeFactory delegate;
@@ -263,6 +266,71 @@ public final class TreeMaker {
      */
     public CaseTree Case(List<? extends ExpressionTree> patterns, Tree body) {
         return delegate.Case(patterns, body);
+    }
+    
+    /**
+     * Creates a new CaseTree for a rule case (case &lt;constants&gt; -> &lt;body&gt;).
+     *
+     * @param patterns the labels for this case statement.
+     * @param body the case's body
+     * @see com.sun.source.tree.CaseTree
+     * @since 2.39
+     */
+    public CaseTree CasePatterns(List<? extends Tree> patterns, Tree body) {
+        return delegate.CaseMultiplePatterns(toCaseLabelTrees(patterns), null, body);
+    }
+    
+    /**
+     * Creates a new CaseTree for a rule case (case &lt;constants&gt; -> &lt;body&gt;).
+     *
+     * @param patterns the labels for this case statement.
+     * @param guard the case's guard
+     * @param body the case's body
+     * @see com.sun.source.tree.CaseTree
+     * @since 2.63
+     */
+    public CaseTree CasePatterns(List<? extends Tree> patterns, ExpressionTree guard, Tree body) {
+        return delegate.CaseMultiplePatterns(toCaseLabelTrees(patterns), guard, body);
+    }
+
+    /**
+     * Creates a new CaseTree.
+     *
+     * @param patterns the labels for this case statement.
+     * @param statements the list of statements.
+     * @see com.sun.source.tree.CaseTree
+     * @since 2.39
+     */
+    public CaseTree CasePatterns(List<? extends Tree> patterns, List<? extends StatementTree> statements) {
+        return delegate.CaseMultiplePatterns(toCaseLabelTrees(patterns), null, statements);
+    }
+
+    /**
+     * Creates a new CaseTree.
+     *
+     * @param patterns the labels for this case statement.
+     * @param guard the case's guard
+     * @param statements the list of statements.
+     * @see com.sun.source.tree.CaseTree
+     * @since 2.63
+     */
+    public CaseTree CasePatterns(List<? extends Tree> patterns, ExpressionTree guard, List<? extends StatementTree> statements) {
+        return delegate.CaseMultiplePatterns(toCaseLabelTrees(patterns), guard, statements);
+    }
+
+    private List<? extends CaseLabelTree> toCaseLabelTrees(List<? extends Tree> patterns) {
+        return patterns.stream().map(p -> {
+            if (p instanceof CaseLabelTree) {
+                return (CaseLabelTree) p;
+            }
+            if (p instanceof ExpressionTree) {
+                return delegate.ConstantCaseLabel((ExpressionTree) p);
+            }
+            if (p instanceof PatternTree) {
+                return delegate.PatternCaseLabel((PatternTree) p);
+            }
+            throw new IllegalArgumentException("Invalid pattern kind: " + p.getKind()); //NOI18N
+        }).collect(Collectors.toList());
     }
     
     /**
@@ -1093,7 +1161,7 @@ public final class TreeMaker {
     /**
      * Creates a new TryTree.
      *
-     * @param resource     the resources of the try clause. The elements of the list
+     * @param resources     the resources of the try clause. The elements of the list
      *                     should either be {@link VariableTree}s or {@link ExpressionTree}s.
      * @param tryBlock     the statement block in the try clause.
      * @param catches      the list of catch clauses, or an empty list.
@@ -1210,6 +1278,60 @@ public final class TreeMaker {
         return delegate.Variable(modifiers, name, type, initializer);
     }
     
+    /**
+     * Creates a new VariableTree for a record component.
+     *
+     * @param modifiers the modifiers of this record component.
+     * @param name the name of the record component.
+     * @param type the type of this record component.
+     * @see com.sun.source.tree.VariableTree
+     * @since 2.70
+     */
+    public VariableTree RecordComponent(ModifiersTree modifiers,
+                          CharSequence name,
+                          Tree type) {
+        return delegate.RecordComponent(modifiers, name, type);
+    }
+
+    /**
+     * Creates a new BindingPatternTree.
+     * @deprecated
+     * @param name name of the binding variable
+     * @param type the type of the pattern
+     * @return the newly created BindingPatternTree
+     */
+    @Deprecated
+    public Tree BindingPattern(CharSequence name,
+                               Tree type) {
+        return delegate.BindingPattern(name, type);
+    }
+    
+      /**
+     * Creates a new Tree for a given VariableTree
+     * specication : 15.20.2
+     * @param vt the VariableTree of the pattern
+     * @see com.sun.source.tree.BindingPatternTree
+     * @return the newly created BindingPatternTree
+     * @since 16
+     */
+    public Tree BindingPattern(VariableTree vt) {
+        return delegate.BindingPattern(vt);
+    }
+
+      /**
+     * Creates a new Tree for a given DeconstructionPatternTree
+     * @param deconstructor deconstructor of record pattern
+     * @param nested list of nested patterns
+     * @param vt the variable of record pattern. This parameter is currently ignored.
+     * @see com.sun.source.tree.DeconstructionPatternTree
+     * @return the newly created RecordPatternTree
+     * @since 19
+     */
+    //TODO: overload without VariableTree?
+    public DeconstructionPatternTree RecordPattern(ExpressionTree deconstructor, List<PatternTree> nested, VariableTree vt) {
+        return delegate.DeconstructionPattern(deconstructor, nested);
+    }
+
     /**
      * Creates a new VariableTree from a VariableElement.
      *
@@ -1487,7 +1609,7 @@ public final class TreeMaker {
      * </pre>
      *
      * You can get it e.g. with this code:
-     * <pre>
+     * <pre>{@code
      *   TreeMaker make = workingCopy.getTreeMaker();
      *   ClassTree node = ...;
      *   // create method modifiers
@@ -1514,7 +1636,7 @@ public final class TreeMaker {
      *   );
      *   // rewrite the original class node with the new one containing newMethod
      *   workingCopy.rewrite(node, <b>make.addClassMember(node, newMethod)</b>);
-     * </pre>
+     * }</pre>
      *
      * @param   clazz    class tree containing members list.
      * @param   member   element to be appended to members list.
@@ -2855,9 +2977,7 @@ public final class TreeMaker {
         // todo (#pf): Shouldn't here be check that names are not the same?
         // i.e. node label == aLabel? -- every case branch has to check itself
         // This will improve performance, no change was done by API user.
-        Tree.Kind kind = node.getKind();
-
-        switch (kind) {
+        switch (node.getKind()) {
             case BREAK: {
                 BreakTree t = (BreakTree) node;
                 N clone = (N) Break(
@@ -2868,7 +2988,8 @@ public final class TreeMaker {
             case ANNOTATION_TYPE:
             case CLASS:
             case ENUM:
-            case INTERFACE: {
+            case INTERFACE:
+            case RECORD: {
                 ClassTree t = (ClassTree) node;
                 // copy all the members, for constructor change their name
                 // too!
@@ -3224,7 +3345,7 @@ public final class TreeMaker {
      * Marks a tree as a replacement of some old one. The hint may cause surrounding whitespace to be 
      * carried over to the new tree and comments to be attached to the same (similar) positions
      * as in the old tree. 
-     * <p/>
+     * <p>
      * If 'defaultOnly' is true, the hint is only added if no previous hint exists. You generally want
      * to force the hint, in code manipulation operations. Bulk tree transformers should preserve existing
      * hints - the {@link TreeUtilities#translate} preserves existing relationships.
@@ -3308,6 +3429,25 @@ public final class TreeMaker {
     }
 
     /**
+     * Creates a new ExpressionTree for provided <tt>bodyText</tt>.
+     * 
+     * @param   lambda    figures out the scope for attribution.
+     * @param   bodyText  text which will be used for lambda body creation.
+     * @return  a new tree for <tt>bodyText</tt>.
+     * @since 2.54
+     */
+    public ExpressionTree createLambdaExpression(LambdaExpressionTree lambda, String bodyText) {
+        SourcePositions[] positions = new SourcePositions[1];
+        final TreeUtilities treeUtils = copy.getTreeUtilities();
+        ExpressionTree body = treeUtils.parseExpression(bodyText, positions);
+        Scope scope = copy.getTrees().getScope(TreePath.getPath(copy.getCompilationUnit(), lambda));
+        treeUtils.attributeTree(body, scope);
+//        mapComments((BlockTree) body, bodyText, copy, handler, positions[0]);
+        new TreePosCleaner().scan(body, null);
+        return (ExpressionTree) body;
+    }
+
+    /**
      * Creates a new MethodTree.
      *
      * @param modifiers the modifiers of this method.
@@ -3341,6 +3481,10 @@ public final class TreeMaker {
     }
     
     private void mapComments(BlockTree block, String inputText, WorkingCopy copy, CommentHandler comments, SourcePositions positions) {
+        if (copy.getFileObject() == null) {
+            // prevent IllegalStateException thrown form AssignComments constructor below
+            return;
+        }
         TokenSequence<JavaTokenId> seq = TokenHierarchy.create(inputText, JavaTokenId.language()).tokenSequence(JavaTokenId.language());
         AssignComments ti = new AssignComments(copy, block, seq, positions);
         ti.scan(block, null);
@@ -3432,8 +3576,30 @@ public final class TreeMaker {
         return delegate.Deprecated(text);
     }
 
-    /**Creates a new javadoc comment.
-     * 
+    /**Creates a new HTML javadoc comment.
+     *
+     * @param fullBody the entire body of the comment
+     * @param tags the block tags of the comment (after the main body)
+     * @return newly created DocCommentTree
+     * @since 2.62
+     */
+    public DocCommentTree DocComment(List<? extends DocTree> fullBody, List<? extends DocTree> tags) {
+        return delegate.DocComment(fullBody, tags);
+    }
+
+    /**Creates a new HTML javadoc comment.
+     *
+     * @param fullBody the entire body of the comment
+     * @param tags the block tags of the comment (after the main body)
+     * @return newly created DocCommentTree
+     * @since 2.71
+     */
+    public DocCommentTree MarkdownDocComment(List<? extends DocTree> fullBody, List<? extends DocTree> tags) {
+        return delegate.MarkdownDocComment(fullBody, tags);
+    }
+
+    /**Creates a new HTML javadoc comment.
+     *
      * @param firstSentence the javadoc comment's first sentence
      * @param body the main body of the comment
      * @param tags the block tags of the comment (after the main body)
@@ -3442,6 +3608,18 @@ public final class TreeMaker {
      */
     public DocCommentTree DocComment(List<? extends DocTree> firstSentence, List<? extends DocTree> body, List<? extends DocTree> tags) {
         return delegate.DocComment(firstSentence, body, tags);
+    }
+
+    /**Creates a new Markdown javadoc comment.
+     *
+     * @param firstSentence the javadoc comment's first sentence
+     * @param body the main body of the comment
+     * @param tags the block tags of the comment (after the main body)
+     * @return newly created DocCommentTree
+     * @since 2.71
+     */
+    public DocCommentTree MarkdownDocComment(List<? extends DocTree> firstSentence, List<? extends DocTree> body, List<? extends DocTree> tags) {
+        return delegate.MarkdownDocComment(firstSentence, body, tags);
     }
 
     /**Creates the DocTree's ParamTree.
@@ -3571,6 +3749,16 @@ public final class TreeMaker {
      */
     public TextTree Text(String text) {
         return delegate.Text(text);
+    }
+
+    /**Creates the DocTree's RawTextTree.
+     *
+     * @param text the text
+     * @return newly created RawTextTree
+     * @since 2.71
+     */
+    public RawTextTree RawText(String text) {
+        return delegate.RawText(text);
     }
 
     /**Creates the DocTree's ThrowsTree that will produce @throws.
@@ -3777,4 +3965,5 @@ public final class TreeMaker {
     public LambdaExpressionTree setLambdaBody(LambdaExpressionTree method, Tree newBody) {
         return delegate.setLambdaBody(method, newBody);
     }
+
 }

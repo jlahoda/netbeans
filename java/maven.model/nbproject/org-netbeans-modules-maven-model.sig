@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.48.1
+#Version 1.70
 
 CLSS public abstract interface java.io.Serializable
 
@@ -27,7 +27,6 @@ meth public final java.lang.String name()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
-hfds name,ordinal
 
 CLSS public java.lang.Object
 cons public init()
@@ -75,11 +74,12 @@ CLSS public abstract interface javax.swing.event.UndoableEditListener
 intf java.util.EventListener
 meth public abstract void undoableEditHappened(javax.swing.event.UndoableEditEvent)
 
-CLSS public abstract interface org.netbeans.modules.maven.model.ModelOperation<%0 extends org.netbeans.modules.xml.xam.dom.AbstractDocumentModel>
+CLSS public abstract interface org.netbeans.modules.maven.model.ModelOperation<%0 extends org.netbeans.modules.xml.xam.dom.AbstractDocumentModel<? extends org.netbeans.modules.xml.xam.dom.DocumentComponent<?>>>
 meth public abstract void performOperation({org.netbeans.modules.maven.model.ModelOperation%0})
 
 CLSS public org.netbeans.modules.maven.model.Utilities
 meth public static org.netbeans.modules.xml.xam.ModelSource createModelSource(org.openide.filesystems.FileObject)
+meth public static org.netbeans.modules.xml.xam.ModelSource createModelSource(org.openide.filesystems.FileObject,javax.swing.text.Document)
 meth public static org.netbeans.modules.xml.xam.ModelSource createModelSource(org.openide.filesystems.FileObject,org.openide.loaders.DataObject,org.netbeans.editor.BaseDocument)
 meth public static org.netbeans.modules.xml.xam.ModelSource createModelSourceForMissingFile(java.io.File,boolean,java.lang.String,java.lang.String)
 meth public static void openAtPosition(org.netbeans.modules.maven.model.pom.POMModel,int)
@@ -1339,6 +1339,7 @@ meth public javax.swing.text.Document getBaseDocument()
 meth public org.netbeans.modules.xml.xam.dom.AbstractDocumentComponent findComponent(org.netbeans.modules.xml.xam.dom.AbstractDocumentComponent,java.util.List<org.w3c.dom.Element>,int)
 meth public org.netbeans.modules.xml.xam.dom.ChangeInfo prepareChangeInfo(java.util.List<? extends org.w3c.dom.Node>,java.util.List<? extends org.w3c.dom.Node>)
 meth public org.netbeans.modules.xml.xam.dom.ChangeInfo prepareChangeInfo(java.util.List<org.w3c.dom.Node>)
+ anno 0 java.lang.Deprecated()
 meth public org.netbeans.modules.xml.xam.dom.DocumentComponent findComponent(int)
 meth public org.netbeans.modules.xml.xam.dom.DocumentComponent findComponent(java.util.List<org.w3c.dom.Element>)
 meth public org.netbeans.modules.xml.xam.dom.DocumentComponent findComponent(org.w3c.dom.Element)

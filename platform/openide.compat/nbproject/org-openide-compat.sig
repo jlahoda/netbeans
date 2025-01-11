@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 6.44.1
+#Version 6.66
 
 CLSS public abstract java.awt.Component
 cons protected init()
@@ -159,8 +159,6 @@ meth public java.awt.im.InputMethodRequests getInputMethodRequests()
 meth public java.awt.image.ColorModel getColorModel()
 meth public java.awt.image.VolatileImage createVolatileImage(int,int)
 meth public java.awt.image.VolatileImage createVolatileImage(int,int,java.awt.ImageCapabilities) throws java.awt.AWTException
-meth public java.awt.peer.ComponentPeer getPeer()
- anno 0 java.lang.Deprecated()
 meth public java.beans.PropertyChangeListener[] getPropertyChangeListeners()
 meth public java.beans.PropertyChangeListener[] getPropertyChangeListeners(java.lang.String)
 meth public java.lang.String getName()
@@ -274,8 +272,6 @@ meth public void transferFocusUpCycle()
 meth public void update(java.awt.Graphics)
 meth public void validate()
 supr java.lang.Object
-hfds FOCUS_TRAVERSABLE_DEFAULT,FOCUS_TRAVERSABLE_SET,FOCUS_TRAVERSABLE_UNKNOWN,LOCK,acc,actionListenerK,adjustmentListenerK,appContext,autoFocusTransferOnDisposal,background,backgroundEraseDisabled,boundsOp,bufferStrategy,changeSupport,coalesceEventsParams,coalesceMap,coalescingEnabled,componentListener,componentListenerK,componentOrientation,componentSerializedDataVersion,compoundShape,containerListenerK,cursor,dropTarget,enabled,eventCache,eventLog,eventMask,focusListener,focusListenerK,focusLog,focusTraversalKeyPropertyNames,focusTraversalKeys,focusTraversalKeysEnabled,focusable,font,foreground,graphicsConfig,height,hierarchyBoundsListener,hierarchyBoundsListenerK,hierarchyListener,hierarchyListenerK,ignoreRepaint,incRate,inputMethodListener,inputMethodListenerK,isAddNotifyComplete,isFocusTraversableOverridden,isInc,isPacked,itemListenerK,keyListener,keyListenerK,locale,log,maxSize,maxSizeSet,minSize,minSizeSet,mixingCutoutRegion,mixingLog,mouseListener,mouseListenerK,mouseMotionListener,mouseMotionListenerK,mouseWheelListener,mouseWheelListenerK,name,nameExplicitlySet,newEventsOnly,objectLock,ownedWindowK,parent,peer,peerFont,popups,prefSize,prefSizeSet,requestFocusController,serialVersionUID,textListenerK,valid,visible,width,windowClosingException,windowFocusListenerK,windowListenerK,windowStateListenerK,x,y
-hcls AWTTreeLock,BltSubRegionBufferStrategy,DummyRequestFocusController,FlipSubRegionBufferStrategy,ProxyCapabilities,SingleBufferStrategy
 
 CLSS public java.awt.Container
 cons public init()
@@ -360,8 +356,6 @@ meth public void transferFocusDownCycle()
 meth public void update(java.awt.Graphics)
 meth public void validate()
 supr java.awt.Component
-hfds EMPTY_ARRAY,INCLUDE_SELF,SEARCH_HEAVYWEIGHTS,component,containerListener,containerSerializedDataVersion,descendUnconditionallyWhenValidating,descendantsCount,dispatcher,eventLog,focusCycleRoot,focusTraversalPolicy,focusTraversalPolicyProvider,isJavaAwtSmartInvalidate,layoutMgr,listeningBoundsChildren,listeningChildren,log,mixingLog,modalAppContext,modalComp,numOfHWComponents,numOfLWComponents,preserveBackgroundColor,printing,printingThreads,serialPersistentFields,serialVersionUID
-hcls DropTargetEventTargetFilter,EventTargetFilter,MouseEventTargetFilter,WakingRunnable
 
 CLSS public abstract interface java.awt.MenuContainer
 meth public abstract boolean postEvent(java.awt.Event)
@@ -408,7 +402,6 @@ cons public init(java.lang.String)
 cons public init(java.lang.String,java.lang.Throwable)
 cons public init(java.lang.Throwable)
 supr java.lang.Exception
-hfds serialVersionUID
 
 CLSS public abstract interface java.io.Serializable
 
@@ -427,7 +420,6 @@ cons public init(java.lang.String)
 cons public init(java.lang.String,java.lang.Throwable)
 cons public init(java.lang.Throwable)
 supr java.lang.Throwable
-hfds serialVersionUID
 
 CLSS public abstract interface !annotation java.lang.FunctionalInterface
  anno 0 java.lang.annotation.Documented()
@@ -465,7 +457,6 @@ cons public init(java.lang.String)
 cons public init(java.lang.String,java.lang.Throwable)
 cons public init(java.lang.Throwable)
 supr java.lang.Exception
-hfds serialVersionUID
 
 CLSS public java.lang.Throwable
 cons protected init(java.lang.String,java.lang.Throwable,boolean,boolean)
@@ -488,8 +479,6 @@ meth public void printStackTrace(java.io.PrintStream)
 meth public void printStackTrace(java.io.PrintWriter)
 meth public void setStackTrace(java.lang.StackTraceElement[])
 supr java.lang.Object
-hfds CAUSE_CAPTION,EMPTY_THROWABLE_ARRAY,NULL_CAUSE_MESSAGE,SELF_SUPPRESSION_MESSAGE,SUPPRESSED_CAPTION,SUPPRESSED_SENTINEL,UNASSIGNED_STACK,backtrace,cause,detailMessage,serialVersionUID,stackTrace,suppressedExceptions
-hcls PrintStreamOrWriter,SentinelHolder,WrappedPrintStream,WrappedPrintWriter
 
 CLSS public abstract interface java.lang.annotation.Annotation
 meth public abstract boolean equals(java.lang.Object)
@@ -529,8 +518,6 @@ meth public java.lang.Object clone()
 meth public java.lang.Object parseObject(java.lang.String) throws java.text.ParseException
 meth public java.text.AttributedCharacterIterator formatToCharacterIterator(java.lang.Object)
 supr java.lang.Object
-hfds serialVersionUID
-hcls FieldDelegate
 
 CLSS public abstract java.util.AbstractCollection<%0 extends java.lang.Object>
 cons protected init()
@@ -550,7 +537,6 @@ meth public java.lang.Object[] toArray()
 meth public java.lang.String toString()
 meth public void clear()
 supr java.lang.Object
-hfds MAX_ARRAY_SIZE
 
 CLSS public abstract java.util.AbstractMap<%0 extends java.lang.Object, %1 extends java.lang.Object>
 cons protected init()
@@ -574,7 +560,6 @@ meth public {java.util.AbstractMap%1} get(java.lang.Object)
 meth public {java.util.AbstractMap%1} put({java.util.AbstractMap%0},{java.util.AbstractMap%1})
 meth public {java.util.AbstractMap%1} remove(java.lang.Object)
 supr java.lang.Object
-hfds keySet,values
 
 CLSS public abstract java.util.AbstractSet<%0 extends java.lang.Object>
 cons protected init()
@@ -615,7 +600,6 @@ intf java.io.Serializable
 meth public java.lang.Object getSource()
 meth public java.lang.String toString()
 supr java.lang.Object
-hfds serialVersionUID
 
 CLSS public abstract interface java.util.Map<%0 extends java.lang.Object, %1 extends java.lang.Object>
 innr public abstract interface static Entry
@@ -873,8 +857,6 @@ meth public void unregisterKeyboardAction(javax.swing.KeyStroke)
 meth public void update(java.awt.Graphics)
 meth public void updateUI()
 supr java.awt.Container
-hfds ACTIONMAP_CREATED,ANCESTOR_INPUTMAP_CREATED,ANCESTOR_USING_BUFFER,AUTOSCROLLS_SET,COMPLETELY_OBSCURED,CREATED_DOUBLE_BUFFER,DEBUG_GRAPHICS_LOADED,FOCUS_INPUTMAP_CREATED,FOCUS_TRAVERSAL_KEYS_BACKWARD_SET,FOCUS_TRAVERSAL_KEYS_FORWARD_SET,INHERITS_POPUP_MENU,INPUT_VERIFIER_SOURCE_KEY,IS_DOUBLE_BUFFERED,IS_OPAQUE,IS_PAINTING_TILE,IS_PRINTING,IS_PRINTING_ALL,IS_REPAINTING,KEYBOARD_BINDINGS_KEY,KEY_EVENTS_ENABLED,NEXT_FOCUS,NOT_OBSCURED,OPAQUE_SET,PARTIALLY_OBSCURED,REQUEST_FOCUS_DISABLED,RESERVED_1,RESERVED_2,RESERVED_3,RESERVED_4,RESERVED_5,RESERVED_6,WHEN_IN_FOCUSED_WINDOW_BINDINGS,WIF_INPUTMAP_CREATED,WRITE_OBJ_COUNTER_FIRST,WRITE_OBJ_COUNTER_LAST,aaTextInfo,actionMap,alignmentX,alignmentY,ancestorInputMap,autoscrolls,border,clientProperties,componentObtainingGraphicsFrom,componentObtainingGraphicsFromLock,defaultLocale,flags,focusController,focusInputMap,inputVerifier,isAlignmentXSet,isAlignmentYSet,managingFocusBackwardTraversalKeys,managingFocusForwardTraversalKeys,paintingChild,popupMenu,readObjectCallbacks,revalidateRunnableScheduled,tempRectangles,uiClassID,verifyInputWhenFocusTarget,vetoableChangeSupport,windowInputMap
-hcls ActionStandin,IntVector,KeyboardState,ReadObjectCallback
 
 CLSS public abstract interface javax.swing.event.ChangeListener
 intf java.util.EventListener
@@ -887,6 +869,7 @@ meth public abstract void insertUpdate(javax.swing.event.DocumentEvent)
 meth public abstract void removeUpdate(javax.swing.event.DocumentEvent)
 
 CLSS public org.openide.explorer.ExplorerActions
+ anno 0 java.lang.Deprecated()
 cons public init()
 meth public final boolean isConfirmDelete()
 meth public final void setConfirmDelete(boolean)
@@ -928,6 +911,7 @@ CLSS public abstract interface static org.openide.explorer.ExplorerManager$Provi
 meth public abstract org.openide.explorer.ExplorerManager getExplorerManager()
 
 CLSS public org.openide.explorer.ExplorerPanel
+ anno 0 java.lang.Deprecated()
 cons public init()
 cons public init(org.openide.explorer.ExplorerManager)
 intf org.openide.explorer.ExplorerManager$Provider
@@ -1039,10 +1023,23 @@ meth public static java.lang.String wrapString(java.lang.String,int,java.text.Br
 meth public static java.lang.String[] parseParameters(java.lang.String)
 meth public static java.lang.String[] wrapStringToArray(java.lang.String,int,java.text.BreakIterator,boolean)
 meth public static java.lang.ref.ReferenceQueue<java.lang.Object> activeReferenceQueue()
+meth public static java.net.URI normalizeURI(java.net.URI)
 meth public static java.net.URI toURI(java.io.File)
 supr java.lang.Object
 hfds LOG,TRANS_LOCK,operatingSystem,pathURIConsistent,transExp,transLoader
 hcls RE
+
+CLSS public abstract org.openide.util.CachedHiDPIIcon
+cons protected init(int,int)
+intf javax.swing.Icon
+meth protected abstract java.awt.Image createAndPaintImage(java.awt.Component,java.awt.image.ColorModel,int,int,double)
+meth protected final static java.awt.image.BufferedImage createBufferedImage(java.awt.image.ColorModel,int,int)
+meth public final int getIconHeight()
+meth public final int getIconWidth()
+meth public final void paintIcon(java.awt.Component,java.awt.Graphics,int,int)
+supr java.lang.Object
+hfds MAX_CACHE_SIZE,cache,cacheSize,height,width
+hcls CachedImageKey
 
 CLSS public abstract interface org.openide.util.Cancellable
 meth public abstract boolean cancel()
@@ -1153,19 +1150,28 @@ CLSS public abstract interface static org.openide.util.HelpCtx$Provider
 meth public abstract org.openide.util.HelpCtx getHelpCtx()
 
 CLSS public abstract org.openide.util.HttpServer
+ anno 0 java.lang.Deprecated()
 innr public abstract interface static Impl
 meth public static boolean allowAccess(java.net.InetAddress) throws java.net.UnknownHostException
+ anno 0 java.lang.Deprecated()
 meth public static java.net.URL getRepositoryRoot() throws java.net.MalformedURLException,java.net.UnknownHostException
+ anno 0 java.lang.Deprecated()
 meth public static java.net.URL getRepositoryURL(org.openide.filesystems.FileObject) throws java.net.MalformedURLException,java.net.UnknownHostException
+ anno 0 java.lang.Deprecated()
 meth public static java.net.URL getResourceRoot() throws java.net.MalformedURLException,java.net.UnknownHostException
+ anno 0 java.lang.Deprecated()
 meth public static java.net.URL getResourceURL(java.lang.String) throws java.net.MalformedURLException,java.net.UnknownHostException
+ anno 0 java.lang.Deprecated()
 meth public static void deregisterServer(org.openide.util.HttpServer$Impl)
+ anno 0 java.lang.Deprecated()
 meth public static void registerServer(org.openide.util.HttpServer$Impl)
+ anno 0 java.lang.Deprecated()
 supr java.lang.Object
 hfds registeredServer
 
 CLSS public abstract interface static org.openide.util.HttpServer$Impl
  outer org.openide.util.HttpServer
+ anno 0 java.lang.Deprecated()
 meth public abstract boolean allowAccess(java.net.InetAddress) throws java.net.UnknownHostException
 meth public abstract java.net.URL getRepositoryRoot() throws java.net.MalformedURLException,java.net.UnknownHostException
 meth public abstract java.net.URL getRepositoryURL(org.openide.filesystems.FileObject) throws java.net.MalformedURLException,java.net.UnknownHostException
@@ -1173,6 +1179,7 @@ meth public abstract java.net.URL getResourceRoot() throws java.net.MalformedURL
 meth public abstract java.net.URL getResourceURL(java.lang.String) throws java.net.MalformedURLException,java.net.UnknownHostException
 
 CLSS public final org.openide.util.ImageUtilities
+fld public final static java.lang.String PROPERTY_URL = "url"
 meth public final static java.awt.Image addToolTipToImage(java.awt.Image,java.lang.String)
 meth public final static java.awt.Image assignToolTipToImage(java.awt.Image,java.lang.String)
 meth public final static java.awt.Image icon2Image(javax.swing.Icon)
@@ -1183,10 +1190,11 @@ meth public final static java.lang.String getImageToolTip(java.awt.Image)
 meth public final static javax.swing.Icon image2Icon(java.awt.Image)
 meth public final static javax.swing.ImageIcon loadImageIcon(java.lang.String,boolean)
 meth public static java.awt.Image createDisabledImage(java.awt.Image)
+meth public static java.net.URL findImageBaseURL(java.awt.Image)
 meth public static javax.swing.Icon createDisabledIcon(javax.swing.Icon)
 supr java.lang.Object
-hfds DARK_LAF_SUFFIX,ERR,LOGGER,NO_ICON,PNG_READER,TOOLTIP_SEPAR,cache,component,compositeCache,currentLoader,extraInitialSlashes,imageIconFilter,imageToolTipCache,loaderQuery,localizedCache,mediaTrackerID,noLoaderWarned,tracker
-hcls ActiveRef,CompositeImageKey,DisabledButtonFilter,LazyDisabledIcon,ToolTipImage,ToolTipImageKey
+hfds DARK_LAF_SUFFIX,ERR,LOGGER,NO_ICON,PNG_READER,TOOLTIP_SEPAR,cache,classLoaderLoader,component,compositeCache,dummyIconComponentButton,dummyIconComponentLabel,extraInitialSlashes,imageIconFilter,imageToolTipCache,localizedCache,mediaTrackerID,svgLoaderLoader,tracker
+hcls ActiveRef,CachedLookupLoader,CompositeImageKey,DisabledButtonFilter,IconImageIcon,MergedIcon,ToolTipImage,ToolTipImageKey
 
 CLSS public abstract org.openide.util.Lookup
 cons public init()
@@ -1253,7 +1261,7 @@ intf java.util.EventListener
 meth public abstract void resultChanged(org.openide.util.LookupEvent)
 
 CLSS public org.openide.util.MapFormat
-cons public init(java.util.Map)
+cons public init(java.util.Map<java.lang.String,?>)
 meth protected java.lang.Object processKey(java.lang.String)
 meth public boolean isExactMatch()
 meth public boolean willThrowExceptionIfKeyWasNotFound()
@@ -1267,7 +1275,7 @@ meth public java.util.Map getMap()
 meth public static java.lang.String format(java.lang.String,java.util.Map)
 meth public void setExactMatch(boolean)
 meth public void setLeftBrace(java.lang.String)
-meth public void setMap(java.util.Map)
+meth public void setMap(java.util.Map<java.lang.String,?>)
 meth public void setRightBrace(java.lang.String)
 meth public void setThrowExceptionIfKeyWasNotFound(boolean)
 supr java.text.Format
@@ -1356,8 +1364,8 @@ meth public static void setBranding(java.lang.String)
 meth public static void setClassLoaderFinder(org.openide.util.NbBundle$ClassLoaderFinder)
  anno 0 java.lang.Deprecated()
 supr java.lang.Object
-hfds LOG,USE_DEBUG_LOADER,brandingToken,bundleCache,localizedFileCache
-hcls AttributesMap,DebugLoader,LocaleIterator,MergedBundle,PBundle
+hfds LOG,USE_DEBUG_LOADER,brandingToken,bundleCache,localizedFileCache,utfThenIsoCharset,utfThenIsoCharsetOnlyUTF8
+hcls AttributesMap,DebugLoader,LocaleIterator,MergedBundle,PBundle,UtfThenIsoCharset
 
 CLSS public abstract interface static org.openide.util.NbBundle$ClassLoaderFinder
  outer org.openide.util.NbBundle
@@ -1377,7 +1385,7 @@ meth public static <%0 extends java.lang.Object, %1 extends java.lang.Object> ja
 meth public static <%0 extends java.lang.Object, %1 extends java.lang.Object> java.util.Map<{%%0},{%%1}> checkedMapByFilter(java.util.Map,java.lang.Class<{%%0}>,java.lang.Class<{%%1}>,boolean)
 meth public static <%0 extends java.lang.Object> java.lang.Iterable<{%%0}> iterable(java.util.Enumeration<{%%0}>)
 meth public static <%0 extends java.lang.Object> java.lang.Iterable<{%%0}> iterable(java.util.Iterator<{%%0}>)
-meth public static <%0 extends java.lang.Object> java.util.Enumeration<{%%0}> checkedEnumerationByFilter(java.util.Enumeration,java.lang.Class<{%%0}>,boolean)
+meth public static <%0 extends java.lang.Object> java.util.Enumeration<{%%0}> checkedEnumerationByFilter(java.util.Enumeration<?>,java.lang.Class<{%%0}>,boolean)
 meth public static <%0 extends java.lang.Object> java.util.Iterator<{%%0}> checkedIteratorByFilter(java.util.Iterator,java.lang.Class<{%%0}>,boolean)
 meth public static <%0 extends java.lang.Object> java.util.List<{%%0}> checkedListByCopy(java.util.List,java.lang.Class<{%%0}>,boolean)
 meth public static <%0 extends java.lang.Object> java.util.Set<{%%0}> checkedSetByCopy(java.util.Set,java.lang.Class<{%%0}>,boolean)
@@ -1406,6 +1414,7 @@ meth public static boolean isAuthenticationDialogSuppressed()
 meth public static char[] getAuthenticationPassword(java.net.URI)
 meth public static java.lang.String getAuthenticationUsername(java.net.URI)
 meth public static java.lang.String getKeyForAuthenticationPassword(java.net.URI)
+ anno 0 java.lang.Deprecated()
 meth public static java.lang.String getProxyHost(java.net.URI)
 meth public static java.lang.String getProxyPort(java.net.URI)
 supr java.lang.Object
@@ -1644,13 +1653,20 @@ meth public static boolean isJavaIdentifier(java.lang.String)
 meth public static boolean isLargeFrameIcons()
  anno 0 java.lang.Deprecated()
 meth public static boolean isMac()
+meth public static boolean isModalDialogOpen()
+meth public static boolean isMouseKeyCode(int)
 meth public static boolean isUnix()
 meth public static boolean isWindows()
 meth public static int arrayHashCode(java.lang.Object[])
  anno 0 java.lang.Deprecated()
 meth public static int getOperatingSystem()
+meth public static int mouseButtonKeyCode(int)
+meth public static int mouseWheelDownKeyCode()
+meth public static int mouseWheelUpKeyCode()
 meth public static int showJFileChooser(javax.swing.JFileChooser,java.awt.Component,java.lang.String)
  anno 0 java.lang.Deprecated()
+meth public static java.awt.Component findDialogParent()
+meth public static java.awt.Component findDialogParent(java.awt.Component)
 meth public static java.awt.Component getFocusTraversableComponent(java.awt.Component)
 meth public static java.awt.Cursor createCustomCursor(java.awt.Component,java.awt.Image,java.lang.String)
 meth public static java.awt.Cursor createProgressCursor(java.awt.Component)
@@ -1699,6 +1715,7 @@ meth public static java.net.URL toURL(java.io.File) throws java.net.MalformedURL
 meth public static java.util.List partialSort(java.util.List,java.util.Comparator,boolean)
  anno 0 java.lang.Deprecated()
 meth public static java.util.List<? extends javax.swing.Action> actionsForPath(java.lang.String)
+meth public static java.util.List<? extends javax.swing.Action> actionsForPath(java.lang.String,org.openide.util.Lookup)
 meth public static javax.swing.JPopupMenu actionsToPopup(javax.swing.Action[],java.awt.Component)
 meth public static javax.swing.JPopupMenu actionsToPopup(javax.swing.Action[],org.openide.util.Lookup)
 meth public static javax.swing.KeyStroke stringToKey(java.lang.String)
@@ -1734,6 +1751,7 @@ supr java.lang.Object
 hfds height,width
 
 CLSS public abstract org.openide.util.WeakListener
+ anno 0 java.lang.Deprecated()
 cons protected init(java.lang.Class,java.util.EventListener)
 innr public final static Change
 innr public final static Document
@@ -1750,21 +1768,31 @@ meth protected final java.util.EventListener get(java.util.EventObject)
 meth protected final void setSource(java.lang.Object)
 meth public java.lang.String toString()
 meth public static java.awt.event.FocusListener focus(java.awt.event.FocusListener,java.lang.Object)
+ anno 0 java.lang.Deprecated()
 meth public static java.beans.PropertyChangeListener propertyChange(java.beans.PropertyChangeListener,java.lang.Object)
+ anno 0 java.lang.Deprecated()
 meth public static java.beans.VetoableChangeListener vetoableChange(java.beans.VetoableChangeListener,java.lang.Object)
+ anno 0 java.lang.Deprecated()
 meth public static java.util.EventListener create(java.lang.Class,java.util.EventListener,java.lang.Object)
+ anno 0 java.lang.Deprecated()
 meth public static javax.swing.event.ChangeListener change(javax.swing.event.ChangeListener,java.lang.Object)
+ anno 0 java.lang.Deprecated()
 meth public static javax.swing.event.DocumentListener document(javax.swing.event.DocumentListener,java.lang.Object)
+ anno 0 java.lang.Deprecated()
 meth public static org.openide.filesystems.FileChangeListener fileChange(org.openide.filesystems.FileChangeListener,java.lang.Object)
+ anno 0 java.lang.Deprecated()
 meth public static org.openide.filesystems.FileStatusListener fileStatus(org.openide.filesystems.FileStatusListener,java.lang.Object)
+ anno 0 java.lang.Deprecated()
 meth public static org.openide.filesystems.RepositoryListener repository(org.openide.filesystems.RepositoryListener,java.lang.Object)
 meth public static org.openide.nodes.NodeListener node(org.openide.nodes.NodeListener,java.lang.Object)
+ anno 0 java.lang.Deprecated()
 supr java.lang.Object
 hfds listenerClass,ref,source
 hcls ListenerReference,ProxyListener
 
 CLSS public final static org.openide.util.WeakListener$Change
  outer org.openide.util.WeakListener
+ anno 0 java.lang.Deprecated()
 cons public init(javax.swing.event.ChangeListener)
 intf javax.swing.event.ChangeListener
 meth protected java.lang.String removeMethodName()
@@ -1773,6 +1801,7 @@ supr org.openide.util.WeakListener
 
 CLSS public final static org.openide.util.WeakListener$Document
  outer org.openide.util.WeakListener
+ anno 0 java.lang.Deprecated()
 cons public init(javax.swing.event.DocumentListener)
 intf javax.swing.event.DocumentListener
 meth protected java.lang.String removeMethodName()
@@ -1783,6 +1812,7 @@ supr org.openide.util.WeakListener
 
 CLSS public static org.openide.util.WeakListener$FileChange
  outer org.openide.util.WeakListener
+ anno 0 java.lang.Deprecated()
 cons public init(org.openide.filesystems.FileChangeListener)
 intf org.openide.filesystems.FileChangeListener
 meth protected java.lang.String removeMethodName()
@@ -1796,6 +1826,7 @@ supr org.openide.util.WeakListener
 
 CLSS public static org.openide.util.WeakListener$FileStatus
  outer org.openide.util.WeakListener
+ anno 0 java.lang.Deprecated()
 cons public init(org.openide.filesystems.FileStatusListener)
 intf org.openide.filesystems.FileStatusListener
 meth protected java.lang.String removeMethodName()
@@ -1804,6 +1835,7 @@ supr org.openide.util.WeakListener
 
 CLSS public final static org.openide.util.WeakListener$Focus
  outer org.openide.util.WeakListener
+ anno 0 java.lang.Deprecated()
 cons public init(java.awt.event.FocusListener)
 intf java.awt.event.FocusListener
 meth protected java.lang.String removeMethodName()
@@ -1813,6 +1845,7 @@ supr org.openide.util.WeakListener
 
 CLSS public final static org.openide.util.WeakListener$Node
  outer org.openide.util.WeakListener
+ anno 0 java.lang.Deprecated()
 cons public init(org.openide.nodes.NodeListener)
 intf org.openide.nodes.NodeListener
 meth protected java.lang.String removeMethodName()
@@ -1824,6 +1857,7 @@ supr org.openide.util.WeakListener$PropertyChange
 
 CLSS public static org.openide.util.WeakListener$PropertyChange
  outer org.openide.util.WeakListener
+ anno 0 java.lang.Deprecated()
 cons public init(java.beans.PropertyChangeListener)
 intf java.beans.PropertyChangeListener
 meth protected java.lang.String removeMethodName()
@@ -1832,6 +1866,7 @@ supr org.openide.util.WeakListener
 
 CLSS public static org.openide.util.WeakListener$Repository
  outer org.openide.util.WeakListener
+ anno 0 java.lang.Deprecated()
 cons public init(org.openide.filesystems.RepositoryListener)
 intf org.openide.filesystems.RepositoryListener
 meth protected java.lang.String removeMethodName()
@@ -1842,6 +1877,7 @@ supr org.openide.util.WeakListener
 
 CLSS public static org.openide.util.WeakListener$VetoableChange
  outer org.openide.util.WeakListener
+ anno 0 java.lang.Deprecated()
 cons public init(java.beans.VetoableChangeListener)
 intf java.beans.VetoableChangeListener
 meth protected java.lang.String removeMethodName()

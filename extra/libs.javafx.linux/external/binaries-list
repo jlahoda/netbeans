@@ -15,11 +15,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
-F8D1CED6047B010F1E3BB92DC060862179CE5897 org.openjfx:javafx-base:11:linux
-794488E3B1F4635D9A1B842BDC872A5EB8FD54CA org.openjfx:javafx-controls:11:linux
-4AB9EDD8D481A420044C473FDB5718CCDD35C836 org.openjfx:javafx-graphics:11:linux
-F65E90798210A9FF1CAD3E7686AF8C1DB138477F org.openjfx:javafx-media:11:linux
-5F50385BC156B2E3BD478F9FDED919F9D8AE8801 org.openjfx:javafx-web:11:linux
-86E2C4FEB81F5147BBB5E662B0892A61535A7472 org.openjfx:javafx-swing:11:linux
-
-
+9F27959208043D012B99019A0A9D53D63BF40C56 org.openjfx:javafx-base:17.0.7:linux
+CAEB9696D8901C66C9990FF337DF884E1867D5B8 org.openjfx:javafx-controls:17.0.7:linux
+C2029CF4A359DDB5FE0DEC9D11407EA97940E06A org.openjfx:javafx-graphics:17.0.7:linux
+BDB52EF954971EE5FB0F5C57CD20ED2B61D4B241 org.openjfx:javafx-media:17.0.7:linux
+C0816F87388EEE94DAC275482B3D66E17F17AEA8 org.openjfx:javafx-web:17.0.7:linux
+662730E1BD365009256FF10B24F72D3F5FAC6B65 org.openjfx:javafx-swing:17.0.7:linux

@@ -61,7 +61,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import static junit.framework.Assert.assertNotNull;
 import org.netbeans.api.j2ee.core.Profile;
 import org.netbeans.api.java.classpath.ClassPath;
 import org.netbeans.api.xml.services.UserCatalog;
@@ -257,7 +256,7 @@ public class TestBase extends CslTestBase {
 //            System.out.println(url);
         }
 //        System.out.println("-----------");
-        return ClassPathSupport.createClassPath(roots.toArray(new URL[roots.size()]));
+        return ClassPathSupport.createClassPath(roots.toArray(new URL[0]));
     }
 
     public final ClassPath createServletAPIClassPath() throws MalformedURLException, IOException {
@@ -273,7 +272,7 @@ public class TestBase extends CslTestBase {
             FileObject fo = FileUtil.toFileObject(f);
             fos.add(FileUtil.getArchiveRoot(fo));
         }
-        return ClassPathSupport.createClassPath(fos.toArray(new FileObject[fos.size()]));
+        return ClassPathSupport.createClassPath(fos.toArray(new FileObject[0]));
     }
 
     protected static class FakeWebModuleProvider implements WebModuleProvider {

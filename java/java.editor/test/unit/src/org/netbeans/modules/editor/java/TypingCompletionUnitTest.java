@@ -23,6 +23,7 @@ import java.awt.EventQueue;
 import java.awt.event.KeyEvent;
 import java.util.prefs.Preferences;
 import java.util.regex.Pattern;
+import javax.lang.model.SourceVersion;
 import javax.swing.JEditorPane;
 import javax.swing.SwingUtilities;
 import javax.swing.text.BadLocationException;
@@ -46,7 +47,7 @@ import org.openide.util.lookup.ServiceProvider;
  * Test java brackets completion - unlike the original test this one
  * emulates real typing and tests the resulting state of the document.
  *
- * @autor Miloslav Metelka
+ * @author Miloslav Metelka
  */
 public class TypingCompletionUnitTest extends NbTestCase {
 
@@ -93,7 +94,7 @@ public class TypingCompletionUnitTest extends NbTestCase {
                 "m();|"
         );
     }
-    
+
     public void testSemicolonOnTheEnd() { // #146139
         Context ctx = new Context(new JavaKit(),
                 "m()| "
@@ -113,7 +114,7 @@ public class TypingCompletionUnitTest extends NbTestCase {
                 "{(()); }"
         );
     }
-    
+
     public void testTypeLeftParen() {
         Context ctx = new Context(new JavaKit(), "m|");
         ctx.typeChar('(');
@@ -920,7 +921,7 @@ public class TypingCompletionUnitTest extends NbTestCase {
                 "Map[]| m = new HashMap[1];"
         );
     }
-    
+
     public void testQuotes148878() throws Exception {
         Context ctx = new Context(new JavaKit(),
                 "if (c == '\\\\|')"
@@ -930,7 +931,7 @@ public class TypingCompletionUnitTest extends NbTestCase {
                 "if (c == '\\\\'|)"
         );
     }
-   
+
     public void testPositionInString() throws Exception {
         Context ctx = new Context(new JavaKit(),
                 "class Test {\n"
@@ -947,7 +948,7 @@ public class TypingCompletionUnitTest extends NbTestCase {
                 + "    }\n"
                 + "}\n");
     }
-    
+
     public void testPositionInEmptyString() throws Exception {
         Context ctx = new Context(new JavaKit(),
                 "class Test {\n"
@@ -964,7 +965,53 @@ public class TypingCompletionUnitTest extends NbTestCase {
                 + "    }\n"
                 + "}\n");
     }
-    
+
+public void testPositionInTextBlock() throws Exception {
+              try {
+            SourceVersion.valueOf("RELEASE_13");
+        } catch (IllegalArgumentException ex) {
+            //OK, skip test
+            return ;
+        }
+        Context ctx = new Context(new JavaKit(),
+                "class Test {\n"
+                + "    {\n"
+                + "        \"\"\"|abcd\"\"\"\n"
+                + "    }\n"
+                + "}\n");
+        ctx.typeChar('\n');
+        ctx.assertDocumentTextEquals(
+                "class Test {\n"
+                + "    {\n"
+                + "        \"\"\"\n"
+                + "        |abcd\"\"\"\n"
+                + "    }\n"
+                + "}\n");
+    }
+
+      public void testPositionInEmptyTextBlock() throws Exception {
+              try {
+            SourceVersion.valueOf("RELEASE_13");
+        } catch (IllegalArgumentException ex) {
+            //OK, skip test
+            return ;
+        }
+        Context ctx = new Context(new JavaKit(),
+                "class Test {\n"
+                + "    {\n"
+                + "        \"\"\"|\"\"\"\n"
+                + "    }\n"
+                + "}\n");
+        ctx.typeChar('\n');
+        ctx.assertDocumentTextEquals(
+                "class Test {\n"
+                + "    {\n"
+                + "        \"\"\"\n"
+                + "        |\"\"\"\n"
+                + "    }\n"
+                + "}\n");
+    }
+
     public void testCommentBlockCompletion() throws Exception {
         Preferences prefs = MimeLookup.getLookup(JavaKit.JAVA_MIME_TYPE).lookup(Preferences.class);
         try {
@@ -988,7 +1035,7 @@ public class TypingCompletionUnitTest extends NbTestCase {
             prefs.remove("enableBlockCommentFormatting");
         }
     }
-   
+
     public void testCommentBlockCompletionNotNeeded() throws Exception {
         Preferences prefs = MimeLookup.getLookup(JavaKit.JAVA_MIME_TYPE).lookup(Preferences.class);
         try {
@@ -1013,7 +1060,7 @@ public class TypingCompletionUnitTest extends NbTestCase {
             prefs.remove("enableBlockCommentFormatting");
         }
     }
-    
+
 
     public void testCommentBlockCompletionTwoComments () {
         Preferences prefs = MimeLookup.getLookup(JavaKit.JAVA_MIME_TYPE).lookup(Preferences.class);
@@ -1060,7 +1107,7 @@ public class TypingCompletionUnitTest extends NbTestCase {
             prefs.remove("enableBlockCommentFormatting");
         }
     }
-    
+
     public void testCommentBlockCompletionNoClose () {
         Preferences prefs = MimeLookup.getLookup(JavaKit.JAVA_MIME_TYPE).lookup(Preferences.class);
         try {
@@ -1077,7 +1124,7 @@ public class TypingCompletionUnitTest extends NbTestCase {
             prefs.remove("enableBlockCommentFormatting");
         }
     }
-    
+
     public void testJavaDocCompletion() throws Exception {
         Context ctx = new Context(new JavaKit(),
                 "class Test {\n"
@@ -1095,7 +1142,7 @@ public class TypingCompletionUnitTest extends NbTestCase {
                 + "    }\n"
                 + "}\n");
     }
-    
+
     public void testJavaDocCompletionNotNeeded() throws Exception {
         Context ctx = new Context(new JavaKit(),
                 "class Test {\n"
@@ -1114,7 +1161,7 @@ public class TypingCompletionUnitTest extends NbTestCase {
                 + "    }\n"
                 + "}\n");
     }
-  
+
     public void insertBreakJavadocComplete() throws Exception {
         Context ctx = new Context(new JavaKit(),
                 "class Test {\n"
@@ -1138,7 +1185,7 @@ public class TypingCompletionUnitTest extends NbTestCase {
                 + "}\n"
         );
     }
-    
+
     public void testRemoveBracketBackSpace() throws Exception {
         Context ctx = new Context(new JavaKit(),
                 "()(|)");
@@ -1152,35 +1199,63 @@ public class TypingCompletionUnitTest extends NbTestCase {
         ctx.typeChar('\f');
         ctx.assertDocumentTextEquals("()|");
     }
-    
-    public void testRemoveQuotesBackSpace() throws Exception {
+
+    public void testRemoveQuotesBackSpace1() throws Exception {
+        Context ctx = new Context(new JavaKit(),
+                "\"|\"");
+        ctx.typeChar('\b');
+        ctx.assertDocumentTextEquals("|");
+    }
+
+    public void testRemoveQuotesBackSpace2() throws Exception {
         Context ctx = new Context(new JavaKit(),
                 "\"\"\"|\"");
         ctx.typeChar('\b');
         ctx.assertDocumentTextEquals("\"\"|");
     }
-    
-    public void testRemoveQuotesDelete() throws Exception {
+
+    public void testRemoveQuotesBackSpace3() throws Exception {
+        Context ctx = new Context(new JavaKit(),
+                "\"\"\"|\";");
+        ctx.typeChar('\b');
+        ctx.assertDocumentTextEquals("\"\"|;");
+    }
+
+    public void testRemoveQuotesDelete1() throws Exception {
+        Context ctx = new Context(new JavaKit(),
+                "|\"\"");
+        ctx.typeChar('\f');
+        ctx.assertDocumentTextEquals("|");
+    }
+
+    public void testRemoveQuotesDelete2() throws Exception {
         Context ctx = new Context(new JavaKit(),
                 "\"\"|\"\"");
         ctx.typeChar('\f');
         ctx.assertDocumentTextEquals("\"\"|");
     }
-    
+
+    public void testRemoveQuotesDelete3() throws Exception {
+        Context ctx = new Context(new JavaKit(),
+                "\"\"|\"\";");
+        ctx.typeChar('\f');
+        ctx.assertDocumentTextEquals("\"\"|;");
+    }
+
     public void testRemoveQuotes2BackSpace() throws Exception {
         Context ctx = new Context(new JavaKit(),
                 "\'\'\'|\'");
         ctx.typeChar('\b');
         ctx.assertDocumentTextEquals("\'\'|");
     }
-    
+
     public void testRemoveQuotes2Delete() throws Exception {
         Context ctx = new Context(new JavaKit(),
                 "\'\'|\'\'");
         ctx.typeChar('\f');
         ctx.assertDocumentTextEquals("\'\'|");
     }
-    
+
     public void testJumpCharacters() throws Exception {
         Context ctx = new Context(new JavaKit(), "m(\"p|\");");
         ctx.typeChar('"');
@@ -1188,13 +1263,13 @@ public class TypingCompletionUnitTest extends NbTestCase {
         ctx.typeChar(')');
         ctx.assertDocumentTextEquals("m(\"p\")|;");
     }
-    
+
     public void testJumpQuote() throws Exception {
         Context ctx = new Context(new JavaKit(), "\"|\"");
         ctx.typeChar('"');
         ctx.assertDocumentTextEquals("\"\"|");
     }
-    
+
     public void testInsertSquareBracket() throws Exception {
         Context ctx = new Context(new JavaKit(), "|");
         ctx.typeChar('[');
@@ -1206,13 +1281,13 @@ public class TypingCompletionUnitTest extends NbTestCase {
         ctx.typeChar('\b');
         ctx.assertDocumentTextEquals("|");
     }
-    
+
     public void testDeleteSquareBracket() throws Exception {
         Context ctx = new Context(new JavaKit(), "|[]");
         ctx.typeChar('\f');
         ctx.assertDocumentTextEquals("|");
     }
-    
+
     public void testInsertBracketInString() throws Exception {
         Context ctx = new Context(new JavaKit(), "\"|\"");
         ctx.typeChar('(');
@@ -1221,31 +1296,143 @@ public class TypingCompletionUnitTest extends NbTestCase {
         ctx.typeChar('(');
         ctx.assertDocumentTextEquals("\" (|\"");
     }
-    
+
     public void testInsertBracketInChar() throws Exception {
         Context ctx = new Context(new JavaKit(), "\'|\'");
         ctx.typeChar('(');
         ctx.assertDocumentTextEquals("\'(|\'");
     }
-    
+
     public void testInsertBracketInComment() throws Exception {
         Context ctx = new Context(new JavaKit(), "//|");
         ctx.typeChar('(');
         ctx.assertDocumentTextEquals("//(|");
     }
-    
+
     public void testSkipBracketInComment() throws Exception {
         Context ctx = new Context(new JavaKit(), "//(|)");
         ctx.typeChar(')');
         ctx.assertDocumentTextEquals("//()|)");
     }
-     
+
+    public void testTextBlock1() throws Exception {
+        try {
+            SourceVersion.valueOf("RELEASE_13");
+        } catch (IllegalArgumentException ex) {
+            //OK, skip test
+            return ;
+        }
+        Context ctx = new Context(new JavaKit(), "\"\"|");
+        ctx.typeChar('\"');
+        ctx.assertDocumentTextEquals("\"\"\"\n|\"\"\"");
+    }
+
+    public void testTextBlock2() throws Exception {
+        try {
+            SourceVersion.valueOf("RELEASE_13");
+        } catch (IllegalArgumentException ex) {
+            //OK, skip test
+            return ;
+        }
+        Context ctx = new Context(new JavaKit(), "\"\"\"\n|\"\"\"");
+        ctx.typeChar('\"');
+        ctx.assertDocumentTextEquals("\"\"\"\n\"|\"\"");
+    }
+
+    public void testTextBlock3() throws Exception {
+        try {
+            SourceVersion.valueOf("RELEASE_13");
+        } catch (IllegalArgumentException ex) {
+            //OK, skip test
+            return ;
+        }
+        Context ctx = new Context(new JavaKit(), "\"\"\"\n\"|\"\"");
+        ctx.typeChar('\"');
+        ctx.assertDocumentTextEquals("\"\"\"\n\"\"|\"");
+    }
+
+    public void testTextBlock4() throws Exception {
+        try {
+            SourceVersion.valueOf("RELEASE_13");
+        } catch (IllegalArgumentException ex) {
+            //OK, skip test
+            return ;
+        }
+        Context ctx = new Context(new JavaKit(), "\"\"\"\n\"\"|\"");
+        ctx.typeChar('\"');
+        ctx.assertDocumentTextEquals("\"\"\"\n\"\"\"|");
+    }
+
+    public void testTextBlock5() throws Exception {
+        try {
+            SourceVersion.valueOf("RELEASE_13");
+        } catch (IllegalArgumentException ex) {
+            //OK, skip test:
+            return ;
+        }
+        Context ctx = new Context(new JavaKit(), "t(|\"\")");
+        ctx.typeChar('\"');
+        ctx.assertDocumentTextEquals("t(\"\"\"\n  |\"\"\")");
+    }
+
+    public void testTextBlock6() throws Exception {
+        try {
+            SourceVersion.valueOf("RELEASE_13");
+        } catch (IllegalArgumentException ex) {
+            //OK, skip test:
+            return ;
+        }
+        Context ctx = new Context(new JavaKit(), "t(\"\"\"\n|\"\n\"\"\")");
+        ctx.typeChar('\f');
+        ctx.assertDocumentTextEquals("t(\"\"\"\n\n\"\"\")");
+    }
+
     public void testCorrectHandlingOfStringEscapes184059() throws Exception {
         assertTrue(isInsideString("foo\n\"bar|\""));
         assertTrue(isInsideString("foo\n\"bar\\\"|\""));
         assertFalse(isInsideString("foo\n\"bar\\\\\"|"));
         assertFalse(isInsideString("foo\n|\"bar\\\\\""));
         assertTrue(isInsideString("foo\n\"|bar\\\\\""));
+    }
+
+    public void testCompleteTemplate1() throws Exception {
+        Context ctx = new Context(new JavaKit(), "\"\\|\"");
+        ctx.typeChar('{');
+        ctx.assertDocumentTextEquals("\"\\{|}\"");
+    }
+
+    public void testCompleteTemplate2() throws Exception {
+        Context ctx = new Context(new JavaKit(), "\"\\|");
+        ctx.typeChar('{');
+        ctx.assertDocumentTextEquals("\"\\{|}");
+    }
+
+    public void testSkipTemplate1() throws Exception {
+        Context ctx = new Context(new JavaKit(), "\"\\{|}\"");
+        ctx.typeChar('}');
+        ctx.assertDocumentTextEquals("\"\\{}|\"");
+    }
+
+    public void testX() throws Exception {
+        Context ctx = new Context(new JavaKit(), "");
+        ctx.typeChar('{');
+        ctx.assertDocumentTextEquals("{");
+    }
+
+    public void testJavadocLineRun() {
+        Context ctx = new Context(new JavaKit(),
+                                  """
+                                  class Test {
+                                      ///|
+                                  }
+                                  """);
+        ctx.typeChar('\n');
+        ctx.assertDocumentTextEquals("""
+                                     class Test {
+                                         ///
+                                         ///|
+                                     }
+                                     """);
     }
 
     private boolean isInsideString(String code) throws BadLocationException {

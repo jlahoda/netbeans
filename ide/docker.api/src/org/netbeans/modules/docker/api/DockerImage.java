@@ -28,7 +28,7 @@ import java.util.logging.Logger;
  *
  * @author Petr Hejl
  */
-public final class DockerImage implements DockerEntity {
+public final class DockerImage implements DockerInstanceEntity {
 
     private final DockerInstance instance;
 
@@ -61,6 +61,7 @@ public final class DockerImage implements DockerEntity {
         }
     }
 
+    @Override
     public DockerInstance getInstance() {
         return instance;
     }
@@ -87,6 +88,11 @@ public final class DockerImage implements DockerEntity {
         return size;
     }
 
+    /**
+     * @deprecated Removed from Docker Engine in v1.44. Return size value.
+     * @return 
+     */
+    @Deprecated
     public long getVirtualSize() {
         return virtualSize;
     }
@@ -123,6 +129,11 @@ public final class DockerImage implements DockerEntity {
     @Override
     public String toString() {
         return "DockerImage{" + "instance=" + instance + ", id=" + id + '}';
+    }
+
+    @Override
+    public DockerEntityType getType() {
+        return DockerEntityType.Container;
     }
 
 }

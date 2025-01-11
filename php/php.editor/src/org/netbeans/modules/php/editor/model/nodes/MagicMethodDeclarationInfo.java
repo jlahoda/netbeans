@@ -20,10 +20,12 @@
 package org.netbeans.modules.php.editor.model.nodes;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.modules.csl.api.OffsetRange;
 import org.netbeans.modules.php.editor.CodeUtils;
@@ -51,20 +53,33 @@ public class MagicMethodDeclarationInfo extends ASTNodeInfo<PHPDocMethodTag> {
     private String methodName;
     private int offset;
     private int typeOffset;
+    private final boolean isStatic;
+    private static final Pattern SPLIT_METHOD_NAMES_PATTERN = Pattern.compile("[(, ]"); // NOI18N
 
     MagicMethodDeclarationInfo(PHPDocMethodTag node) {
         super(node);
-        String[] parts = node.getValue().trim().split("\\s+", 3); //NOI18N
-        if (parts.length == 1 || (parts.length > 0 && parts[0].trim().indexOf("(") > 0)) { //NOI18N
+        // @method int get(Type $object) message
+        // @method static int staticGet(Type $object) message
+        String[] parts = CodeUtils.WHITE_SPACES_PATTERN.split(node.getValue().trim(), 3);
+        isStatic = parts.length >= 1 && parts[0].equals(Type.STATIC); // NETBEANS-1861
+        // the method is already checked whether it is static when PHPDocMethodTag is created
+        // So, they should be the same result
+        // see: PHPDocCommentParser.createTag()
+        assert isStatic == node.isStatic() : "PHPDocMethodTag static: " + node.isStatic(); // NOI18N
+        if (isStatic) {
+            parts = Arrays.copyOfRange(parts, 1, parts.length);
+        }
+        String mtdName = node.getMethodName().getValue();
+        if (parts.length == 1 || (parts.length > 0 && parts[0].trim().startsWith(mtdName))) { // don't check '(' because DNF return type has '(' e.g. (X&Y)|Z method()
             // expect that the type is void
             returnType = Type.VOID;
-            String[] methodNames = parts[0].split("[(, ]", 2); //NOI18N
+            String[] methodNames = SPLIT_METHOD_NAMES_PATTERN.split(parts[0], 2);
             if (methodNames.length > 0) {
                 methodName = methodNames[0];
                 offset = getOriginalNode().getStartOffset() + PHPDocTag.Type.METHOD.toString().length() + 1 + node.getValue().indexOf(methodName);
             }
         } else if (parts.length >= 2) {
-            String[] methodNames = parts[1].split("[(, ]", 2); //NOI18N
+            String[] methodNames = SPLIT_METHOD_NAMES_PATTERN.split(parts[1], 2);
             if (parts[0].length() > 0 && methodNames.length > 0) {
                 returnType = parts[0];
                 methodName = methodNames[0];
@@ -75,6 +90,15 @@ public class MagicMethodDeclarationInfo extends ASTNodeInfo<PHPDocMethodTag> {
 
         for (PHPDocVarTypeTag parameter : node.getParameters()) {
             Collection<Pair<QualifiedName, Boolean>> names = new LinkedList<>();
+            String declaredType = null;
+            if (!parameter.getTypes().isEmpty()) {
+                // e.g. (X&Y)|Z $param = null
+                String[] paramValues = CodeUtils.WHITE_SPACES_PATTERN.split(parameter.getValue().trim(), 2);
+                if (!paramValues[0].trim().startsWith("$")) { // NOI18N
+                    declaredType = paramValues[0].trim();
+                    assert !declaredType.isEmpty() : parameter.getValue();
+                }
+            }
             for (PHPDocTypeNode type : parameter.getTypes()) {
                 String typeName = type.getValue();
                 boolean isNullableType = CodeUtils.isNullableType(typeName);
@@ -94,7 +118,8 @@ public class MagicMethodDeclarationInfo extends ASTNodeInfo<PHPDocMethodTag> {
             boolean isMandatory = defaultValue == null;
             boolean isReference = name.startsWith("&"); // NOI18N
             boolean isVariadic = name.startsWith("..."); // NOI18N
-            parameters.add(new ParameterElementImpl(name, defaultValue, 0, types, isMandatory, true, isReference, isVariadic));
+            boolean isRawType = declaredType != null;
+            parameters.add(new ParameterElementImpl(name, defaultValue, 0, declaredType, declaredType, types, isMandatory, isRawType, isReference, isVariadic, false, 0, false));
         }
     }
 
@@ -137,7 +162,7 @@ public class MagicMethodDeclarationInfo extends ASTNodeInfo<PHPDocMethodTag> {
 
     @Override
     public Kind getKind() {
-        return Kind.METHOD;
+        return isStatic ? Kind.STATIC_METHOD : Kind.METHOD;
     }
 
     @Override
@@ -168,6 +193,7 @@ public class MagicMethodDeclarationInfo extends ASTNodeInfo<PHPDocMethodTag> {
     }
 
     public PhpModifiers getAccessModifiers() {
-        return PhpModifiers.fromBitMask(PhpModifiers.PUBLIC);
+        int modifiers = isStatic ? (PhpModifiers.PUBLIC | PhpModifiers.STATIC) : PhpModifiers.PUBLIC;
+        return PhpModifiers.fromBitMask(modifiers);
     }
 }

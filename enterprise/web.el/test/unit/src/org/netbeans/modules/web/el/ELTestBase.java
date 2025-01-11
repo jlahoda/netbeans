@@ -60,8 +60,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertTrue;
 import org.netbeans.api.j2ee.core.Profile;
 import org.netbeans.api.java.classpath.ClassPath;
 import org.netbeans.modules.csl.api.CodeCompletionContext;
@@ -330,7 +328,7 @@ public class ELTestBase extends CslTestBase {
         sb.append("\n");
 
         // Sort to make test more stable
-        Collections.sort(proposals, new Comparator<CompletionProposal>() {
+        proposals.sort(new Comparator<CompletionProposal>() {
 
             public int compare(CompletionProposal p1, CompletionProposal p2) {
                 // Smart items first
@@ -560,7 +558,7 @@ public class ELTestBase extends CslTestBase {
 //            System.out.println(url);
         }
 //        System.out.println("-----------");
-        return ClassPathSupport.createClassPath(roots.toArray(new URL[roots.size()]));
+        return ClassPathSupport.createClassPath(roots.toArray(new URL[0]));
     }
 
     public final ClassPath createServletAPIClassPath() throws MalformedURLException, IOException {
@@ -576,7 +574,7 @@ public class ELTestBase extends CslTestBase {
             FileObject fo = FileUtil.toFileObject(f);
             fos.add(FileUtil.getArchiveRoot(fo));
         }
-        return ClassPathSupport.createClassPath(fos.toArray(new FileObject[fos.size()]));
+        return ClassPathSupport.createClassPath(fos.toArray(new FileObject[0]));
     }
 
     protected static class FakeWebModuleProvider implements WebModuleProvider {

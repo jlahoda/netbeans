@@ -68,7 +68,7 @@ public class JDBCDriverConvertor implements Environment.Provider, InstanceCookie
     /**
      * The reference to the instance of Environment.Provider
      */
-    private static Reference/*<JDBCDriverConvertor>*/ providerRef;
+    private static Reference<JDBCDriverConvertor> providerRef;
     
     /**
      * The path where the drivers are registered in the SystemFileSystem.
@@ -246,7 +246,7 @@ public class JDBCDriverConvertor implements Environment.Provider, InstanceCookie
         
         String part = urlString.substring(colon + 1, pound != -1 ? pound : urlString.length());
         if (pound != -1) {
-            fragment = urlString.substring(pound + 1, urlString.length());
+            fragment = urlString.substring(pound + 1);
         }
         return new URI(url.getProtocol(), part, fragment).toURL();
     }

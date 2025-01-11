@@ -37,6 +37,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.InputEvent;
 import java.awt.event.MouseEvent;
+import java.awt.event.KeyEvent;
 
 import java.beans.PropertyEditor;
 
@@ -96,6 +97,7 @@ class RadioInplaceEditor extends JPanel implements InplaceEditor, ActionListener
     }
 
     /** Overridden to avoid grabbing the AWT tree lock */
+    @Override
     public Dimension getPreferredSize() {
         if (getLayout() != null) {
             return getLayout().preferredLayoutSize(this);
@@ -104,6 +106,7 @@ class RadioInplaceEditor extends JPanel implements InplaceEditor, ActionListener
         }
     }
 
+    @Override
     public void addNotify() {
         super.addNotify();
         isFirstEvent = true;
@@ -133,6 +136,7 @@ class RadioInplaceEditor extends JPanel implements InplaceEditor, ActionListener
         return result;
     }
 
+    @Override
     public void setEnabled(boolean val) {
         //        System.err.println("RadioEditor.setEnabled " + val);
         super.setEnabled(val);
@@ -144,6 +148,7 @@ class RadioInplaceEditor extends JPanel implements InplaceEditor, ActionListener
         }
     }
 
+    @Override
     public void setBackground(Color col) {
         super.setBackground(col);
 
@@ -154,6 +159,7 @@ class RadioInplaceEditor extends JPanel implements InplaceEditor, ActionListener
         }
     }
 
+    @Override
     public void setForeground(Color col) {
         super.setForeground(col);
 
@@ -168,6 +174,7 @@ class RadioInplaceEditor extends JPanel implements InplaceEditor, ActionListener
      * focus policy, we're responsible for all possible subcomponents.
      * Therfore just proxy requestFocusInWindow for the selected radio
      * button  */
+    @Override
     public void requestFocus() {
         Component[] c = getComponents();
 
@@ -186,6 +193,7 @@ class RadioInplaceEditor extends JPanel implements InplaceEditor, ActionListener
         }
     }
 
+    @Override
     public boolean requestFocusInWindow() {
         Component[] c = getComponents();
 
@@ -375,17 +383,17 @@ class RadioInplaceEditor extends JPanel implements InplaceEditor, ActionListener
 
     private void fireActionPerformed(final java.awt.event.ActionEvent event) {
         //        System.err.println("Radio editor firing action performed " + event.getActionCommand());
-        java.util.List list;
+        List<ActionListener> list;
 
         synchronized (this) {
             if (actionListenerList == null) {
                 return;
             }
 
-            list = (List) ((ArrayList) actionListenerList).clone();
+            list = new ArrayList<>(actionListenerList);
         }
 
-        final java.util.List theList = list;
+        final List<ActionListener> theList = list;
 
         //When used in a table, the typical case is that the editor is instantiated,
         //processes its mouse event, fires an event and is immediately removed.
@@ -396,14 +404,14 @@ class RadioInplaceEditor extends JPanel implements InplaceEditor, ActionListener
                 new Runnable() {
                     public void run() {
                         for (int i = 0; i < theList.size(); i++) {
-                            ((java.awt.event.ActionListener) theList.get(i)).actionPerformed(event);
+                            theList.get(i).actionPerformed(event);
                         }
                     }
                 }
             );
         } else {
             for (int i = 0; i < list.size(); i++) {
-                ((java.awt.event.ActionListener) theList.get(i)).actionPerformed(event);
+                theList.get(i).actionPerformed(event);
             }
         }
     }
@@ -413,6 +421,7 @@ class RadioInplaceEditor extends JPanel implements InplaceEditor, ActionListener
         fireActionPerformed(ae);
     }
 
+    @Override
     public void paint(Graphics g) {
         if (isShowing()) {
             super.paint(g);
@@ -449,6 +458,7 @@ class RadioInplaceEditor extends JPanel implements InplaceEditor, ActionListener
         }
     }
 
+    @Override
     public void processMouseEvent(MouseEvent me) {
         if (isFirstEvent) {
             handleInitialInputEvent(me);
@@ -458,6 +468,7 @@ class RadioInplaceEditor extends JPanel implements InplaceEditor, ActionListener
         }
     }
 
+    @Override
     public Component getComponentAt(int x, int y) {
         getLayout().layoutContainer(this);
 
@@ -474,26 +485,29 @@ class RadioInplaceEditor extends JPanel implements InplaceEditor, ActionListener
             super();
         }
 
+        @Override
         public String getName() {
             return "InvRadioButton - " + getText(); //NOI18N
         }
 
-        public void processKeyEvent(java.awt.event.KeyEvent ke) {
+        @Override
+        public void processKeyEvent(KeyEvent ke) {
             super.processKeyEvent(ke);
 
             if (
-                ((ke.getKeyCode() == ke.VK_ENTER) || (ke.getKeyCode() == ke.VK_ESCAPE)) &&
-                    (ke.getID() == ke.KEY_PRESSED)
+                ((ke.getKeyCode() == KeyEvent.VK_ENTER) || (ke.getKeyCode() == KeyEvent.VK_ESCAPE)) &&
+                    (ke.getID() == KeyEvent.KEY_PRESSED)
             ) {
                 RadioInplaceEditor.this.fireActionPerformed(
                     new ActionEvent(
                         this, ActionEvent.ACTION_PERFORMED,
-                        (ke.getKeyCode() == ke.VK_ENTER) ? COMMAND_SUCCESS : COMMAND_FAILURE
+                        (ke.getKeyCode() == KeyEvent.VK_ENTER) ? COMMAND_SUCCESS : COMMAND_FAILURE
                     )
                 );
             }
         }
 
+        @Override
         public Dimension getPreferredSize() {
             int w = 0;
             int h = 0;

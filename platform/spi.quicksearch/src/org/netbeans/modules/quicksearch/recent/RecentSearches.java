@@ -51,7 +51,7 @@ import org.openide.util.Task;
  * Recent Searches items storage and its persistance
  *
  * @author Jan Becicka
- * @authoe Max Sauer
+ * @author Max Sauer
  */
 public class RecentSearches {
     
@@ -305,6 +305,6 @@ public class RecentSearches {
      * results.
      */
     private String translateHTMLEntities(String s) {
-        return s.replaceAll("\\&amp;", "&");                            //NOI18N
+        return s.replace("&amp;", "&");                            //NOI18N
     }
 }

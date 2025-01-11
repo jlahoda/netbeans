@@ -63,6 +63,7 @@ public final class ProgressUtils {
      * @param waitForCanceled true if method should wait until canceled task is finished (if it is not finished in 1s ISE is thrown)
      * @deprecated Use {@link BaseProgressUtils}
      */
+    @Deprecated
     public static void runOffEventDispatchThread(Runnable operation, String operationDescr, AtomicBoolean cancelOperation, boolean waitForCanceled) {
         BaseProgressUtils.runOffEventDispatchThread(operation, operationDescr, cancelOperation, waitForCanceled, DISPLAY_WAIT_CURSOR_MS, DISPLAY_DIALOG_MS);
     }
@@ -84,6 +85,7 @@ public final class ProgressUtils {
      * @since 1.19
      * @deprecated Use {@link BaseProgressUtils}
      */
+    @Deprecated
     public static void runOffEventDispatchThread(Runnable operation, String operationDescr, AtomicBoolean cancelOperation, boolean waitForCanceled, int waitCursorAfter, int dialogAfter) {
         BaseProgressUtils.runOffEventDispatchThread(operation, operationDescr, cancelOperation, waitForCanceled, waitCursorAfter, dialogAfter);
     }
@@ -92,13 +94,13 @@ public final class ProgressUtils {
      * Show a modal progress dialog that blocks the main window and all other
      * currently displayed frames or dialogs, while running the passed runnable
      * on a background thread.
-     * <p/>
+     * <p>
      * This method is thread-safe, and will block until the operation has
      * completed, regardless of what thread calls this method.
-     * <p/>
+     * <p>
      * The resulting progress UI should show a cancel button if the passed
      * runnable implements org.openide.util.Cancellable.
-     * <p/>
+     * <p>
      * Unless you are being passed the runnable or progress handle from foreign
      * code (such as in WizardDescriptor.progressInstantiatingIterator), it
      * is usually simpler to use {@link #showProgressDialogAndRun(ProgressRunnable, String, boolean)}.
@@ -111,6 +113,7 @@ public final class ProgressUtils {
      * @since 1.19
      * @deprecated Use {@link BaseProgressUtils}
      */
+    @Deprecated
     public static void showProgressDialogAndRun(Runnable operation, ProgressHandle progress, boolean includeDetailLabel) {
         BaseProgressUtils.showProgressDialogAndRun(operation, progress, includeDetailLabel);
     }
@@ -138,6 +141,7 @@ public final class ProgressUtils {
      * @since 1.30
      * @deprecated Use {@link BaseProgressUtils}
      */
+    @Deprecated
     public static void runOffEventThreadWithProgressDialog(
             final Runnable operation,
             final String dialogTitle, 
@@ -169,6 +173,7 @@ public final class ProgressUtils {
      * @since 1.30
      * @deprecated Use {@link BaseProgressUtils}
      */
+    @Deprecated
     public static void runOffEventThreadWithCustomDialogContent(
             final Runnable operation,
             final String dialogTitle,
@@ -193,10 +198,10 @@ public final class ProgressUtils {
      * Show a modal progress dialog that blocks the main window and all other
      * currently displayed frames or dialogs, while running the passed runnable
      * on a background thread.
-     * <p/>
+     * <p>
      * This method is thread-safe, and will block until the operation has
      * completed, regardless of what thread calls this method.
-     * <p/>
+     * <p>
      * The resulting progress UI should show a cancel button if the passed
      * runnable implements org.openide.util.Cancellable.
      *
@@ -210,6 +215,7 @@ public final class ProgressUtils {
      * @since 1.19
      * @deprecated use {@link BaseProgressUtils}
      */
+    @Deprecated
     public static <T> T showProgressDialogAndRun(final ProgressRunnable<T> operation, final String displayName, boolean includeDetailLabel) {
         return BaseProgressUtils.showProgressDialogAndRun(operation, displayName, includeDetailLabel);
     }
@@ -219,10 +225,10 @@ public final class ProgressUtils {
      * Show a modal progress dialog that blocks the main window and all other
      * currently displayed frames or dialogs, while running the passed runnable
      * on a background thread with an indeterminate-state progress bar.
-     * <p/>
+     * <p>
      * This method is thread-safe, and will block until the operation has
      * completed, regardless of what thread calls this method.
-     * <p/>
+     * <p>
      * The resulting progress UI should show a cancel button if the passed
      * runnable implements org.openide.util.Cancellable.
      * .
@@ -231,6 +237,7 @@ public final class ProgressUtils {
      * @since 1.19
      * @deprecated use {@link BaseProgressUtils}
      */
+    @Deprecated
     public static void showProgressDialogAndRun(Runnable operation, String displayName) {
         BaseProgressUtils.showProgressDialogAndRun(operation, displayName);
     }
@@ -242,7 +249,7 @@ public final class ProgressUtils {
      * which can be monitored for completion or cancellation. This method will
      * not block while the work is run, only until the progress UI is
      * initialized.
-     * <p/>
+     * <p>
      * The resulting progress UI should show a cancel button if the passed
      * runnable implements org.openide.util.Cancellable.
      *
@@ -252,6 +259,7 @@ public final class ProgressUtils {
      * @return
      * @deprecated use {@link BaseProgressUtils}
      */
+    @Deprecated
     public static <T> Future<T> showProgressDialogAndRunLater (final ProgressRunnable<T> operation, final ProgressHandle handle, boolean includeDetailLabel) {
         return BaseProgressUtils.showProgressDialogAndRunLater(operation, handle, includeDetailLabel);
     }

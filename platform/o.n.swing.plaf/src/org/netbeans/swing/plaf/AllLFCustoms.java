@@ -112,7 +112,7 @@ final class AllLFCustoms extends LFCustoms {
         
         Map<Font, Font> fontTranslation = new HashMap<Font, Font>(5);
         
-        if( "Nimbus".equals( UIManager.getLookAndFeel().getID() ) ) { //NOI18N
+        if( UIManager.getFont("defaultFont") != null ) { //NOI18N
             switchFont("defaultFont", fontTranslation, uiFontSize, nbDialogPlain); // NOI18N
         }
         switchFont("controlFont", fontTranslation, uiFontSize, nbDialogPlain); // NOI18N
@@ -154,6 +154,7 @@ final class AllLFCustoms extends LFCustoms {
         switchFont("windowTitleFont", fontTranslation, uiFontSize, nbDialogBold); // NOI18N
         switchFont("Spinner.font", fontTranslation, uiFontSize, nbDialogPlain); // NOI18N
         switchFont("FormattedTextField.font", fontTranslation, uiFontSize, nbDialogPlain); // NOI18N
+        switchFont("Slider.font", fontTranslation, uiFontSize, nbDialogPlain); // NOI18N
     }
 
     //#144402

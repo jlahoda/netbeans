@@ -142,6 +142,7 @@ implements Cloneable, Stamps.Updater {
             }
             framework = frameworkFactory.newFramework(configMap);
             try {
+                System.clearProperty("java.security.manager");
                 framework.init();
                 NetigsoServices ns = new NetigsoServices(this, framework);
             } catch (BundleException ex) {
@@ -188,7 +189,7 @@ implements Cloneable, Stamps.Updater {
 
     /** contributed by Alex Bowen (trajar@netbeans.org) */
     private void injectSystemProperties(Map configProps) {
-        for (Enumeration e = System.getProperties().propertyNames(); e.hasMoreElements(); ) {
+        for (Enumeration<?> e = System.getProperties().propertyNames(); e.hasMoreElements(); ) {
             String key = e.nextElement().toString();
             if (key.startsWith("felix.") || key.startsWith("org.osgi.framework.")) { // NOI18N
                 configProps.put(key, System.getProperty(key));
@@ -275,12 +276,12 @@ implements Cloneable, Stamps.Updater {
                 try {
                     SELF_QUERY.set(true);
                     if (findCoveredPkgs(exported)) {
-                        Enumeration en = b.findEntries("", null, true);
+                        Enumeration<URL> en = b.findEntries("", null, true);
                         if (en == null) {
                             LOG.log(Level.INFO, "Bundle {0}: {1} is empty", new Object[] { b.getBundleId(), b.getSymbolicName() });
                         } else {
                             while (en.hasMoreElements()) {
-                                URL url = (URL) en.nextElement();
+                                URL url = en.nextElement();
                                 if (url.getFile().startsWith("/META-INF")) {
                                     pkgs.add(url.getFile().substring(9));
                                     continue;
@@ -291,11 +292,7 @@ implements Cloneable, Stamps.Updater {
                     }
                     if (exported instanceof String) {
                         for (String p : exported.toString().split(",")) { // NOI18N
-                            int semic = p.indexOf(';');
-                            if (semic >= 0) {
-                                p = p.substring(0, semic);
-                            }
-                            pkgs.add(p);
+                            pkgs.add(extractBundleName(p));
                         }
                     }
                 } finally {
@@ -327,7 +324,7 @@ implements Cloneable, Stamps.Updater {
                     throw possible;
                 }
                 // Bundle is a fragment, replace it with host in classloader
-                String fragmentHost = b.getHeaders("").get("Fragment-Host");
+                String fragmentHost = extractBundleName(b.getHeaders("").get("Fragment-Host"));
                 Bundle hostBundle = findBundle(fragmentHost);
                 if (hostBundle == null) {
                     LOG.log(Level.WARNING, "Failed to locate fragment host bundle {0} for fragment bundle {1}",
@@ -354,6 +351,17 @@ implements Cloneable, Stamps.Updater {
 
     private static boolean isRealBundle(Bundle b) {
         return b.getHeaders("").get("Fragment-Host") == null; // NOI18N
+    }
+
+    private static String extractBundleName(String fullBundleSpec) {
+        if (fullBundleSpec == null) {
+            return fullBundleSpec;
+        }
+        int semic = fullBundleSpec.indexOf(';');
+        if (semic >= 0) {
+            return fullBundleSpec.substring(0, semic);
+        }
+        return fullBundleSpec;
     }
 
     @Override

@@ -48,7 +48,8 @@ import org.openide.filesystems.FileObject;
  */
 public final class JavaCompletionItemFactory implements JavaCompletionTask.TypeCastableItemFactory<JavaCompletionItem>,
         JavaCompletionTask.LambdaItemFactory<JavaCompletionItem>,
-        JavaCompletionTask.ModuleItemFactory<JavaCompletionItem> {
+        JavaCompletionTask.ModuleItemFactory<JavaCompletionItem>,
+        JavaCompletionTask.RecordPatternItemFactory<JavaCompletionItem> {
 
     private final WhiteListQuery.WhiteList whiteList;
 
@@ -157,13 +158,13 @@ public final class JavaCompletionItemFactory implements JavaCompletionTask.TypeC
     }
 
     @Override
-    public JavaCompletionItem createStaticMemberItem(CompilationInfo info, DeclaredType type, Element memberElem, TypeMirror memberType, boolean multipleVersions, int substitutionOffset, boolean isDeprecated, boolean addSemicolon) {
-        return JavaCompletionItem.createStaticMemberItem(info, type, memberElem, memberType, multipleVersions, substitutionOffset, isDeprecated, addSemicolon, whiteList);
+    public JavaCompletionItem createStaticMemberItem(CompilationInfo info, DeclaredType type, Element memberElem, TypeMirror memberType, boolean multipleVersions, int substitutionOffset, boolean isDeprecated, boolean addSemicolon, boolean smartType) {
+        return JavaCompletionItem.createStaticMemberItem(info, type, memberElem, memberType, multipleVersions, substitutionOffset, isDeprecated, addSemicolon, smartType, whiteList);
     }
 
     @Override
-    public JavaCompletionItem createStaticMemberItem(ElementHandle<TypeElement> handle, String name, int substitutionOffset, boolean addSemicolon, ReferencesCount referencesCount, Source source) {
-        return LazyJavaCompletionItem.createStaticMemberItem(handle, name, substitutionOffset, addSemicolon, referencesCount, source, whiteList);
+    public JavaCompletionItem createStaticMemberItem(ElementHandle<TypeElement> handle, String name, int substitutionOffset, boolean addSemicolon, ReferencesCount referencesCount, Source source, boolean smartType) {
+        return LazyJavaCompletionItem.createStaticMemberItem(handle, name, substitutionOffset, addSemicolon, referencesCount, source, smartType, whiteList);
     }
 
     @Override
@@ -177,7 +178,12 @@ public final class JavaCompletionItemFactory implements JavaCompletionTask.TypeC
     }
 
     @Override
-    public JavaCompletionItem createLambdaItem(CompilationInfo info, TypeElement elem, DeclaredType type, int substitutionOffset, boolean addSemicolon) {
-        return JavaCompletionItem.createLambdaItem(info, elem, type, substitutionOffset, addSemicolon);
+    public JavaCompletionItem createLambdaItem(CompilationInfo info, TypeElement elem, DeclaredType type, int substitutionOffset, boolean expression, boolean addSemicolon) {
+        return JavaCompletionItem.createLambdaItem(info, elem, type, substitutionOffset, expression, addSemicolon);
+    }
+
+    @Override
+    public JavaCompletionItem createRecordPatternItem(CompilationInfo info, TypeElement elem, DeclaredType type, int substitutionOffset, ReferencesCount referencesCount, boolean isDeprecated, boolean insideNew, boolean addTypeVars) {
+        return JavaCompletionItem.createRecordPatternItem(info, elem, type, substitutionOffset, referencesCount, isDeprecated, insideNew, addTypeVars);
     }
 }

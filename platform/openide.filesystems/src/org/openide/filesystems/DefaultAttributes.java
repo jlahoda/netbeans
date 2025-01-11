@@ -42,6 +42,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.logging.Level;
 import javax.xml.parsers.FactoryConfigurationError;
@@ -66,7 +67,8 @@ import org.xml.sax.helpers.DefaultHandler;
  * (it can then serve to filter a plain list implementation).
  *
  *Description of format of special file ilustrates best DTD file that is showed in next lines:
- *<!ELEMENT attributes (fileobject)*>
+ * <pre>{@code 
+ * <!ELEMENT attributes (fileobject)*>
  * <!ATTLIST attributes version CDATA #REQUIRED>
  * <!ELEMENT fileobject (attr)*>
  * <!ATTLIST fileobject name CDATA #REQUIRED>
@@ -84,7 +86,8 @@ import org.xml.sax.helpers.DefaultHandler;
  * <!ATTLIST attr methodvalue CDATA #IMPLIED>
  * <!ATTLIST attr serialvalue CDATA #IMPLIED>
  * <!ATTLIST attr urlvalue CDATA #IMPLIED>
- *
+ * }
+ * </pre>
  * @author Jaroslav Tulach
  */
 @SuppressWarnings("unchecked")
@@ -95,20 +98,20 @@ public class DefaultAttributes extends Object implements AbstractFileSystem.Attr
      * @deprecated does not handle XML attributes
      */
     @Deprecated
-    public final static String ATTR_NAME = "filesystem"; // NOI18N
+    public static final String ATTR_NAME = "filesystem"; // NOI18N
 
     /** Extension of special file in each folder where attributes are saved.
      * @deprecated does not handle XML attributes
      */
     @Deprecated
-    public final static String ATTR_EXT = "attributes"; // NOI18N
+    public static final String ATTR_EXT = "attributes"; // NOI18N
 
     /** Name with extension of special file in each folder where attributes are saved.
      * @deprecated does not handle XML attributes
      */
     @Deprecated
-    public final static String ATTR_NAME_EXT = ATTR_NAME + '.' + ATTR_EXT;
-    private final static String ATTR_NAME_EXT_XML = System.getProperty(
+    public static final String ATTR_NAME_EXT = ATTR_NAME + '.' + ATTR_EXT;
+    private static final String ATTR_NAME_EXT_XML = System.getProperty(
             "org.openide.filesystems.DefaultAttributes.ATTR_NAME_EXT_XML", ".nbattrs"
         ); // NOI18N
 
@@ -119,7 +122,7 @@ public class DefaultAttributes extends Object implements AbstractFileSystem.Attr
      * - org.openide.loaders.CompilerSupport
      * - org.netbeans.core.ExJarFileSystem
      */
-    private final static String READONLY_ATTRIBUTES = "readOnlyAttrs"; //NOI18N
+    private static final String READONLY_ATTRIBUTES = "readOnlyAttrs"; //NOI18N
 
     // <?xml version="1.0"?>
     // <!DOCTYPE filesystem PUBLIC "-//NetBeans//DTD DefaultAttributes 1.0//EN" "http://www.netbeans.org/dtds/attributes-1_0.dtd">
@@ -143,7 +146,7 @@ public class DefaultAttributes extends Object implements AbstractFileSystem.Attr
     * For name of folder gives map of maps of attibutes
     * (String, Reference (Table))
     */
-    private transient Map cache;
+    private transient Map<String, SoftReference<Table>> cache;
 
     /** Constructor.
     * @param info file object information to use
@@ -458,10 +461,10 @@ public class DefaultAttributes extends Object implements AbstractFileSystem.Attr
             split(newName, arr);
 
             // Remove transient attributes:
-            Iterator it = v.entrySet().iterator();
+            Iterator<Map.Entry> it = v.entrySet().iterator();
 
             while (it.hasNext()) {
-                Map.Entry pair = (Map.Entry) it.next();
+                Map.Entry pair = it.next();
 
                 if (FileUtil.transientAttributes.contains(pair.getKey())) {
                     it.remove();
@@ -498,9 +501,9 @@ public class DefaultAttributes extends Object implements AbstractFileSystem.Attr
 
     /** Getter for the cache.
     */
-    private Map getCache() {
+    private Map<String, SoftReference<Table>> getCache() {
         if (cache == null) {
-            cache = new HashMap(31);
+            cache = new HashMap<>(31);
         }
 
         return cache;
@@ -612,10 +615,10 @@ public class DefaultAttributes extends Object implements AbstractFileSystem.Attr
     */
     private Table loadTable(String name) { //throws IOException {
 
-        Reference r = (Reference) getCache().get(name);
+        SoftReference<Table> r = getCache().get(name);
 
         if (r != null) {
-            Table m = (Table) r.get();
+            Table m = r.get();
 
             if (m != null) {
                 return m;
@@ -626,7 +629,7 @@ public class DefaultAttributes extends Object implements AbstractFileSystem.Attr
         Table t = load(name);
         t.attach(name, this);
 
-        getCache().put(name, new SoftReference(t));
+        getCache().put(name, new SoftReference<Table>(t));
 
         return t;
     }
@@ -710,7 +713,7 @@ public class DefaultAttributes extends Object implements AbstractFileSystem.Attr
     * @param pbStream is pushback input stream; tests 4 bytes and then returns them back
     * @return true if the file has serialized form
     */
-    static private final boolean isSerialized(PushbackInputStream pbStream)
+    private static final boolean isSerialized(PushbackInputStream pbStream)
     throws IOException {
         int[] serialPattern = { '\u00AC', '\u00ED', '\u0000', '\u0005' }; //NOI18N patern for serialized objects
         byte[] checkedArray = new byte[serialPattern.length];
@@ -775,7 +778,7 @@ public class DefaultAttributes extends Object implements AbstractFileSystem.Attr
     /** Table that hold mapping between files and attributes.
     * Hold mapping of type (String, Map (String, Object))
     */
-    final static class Table extends HashMap implements Externalizable {
+    static final class Table extends HashMap implements Externalizable {
         static final long serialVersionUID = 2353458763249746934L;
 
         /** name of folder we belong to */
@@ -882,12 +885,12 @@ public class DefaultAttributes extends Object implements AbstractFileSystem.Attr
         /** Enum of attributes for one file.
         */
         public Enumeration<String> attrs(String fileName) {
-            Map m = (Map) get(fileName);
+            Map<String, Map> m = (Map) get(fileName);
 
             if (m == null) {
                 return Enumerations.empty();
             } else {
-                HashSet s = new HashSet(m.keySet());
+                Set<String> s = new HashSet<>(m.keySet());
 
                 return Collections.enumeration(s);
             }
@@ -996,14 +999,14 @@ public class DefaultAttributes extends Object implements AbstractFileSystem.Attr
                             return;
                         }
 
-                        Iterator it = mapAllowed.entrySet().iterator();
+                        Iterator<Map.Entry<String, String>> it = mapAllowed.entrySet().iterator();
 
                         while (it.hasNext()) {
-                            Map.Entry pair = (Map.Entry) it.next();
+                            Map.Entry<String, String> pair = it.next();
 
-                            if (XMLMapAttr.Attr.isValid((String) pair.getKey()) != -1) {
+                            if (XMLMapAttr.Attr.isValid(pair.getKey()) != -1) {
                                 XMLMapAttr.Attr attr = XMLMapAttr.createAttributeAndDecode(
-                                        (String) pair.getKey(), (String) pair.getValue()
+                                        pair.getKey(), pair.getValue()
                                     );
                                 setAttr(fileName.toString(), attrName, attr);
                             }
@@ -1035,11 +1038,11 @@ public class DefaultAttributes extends Object implements AbstractFileSystem.Attr
          */
         public void writeToXML(PrintWriter pw) /*throws IOException */ {
             // list of names
-            Iterator it = new TreeSet(keySet()).iterator();
+            Iterator<String> it = new TreeSet<>(keySet()).iterator();
             XMLMapAttr.writeHeading(pw);
 
             while (it.hasNext()) {
-                String file = (String) it.next();
+                String file = it.next();
                 XMLMapAttr attr = (XMLMapAttr) get(file);
 
                 if ((attr != null) && !attr.isEmpty()) {
@@ -1082,19 +1085,19 @@ public class DefaultAttributes extends Object implements AbstractFileSystem.Attr
          * @throws IOException  */
         public void writeExternal(ObjectOutput oo) throws IOException {
             // list of names
-            Iterator it = keySet().iterator();
+            Iterator<String> it = keySet().iterator();
 
             while (it.hasNext()) {
-                String file = (String) it.next();
+                String file = it.next();
                 Map attr = (Map) get(file);
 
                 if ((attr != null) && !attr.isEmpty()) {
                     oo.writeObject(file);
 
-                    Iterator entries = attr.entrySet().iterator();
+                    Iterator<Map.Entry> entries = attr.entrySet().iterator();
 
                     while (entries.hasNext()) {
-                        Map.Entry entry = (Map.Entry) entries.next();
+                        Map.Entry entry = entries.next();
                         String key = (String) entry.getKey();
                         Object value = entry.getValue();
 
@@ -1156,14 +1159,14 @@ public class DefaultAttributes extends Object implements AbstractFileSystem.Attr
      * - protected  void characters(char[] ch, int start, int length) throws SAXException {}
      * - protected  void  internalStartElement(String elemName, HashMap mapMandatory,HashMap mapAllowed) throws SAXException {}
      */
-    static abstract class ElementHandler {
+    abstract static class ElementHandler {
         private static final String[] EMPTY = {  };
         private int mandatAttrCount;
 
         public void startElement(String elemName, Attributes attrs)
         throws SAXException {
-            HashMap mapAllowed = new HashMap();
-            HashMap mapMandatory = new HashMap();
+            HashMap<String, String> mapAllowed   = new HashMap<>();
+            HashMap<String, String> mapMandatory = new HashMap<>();
 
             if (checkAttributes(attrs, mapMandatory, mapAllowed) == false) {
                 throw new SAXException(
@@ -1257,7 +1260,7 @@ public class DefaultAttributes extends Object implements AbstractFileSystem.Attr
             return -1;
         }
 
-        private boolean checkAttributes(Attributes attrList, HashMap mapMandatory, HashMap mapAllowed) {
+        private boolean checkAttributes(Attributes attrList,HashMap<String, String> mapMandatory, HashMap<String, String> mapAllowed) {
             String temp;
             mandatAttrCount = 0;
 

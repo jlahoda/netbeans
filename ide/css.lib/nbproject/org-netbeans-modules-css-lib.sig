@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.86.1
+#Version 2.6
 
 CLSS public abstract interface java.io.Serializable
 
@@ -21,7 +21,6 @@ meth public final java.lang.String name()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
-hfds name,ordinal
 
 CLSS public abstract interface !annotation java.lang.FunctionalInterface
  anno 0 java.lang.annotation.Documented()
@@ -300,6 +299,7 @@ fld public final static org.netbeans.modules.css.lib.api.CssTokenId CHARSET_SYM
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId COLON
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId COMMA
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId COMMENT
+fld public final static org.netbeans.modules.css.lib.api.CssTokenId CONTAINER_SYM
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId CONTAINS
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId COUNTER_STYLE_SYM
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId CP_DOTS
@@ -329,6 +329,7 @@ fld public final static org.netbeans.modules.css.lib.api.CssTokenId H
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId HASH
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId HASH_SYMBOL
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId HEXCHAR
+fld public final static org.netbeans.modules.css.lib.api.CssTokenId HEXCHAR_WILDCARD
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId I
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId IDENT
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId IMPORTANT_SYM
@@ -338,6 +339,7 @@ fld public final static org.netbeans.modules.css.lib.api.CssTokenId INVALID
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId J
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId K
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId L
+fld public final static org.netbeans.modules.css.lib.api.CssTokenId LAYER_SYM
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId LBRACE
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId LBRACKET
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId LEFTBOTTOM_SYM
@@ -397,6 +399,7 @@ fld public final static org.netbeans.modules.css.lib.api.CssTokenId SASS_ERROR
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId SASS_EXTEND
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId SASS_EXTEND_ONLY_SELECTOR
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId SASS_FOR
+fld public final static org.netbeans.modules.css.lib.api.CssTokenId SASS_FORWARD
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId SASS_FUNCTION
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId SASS_GLOBAL
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId SASS_IF
@@ -404,6 +407,7 @@ fld public final static org.netbeans.modules.css.lib.api.CssTokenId SASS_INCLUDE
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId SASS_MIXIN
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId SASS_OPTIONAL
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId SASS_RETURN
+fld public final static org.netbeans.modules.css.lib.api.CssTokenId SASS_USE
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId SASS_VAR
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId SASS_WARN
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId SASS_WHILE
@@ -411,6 +415,7 @@ fld public final static org.netbeans.modules.css.lib.api.CssTokenId SEMI
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId SOLIDUS
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId STAR
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId STRING
+fld public final static org.netbeans.modules.css.lib.api.CssTokenId SUPPORTS_SYM
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId T
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId TILDE
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId TIME
@@ -421,9 +426,11 @@ fld public final static org.netbeans.modules.css.lib.api.CssTokenId TOPRIGHTCORN
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId TOPRIGHT_SYM
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId U
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId UNICODE
+fld public final static org.netbeans.modules.css.lib.api.CssTokenId URANGE
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId URI
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId URL
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId V
+fld public final static org.netbeans.modules.css.lib.api.CssTokenId VARIABLE
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId W
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId WEBKIT_KEYFRAMES_SYM
 fld public final static org.netbeans.modules.css.lib.api.CssTokenId WS
@@ -483,15 +490,28 @@ meth public abstract java.lang.String name()
 meth public abstract java.util.List<org.netbeans.modules.css.lib.api.Node> children()
 meth public abstract org.netbeans.modules.css.lib.api.Node parent()
 meth public abstract org.netbeans.modules.css.lib.api.NodeType type()
+meth public java.lang.String unescapedImage()
 
 CLSS public final !enum org.netbeans.modules.css.lib.api.NodeType
 fld public final static org.netbeans.modules.css.lib.api.NodeType atRuleId
 fld public final static org.netbeans.modules.css.lib.api.NodeType at_rule
 fld public final static org.netbeans.modules.css.lib.api.NodeType body
 fld public final static org.netbeans.modules.css.lib.api.NodeType bodyItem
+fld public final static org.netbeans.modules.css.lib.api.NodeType braceBlock
+fld public final static org.netbeans.modules.css.lib.api.NodeType braceBlock2
+fld public final static org.netbeans.modules.css.lib.api.NodeType bracketBlock
 fld public final static org.netbeans.modules.css.lib.api.NodeType charSet
 fld public final static org.netbeans.modules.css.lib.api.NodeType charSetValue
 fld public final static org.netbeans.modules.css.lib.api.NodeType combinator
+fld public final static org.netbeans.modules.css.lib.api.NodeType componentValue
+fld public final static org.netbeans.modules.css.lib.api.NodeType componentValueOuter
+fld public final static org.netbeans.modules.css.lib.api.NodeType containerAtRule
+fld public final static org.netbeans.modules.css.lib.api.NodeType containerCondition
+fld public final static org.netbeans.modules.css.lib.api.NodeType containerName
+fld public final static org.netbeans.modules.css.lib.api.NodeType containerQueryConjunction
+fld public final static org.netbeans.modules.css.lib.api.NodeType containerQueryDisjunction
+fld public final static org.netbeans.modules.css.lib.api.NodeType containerQueryInParens
+fld public final static org.netbeans.modules.css.lib.api.NodeType containerQueryWithOperator
 fld public final static org.netbeans.modules.css.lib.api.NodeType counterStyle
 fld public final static org.netbeans.modules.css.lib.api.NodeType cp_arg
 fld public final static org.netbeans.modules.css.lib.api.NodeType cp_args_list
@@ -531,11 +551,17 @@ fld public final static org.netbeans.modules.css.lib.api.NodeType functionName
 fld public final static org.netbeans.modules.css.lib.api.NodeType generic_at_rule
 fld public final static org.netbeans.modules.css.lib.api.NodeType hexColor
 fld public final static org.netbeans.modules.css.lib.api.NodeType importItem
+fld public final static org.netbeans.modules.css.lib.api.NodeType importLayer
 fld public final static org.netbeans.modules.css.lib.api.NodeType imports
 fld public final static org.netbeans.modules.css.lib.api.NodeType invalidRule
 fld public final static org.netbeans.modules.css.lib.api.NodeType key_and
 fld public final static org.netbeans.modules.css.lib.api.NodeType key_only
 fld public final static org.netbeans.modules.css.lib.api.NodeType key_or
+fld public final static org.netbeans.modules.css.lib.api.NodeType layerAtRule
+fld public final static org.netbeans.modules.css.lib.api.NodeType layerBlock
+fld public final static org.netbeans.modules.css.lib.api.NodeType layerBody
+fld public final static org.netbeans.modules.css.lib.api.NodeType layerName
+fld public final static org.netbeans.modules.css.lib.api.NodeType layerStatement
 fld public final static org.netbeans.modules.css.lib.api.NodeType less_condition
 fld public final static org.netbeans.modules.css.lib.api.NodeType less_condition_operator
 fld public final static org.netbeans.modules.css.lib.api.NodeType less_fn_name
@@ -565,6 +591,9 @@ fld public final static org.netbeans.modules.css.lib.api.NodeType namespacePrefi
 fld public final static org.netbeans.modules.css.lib.api.NodeType namespaces
 fld public final static org.netbeans.modules.css.lib.api.NodeType operator
 fld public final static org.netbeans.modules.css.lib.api.NodeType page
+fld public final static org.netbeans.modules.css.lib.api.NodeType parenBlock
+fld public final static org.netbeans.modules.css.lib.api.NodeType preservedToken
+fld public final static org.netbeans.modules.css.lib.api.NodeType preservedTokenTopLevel
 fld public final static org.netbeans.modules.css.lib.api.NodeType prio
 fld public final static org.netbeans.modules.css.lib.api.NodeType property
 fld public final static org.netbeans.modules.css.lib.api.NodeType propertyDeclaration
@@ -587,6 +616,12 @@ fld public final static org.netbeans.modules.css.lib.api.NodeType sass_error
 fld public final static org.netbeans.modules.css.lib.api.NodeType sass_extend
 fld public final static org.netbeans.modules.css.lib.api.NodeType sass_extend_only_selector
 fld public final static org.netbeans.modules.css.lib.api.NodeType sass_for
+fld public final static org.netbeans.modules.css.lib.api.NodeType sass_forward
+fld public final static org.netbeans.modules.css.lib.api.NodeType sass_forward_as
+fld public final static org.netbeans.modules.css.lib.api.NodeType sass_forward_hide
+fld public final static org.netbeans.modules.css.lib.api.NodeType sass_forward_show
+fld public final static org.netbeans.modules.css.lib.api.NodeType sass_forward_with
+fld public final static org.netbeans.modules.css.lib.api.NodeType sass_forward_with_declaration
 fld public final static org.netbeans.modules.css.lib.api.NodeType sass_function_declaration
 fld public final static org.netbeans.modules.css.lib.api.NodeType sass_function_name
 fld public final static org.netbeans.modules.css.lib.api.NodeType sass_function_return
@@ -598,14 +633,40 @@ fld public final static org.netbeans.modules.css.lib.api.NodeType sass_map_pair
 fld public final static org.netbeans.modules.css.lib.api.NodeType sass_map_pairs
 fld public final static org.netbeans.modules.css.lib.api.NodeType sass_nested_properties
 fld public final static org.netbeans.modules.css.lib.api.NodeType sass_selector_interpolation_exp
+fld public final static org.netbeans.modules.css.lib.api.NodeType sass_use
+fld public final static org.netbeans.modules.css.lib.api.NodeType sass_use_as
+fld public final static org.netbeans.modules.css.lib.api.NodeType sass_use_with
+fld public final static org.netbeans.modules.css.lib.api.NodeType sass_use_with_declaration
 fld public final static org.netbeans.modules.css.lib.api.NodeType sass_while
 fld public final static org.netbeans.modules.css.lib.api.NodeType selector
 fld public final static org.netbeans.modules.css.lib.api.NodeType selectorsGroup
 fld public final static org.netbeans.modules.css.lib.api.NodeType simpleSelectorSequence
+fld public final static org.netbeans.modules.css.lib.api.NodeType sizeFeature
+fld public final static org.netbeans.modules.css.lib.api.NodeType sizeFeatureFixedValue
+fld public final static org.netbeans.modules.css.lib.api.NodeType sizeFeatureName
+fld public final static org.netbeans.modules.css.lib.api.NodeType sizeFeatureRangeBetweenGt
+fld public final static org.netbeans.modules.css.lib.api.NodeType sizeFeatureRangeBetweenLt
+fld public final static org.netbeans.modules.css.lib.api.NodeType sizeFeatureRangeSingle
+fld public final static org.netbeans.modules.css.lib.api.NodeType sizeFeatureValue
 fld public final static org.netbeans.modules.css.lib.api.NodeType slAttribute
 fld public final static org.netbeans.modules.css.lib.api.NodeType slAttributeName
 fld public final static org.netbeans.modules.css.lib.api.NodeType slAttributeValue
+fld public final static org.netbeans.modules.css.lib.api.NodeType styleCondition
+fld public final static org.netbeans.modules.css.lib.api.NodeType styleConditionWithOperator
+fld public final static org.netbeans.modules.css.lib.api.NodeType styleFeature
+fld public final static org.netbeans.modules.css.lib.api.NodeType styleInParens
+fld public final static org.netbeans.modules.css.lib.api.NodeType styleQuery
+fld public final static org.netbeans.modules.css.lib.api.NodeType styleQueryConjunction
+fld public final static org.netbeans.modules.css.lib.api.NodeType styleQueryDisjunction
 fld public final static org.netbeans.modules.css.lib.api.NodeType styleSheet
+fld public final static org.netbeans.modules.css.lib.api.NodeType supportsAtRule
+fld public final static org.netbeans.modules.css.lib.api.NodeType supportsCondition
+fld public final static org.netbeans.modules.css.lib.api.NodeType supportsConjunction
+fld public final static org.netbeans.modules.css.lib.api.NodeType supportsDecl
+fld public final static org.netbeans.modules.css.lib.api.NodeType supportsDisjunction
+fld public final static org.netbeans.modules.css.lib.api.NodeType supportsFeature
+fld public final static org.netbeans.modules.css.lib.api.NodeType supportsInParens
+fld public final static org.netbeans.modules.css.lib.api.NodeType supportsWithOperator
 fld public final static org.netbeans.modules.css.lib.api.NodeType syncToDeclarationsRule
 fld public final static org.netbeans.modules.css.lib.api.NodeType syncToFollow
 fld public final static org.netbeans.modules.css.lib.api.NodeType syncTo_RBRACE
@@ -635,6 +696,7 @@ meth public static int[] getRuleBodyRange(org.netbeans.modules.css.lib.api.Node)
 meth public static int[] getTrimmedNodeRange(org.netbeans.modules.css.lib.api.Node)
 meth public static java.lang.String encodeToString(org.netbeans.modules.css.lib.api.TreePath)
 meth public static java.lang.String getElementId(org.netbeans.modules.css.lib.api.Node)
+meth public static java.lang.String unescape(java.lang.CharSequence)
 meth public static org.netbeans.modules.css.lib.api.CssTokenId getTokenNodeTokenId(org.netbeans.modules.css.lib.api.Node)
 meth public static org.netbeans.modules.css.lib.api.Node findNodeAtOffset(org.netbeans.modules.css.lib.api.Node,int)
 meth public static org.netbeans.modules.css.lib.api.Node findNonTokenNodeAtOffset(org.netbeans.modules.css.lib.api.Node,int)
@@ -648,7 +710,7 @@ meth public static org.netbeans.modules.css.lib.api.Node[] getChildrenByType(org
 meth public static void dumpTree(org.netbeans.modules.css.lib.api.Node)
 meth public static void dumpTree(org.netbeans.modules.css.lib.api.Node,java.io.PrintWriter)
 supr java.lang.Object
-hfds ELEMENT_PATH_ELEMENTS_DELIMITER,ELEMENT_PATH_INDEX_DELIMITER,INDENT
+hfds ELEMENT_PATH_ELEMENTS_DELIMITER,ELEMENT_PATH_INDEX_DELIMITER,ESCAPE,INDENT
 
 CLSS public abstract org.netbeans.modules.css.lib.api.NodeVisitor<%0 extends java.lang.Object>
 cons public init()
@@ -721,7 +783,6 @@ hfds value
 CLSS public abstract org.netbeans.modules.css.lib.api.properties.GrammarElement
 cons public init(org.netbeans.modules.css.lib.api.properties.GroupGrammarElement,java.lang.String)
 fld public final static char INVISIBLE_PROPERTY_PREFIX = '@'
-meth protected java.lang.String indentString(int)
 meth public abstract void accept(org.netbeans.modules.css.lib.api.properties.GrammarElementVisitor)
 meth public boolean equals(java.lang.Object)
 meth public boolean isOptional()
@@ -733,7 +794,6 @@ meth public java.lang.String getVisibleOrigin()
 meth public java.lang.String origin()
 meth public java.lang.String path()
 meth public java.lang.String toString()
-meth public java.lang.String toString2(int)
 meth public java.util.List<org.netbeans.modules.css.lib.api.properties.GrammarElement> elementsPath()
 meth public org.netbeans.modules.css.lib.api.properties.GroupGrammarElement parent()
 meth public static boolean isArtificialElementName(java.lang.CharSequence)
@@ -745,10 +805,10 @@ hfds maximum_occurances,minimum_occurances,name,parent,path
 
 CLSS public abstract org.netbeans.modules.css.lib.api.properties.GrammarElementVisitor
 cons public init()
-meth public final void visit(org.netbeans.modules.css.lib.api.properties.GrammarElement)
-meth public void visit(org.netbeans.modules.css.lib.api.properties.FixedTextGrammarElement)
-meth public void visit(org.netbeans.modules.css.lib.api.properties.GroupGrammarElement)
-meth public void visit(org.netbeans.modules.css.lib.api.properties.UnitGrammarElement)
+meth public boolean visit(org.netbeans.modules.css.lib.api.properties.FixedTextGrammarElement)
+meth public boolean visit(org.netbeans.modules.css.lib.api.properties.GroupGrammarElement)
+meth public boolean visit(org.netbeans.modules.css.lib.api.properties.UnitGrammarElement)
+meth public final boolean visit(org.netbeans.modules.css.lib.api.properties.GrammarElement)
 supr java.lang.Object
 
 CLSS public org.netbeans.modules.css.lib.api.properties.GrammarParseTreeConvertor
@@ -769,7 +829,7 @@ meth public void enableFeature(org.netbeans.modules.css.lib.api.properties.Gramm
 meth public void removeGrammarResolverListener(org.netbeans.modules.css.lib.api.properties.GrammarResolverListener)
 meth public void setFeature(org.netbeans.modules.css.lib.api.properties.GrammarResolver$Feature,java.lang.Object)
 supr java.lang.Object
-hfds FEATURES,LISTENERS,LOG,LOGGER,LOGGERS,grammar,lastResolved,resolvedSomething,resolvedTokens,tokenizer
+hfds FEATURES,LISTENERS,LOG,LOGGER,LOGGERS,globalValues,grammar,lastResolved,resolvedSomething,resolvedTokens,tokenizer
 hcls InputState
 
 CLSS public final static !enum org.netbeans.modules.css.lib.api.properties.GrammarResolver$Feature
@@ -816,7 +876,6 @@ cons public init(org.netbeans.modules.css.lib.api.properties.GroupGrammarElement
 innr public final static !enum Type
 meth public boolean isVisible()
 meth public java.lang.String toString()
-meth public java.lang.String toString2(int)
 meth public java.util.List<org.netbeans.modules.css.lib.api.properties.GrammarElement> elements()
 meth public java.util.List<org.netbeans.modules.css.lib.api.properties.GrammarElement> getAllPossibleValues()
 meth public org.netbeans.modules.css.lib.api.properties.GroupGrammarElement$Type getType()
@@ -925,16 +984,19 @@ meth public static org.netbeans.modules.css.lib.api.properties.PropertyDefinitio
 supr java.lang.Object
 
 CLSS public final !enum org.netbeans.modules.css.lib.api.properties.PropertyCategory
+fld public final static org.netbeans.modules.css.lib.api.properties.PropertyCategory ALIGNMENT
 fld public final static org.netbeans.modules.css.lib.api.properties.PropertyCategory ANIMATIONS
 fld public final static org.netbeans.modules.css.lib.api.properties.PropertyCategory BACKGROUND
 fld public final static org.netbeans.modules.css.lib.api.properties.PropertyCategory BOX
 fld public final static org.netbeans.modules.css.lib.api.properties.PropertyCategory CHROME
 fld public final static org.netbeans.modules.css.lib.api.properties.PropertyCategory COLORS
+fld public final static org.netbeans.modules.css.lib.api.properties.PropertyCategory CONTAIN
 fld public final static org.netbeans.modules.css.lib.api.properties.PropertyCategory CONTENT
 fld public final static org.netbeans.modules.css.lib.api.properties.PropertyCategory DEFAULT
 fld public final static org.netbeans.modules.css.lib.api.properties.PropertyCategory FIREFOX
 fld public final static org.netbeans.modules.css.lib.api.properties.PropertyCategory FLEXIBLE_BOX_LAYOUT
 fld public final static org.netbeans.modules.css.lib.api.properties.PropertyCategory FONTS
+fld public final static org.netbeans.modules.css.lib.api.properties.PropertyCategory FRAGMENTATION
 fld public final static org.netbeans.modules.css.lib.api.properties.PropertyCategory GRID
 fld public final static org.netbeans.modules.css.lib.api.properties.PropertyCategory HYPERLINKS
 fld public final static org.netbeans.modules.css.lib.api.properties.PropertyCategory IMAGES
@@ -945,8 +1007,10 @@ fld public final static org.netbeans.modules.css.lib.api.properties.PropertyCate
 fld public final static org.netbeans.modules.css.lib.api.properties.PropertyCategory MULTI_COLUMN_LAYOUT
 fld public final static org.netbeans.modules.css.lib.api.properties.PropertyCategory OPERA
 fld public final static org.netbeans.modules.css.lib.api.properties.PropertyCategory PAGED_MEDIA
+fld public final static org.netbeans.modules.css.lib.api.properties.PropertyCategory POSITIONING
 fld public final static org.netbeans.modules.css.lib.api.properties.PropertyCategory RUBY
 fld public final static org.netbeans.modules.css.lib.api.properties.PropertyCategory SAFARI
+fld public final static org.netbeans.modules.css.lib.api.properties.PropertyCategory SIZING
 fld public final static org.netbeans.modules.css.lib.api.properties.PropertyCategory SPEECH
 fld public final static org.netbeans.modules.css.lib.api.properties.PropertyCategory TEXT
 fld public final static org.netbeans.modules.css.lib.api.properties.PropertyCategory TRANSFORMATIONS_2D
@@ -1038,6 +1102,7 @@ innr public static Angle
 innr public static Anything
 innr public static Date
 innr public static Decibel
+innr public static Flex
 innr public static Frequency
 innr public static HashColor
 innr public static HashColorAplha
@@ -1052,14 +1117,16 @@ innr public static Resolution
 innr public static Semitones
 innr public static StringAcceptor
 innr public static Time
+innr public static Urange
 innr public static Uri
+innr public static Variable
 meth public abstract boolean accepts(org.netbeans.modules.css.lib.api.properties.Token)
 meth public final java.lang.String id()
 meth public static <%0 extends org.netbeans.modules.css.lib.api.properties.TokenAcceptor> {%%0} getAcceptor(java.lang.Class<{%%0}>)
 meth public static org.netbeans.modules.css.lib.api.properties.TokenAcceptor getAcceptor(java.lang.String)
 supr java.lang.Object
 hfds INSTANCES,id
-hcls GenericFunctionContent
+hcls NonBrace
 
 CLSS public static org.netbeans.modules.css.lib.api.properties.TokenAcceptor$Angle
  outer org.netbeans.modules.css.lib.api.properties.TokenAcceptor
@@ -1081,6 +1148,13 @@ meth public boolean accepts(java.lang.String)
 supr org.netbeans.modules.css.lib.api.properties.TokenAcceptor$TokenImageAcceptor
 
 CLSS public static org.netbeans.modules.css.lib.api.properties.TokenAcceptor$Decibel
+ outer org.netbeans.modules.css.lib.api.properties.TokenAcceptor
+cons public init(java.lang.String)
+meth protected java.util.List<java.lang.String> postfixes()
+supr org.netbeans.modules.css.lib.api.properties.TokenAcceptor$NumberPostfixAcceptor
+hfds POSTFIXES
+
+CLSS public static org.netbeans.modules.css.lib.api.properties.TokenAcceptor$Flex
  outer org.netbeans.modules.css.lib.api.properties.TokenAcceptor
 cons public init(java.lang.String)
 meth protected java.util.List<java.lang.String> postfixes()
@@ -1200,12 +1274,25 @@ meth public abstract boolean accepts(java.lang.String)
 meth public boolean accepts(org.netbeans.modules.css.lib.api.properties.Token)
 supr org.netbeans.modules.css.lib.api.properties.TokenAcceptor
 
+CLSS public static org.netbeans.modules.css.lib.api.properties.TokenAcceptor$Urange
+ outer org.netbeans.modules.css.lib.api.properties.TokenAcceptor
+cons public init(java.lang.String)
+meth public boolean accepts(org.netbeans.modules.css.lib.api.properties.Token)
+supr org.netbeans.modules.css.lib.api.properties.TokenAcceptor
+hfds URANGE_TOKEN_IMAGE
+
 CLSS public static org.netbeans.modules.css.lib.api.properties.TokenAcceptor$Uri
  outer org.netbeans.modules.css.lib.api.properties.TokenAcceptor
 cons public init(java.lang.String)
 meth public boolean accepts(org.netbeans.modules.css.lib.api.properties.Token)
 supr org.netbeans.modules.css.lib.api.properties.TokenAcceptor
 hfds URL_TOKEN_IMAGE
+
+CLSS public static org.netbeans.modules.css.lib.api.properties.TokenAcceptor$Variable
+ outer org.netbeans.modules.css.lib.api.properties.TokenAcceptor
+cons public init(java.lang.String)
+meth public boolean accepts(org.netbeans.modules.css.lib.api.properties.Token)
+supr org.netbeans.modules.css.lib.api.properties.TokenAcceptor
 
 CLSS public abstract interface org.netbeans.modules.css.lib.api.properties.TokenNode
 intf org.netbeans.modules.css.lib.api.properties.Node
@@ -1231,6 +1318,7 @@ meth public final java.lang.String getTokenAcceptorId()
 meth public java.lang.String getValue()
 meth public java.lang.String toString()
 meth public java.util.Collection<java.lang.String> getFixedValues()
+ anno 0 java.lang.Deprecated()
 meth public void accept(org.netbeans.modules.css.lib.api.properties.GrammarElementVisitor)
 supr org.netbeans.modules.css.lib.api.properties.ValueGrammarElement
 hfds name,tokenAcceptor
@@ -1262,6 +1350,7 @@ CLSS public abstract static org.netbeans.modules.parsing.spi.Parser$Result
  outer org.netbeans.modules.parsing.spi.Parser
 cons protected init(org.netbeans.modules.parsing.api.Snapshot)
 meth protected abstract void invalidate()
+meth protected boolean processingFinished()
 meth public org.netbeans.modules.parsing.api.Snapshot getSnapshot()
 supr java.lang.Object
 hfds snapshot

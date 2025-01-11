@@ -34,7 +34,7 @@ import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.api.project.Project;
 import org.netbeans.modules.php.analysis.PHPStanParams;
 import org.netbeans.modules.php.analysis.options.AnalysisOptions;
-import org.netbeans.modules.php.analysis.parsers.PHPStanReportParser;
+import org.netbeans.modules.php.analysis.parsers.CheckStyleReportParser;
 import org.netbeans.modules.php.analysis.results.Result;
 import org.netbeans.modules.php.analysis.ui.options.AnalysisOptionsPanelController;
 import org.netbeans.modules.php.api.executable.InvalidPhpExecutableException;
@@ -75,6 +75,11 @@ public final class PHPStan {
             ERROR_FORMAT_PARAM
     );
 
+     // configuration files
+    public static final String CONFIG_FILE_NAME = "phpstan.neon";  // NOI18N
+    public static final String DIST_CONFIG_FILE_NAME = "phpstan.neon.dist";  // NOI18N
+    public static final String ALTERNATIVE_DIST_CONFIG_FILE_NAME = "phpstan.dist.neon";  // NOI18N
+
     private final String phpStanPath;
     private int analyzeGroupCounter = 1;
 
@@ -83,7 +88,10 @@ public final class PHPStan {
     }
 
     public static PHPStan getDefault() throws InvalidPhpExecutableException {
-        String phpStanPath = AnalysisOptions.getInstance().getPHPStanPath();
+        return getCustom(AnalysisOptions.getInstance().getPHPStanPath());
+    }
+
+    public static PHPStan getCustom(String phpStanPath) throws InvalidPhpExecutableException {
         String error = validate(phpStanPath);
         if (error != null) {
             throw new InvalidPhpExecutableException(error);
@@ -92,8 +100,8 @@ public final class PHPStan {
     }
 
     @NbBundle.Messages("PHPStan.script.label=PHPStan")
-    public static String validate(String codeSnifferPath) {
-        return PhpExecutableValidator.validateCommand(codeSnifferPath, Bundle.PHPStan_script_label());
+    public static String validate(String phpStanPath) {
+        return PhpExecutableValidator.validateCommand(phpStanPath, Bundle.PHPStan_script_label());
     }
 
     public void startAnalyzeGroup() {
@@ -102,19 +110,21 @@ public final class PHPStan {
 
     @NbBundle.Messages({
         "# {0} - counter",
-        "PHPStan.analyze=PHPStan (analyze #{0})",})
+        "PHPStan.analyze=PHPStan (analyze #{0})"
+    })
     @CheckForNull
     public List<Result> analyze(PHPStanParams params, FileObject file) {
         assert file.isValid() : "Invalid file given: " + file;
         try {
-            Integer result = getExecutable(Bundle.PHPStan_analyze(analyzeGroupCounter++), findWorkDir(file))
+            FileObject workDir = findWorkDir(file);
+            Integer result = getExecutable(Bundle.PHPStan_analyze(analyzeGroupCounter++), workDir == null ? null : FileUtil.toFile(workDir))
                     .additionalParameters(getParameters(params, file))
                     .runAndWait(getDescriptor(), "Running phpstan..."); // NOI18N
             if (result == null) {
                 return null;
             }
 
-            return PHPStanReportParser.parse(XML_LOG, file);
+            return CheckStyleReportParser.parse(XML_LOG, file, workDir);
         } catch (CancellationException ex) {
             // cancelled
             return Collections.emptyList();
@@ -133,17 +143,22 @@ public final class PHPStan {
      * @return project directory or {@code null}
      */
     @CheckForNull
-    private File findWorkDir(FileObject file) {
+    private FileObject findWorkDir(FileObject file) {
         assert file != null;
         Project project = FileOwnerQuery.getOwner(file);
+        FileObject workDir = null;
         if (project != null) {
-            File projectDir = FileUtil.toFile(project.getProjectDirectory());
+            workDir = project.getProjectDirectory();
             if (LOGGER.isLoggable(Level.FINE)) {
-                LOGGER.log(Level.FINE, "Project directory for {0} found in {1}", new Object[]{FileUtil.toFile(file), projectDir});
+                if (workDir != null) {
+                    LOGGER.log(Level.FINE, "Project directory for {0} is found in {1}", new Object[]{FileUtil.toFile(file), workDir}); // NOI18N
+                } else {
+                    // the file/directory may not be in a PHP project
+                    LOGGER.log(Level.FINE, "Project directory for {0} is not found", FileUtil.toFile(file)); // NOI18N
+                }
             }
-            return projectDir;
         }
-        return null;
+        return workDir;
     }
 
     private PhpExecutable getExecutable(String title, @NullAllowed File workDir) {

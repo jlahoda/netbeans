@@ -153,7 +153,7 @@ public class BreadCrumbComponent<T extends JLabel&Renderer> extends JComponent i
 
         int i = 0;
         
-        nodes = path.toArray(new Node[path.size()]);
+        nodes = path.toArray(new Node[0]);
         sizes = new double[path.size()];
         
         int xTotal = 0;
@@ -170,7 +170,7 @@ public class BreadCrumbComponent<T extends JLabel&Renderer> extends JComponent i
             i++;
         }
 
-        setPreferredSize(new Dimension((int) (xTotal + (nodes.length - 1) * (LEFT_SEPARATOR_INSET + SEPARATOR.getIconWidth() + RIGHT_SEPARATOR_INSET) + START_INSET), USABLE_HEIGHT/*(int) (height + 2 * INSET_HEIGHT)*/));
+        setPreferredSize(new Dimension((xTotal + (nodes.length - 1) * (LEFT_SEPARATOR_INSET + SEPARATOR.getIconWidth() + RIGHT_SEPARATOR_INSET) + START_INSET), USABLE_HEIGHT/*(int) (height + 2 * INSET_HEIGHT)*/));
     }
     
     @Override

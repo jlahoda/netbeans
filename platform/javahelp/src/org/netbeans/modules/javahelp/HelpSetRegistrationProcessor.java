@@ -31,6 +31,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -38,8 +39,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
-import javax.annotation.processing.SupportedSourceVersion;
-import javax.lang.model.SourceVersion;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic.Kind;
@@ -60,7 +59,6 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 @ServiceProvider(service=Processor.class)
-@SupportedSourceVersion(SourceVersion.RELEASE_7)
 public class HelpSetRegistrationProcessor extends LayerGeneratingProcessor {
 
     public @Override Set<String> getSupportedAnnotationTypes() {
@@ -125,7 +123,7 @@ public class HelpSetRegistrationProcessor extends LayerGeneratingProcessor {
                     File d = Utilities.toFile(loc).getParentFile();
                     String out = hs.replaceFirst("/[^/]+$", "/") + searchDir + "/";
                     try {
-                        File config = File.createTempFile("jhindexer-config", ".txt");
+                        File config = Files.createTempFile("jhindexer-config", ".txt").toFile();
                         try {
                             AtomicInteger cnt = new AtomicInteger();
                             OutputStream os = new FileOutputStream(config);
@@ -198,7 +196,7 @@ public class HelpSetRegistrationProcessor extends LayerGeneratingProcessor {
      */
     static File createTempFile(String pref, String suff) throws IOException {
 
-        File f = File.createTempFile(pref, suff); //file in default tmp folder
+        File f = Files.createTempFile(pref, suff).toFile(); //file in default tmp folder
         if (!isUrlCompatible(f)) {
             if (Utilities.isWindows()) {
                 f = replaceTempFile(f, "c:\\Temp", pref, suff);         //NOI18N

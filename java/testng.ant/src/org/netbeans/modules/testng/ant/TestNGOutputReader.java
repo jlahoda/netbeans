@@ -22,7 +22,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.charset.UnsupportedCharsetException;
+import java.nio.charset.StandardCharsets;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.*;
@@ -899,11 +899,7 @@ final class TestNGOutputReader {
         XmlResult reports = null;
         try {
             reports = XmlOutputParser.parseXmlOutput(
-                    new InputStreamReader(
-                    new FileInputStream(reportFile),
-                    "UTF-8"), session);                                  //NOI18N
-        } catch (UnsupportedCharsetException ex) {
-            assert false;
+                    new InputStreamReader(new FileInputStream(reportFile), StandardCharsets.UTF_8), session);
         } catch (SAXException ex) {
             /*
              * This exception has already been handled.
@@ -951,7 +947,7 @@ final class TestNGOutputReader {
     private void testStarted(String suiteName, String testCase, String parameters, String values) {
         suiteName = testSession.getCurrentSuite().getName();
         testSession.setCurrentSuite(suiteName);
-        TestNGTestcase tc = ((TestNGTestSuite) ((TestNGTestSession) testSession).getCurrentSuite()).getTestCase(testCase, values);
+        TestNGTestcase tc = ((TestNGTestSuite)testSession.getCurrentSuite()).getTestCase(testCase, values);
         if (tc == null) {
             tc = new TestNGTestcase(testCase, parameters, values, testSession);
             testSession.addTestCase(tc);
@@ -968,7 +964,7 @@ final class TestNGOutputReader {
     private void testFinished(String st, String suiteName, String testCase, String parameters, String values, String duration) {
         suiteName = testSession.getCurrentSuite().getName();
         testSession.setCurrentSuite(suiteName);
-        TestNGTestcase tc = ((TestNGTestSuite) ((TestNGTestSession) testSession).getCurrentSuite()).getTestCase(testCase, values);
+        TestNGTestcase tc = ((TestNGTestSuite)testSession.getCurrentSuite()).getTestCase(testCase, values);
         CoreManager testngManager = getManagerProvider();
         if (tc == null) {
             //TestNG does not log invoke message for junit tests...
@@ -1059,7 +1055,7 @@ final class TestNGOutputReader {
                         matcher.group(2)));
             }
         }
-        t.setStackTrace(txt.toArray(new String[txt.size()]));
+        t.setStackTrace(txt.toArray(new String[0]));
         testSession.getCurrentTestCase().setTrouble(t);
 
 	if (currentTime != -1 && currentSuitename != null) {

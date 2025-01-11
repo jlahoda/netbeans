@@ -59,7 +59,7 @@ public class ElementDescription {
     public ElementDescription(CompilationInfo info, Element element, boolean overriddenFlag) {
         this.originalCPInfo = info.getClasspathInfo();
         this.handle = ElementHandle.create(element);
-        if (METHOD.equals(element.getKind()) && null != element.getEnclosingElement()) {
+        if (METHOD == element.getKind() && null != element.getEnclosingElement()) {
             //when showing the implementors/overriders of a method, show the type icon (not the method icon)
             this.imageKind = element.getEnclosingElement().getKind();
         } else {
@@ -158,6 +158,10 @@ public class ElementDescription {
         if (!ElementOpen.open(originalCPInfo, ElementDescription.this.getHandle())) {
             Toolkit.getDefaultToolkit().beep();
         }
+    }
+
+    public ClasspathInfo getOriginalCPInfo() {
+        return originalCPInfo;
     }
 
     public ElementHandle<Element> getHandle() {

@@ -285,7 +285,7 @@ public class MoveClassUI implements RefactoringUI, RefactoringUIBypass {
             if (e == null) {
                 return null;
             }
-            JEditorPane textC = NbDocument.findRecentEditorPane(ec);;
+            JEditorPane textC = NbDocument.findRecentEditorPane(ec);
             if (textC == null) {
                 try {
                     return new MoveClassUI(DataObject.find(files[0]), tar, paste);
@@ -305,7 +305,11 @@ public class MoveClassUI implements RefactoringUI, RefactoringUIBypass {
                 Collection<TreePathHandle> tphs = new ArrayList<TreePathHandle>();
                 SourcePositions sourcePositions = info.getTrees().getSourcePositions();
                 for (Element ele : e.getEnclosedElements()) {
-                    Tree leaf = info.getTrees().getPath(ele).getLeaf();
+                    TreePath path = info.getTrees().getPath(ele);
+                    if (path == null) {
+                        continue;
+                    }
+                    Tree leaf = path.getLeaf();
                     long start = sourcePositions.getStartPosition(info.getCompilationUnit(), leaf);
                     long end = sourcePositions.getEndPosition(info.getCompilationUnit(), leaf);
                     if ((start >= startOffset && start <= endOffset)
@@ -316,7 +320,7 @@ public class MoveClassUI implements RefactoringUI, RefactoringUIBypass {
                 if (tphs.isEmpty()) {
                     return doCursorPosition(info, selectedElement, startOffset);
                 }
-                return new MoveMembersUI(tphs.toArray(new TreePathHandle[tphs.size()]));
+                return new MoveMembersUI(tphs.toArray(new TreePathHandle[0]));
             }
         }
 

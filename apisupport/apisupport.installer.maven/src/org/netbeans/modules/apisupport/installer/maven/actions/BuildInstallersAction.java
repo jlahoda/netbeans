@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -149,7 +150,6 @@ public final class BuildInstallersAction extends AbstractAction implements Conte
                     //    licenseFile = null;
                     //}
                 }
-                boolean usePack200 = prefs.getBoolean(SuiteInstallerProjectProperties.USE_PACK200_COMPRESSION, false);
 
                 //${harness.dir}/etc/applicationIcon.icns
                 appIconIcnsFile = new File(InstalledFileLocator.getDefault().locate(
@@ -172,7 +172,7 @@ public final class BuildInstallersAction extends AbstractAction implements Conte
                             URL url = new URL(licenseResource);
                             is = url.openStream();
                             if (is != null) {
-                                licenseFile = File.createTempFile("license", ".txt");
+                                licenseFile = Files.createTempFile("license", ".txt").toFile();
                                 licenseFile.getParentFile().mkdirs();
                                 licenseFile.deleteOnExit();
 
@@ -322,8 +322,6 @@ public final class BuildInstallersAction extends AbstractAction implements Conte
                 "generated-installers-location-forward-slashes",
                 new File(suiteLocation, "dist").getAbsolutePath().replace("\\", "/"));
                  */
-                props.put(
-                        "pack200.enabled", "" + usePack200);
 
                 /*
                 if(appIcon!=null) {

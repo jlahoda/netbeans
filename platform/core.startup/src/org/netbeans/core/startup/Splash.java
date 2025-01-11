@@ -27,7 +27,9 @@ import java.awt.image.BufferedImage;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import java.util.StringTokenizer;
@@ -244,10 +246,12 @@ public final class Splash implements Stamps.Updater {
         if (about) {
             ret = ImageUtilities.loadImage("org/netbeans/core/startup/about.png", true);
         }
-        if (ret == null)
+        if (ret == null) {
             ret = ImageUtilities.loadImage("org/netbeans/core/startup/splash.gif", true);
-        if (ret == null)
+        }
+        if (ret == null) {
             return null;
+        }
         return new ScaledBitmapIcon(ret,
                 Integer.parseInt(NbBundle.getMessage(Splash.class, "SPLASH_WIDTH")),
                 Integer.parseInt(NbBundle.getMessage(Splash.class, "SPLASH_HEIGHT")));
@@ -437,7 +441,8 @@ public final class Splash implements Stamps.Updater {
 
         final void init() throws MissingResourceException, NumberFormatException {
             assert SwingUtilities.isEventDispatchThread();
-            if (maxSteps > 0) {
+            // check if init has already been called
+            if (statusBox != null) {
                 return;
             }
             // 100 is allocated for module system that will adjust this when number
@@ -541,11 +546,13 @@ public final class Splash implements Stamps.Updater {
             String newText = null;
             String newString;
             
-            if (text == null)
+            if (text == null) {
                 return ;
+            }
 
-            if (statusBox.fm == null)
+            if (statusBox.fm == null) {           
                 return;
+            }
             
             int width = statusBox.fm.stringWidth(text);
             
@@ -633,10 +640,12 @@ public final class Splash implements Stamps.Updater {
         }
 	
         void paint() {
-            image.paintIcon(comp, graphics, 0, 0);
+            // loadContentIcon may return a null image
+            if (image != null) {
+                image.paintIcon(comp, graphics, 0, 0);
+            }
             // turn anti-aliasing on for the splash text
-            graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
-                    RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            configureDefaultRenderingHints(graphics);
 
             if (versionBox != null) {
                 String buildNumber = System.getProperty("netbeans.buildnumber");
@@ -666,6 +675,18 @@ public final class Splash implements Stamps.Updater {
                 barLength = 0;
             }
         }
+    }
+
+    /* A simplified version of org.openide.awt.GraphicsUtils.configureDefaultRenderingHints. (We
+    can't use the org.openide.awt module here.) */
+    public static void configureDefaultRenderingHints(Graphics2D graphics) {
+        Map<Object,Object> ret =
+                (Map) (Toolkit.getDefaultToolkit().getDesktopProperty("awt.font.desktophints"));
+        if (ret == null) {
+            ret = new HashMap<Object,Object>();
+            ret.put(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        }
+        graphics.addRenderingHints(ret);
     }
 
     private static class SplashDialog extends JDialog implements ActionListener {

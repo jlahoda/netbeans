@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.24.1
+#Version 1.46
 
 CLSS public abstract interface java.io.Closeable
 intf java.lang.AutoCloseable
@@ -28,7 +28,6 @@ meth public final java.lang.String name()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
-hfds name,ordinal
 
 CLSS public java.lang.Exception
 cons protected init(java.lang.String,java.lang.Throwable,boolean,boolean)
@@ -37,7 +36,6 @@ cons public init(java.lang.String)
 cons public init(java.lang.String,java.lang.Throwable)
 cons public init(java.lang.Throwable)
 supr java.lang.Throwable
-hfds serialVersionUID
 
 CLSS public java.lang.Object
 cons public init()
@@ -74,8 +72,6 @@ meth public void printStackTrace(java.io.PrintStream)
 meth public void printStackTrace(java.io.PrintWriter)
 meth public void setStackTrace(java.lang.StackTraceElement[])
 supr java.lang.Object
-hfds CAUSE_CAPTION,EMPTY_THROWABLE_ARRAY,NULL_CAUSE_MESSAGE,SELF_SUPPRESSION_MESSAGE,SUPPRESSED_CAPTION,SUPPRESSED_SENTINEL,UNASSIGNED_STACK,backtrace,cause,detailMessage,serialVersionUID,stackTrace,suppressedExceptions
-hcls PrintStreamOrWriter,SentinelHolder,WrappedPrintStream,WrappedPrintWriter
 
 CLSS public abstract interface java.util.EventListener
 
@@ -86,7 +82,6 @@ intf java.io.Serializable
 meth public java.lang.Object getSource()
 meth public java.lang.String toString()
 supr java.lang.Object
-hfds serialVersionUID
 
 CLSS public final org.netbeans.modules.docker.api.ActionChunkedResult
 innr public static Chunk
@@ -164,6 +159,7 @@ CLSS public org.netbeans.modules.docker.api.DockerAction
 cons public init(org.netbeans.modules.docker.api.DockerInstance)
 fld public final static java.lang.String DOCKER_FILE = "Dockerfile"
 meth public boolean ping()
+meth public boolean pingWithExceptions() throws java.lang.Exception
 meth public java.util.List<org.netbeans.modules.docker.api.DockerContainer> getContainers()
 meth public java.util.List<org.netbeans.modules.docker.api.DockerImage> getImages()
 meth public java.util.List<org.netbeans.modules.docker.api.DockerRegistryImage> search(java.lang.String)
@@ -171,6 +167,8 @@ meth public java.util.concurrent.FutureTask<org.netbeans.modules.docker.api.Dock
  anno 1 org.netbeans.api.annotations.common.NonNull()
  anno 2 org.netbeans.api.annotations.common.NullAllowed()
  anno 3 org.netbeans.api.annotations.common.NullAllowed()
+meth public org.json.simple.JSONObject getRawDetails(org.netbeans.modules.docker.api.DockerEntityType,java.lang.String) throws org.netbeans.modules.docker.api.DockerException
+meth public org.json.simple.JSONObject getRunningProcessesList(org.netbeans.modules.docker.api.DockerContainer) throws org.netbeans.modules.docker.api.DockerException
 meth public org.netbeans.modules.docker.api.ActionChunkedResult logs(org.netbeans.modules.docker.api.DockerContainer) throws org.netbeans.modules.docker.api.DockerException
 meth public org.netbeans.modules.docker.api.ActionStreamResult attach(org.netbeans.modules.docker.api.DockerContainer,boolean,boolean) throws org.netbeans.modules.docker.api.DockerException
 meth public org.netbeans.modules.docker.api.DockerContainerDetail getDetail(org.netbeans.modules.docker.api.DockerContainer) throws org.netbeans.modules.docker.api.DockerException
@@ -205,7 +203,7 @@ supr org.netbeans.modules.docker.api.DockerException
 
 CLSS public final org.netbeans.modules.docker.api.DockerContainer
 innr public final static !enum Status
-intf org.netbeans.modules.docker.api.DockerEntity
+intf org.netbeans.modules.docker.api.DockerInstanceEntity
 meth public boolean equals(java.lang.Object)
 meth public int hashCode()
 meth public java.lang.String getId()
@@ -214,6 +212,7 @@ meth public java.lang.String getName()
 meth public java.lang.String getShortId()
 meth public java.lang.String toString()
 meth public org.netbeans.modules.docker.api.DockerContainer$Status getStatus()
+meth public org.netbeans.modules.docker.api.DockerEntityType getType()
 meth public org.netbeans.modules.docker.api.DockerInstance getInstance()
 supr java.lang.Object
 hfds id,image,instance,name,status
@@ -242,6 +241,15 @@ hfds name,portMappings,status,stdin,tty
 CLSS public abstract interface org.netbeans.modules.docker.api.DockerEntity
 meth public abstract java.lang.String getId()
 meth public abstract java.lang.String getShortId()
+
+CLSS public final !enum org.netbeans.modules.docker.api.DockerEntityType
+fld public final static org.netbeans.modules.docker.api.DockerEntityType Container
+fld public final static org.netbeans.modules.docker.api.DockerEntityType Image
+meth public java.lang.String getUrlPath()
+meth public static org.netbeans.modules.docker.api.DockerEntityType valueOf(java.lang.String)
+meth public static org.netbeans.modules.docker.api.DockerEntityType[] values()
+supr java.lang.Enum<org.netbeans.modules.docker.api.DockerEntityType>
+hfds urlPath
 
 CLSS public final org.netbeans.modules.docker.api.DockerEvent
 innr public abstract interface static Listener
@@ -304,7 +312,7 @@ cons public init(java.lang.Throwable)
 supr java.lang.Exception
 
 CLSS public final org.netbeans.modules.docker.api.DockerImage
-intf org.netbeans.modules.docker.api.DockerEntity
+intf org.netbeans.modules.docker.api.DockerInstanceEntity
 meth public boolean equals(java.lang.Object)
 meth public int hashCode()
 meth public java.lang.String getId()
@@ -314,6 +322,8 @@ meth public java.util.List<org.netbeans.modules.docker.api.DockerTag> getTags()
 meth public long getCreated()
 meth public long getSize()
 meth public long getVirtualSize()
+ anno 0 java.lang.Deprecated()
+meth public org.netbeans.modules.docker.api.DockerEntityType getType()
 meth public org.netbeans.modules.docker.api.DockerInstance getInstance()
 supr java.lang.Object
 hfds created,id,instance,size,tags,virtualSize
@@ -359,6 +369,11 @@ intf java.util.EventListener
 meth public abstract void onConnect()
 meth public abstract void onDisconnect()
 
+CLSS public abstract interface org.netbeans.modules.docker.api.DockerInstanceEntity
+intf org.netbeans.modules.docker.api.DockerEntity
+meth public abstract org.netbeans.modules.docker.api.DockerEntityType getType()
+meth public abstract org.netbeans.modules.docker.api.DockerInstance getInstance()
+
 CLSS public org.netbeans.modules.docker.api.DockerName
 meth public java.lang.String getNamespace()
 meth public java.lang.String getRegistry()
@@ -395,14 +410,16 @@ supr java.lang.Object
 hfds LOGGER,changeSupport,initialized,instances,support
 
 CLSS public final org.netbeans.modules.docker.api.DockerTag
-intf org.netbeans.modules.docker.api.DockerEntity
+intf org.netbeans.modules.docker.api.DockerInstanceEntity
 meth public boolean equals(java.lang.Object)
 meth public int hashCode()
 meth public java.lang.String getId()
 meth public java.lang.String getShortId()
 meth public java.lang.String getTag()
 meth public java.lang.String toString()
+meth public org.netbeans.modules.docker.api.DockerEntityType getType()
 meth public org.netbeans.modules.docker.api.DockerImage getImage()
+meth public org.netbeans.modules.docker.api.DockerInstance getInstance()
 supr java.lang.Object
 hfds image,tag
 

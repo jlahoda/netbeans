@@ -464,6 +464,10 @@
                         <compile-dependency/>
                     </test-dependency>
                     <test-dependency>
+                        <code-name-base>org.netbeans.modules.java.j2seplatform</code-name-base>
+                        <compile-dependency/>
+                    </test-dependency>
+                    <test-dependency>
                         <code-name-base>org.netbeans.modules.nbjunit</code-name-base>
                         <recursive/>
                         <compile-dependency/>
@@ -509,6 +513,11 @@
                 <classpath>${antsrc.cp}</classpath>
                 <built-to>build/antclasses</built-to>
                 <built-to>${cluster}/ant/nblib/${code.name.base.dashes}.jar</built-to>
+            </extra-compilation-unit>
+            <extra-compilation-unit>
+                <package-root>copyapsrc</package-root>
+                <classpath>${cp}</classpath>
+                <built-to>build/copyapclasses</built-to>
             </extra-compilation-unit>
         </data>
     </configuration>

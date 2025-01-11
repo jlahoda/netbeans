@@ -24,6 +24,7 @@ import java.beans.PropertyVetoException;
 import java.io.*;
 import java.lang.ref.*;
 import java.lang.reflect.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.logging.*;
 import org.openide.ServiceType;
@@ -945,7 +946,7 @@ public class InstanceDataObject extends MultiDataObject implements InstanceCooki
 
     // XXX #27494 Please changes to this field apply also into
     // core/naming/src/org/netbeans/core/naming/Utils class.
-    private final static int MAX_FILENAME_LENGTH = 50;
+    private static final int MAX_FILENAME_LENGTH = 50;
 
     // XXX #27494 Please changes to this method apply also into
     // core/naming/src/org/netbeans/core/naming/Utils class.
@@ -1036,11 +1037,11 @@ public class InstanceDataObject extends MultiDataObject implements InstanceCooki
         return super.handleCreateFromTemplate(df, name);
     }
 
-    /* Copy a service sanely. For settings and serializable beans, special
+    /** Copy a service sanely. For settings and serializable beans, special
      * methods are used to write out the resulting files, and the name to
      * use is taken from the *display name* of the current file, as this is
      * what the user is accustomed to seeing (for ServiceType's especially).
-     * @see <a href="http://www.netbeans.org/issues/show_bug.cgi?id=16278">Issue #16278</a>
+     * @see <a href="https://bz.apache.org/netbeans/show_bug.cgi?id=16278">Issue #16278</a>
      */
     @Override
     protected DataObject handleCopy(DataFolder df) throws IOException {
@@ -1543,7 +1544,7 @@ public class InstanceDataObject extends MultiDataObject implements InstanceCooki
         private InstanceDataObject result = null;
         private boolean create;
 
-        private final static Creator me = new Creator ();
+        private static final Creator me = new Creator ();
 
 
         private Creator() {
@@ -1609,7 +1610,7 @@ public class InstanceDataObject extends MultiDataObject implements InstanceCooki
             throw new IOException("missing attribute settings.convertor"); // NOI18N
         }
         ByteArrayOutputStream b = new ByteArrayOutputStream(1024);
-        Writer w = new OutputStreamWriter(b, "UTF-8"); // NOI18N
+        Writer w = new OutputStreamWriter(b, StandardCharsets.UTF_8);
         convertorWriteMethod(convertor, new WriterProvider(w, ctx), inst);
         w.close();
         return b;
@@ -1638,7 +1639,7 @@ public class InstanceDataObject extends MultiDataObject implements InstanceCooki
     }
 
     /** path where to find convertor/provider definition */
-    private final static String EA_PROVIDER_PATH = "settings.providerPath"; // NOI18N
+    private static final String EA_PROVIDER_PATH = "settings.providerPath"; // NOI18N
     private static final String EA_SUBCLASSES = "settings.subclasses"; // NOI18N
 
     /** look up appropriate convertor according to obj */
@@ -1650,7 +1651,7 @@ public class InstanceDataObject extends MultiDataObject implements InstanceCooki
             throw new FileNotFoundException("SFS:xml/memory while converting a " + obj.getClass().getName()); //NOI18N
         }
         
-        Class clazz = obj.getClass();
+        Class<?> clazz = obj.getClass();
         Class c = clazz;
         while (c != null) {
             String className = c.getName();

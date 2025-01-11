@@ -142,11 +142,11 @@ public final class RunTargetsAction extends AbstractAction implements ContextAwa
                 } catch (IOException e) {
                     DialogDisplayer.getDefault().notify(
                             new NotifyDescriptor.Message(e.getLocalizedMessage()));
-                    allTargets = Collections.EMPTY_SET;
+                    allTargets = Collections.emptySet();
                 }
                 String defaultTarget = null;
-                SortedSet<String> describedTargets = new TreeSet(Collator.getInstance());
-                SortedSet<String> otherTargets = new TreeSet(Collator.getInstance());
+                SortedSet<String> describedTargets = new TreeSet<>(Collator.getInstance());
+                SortedSet<String> otherTargets     = new TreeSet<>(Collator.getInstance());
                 for (TargetLister.Target t : allTargets) {
                     if (t.isOverridden()) {
                         // Cannot be called.
@@ -255,7 +255,7 @@ public final class RunTargetsAction extends AbstractAction implements ContextAwa
     private static final class AdvancedAction extends AbstractAction {
         
         private final AntProjectCookie project;
-        private final Set/*<TargetLister.Target>*/ allTargets;
+        private final Set<TargetLister.Target> allTargets;
         
         public AdvancedAction(AntProjectCookie project, Set/*<TargetLister.Target>*/ allTargets) {
             super(NbBundle.getMessage(RunTargetsAction.class, "LBL_run_advanced"));

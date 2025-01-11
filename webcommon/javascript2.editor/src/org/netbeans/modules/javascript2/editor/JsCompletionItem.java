@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,7 +34,7 @@ import javax.swing.ImageIcon;
 import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.lexer.Token;
 import org.netbeans.api.lexer.TokenSequence;
-import org.netbeans.modules.csl.api.CodeCompletionResult;
+import org.netbeans.modules.csl.api.CodeCompletionContext;
 import org.netbeans.modules.csl.api.CompletionProposal;
 import org.netbeans.modules.csl.api.ElementHandle;
 import org.netbeans.modules.csl.api.ElementKind;
@@ -42,7 +43,6 @@ import org.netbeans.modules.csl.api.Modifier;
 import org.netbeans.modules.csl.api.OffsetRange;
 import org.netbeans.modules.csl.spi.ParserResult;
 import org.netbeans.modules.csl.spi.support.CancelSupport;
-import org.netbeans.modules.html.editor.lib.api.model.HtmlTagAttribute;
 import org.netbeans.modules.javascript2.lexer.api.JsTokenId;
 import org.netbeans.modules.javascript2.lexer.api.LexUtilities;
 import org.netbeans.modules.javascript2.model.api.IndexedElement;
@@ -55,6 +55,8 @@ import org.netbeans.modules.javascript2.model.api.ModelUtils;
 import org.netbeans.modules.javascript2.editor.options.OptionsUtils;
 import org.netbeans.modules.javascript2.editor.parser.JsParserResult;
 import org.netbeans.modules.javascript2.editor.spi.CompletionContext;
+import org.netbeans.modules.javascript2.editor.spi.ElementDocumentation;
+import org.netbeans.modules.javascript2.editor.spi.ProposalRequest;
 import org.netbeans.modules.javascript2.model.api.Index;
 import org.netbeans.modules.javascript2.model.api.Model;
 import org.netbeans.modules.parsing.api.Snapshot;
@@ -67,15 +69,15 @@ import org.openide.util.NbBundle.Messages;
  * @author Petr Pisl
  */
 public class JsCompletionItem implements CompletionProposal {
-    
+
     protected final CompletionRequest request;
     protected final ElementHandle element;
-    
-    JsCompletionItem(ElementHandle element, CompletionRequest request) {
+
+    protected JsCompletionItem(ElementHandle element, CompletionRequest request) {
         this.element = element;
         this.request = request;
     }
-    
+
     @Override
     public int getAnchorOffset() {
         return LexUtilities.getLexerOffset((JsParserResult)request.info, request.anchor);
@@ -112,14 +114,14 @@ public class JsCompletionItem implements CompletionProposal {
                 }
             }
         }
-        sb.append(getName());    
+        sb.append(getName());
         return sb.toString();
     }
-    
+
     protected boolean isDeprecated() {
         return element.getModifiers().contains(Modifier.DEPRECATED);
     }
-    
+
     @Override
     public String getLhsHtml(HtmlFormatter formatter) {
         formatName(formatter);
@@ -135,7 +137,7 @@ public class JsCompletionItem implements CompletionProposal {
             formatter.appendText(getName());
         }
     }
-    
+
     @Messages("JsCompletionItem.lbl.js.platform=JS Platform")
     @Override
     public String getRhsHtml(HtmlFormatter formatter) {
@@ -179,7 +181,15 @@ public class JsCompletionItem implements CompletionProposal {
 
     @Override
     public Set<Modifier> getModifiers() {
-        Set<Modifier> modifiers = (getElement() == null || getElement().getModifiers().isEmpty() ? Collections.EMPTY_SET : EnumSet.copyOf(getElement().getModifiers()));
+        Set<Modifier> modifiers;
+
+        if (getElement() == null || getElement().getModifiers().isEmpty()) {
+            modifiers = Collections.EMPTY_SET;
+        } else {
+            modifiers = EnumSet.noneOf(Modifier.class);
+            modifiers.addAll(getElement().getModifiers());
+        }
+
         if (modifiers.contains(Modifier.PRIVATE) && (modifiers.contains(Modifier.PUBLIC) || modifiers.contains(Modifier.PROTECTED))) {
             modifiers.remove(Modifier.PUBLIC);
             modifiers.remove(Modifier.PROTECTED);
@@ -196,7 +206,7 @@ public class JsCompletionItem implements CompletionProposal {
     @Override
     public int getSortPrioOverride() {
         int order = 100;
-        if (element != null && element instanceof JsElement) {
+        if (element instanceof JsElement) {
             if (((JsElement)element).isPlatform()) {
                 if (ModelUtils.PROTOTYPE.equals(element.getName())) { //NOI18N
                     order = 1;
@@ -228,7 +238,7 @@ public class JsCompletionItem implements CompletionProposal {
         }
         return getName();
      }
-    
+
     public static class CompletionRequest {
         public int anchor;
         public JsParserResult result;
@@ -237,21 +247,22 @@ public class JsCompletionItem implements CompletionProposal {
         public CompletionContext completionContext;
         public boolean addHtmlTagAttributes;
         public CancelSupport cancelSupport;
+        public Collection<String> fqnTypes = new LinkedHashSet<>();
     }
-    
+
     private static ImageIcon priviligedIcon = null;
     private static ImageIcon publicGenerator = null;
     private static ImageIcon privateGenerator = null;
     private static ImageIcon priviligedGenerator = null;
-    
+
     public static class JsFunctionCompletionItem extends JsCompletionItem {
-        
+
         private final Set<String> returnTypes;
         private final Map<String, Set<String>> parametersTypes;
         JsFunctionCompletionItem(ElementHandle element, CompletionRequest request, Set<String> resolvedReturnTypes, Map<String, Set<String>> parametersTypes) {
             super(element, request);
             this.returnTypes = resolvedReturnTypes != null ? resolvedReturnTypes : Collections.EMPTY_SET;
-            this.parametersTypes = parametersTypes != null ? parametersTypes : Collections.EMPTY_MAP;
+            this.parametersTypes = parametersTypes != null ? parametersTypes : Collections.<String, Set<String>>emptyMap();
         }
 
         @Override
@@ -289,7 +300,7 @@ public class JsCompletionItem implements CompletionProposal {
                 }
                 if (it.hasNext()) {
                     formatter.appendText(", ");  //NOI18N
-                }    
+                }
             }
         }
 
@@ -333,7 +344,7 @@ public class JsCompletionItem implements CompletionProposal {
             }
             return super.getIcon(); //To change body of generated methods, choose Tools | Templates.
         }
-        
+
         private boolean isAfterNewKeyword() {
             boolean isAfterNew = false;
             Snapshot snapshot = request.result.getSnapshot();
@@ -342,7 +353,7 @@ public class JsCompletionItem implements CompletionProposal {
             if (ts != null) {
                 ts.move(offset);
                 if (ts.moveNext()) {
-                    Token<? extends JsTokenId> token = LexUtilities.findPrevious(ts, Arrays.asList(JsTokenId.IDENTIFIER, JsTokenId.OPERATOR_DOT, JsTokenId.BLOCK_COMMENT, JsTokenId.WHITESPACE, JsTokenId.LINE_COMMENT, JsTokenId.EOL));
+                    Token<? extends JsTokenId> token = LexUtilities.findPrevious(ts, Arrays.asList(JsTokenId.IDENTIFIER, JsTokenId.PRIVATE_IDENTIFIER, JsTokenId.OPERATOR_DOT, JsTokenId.OPERATOR_OPTIONAL_ACCESS, JsTokenId.BLOCK_COMMENT, JsTokenId.WHITESPACE, JsTokenId.LINE_COMMENT, JsTokenId.EOL));
                     if (token.id() == JsTokenId.KEYWORD_NEW) {
                         isAfterNew = true;
                     }
@@ -350,9 +361,9 @@ public class JsCompletionItem implements CompletionProposal {
             }
             return isAfterNew;
         }
-        
+
         /**
-         * 
+         *
          * @return true if the element should be treated as an object or function in the context
          */
         private boolean asObject() {
@@ -374,9 +385,9 @@ public class JsCompletionItem implements CompletionProposal {
                     if (returnTypes.isEmpty()) {
                         result = true;
                     } else if (returnTypes.size() == 1) {
-                        String type = returnTypes.iterator().next(); 
+                        String type = returnTypes.iterator().next();
                         firstChar = type.charAt(0);
-                        if (Character.isUpperCase(firstChar) && !(Type.NUMBER.equals(type) || Type.BOOLEAN.equals(type) 
+                        if (Character.isUpperCase(firstChar) && !(Type.NUMBER.equals(type) || Type.BOOLEAN.equals(type)
                                 || Type.STRING.equals(type) || Type.ARRAY.equals(type))) {
                             result = true;
                         }
@@ -392,7 +403,7 @@ public class JsCompletionItem implements CompletionProposal {
         public JsGeneratorCompletionItem(ElementHandle element, CompletionRequest request, Set<String> resolvedReturnTypes, Map<String, Set<String>> parametersTypes) {
             super(element, request, resolvedReturnTypes, parametersTypes);
         }
-        
+
         @Override
         public ImageIcon getIcon() {
             if (getModifiers().contains(Modifier.PUBLIC)) {
@@ -413,18 +424,18 @@ public class JsCompletionItem implements CompletionProposal {
             }
             return super.getIcon();
         }
-        
+
     }
-    
+
     public static class JsCallbackCompletionItem extends JsCompletionItem {
         private static ImageIcon callbackIcon = null;
         private IndexedElement.FunctionIndexedElement function;
-                
+
         public JsCallbackCompletionItem(IndexedElement.FunctionIndexedElement element, CompletionRequest request) {
             super(element, request);
             function = element;
         }
-        
+
         @Override
         public ImageIcon getIcon() {
             if (callbackIcon == null) {
@@ -432,7 +443,7 @@ public class JsCompletionItem implements CompletionProposal {
             }
             return callbackIcon;
         }
-        
+
         @Override
         public String getLhsHtml(HtmlFormatter formatter) {
             formatter.setMaxLength(OptionsUtils.forLanguage(JsTokenId.javascriptLanguage()).getCodeCompletionItemSignatureWidth());
@@ -449,8 +460,8 @@ public class JsCompletionItem implements CompletionProposal {
         public int getSortPrioOverride() {
             return 90;      // display as first items?
         }
-    
-        
+
+
         private void appendParamsStr(HtmlFormatter formatter){
             for (Iterator<Map.Entry<String, Collection<String>>> it = function.getParameters().entrySet().iterator(); it.hasNext();) {
                 Map.Entry<String, Collection<String>> entry = it.next();
@@ -471,10 +482,10 @@ public class JsCompletionItem implements CompletionProposal {
                 }
                 if (it.hasNext()) {
                     formatter.appendText(", ");  //NOI18N
-                }    
+                }
             }
         }
-        
+
         @Override
         public String getCustomInsertTemplate() {
             StringBuilder template = new StringBuilder();
@@ -515,13 +526,13 @@ public class JsCompletionItem implements CompletionProposal {
         }
 
     }
-    
+
     static class KeywordItem extends JsCompletionItem {
-        
+
         private static  ImageIcon keywordIcon = null;
-        
+
         private final String keyword;
-        
+
         private final JsKeywords.CompletionDescription description;
 
         public KeywordItem(String keyword, JsKeywords.CompletionDescription description, CompletionRequest request) {
@@ -565,21 +576,21 @@ public class JsCompletionItem implements CompletionProposal {
             }
             return keywordIcon;
         }
-        
+
         @Override
         public String getInsertPrefix() {
             return getName();
         }
-        
+
         @Override
         public String getCustomInsertTemplate() {
             StringBuilder builder = new StringBuilder();
-            
+
             JsKeywords.CompletionType type = description.getType();
             if (type == null) {
                 return getName();
             }
-            
+
             switch(type) {
                 case SIMPLE:
                     builder.append(getName());
@@ -625,120 +636,10 @@ public class JsCompletionItem implements CompletionProposal {
         }
     }
 
-    static class CssCompletionItem extends JsCompletionItem {
-        
-        private static ImageIcon cssIcon = null;
-        
-        private final String name;
-        
-        public CssCompletionItem(String name, CompletionRequest request) {
-            super(null, request);
-            this.name = name;
-        }
-        
-        @Override
-        public ImageIcon getIcon() {
-            if (cssIcon == null) {
-                cssIcon = new ImageIcon(ImageUtilities.loadImage("org/netbeans/modules/javascript2/jquery/resources/style_sheet_16.png")); //NOI18N
-            }
-            return cssIcon;
-        }
-        
-        @Override
-        public String getName() {
-            return name;
-        }
-        
-        @Override
-        public String getInsertPrefix() {
-            return getName();
-        }
-        
-        @Override
-        public String getLhsHtml(HtmlFormatter formatter) {
-            formatter.reset();
-            formatter.appendText(getName());
-            return formatter.getText();
-        }
-
-        @Override
-        public ElementKind getKind() {
-            return ElementKind.RULE;
-        }
-
-        @Override
-        public String getRhsHtml(HtmlFormatter formatter) {
-            return null;
-        }
-        
-    }
-    
-    public static class JsHtmlAttributeItem extends JsCompletionItem {
-        
-        private final HtmlTagAttribute attr;
-        
-        public JsHtmlAttributeItem(HtmlTagAttribute attr, CompletionRequest request) {
-            super(new HtmlAttrElement(attr), request);
-            this.attr = attr;
-        }
-        
-        @Override
-        public String getName() {
-            return attr.getName();
-        }
-        
-        @Override
-        public String getInsertPrefix() {
-            return getName();
-        }
-        
-        @Override
-        public String getLhsHtml(HtmlFormatter formatter) {
-            formatter.reset();
-            formatter.appendText(getName());
-            return formatter.getText();
-        }
-
-        @Override
-        public ElementKind getKind() {
-            return ElementKind.ATTRIBUTE;
-        }
-
-        @Messages("JsCompletionItem.lbl.html.attribute=HTML Attribute")
-        @Override
-        public String getRhsHtml(HtmlFormatter formatter) {
-            formatter.reset();
-            formatter.appendHtml("<font color=#999999>");
-            formatter.appendText(Bundle.JsCompletionItem_lbl_html_attribute());
-            formatter.appendHtml("</font>");
-            return formatter.getText();
-        }
-        
-        private static class HtmlAttrElement extends SimpleDocElement {
-            private final HtmlTagAttribute attribute;
-            
-            public HtmlAttrElement(HtmlTagAttribute attribute) {
-                super(attribute.getName(), ElementKind.ATTRIBUTE);
-                this.attribute = attribute;
-            }
-
-            @Override
-            public String getDocumentation() {
-                String content = attribute.getHelp().getHelpContent();
-                if (content == null) {
-                    if (attribute.getHelp().getHelpResolver() != null && attribute.getHelp().getHelpURL() != null) {
-                        content = attribute.getHelp().getHelpResolver().getHelpContent(attribute.getHelp().getHelpURL());
-                    }
-                }
-                return content;
-            }
-        }
-    }
-    
     public static class JsPropertyCompletionItem extends JsCompletionItem {
 
         private final Set<String> resolvedTypes;
-        
+
         JsPropertyCompletionItem(ElementHandle element, CompletionRequest request, Set<String> resolvedTypes) {
             super(element, request);
             this.resolvedTypes = resolvedTypes != null ? resolvedTypes : Collections.EMPTY_SET;
@@ -768,24 +669,24 @@ public class JsCompletionItem implements CompletionProposal {
             }
             return super.getCustomInsertTemplate(); //To change body of generated methods, choose Tools | Templates.
         }
-        
+
     }
 
     public static class Factory {
-        
+
         public static void create( Map<String, List<JsElement>> items, CompletionRequest request, List<CompletionProposal> result) {
             CancelSupport cancelSupport = request.cancelSupport;
             if (cancelSupport.isCancelled()) {
                 return;
             }
-            // This maps unresolved types to the display name of the resolved type. 
+            // This maps unresolved types to the display name of the resolved type.
             // It should save time to not resolve one type more times
-            HashMap<String, Set<String>> resolvedTypes = new HashMap<String, Set<String>>();
+            HashMap<String, Set<String>> resolvedTypes = new HashMap<>();
 
             for (Map.Entry<String, List<JsElement>> entry: items.entrySet()) {
 
                 // this helps to eleminate items that will look as the same items in the cc
-                HashMap<String, JsCompletionItem> signatures = new HashMap<String, JsCompletionItem>();
+                HashMap<String, JsCompletionItem> signatures = new HashMap<>();
                 Index jsIndex = null;
                 if (OptionsUtils.forLanguage(JsTokenId.javascriptLanguage()).autoCompletionTypeResolution()) {
                     jsIndex = Index.get(request.info.getSnapshot().getSource().getFileObject());
@@ -799,8 +700,9 @@ public class JsCompletionItem implements CompletionProposal {
                         case FUNCTION:
                         case METHOD:
                         case GENERATOR:
-                            Set<String> returnTypes = new HashSet<String>();
-                            HashMap<String, Set<String>> allParameters = new LinkedHashMap<String, Set<String>>();
+                        case ARROW_FUNCTION:
+                            Set<String> returnTypes = new HashSet<>();
+                            HashMap<String, Set<String>> allParameters = new LinkedHashMap<>();
                             if (element instanceof JsFunction) {
                                 // count return types
                                 Collection<TypeUsage> resolveTypes = ModelUtils.resolveTypes(((JsFunction) element).getReturnTypes(),
@@ -809,7 +711,7 @@ public class JsCompletionItem implements CompletionProposal {
                                 returnTypes.addAll(Utils.getDisplayNames(resolveTypes));
                                 // count parameters type
                                 for (JsObject jsObject : ((JsFunction) element).getParameters()) {
-                                    Set<String> paramTypes = new HashSet<String>();
+                                    Set<String> paramTypes = new HashSet<>();
                                     for (TypeUsage type : jsObject.getAssignmentForOffset(jsObject.getOffset() + 1)) {
                                         Set<String> resolvedType = resolvedTypes.get(type.getType());
                                         if (resolvedType == null) {
@@ -826,7 +728,7 @@ public class JsCompletionItem implements CompletionProposal {
                                 }
                             } else if (element instanceof IndexedElement.FunctionIndexedElement) {
                                 // count return types
-                                HashSet<TypeUsage> returnTypeUsages = new HashSet<TypeUsage>();
+                                HashSet<TypeUsage> returnTypeUsages = new HashSet<>();
                                 for (String type : ((IndexedElement.FunctionIndexedElement) element).getReturnTypes()) {
                                     returnTypeUsages.add(new TypeUsage(type, -1, false));
                                 }
@@ -837,7 +739,7 @@ public class JsCompletionItem implements CompletionProposal {
                                 // count parameters type
                                 LinkedHashMap<String, Collection<String>> parameters = ((IndexedElement.FunctionIndexedElement) element).getParameters();
                                 for (Map.Entry<String, Collection<String>> paramEntry : parameters.entrySet()) {
-                                    Set<String> paramTypes = new HashSet<String>();
+                                    Set<String> paramTypes = new HashSet<>();
                                     for (String type : paramEntry.getValue()) {
                                         Set<String> resolvedType = resolvedTypes.get(type);
                                         if (resolvedType == null) {
@@ -856,7 +758,7 @@ public class JsCompletionItem implements CompletionProposal {
                             // create signature
                             String signature = createFnSignature(entry.getKey(), allParameters, returnTypes);
                             if (!signatures.containsKey(signature)) {
-                                JsCompletionItem item = element.getJSKind() != JsElement.Kind.GENERATOR 
+                                JsCompletionItem item = element.getJSKind() != JsElement.Kind.GENERATOR
                                         ? new JsFunctionCompletionItem(element, request, returnTypes, allParameters)
                                         : new JsGeneratorCompletionItem(element, request, returnTypes, allParameters);
                                 signatures.put(signature, item);
@@ -868,7 +770,7 @@ public class JsCompletionItem implements CompletionProposal {
                         case PROPERTY_SETTER:
                         case FIELD:
                         case VARIABLE:
-                            Set<String> typesToDisplay = new HashSet<String>();
+                            Set<String> typesToDisplay = new HashSet<>();
                             Collection<? extends TypeUsage> assignment = null;
                             if (element instanceof JsObject) {
                                 JsObject jsObject = (JsObject) element;
@@ -878,7 +780,7 @@ public class JsCompletionItem implements CompletionProposal {
                                 assignment = iElement.getAssignments();
                             }
                             if (assignment != null && !assignment.isEmpty()) {
-                                HashSet<TypeUsage> toResolve = new HashSet<TypeUsage>();
+                                HashSet<TypeUsage> toResolve = new HashSet<>();
                                 for (TypeUsage type : assignment) {
                                     if (type.isResolved()) {
                                         if (!Type.UNDEFINED.equals(type.getType())) {
@@ -926,7 +828,7 @@ public class JsCompletionItem implements CompletionProposal {
                 }
             }
         }
-        
+
         private static String createFnSignature(String name, HashMap<String, Set<String>> params, Set<String> returnTypes) {
             StringBuilder sb = new StringBuilder();
             sb.append(name).append('(');
@@ -939,7 +841,7 @@ public class JsCompletionItem implements CompletionProposal {
             sb.append(createTypeSignature(returnTypes));
             return sb.toString();
         }
-        
+
         private static String createTypeSignature(Set<String> types) {
             StringBuilder sb = new StringBuilder();
             for(String name: types){
@@ -948,8 +850,8 @@ public class JsCompletionItem implements CompletionProposal {
             return sb.toString();
         }
     }
-    
-    public abstract static class SimpleDocElement implements ElementHandle {
+
+    public abstract static class SimpleDocElement implements ElementHandle, ElementDocumentation {
 
         private final String name;
         private final ElementKind kind;
@@ -958,8 +860,8 @@ public class JsCompletionItem implements CompletionProposal {
             this.name = name;
             this.kind = kind;
         }
-        
-        
+
+
         @Override
         public FileObject getFileObject() {
             return null;
@@ -999,7 +901,22 @@ public class JsCompletionItem implements CompletionProposal {
         public OffsetRange getOffsetRange(ParserResult result) {
             return OffsetRange.NONE;
         }
-        
-        abstract public String getDocumentation();
+    }
+
+    /**
+     * Creates default ProposalRequest. Used by compatibility bridge in new CC interface.
+     * @param ccContext parser context
+     * @param jsCompletionContext js completion type
+     * @param prefix typed prefix
+     * @return initialized ProposalRequest
+     */
+    public static ProposalRequest createRequest(CodeCompletionContext ccContext, CompletionContext jsCompletionContext, String prefix) {
+        int caretOffset = ccContext.getParserResult().getSnapshot().getEmbeddedOffset(ccContext.getCaretOffset());
+        String pref = ccContext.getPrefix();
+        int offset = pref == null ? caretOffset : caretOffset
+                    // can't just use 'prefix.getLength()' here cos it might have been calculated with
+                    // the 'upToOffset' flag set to false
+                    - pref.length();
+        return new ProposalRequest(ccContext, jsCompletionContext, null, offset);
     }
 }

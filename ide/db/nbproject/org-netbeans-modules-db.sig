@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.70.1
+#Version 1.95.0
 
 CLSS public java.beans.FeatureDescriptor
 cons public init()
@@ -20,7 +20,6 @@ meth public void setPreferred(boolean)
 meth public void setShortDescription(java.lang.String)
 meth public void setValue(java.lang.String,java.lang.Object)
 supr java.lang.Object
-hfds TRANSIENT,classRef,displayName,expert,hidden,name,preferred,shortDescription,table
 
 CLSS public abstract interface java.io.Serializable
 
@@ -31,7 +30,6 @@ cons public init(java.lang.String)
 cons public init(java.lang.String,java.lang.Throwable)
 cons public init(java.lang.Throwable)
 supr java.lang.Throwable
-hfds serialVersionUID
 
 CLSS public java.lang.Object
 cons public init()
@@ -68,8 +66,6 @@ meth public void printStackTrace(java.io.PrintStream)
 meth public void printStackTrace(java.io.PrintWriter)
 meth public void setStackTrace(java.lang.StackTraceElement[])
 supr java.lang.Object
-hfds CAUSE_CAPTION,EMPTY_THROWABLE_ARRAY,NULL_CAUSE_MESSAGE,SELF_SUPPRESSION_MESSAGE,SUPPRESSED_CAPTION,SUPPRESSED_SENTINEL,UNASSIGNED_STACK,backtrace,cause,detailMessage,serialVersionUID,stackTrace,suppressedExceptions
-hcls PrintStreamOrWriter,SentinelHolder,WrappedPrintStream,WrappedPrintWriter
 
 CLSS public abstract interface java.util.EventListener
 
@@ -81,6 +77,7 @@ CLSS public final org.netbeans.api.db.explorer.ConnectionManager
 cons public init()
 meth public boolean connect(org.netbeans.api.db.explorer.DatabaseConnection) throws org.netbeans.api.db.explorer.DatabaseException
 meth public org.netbeans.api.db.explorer.DatabaseConnection getConnection(java.lang.String)
+meth public org.netbeans.api.db.explorer.DatabaseConnection getPreferredConnection(boolean)
 meth public org.netbeans.api.db.explorer.DatabaseConnection showAddConnectionDialogFromEventThread(org.netbeans.api.db.explorer.JDBCDriver)
 meth public org.netbeans.api.db.explorer.DatabaseConnection showAddConnectionDialogFromEventThread(org.netbeans.api.db.explorer.JDBCDriver,java.lang.String)
 meth public org.netbeans.api.db.explorer.DatabaseConnection showAddConnectionDialogFromEventThread(org.netbeans.api.db.explorer.JDBCDriver,java.lang.String,java.lang.String,java.lang.String)
@@ -93,6 +90,7 @@ meth public void refreshConnectionInExplorer(org.netbeans.api.db.explorer.Databa
 meth public void removeConnection(org.netbeans.api.db.explorer.DatabaseConnection) throws org.netbeans.api.db.explorer.DatabaseException
 meth public void removeConnectionListener(org.netbeans.api.db.explorer.ConnectionListener)
 meth public void selectConnectionInExplorer(org.netbeans.api.db.explorer.DatabaseConnection)
+meth public void setPreferredConnection(org.netbeans.api.db.explorer.DatabaseConnection)
 meth public void showAddConnectionDialog(org.netbeans.api.db.explorer.JDBCDriver)
 meth public void showAddConnectionDialog(org.netbeans.api.db.explorer.JDBCDriver,java.lang.String)
 meth public void showAddConnectionDialog(org.netbeans.api.db.explorer.JDBCDriver,java.lang.String,java.lang.String,java.lang.String)
@@ -290,7 +288,7 @@ hfds childNodeFactory,dataLookup,firePropChangeAfterRefresh,layerEntry,nodeProvi
 
 CLSS public org.netbeans.api.db.explorer.node.ChildNodeFactory
 cons public init(org.openide.util.Lookup)
-meth protected boolean createKeys(java.util.List)
+meth protected boolean createKeys(java.util.List<org.openide.util.Lookup>)
 meth public org.openide.nodes.Node[] createNodesForKey(org.openide.util.Lookup)
 meth public void refresh()
 meth public void refreshSync()
@@ -321,15 +319,16 @@ CLSS public abstract interface org.netbeans.api.db.explorer.node.NodeProviderFac
 meth public abstract org.netbeans.api.db.explorer.node.NodeProvider createInstance(org.openide.util.Lookup)
 
 CLSS public final org.netbeans.api.db.explorer.support.DatabaseExplorerUIs
+meth public static org.openide.nodes.Node connectionsNode()
 meth public static void connect(javax.swing.JComboBox,org.netbeans.api.db.explorer.ConnectionManager)
 supr java.lang.Object
-hcls ConnectionComboBoxModel,ConnectionComparator,ConnectionDataComboBoxModel
+hcls ConnChildren,ConnectionComboBoxModel,ConnectionComparator,ConnectionDataComboBoxModel
 
 CLSS public final org.netbeans.api.db.sql.support.SQLIdentifiers
 innr public abstract static Quoter
 meth public static org.netbeans.api.db.sql.support.SQLIdentifiers$Quoter createQuoter(java.sql.DatabaseMetaData)
 supr java.lang.Object
-hcls DatabaseMetaDataQuoter
+hcls DatabaseMetaDataQuoter,FallbackQuoter
 
 CLSS public abstract static org.netbeans.api.db.sql.support.SQLIdentifiers$Quoter
  outer org.netbeans.api.db.sql.support.SQLIdentifiers

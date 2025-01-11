@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 2.82.1
+#Version 2.105
 
 CLSS public java.awt.datatransfer.Clipboard
 cons public init(java.lang.String)
@@ -15,7 +15,6 @@ meth public void addFlavorListener(java.awt.datatransfer.FlavorListener)
 meth public void removeFlavorListener(java.awt.datatransfer.FlavorListener)
 meth public void setContents(java.awt.datatransfer.Transferable,java.awt.datatransfer.ClipboardOwner)
 supr java.lang.Object
-hfds currentDataFlavors,flavorListeners,name
 
 CLSS public abstract interface java.awt.datatransfer.FlavorListener
 intf java.util.EventListener
@@ -31,7 +30,6 @@ cons public init(java.lang.String)
 cons public init(java.lang.String,java.lang.Throwable)
 cons public init(java.lang.Throwable)
 supr java.lang.Exception
-hfds serialVersionUID
 
 CLSS public abstract interface java.io.Serializable
 
@@ -71,8 +69,6 @@ meth public void setClassAssertionStatus(java.lang.String,boolean)
 meth public void setDefaultAssertionStatus(boolean)
 meth public void setPackageAssertionStatus(java.lang.String,boolean)
 supr java.lang.Object
-hfds assertionLock,classAssertionStatus,classes,defaultAssertionStatus,defaultDomain,domains,loadedLibraryNames,nativeLibraries,nativeLibraryContext,nocerts,package2certs,packageAssertionStatus,packages,parallelLockMap,parent,scl,sclSet,sys_paths,systemNativeLibraries,usr_paths
-hcls NativeLibrary,ParallelLoaders
 
 CLSS public java.lang.Exception
 cons protected init(java.lang.String,java.lang.Throwable,boolean,boolean)
@@ -81,7 +77,6 @@ cons public init(java.lang.String)
 cons public init(java.lang.String,java.lang.Throwable)
 cons public init(java.lang.Throwable)
 supr java.lang.Throwable
-hfds serialVersionUID
 
 CLSS public java.lang.Object
 cons public init()
@@ -155,7 +150,6 @@ meth public void checkSystemClipboardAccess()
 meth public void checkWrite(java.io.FileDescriptor)
 meth public void checkWrite(java.lang.String)
 supr java.lang.Object
-hfds initialized,packageAccess,packageAccessLock,packageAccessValid,packageDefinition,packageDefinitionLock,packageDefinitionValid,rootGroup
 
 CLSS public java.lang.Throwable
 cons protected init(java.lang.String,java.lang.Throwable,boolean,boolean)
@@ -178,8 +172,6 @@ meth public void printStackTrace(java.io.PrintStream)
 meth public void printStackTrace(java.io.PrintWriter)
 meth public void setStackTrace(java.lang.StackTraceElement[])
 supr java.lang.Object
-hfds CAUSE_CAPTION,EMPTY_THROWABLE_ARRAY,NULL_CAUSE_MESSAGE,SELF_SUPPRESSION_MESSAGE,SUPPRESSED_CAPTION,SUPPRESSED_SENTINEL,UNASSIGNED_STACK,backtrace,cause,detailMessage,serialVersionUID,stackTrace,suppressedExceptions
-hcls PrintStreamOrWriter,SentinelHolder,WrappedPrintStream,WrappedPrintWriter
 
 CLSS public abstract interface java.net.URLStreamHandlerFactory
 meth public abstract java.net.URLStreamHandler createURLStreamHandler(java.lang.String)
@@ -286,7 +278,7 @@ CLSS public org.netbeans.JarClassLoader
 cons public init(java.util.List<java.io.File>,java.lang.ClassLoader[])
 cons public init(java.util.List<java.io.File>,java.lang.ClassLoader[],boolean)
 cons public init(java.util.List<java.io.File>,java.lang.ClassLoader[],boolean,org.netbeans.Module)
-meth protected java.lang.Class doLoadClass(java.lang.String,java.lang.String)
+meth protected java.lang.Class<?> doLoadClass(java.lang.String,java.lang.String)
 meth protected java.lang.Package definePackage(java.lang.String,java.util.jar.Manifest,java.net.URL)
 meth protected java.security.PermissionCollection getPermissions(java.security.CodeSource)
 meth public java.net.URL findResource(java.lang.String)
@@ -295,30 +287,8 @@ meth public static boolean isArchivePopulated()
 meth public static void saveArchive()
 meth public void destroy()
 supr org.netbeans.ProxyClassLoader
-hfds LOGGER,archive,cache,module,patchingBytecode,sources
+hfds BASE_VERSION,LOGGER,META_INF,MULTI_RELEASE,RUNTIME_VERSION,archive,cache,module,patchingBytecode,sources
 hcls DirSource,JarSource,JarURLStreamHandler,NbJarURLConnection,Source
-
-CLSS public final org.netbeans.JaveleonModule
-cons public init(org.netbeans.ModuleManager,java.io.File,java.lang.Object,org.netbeans.Events) throws java.io.IOException
-fld public final static boolean isJaveleonPresent
-meth protected java.lang.ClassLoader createNewClassLoader(java.util.List<java.io.File>,java.util.List<java.lang.ClassLoader>)
-meth protected java.lang.ClassLoader getParentLoader(org.netbeans.Module)
-meth protected void classLoaderDown()
-meth protected void cleanup()
-meth public boolean isFixed()
-meth public final void reload() throws java.io.IOException
-meth public java.io.File getJarFile()
-meth public java.lang.Object getLocalizedAttribute(java.lang.String)
-meth public java.lang.String toString()
-meth public java.util.List<java.io.File> getAllJars()
-meth public java.util.jar.Manifest getManifest()
-meth public static boolean incrementGlobalId()
-meth public void classLoaderUp(java.util.Set<org.netbeans.Module>) throws java.io.IOException
-meth public void destroy()
-meth public void releaseManifest()
-meth public void setReloadable(boolean)
-supr org.netbeans.Module
-hfds LOG,currentClassLoaders,incrementGlobalId,registerClassLoader
 
 CLSS public final org.netbeans.Main
 meth public static void finishInitialization()
@@ -378,7 +348,7 @@ meth public org.netbeans.ModuleManager getManager()
 meth public org.openide.modules.SpecificationVersion getSpecificationVersion()
 meth public void releaseManifest()
 supr org.openide.modules.ModuleInfo
-hfds DATA_LOCK,autoload,data,eager,enabled,findResources,history,instr
+hfds DATA_LOCK,autoload,data,eager,enabled,history,instr
 
 CLSS public final static org.netbeans.Module$PackageExport
  outer org.netbeans.Module
@@ -413,7 +383,7 @@ meth public boolean shouldDelegateResource(org.netbeans.Module,org.netbeans.Modu
 meth public java.lang.String[] refineProvides(org.netbeans.Module)
 meth public java.util.jar.Manifest loadManifest(java.io.File) throws java.io.IOException
 meth public org.openide.util.Task closeAsync(java.util.List<org.netbeans.Module>)
-meth public void refineClassLoader(org.netbeans.Module,java.util.List)
+meth public void refineClassLoader(org.netbeans.Module,java.util.List<? extends java.lang.ClassLoader>)
 meth public void refineDependencies(org.netbeans.Module,java.util.Set<org.openide.modules.Dependency>)
 supr java.lang.Object
 
@@ -423,6 +393,7 @@ fld public final static java.lang.String PROP_CLASS_LOADER = "classLoader"
 fld public final static java.lang.String PROP_ENABLED_MODULES = "enabledModules"
 fld public final static java.lang.String PROP_MODULES = "modules"
 meth public boolean hasToEnableCompatModules(java.util.Set<org.netbeans.Module>)
+meth public boolean isOrWillEnable(org.netbeans.Module)
 meth public boolean shouldDelegateResource(org.netbeans.Module,org.netbeans.Module,java.lang.String)
  anno 0 java.lang.Deprecated()
 meth public boolean shouldDelegateResource(org.netbeans.Module,org.netbeans.Module,java.lang.String,java.lang.ClassLoader)
@@ -438,11 +409,10 @@ meth public final void disable(org.netbeans.Module)
 meth public final void enable(org.netbeans.Module) throws org.netbeans.InvalidException
 meth public final void removePropertyChangeListener(java.beans.PropertyChangeListener)
 meth public java.lang.ClassLoader getClassLoader()
-meth public java.lang.ClassLoader refineClassLoader(org.netbeans.Module,java.util.List)
+meth public java.lang.ClassLoader refineClassLoader(org.netbeans.Module,java.util.List<? extends java.lang.ClassLoader>)
 meth public java.util.Collection<org.netbeans.Module> getAttachedFragments(org.netbeans.Module)
 meth public java.util.List<org.netbeans.Module> simulateDisable(java.util.Set<org.netbeans.Module>)
 meth public java.util.List<org.netbeans.Module> simulateEnable(java.util.Set<org.netbeans.Module>)
-meth public java.util.List<org.netbeans.Module> simulateJaveleonReload(org.netbeans.Module)
 meth public java.util.Set<org.netbeans.Module> getModuleInterdependencies(org.netbeans.Module,boolean,boolean)
  anno 0 java.lang.Deprecated()
 meth public java.util.Set<org.netbeans.Module> getModuleInterdependencies(org.netbeans.Module,boolean,boolean,boolean)
@@ -462,10 +432,9 @@ meth public void disable(java.util.Set<org.netbeans.Module>)
 meth public void enable(java.util.Set<org.netbeans.Module>) throws org.netbeans.InvalidException
 meth public void releaseModuleManifests()
 meth public void reload(org.netbeans.Module) throws java.io.IOException
-meth public void replaceJaveleonModule(org.netbeans.Module,org.netbeans.Module)
 supr org.openide.modules.Modules
-hfds EMPTY_COLLECTION,MODULE_PROBLEMS_LOCK,MUTEX,MUTEX_PRIVILEGED,PRINT_TOPOLOGICAL_EXCEPTION_STACK_TRACES,PROBING_IN_PROCESS,bootstrapModules,changeSupport,classLoader,classLoaderLock,classLoaderPatches,completeLookup,ev,firer,fragmentModules,installer,lookup,mdc,moduleFactory,moduleProblemsWithNeeds,moduleProblemsWithoutNeeds,modules,modulesByName,netigso,providersOf,readOnly
-hcls CodeNameBaseComparator,ModuleDataCache,ProvidersOf,SystemClassLoader
+hfds DEPLOG,EMPTY_COLLECTION,MODULE_PROBLEMS_LOCK,MUTEX,MUTEX_PRIVILEGED,PRINT_TOPOLOGICAL_EXCEPTION_STACK_TRACES,PROBING_IN_PROCESS,addedBecauseOfDependent,bootstrapModules,changeSupport,classLoader,classLoaderLock,classLoaderPatches,completeLookup,eagerActivation,enableContext,environmentTokens,ev,firer,fragmentModules,installer,lookup,mdc,moduleFactory,moduleProblemsWithNeeds,moduleProblemsWithoutNeeds,modules,modulesByName,netigso,providersOf,readOnly,reported,reportedProblems
+hcls CodeNameBaseComparator,EnableContext,ModuleDataCache,ProvidersOf,SystemClassLoader
 
 CLSS public final org.netbeans.NbClipboard
 cons public init()
@@ -481,7 +450,7 @@ meth public void flavorsChanged(java.awt.datatransfer.FlavorEvent)
 meth public void resultChanged(org.openide.util.LookupEvent)
 meth public void setContents(java.awt.datatransfer.Transferable,java.awt.datatransfer.ClipboardOwner)
 supr org.openide.util.datatransfer.ExClipboard
-hfds FIRING,RP,anyWindowIsActivated,convertors,getContentsTask,last,lastWindowActivated,lastWindowDeactivated,lastWindowDeactivatedSource,log,result,setContentsTask,slowSystemClipboard,systemClipboard
+hfds FIRING,RP,anyWindowIsActivated,convertors,getContentsTask,last,log,result,setContentsTask,slowSystemClipboard,systemClipboard
 hcls GetContents,LoggableTransferable,SetContents
 
 CLSS public org.netbeans.NbExecJavaStartTry
@@ -515,11 +484,13 @@ hfds CONSTRUCTOR_NAME,DESC_CTOR_ANNOTATION,DESC_DEFAULT_CTOR,DESC_PATCHED_PUBLIC
 
 CLSS public org.netbeans.ProxyClassLoader
 cons public init(java.lang.ClassLoader[],boolean)
+cons public init(java.lang.ClassLoader[],boolean,java.util.function.BiFunction<java.lang.String,java.lang.ClassLoader,java.lang.Boolean>)
 meth protected boolean shouldDelegateResource(java.lang.String,java.lang.ClassLoader)
 meth protected final void addCoveredPackages(java.lang.Iterable<java.lang.String>)
 meth protected final void setSystemClassLoader(java.lang.ClassLoader)
-meth protected java.lang.Class doLoadClass(java.lang.String,java.lang.String)
-meth protected java.lang.Class loadClass(java.lang.String,boolean) throws java.lang.ClassNotFoundException
+meth protected java.lang.Class<?> doLoadClass(java.lang.String,java.lang.String)
+meth protected java.lang.Class<?> findClass(java.lang.String) throws java.lang.ClassNotFoundException
+meth protected java.lang.Class<?> loadClass(java.lang.String,boolean) throws java.lang.ClassNotFoundException
 meth protected java.lang.Package definePackage(java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.net.URL)
 meth protected java.lang.Package getPackage(java.lang.String)
 meth protected java.lang.Package getPackageFast(java.lang.String,boolean)
@@ -531,7 +502,7 @@ meth public java.util.Enumeration<java.net.URL> findResources(java.lang.String) 
 meth public void append(java.lang.ClassLoader[])
 meth public void destroy()
 supr java.lang.ClassLoader
-hfds LOGGER,LOG_LOADING,TOP_CL,arbitraryLoadWarnings,packages,parents,sclPackages
+hfds LOGGER,LOG_LOADING,TOP_CL,arbitraryLoadWarnings,delegatingPredicate,packages,parents,sclPackages
 
 CLSS public org.netbeans.ProxyURLStreamHandlerFactory
 intf java.net.URLStreamHandlerFactory

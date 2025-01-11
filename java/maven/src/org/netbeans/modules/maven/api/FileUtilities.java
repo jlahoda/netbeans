@@ -28,7 +28,7 @@ import java.util.Stack;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.cli.MavenCli;
+import org.apache.maven.cli.configuration.SettingsXmlConfigurationProcessor;
 import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.annotations.common.NullAllowed;
@@ -193,7 +193,7 @@ public final class FileUtilities {
      * @param basedir a directory to resolve relative to (need not exist on disk)
      * @param file a file or directory to find a relative path for
      * @return a relativized path (slash-separated), or null if it is not possible (e.g. different DOS drives);
-     *         just <samp>.</samp> in case the paths are the same
+     *         just <code>.</code> in case the paths are the same
      * @throws IllegalArgumentException if the basedir is known to be a file and not a directory
      *
      * copied from project.ant's PropertyUtils
@@ -291,13 +291,13 @@ public final class FileUtilities {
      * @return either the settings.xml file or <code>null</code> if not available
      */
     public static File getUserSettingsFile(boolean forceCreate) {
-        if(!MavenCli.DEFAULT_USER_SETTINGS_FILE.exists()) {
+        if(!SettingsXmlConfigurationProcessor.DEFAULT_USER_SETTINGS_FILE.exists()) {
             if(!forceCreate) {
                 return null;
             }
             
             try {
-                File fil = MavenCli.DEFAULT_USER_SETTINGS_FILE.getParentFile();
+                File fil = SettingsXmlConfigurationProcessor.DEFAULT_USER_SETTINGS_FILE.getParentFile();
 
                 DataFolder folder = DataFolder.findFolder(FileUtil.createFolder(fil));
                 // path to template...
@@ -310,7 +310,7 @@ public final class FileUtilities {
                 ex.printStackTrace();
             }
         }
-        return MavenCli.DEFAULT_USER_SETTINGS_FILE;
+        return SettingsXmlConfigurationProcessor.DEFAULT_USER_SETTINGS_FILE;
     }
     
     private static void getSourcePackageNames (Project prj, SortedSet<String> result, boolean onlyRoots) {

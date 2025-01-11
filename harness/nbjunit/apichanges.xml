@@ -34,6 +34,35 @@
     <!-- ACTUAL CHANGES BEGIN HERE: -->
 
 <changes>
+    <change id="hamcrest">
+        <api name="nbjunit"/>
+        <summary>Support for Hamcrest library</summary>
+        <version major="1" minor="99"/>
+        <date day="15" month="7" year="2020"/>
+        <author login="sdedic"/>
+        <compatibility addition="yes"/>
+        <description>
+            <p>
+                NbModuleSuite loads <code>org.hamcrest</code> from the same
+                classloader as <code>org.junit</code> classes to prevent LinkageErrors.
+            </p>
+        </description>
+        <class package="org.netbeans.junit" name="NbModuleSuite"/>
+    </change>
+    <change id="ignore.support">
+        <api name="nbjunit"/>
+        <summary>JUnit ignore annotation</summary>
+        <version major="1" minor="98"/>
+        <date day="21" month="6" year="2020"/>
+        <author login="hectorespert"/>
+        <compatibility addition="yes"/>
+        <description>
+            <p>
+                Add support for JUnit <a href="https://junit.org/junit4/javadoc/latest/org/junit/Ignore.html">@Ignore</a> annotation on NbTestCase test case extension.
+            </p>
+        </description>
+        <class package="org.netbeans.junit" name="NbTestCase"/>
+    </change>
     <change id="NbModuleSuite.Configuration.parentClassLoader">
         <api name="nbjunit"/>
         <summary>NbModuleSuite.Configuration.parentClassLoader()</summary>
@@ -360,7 +389,7 @@
                 Methods <code>enableInstances</code> and 
                 <code>assertInstances</code> added to <code>Log</code> class to
                 simplify writing memory leaks tests integrated with
-                <a href="http://wiki.netbeans.org/wiki/view/FitnessViaTimersCounters">timers/counters</a> infastructure.
+                <a href="https://netbeans.apache.org/wiki/FitnessViaTimersCounter">timers/counters</a> infastructure.
             </p>
         </description>
         <class package="org.netbeans.junit" name="Log"/>

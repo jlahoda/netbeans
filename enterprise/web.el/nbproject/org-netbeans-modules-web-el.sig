@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.55.1
+#Version 1.78
 
 CLSS public abstract interface java.io.Serializable
 
@@ -21,7 +21,6 @@ meth public final java.lang.String name()
 meth public java.lang.String toString()
 meth public static <%0 extends java.lang.Enum<{%%0}>> {%%0} valueOf(java.lang.Class<{%%0}>,java.lang.String)
 supr java.lang.Object
-hfds name,ordinal
 
 CLSS public java.lang.Object
 cons public init()
@@ -46,8 +45,11 @@ meth public abstract java.lang.String getLineCommentPrefix()
 meth public abstract java.lang.String getPreferredExtension()
  anno 0 org.netbeans.api.annotations.common.CheckForNull()
 meth public abstract java.util.Set<java.lang.String> getBinaryLibraryPathIds()
+ anno 0 java.lang.Deprecated()
 meth public abstract java.util.Set<java.lang.String> getLibraryPathIds()
+ anno 0 java.lang.Deprecated()
 meth public abstract java.util.Set<java.lang.String> getSourcePathIds()
+ anno 0 java.lang.Deprecated()
 meth public abstract org.netbeans.api.lexer.Language getLexerLanguage()
  anno 0 org.netbeans.api.annotations.common.NonNull()
 
@@ -60,8 +62,10 @@ meth public boolean hasFormatter()
 meth public boolean hasHintsProvider()
 meth public boolean hasOccurrencesFinder()
 meth public boolean hasStructureScanner()
+ anno 0 java.lang.Deprecated()
 meth public boolean isIdentifierChar(char)
 meth public boolean isUsingCustomEditorKit()
+ anno 0 java.lang.Deprecated()
 meth public java.lang.String getLineCommentPrefix()
 meth public java.lang.String getPreferredExtension()
 meth public java.util.Set<java.lang.String> getBinaryLibraryPathIds()
@@ -118,6 +122,7 @@ CLSS public abstract static org.netbeans.modules.parsing.spi.Parser$Result
  outer org.netbeans.modules.parsing.spi.Parser
 cons protected init(org.netbeans.modules.parsing.api.Snapshot)
 meth protected abstract void invalidate()
+meth protected boolean processingFinished()
 meth public org.netbeans.modules.parsing.api.Snapshot getSnapshot()
 supr java.lang.Object
 hfds snapshot

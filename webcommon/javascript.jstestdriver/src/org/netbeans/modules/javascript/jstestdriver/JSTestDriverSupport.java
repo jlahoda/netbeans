@@ -315,7 +315,7 @@ public class JSTestDriverSupport {
             String s = JSTestDriverCustomizerPanel.getServerURL();
             // #230400 - use IP address instead of localhost so that mobile browsers testing works:
             if (bd.getBrowserFamily().isMobile() && s.startsWith("http://localhost:")) {
-                s = s.replaceAll("localhost", WebUtils.getLocalhostInetAddress().getHostAddress());
+                s = s.replace("localhost", WebUtils.getLocalhostInetAddress().getHostAddress());
             }
             s = s+"/capture"; //NOI18N
             if (bd.hasNetBeansIntegration()) {
@@ -408,7 +408,7 @@ public class JSTestDriverSupport {
             //res.add(ConvertedLine.forText(line.substring(0, start), null));
             ListenerImpl l = new ListenerImpl(fo, lineNumber, columnNumber);
             res.add(ConvertedLine.forText(/*line.substring(start, line.length()-1)*/line, l.isValidHyperlink() ? l : null));
-            //res.add(ConvertedLine.forText(line.substring(line.length()-1, line.length()), null));
+            //res.add(ConvertedLine.forText(line.substring(line.length()-1), null));
             return res;
         }
         
@@ -475,7 +475,7 @@ public class JSTestDriverSupport {
             //res.add(ConvertedLine.forText(line.substring(0, start), null));
             ListenerImpl l = new ListenerImpl(fo, lineNumber, columnNumber);
             res.add(ConvertedLine.forText(/*line.substring(start, line.length()-1)*/line, l.isValidHyperlink() ? l : null));
-            //res.add(ConvertedLine.forText(line.substring(line.length()-1, line.length()), null));
+            //res.add(ConvertedLine.forText(line.substring(line.length()-1), null));
             return res;
         }
     
@@ -625,7 +625,7 @@ public class JSTestDriverSupport {
                     r.add(s);
                 }
             }
-            return r.toArray(new String[r.size()]);
+            return r.toArray(new String[0]);
         }
         
     }

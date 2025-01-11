@@ -19,15 +19,12 @@
 
 package org.netbeans.modules.java.ui;
 
-import java.awt.Image;
 import java.util.Collection;
 import java.util.Collections;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
-import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import org.openide.util.ImageUtilities;
-import org.openide.util.Utilities;
 
 /**
  *
@@ -44,64 +41,65 @@ public final class Icons {
     private Icons() {
     }
     
-    public static Icon getBusyIcon () {
-        Image img = ImageUtilities.loadImage (WAIT);
-        if (img == null) {
-            return null;
-        }
-        else {
-            return ImageUtilities.image2Icon (img);
-        }
+    public static ImageIcon getBusyIcon () {
+        ImageIcon icon = ImageUtilities.loadImageIcon(WAIT, false);
+        return icon;
     }
             
     
-    public static Icon getElementIcon( ElementKind elementKind, Collection<Modifier> modifiers ) {
+    public static ImageIcon getElementIcon( ElementKind elementKind, Collection<Modifier> modifiers ) {
         
         if ( modifiers == null ) {
             modifiers = Collections.<Modifier>emptyList();
         }
         
-        Image img = null;
-	
-	switch( elementKind ) {
+        ImageIcon icon = null;
+
+        switch (elementKind) {
             case MODULE:
-                img = ImageUtilities.loadImage( ICON_BASE + "module" + PNG_EXTENSION );
-		break;
-	    case PACKAGE:
-		img = ImageUtilities.loadImage( ICON_BASE + "package" + GIF_EXTENSION );
-		break;
-	    case ENUM:	
-		img = ImageUtilities.loadImage( ICON_BASE + "enum" + PNG_EXTENSION );
-		break;
-	    case ANNOTATION_TYPE:
-		img = ImageUtilities.loadImage( ICON_BASE + "annotation" + PNG_EXTENSION );
-		break;
-	    case CLASS:	
-		img = ImageUtilities.loadImage( ICON_BASE + "class" + PNG_EXTENSION );
-		break;
-	    case INTERFACE:
-		img = ImageUtilities.loadImage( ICON_BASE + "interface"  + PNG_EXTENSION );
-		break;
-	    case FIELD:
-		img = ImageUtilities.loadImage( getIconName(elementKind, ICON_BASE + "field", PNG_EXTENSION, modifiers ) );
-		break;
-	    case ENUM_CONSTANT: 
-		img = ImageUtilities.loadImage( ICON_BASE + "constant" + PNG_EXTENSION );
-		break;
-	    case CONSTRUCTOR:
-		img = ImageUtilities.loadImage( getIconName(elementKind, ICON_BASE + "constructor", PNG_EXTENSION, modifiers ) );
-		break;
-	    case INSTANCE_INIT: 	
-	    case STATIC_INIT: 	
-		img = ImageUtilities.loadImage( getIconName(elementKind, ICON_BASE + "initializer", PNG_EXTENSION, modifiers ) );
-		break;
-	    case METHOD: 	
-		img = ImageUtilities.loadImage( getIconName(elementKind, ICON_BASE + "method", PNG_EXTENSION, modifiers ) );
-		break;
-	    default:	
-	        img = null;
+                icon = ImageUtilities.loadImageIcon(ICON_BASE + "module" + PNG_EXTENSION, false);
+                break;
+            case PACKAGE:
+                icon = ImageUtilities.loadImageIcon(ICON_BASE + "package" + GIF_EXTENSION, false);
+                break;
+            case ENUM:
+                icon = ImageUtilities.loadImageIcon(ICON_BASE + "enum" + PNG_EXTENSION, false);
+                break;
+            case ANNOTATION_TYPE:
+                icon = ImageUtilities.loadImageIcon(ICON_BASE + "annotation" + PNG_EXTENSION, false);
+                break;
+            case CLASS:
+                icon = ImageUtilities.loadImageIcon(ICON_BASE + "class" + PNG_EXTENSION, false);
+                break;
+            case INTERFACE:
+                icon = ImageUtilities.loadImageIcon(ICON_BASE + "interface" + PNG_EXTENSION, false);
+                break;
+            case FIELD:
+                icon = ImageUtilities.loadImageIcon(getIconName(elementKind, ICON_BASE + "field", PNG_EXTENSION, modifiers), false);
+                break;
+            case ENUM_CONSTANT:
+                icon = ImageUtilities.loadImageIcon(ICON_BASE + "constant" + PNG_EXTENSION, false);
+                break;
+            case CONSTRUCTOR:
+                icon = ImageUtilities.loadImageIcon(getIconName(elementKind, ICON_BASE + "constructor", PNG_EXTENSION, modifiers), false);
+                break;
+            case INSTANCE_INIT:
+            case STATIC_INIT:
+                icon = ImageUtilities.loadImageIcon(getIconName(elementKind, ICON_BASE + "initializer", PNG_EXTENSION, modifiers), false);
+                break;
+            case METHOD:
+                icon = ImageUtilities.loadImageIcon(getIconName(elementKind, ICON_BASE + "method", PNG_EXTENSION, modifiers), false);
+                break;
+            case RECORD:
+                icon = ImageUtilities.loadImageIcon(ICON_BASE + "record" + PNG_EXTENSION, false);
+                break;
+            case RECORD_COMPONENT:
+                icon = ImageUtilities.loadImageIcon(ICON_BASE + "recordComponent" + PNG_EXTENSION, false);
+                break;
+            default:
+                icon = null;
         }
-	return img == null ? null : ImageUtilities.image2Icon (img);
+	return icon;
         
     }
     

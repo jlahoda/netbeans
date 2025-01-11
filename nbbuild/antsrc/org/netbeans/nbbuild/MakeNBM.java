@@ -264,6 +264,7 @@ public class MakeNBM extends Task {
     public /*static*/ class Signature {
         public File keystore;
         public String storepass, alias;
+        public String tsaurl, tsacert;
         /** Path to the keystore (private key). */
         public void setKeystore(File f) {
             keystore = f;
@@ -279,6 +280,14 @@ public class MakeNBM extends Task {
         public void setAlias(String s) {
             alias = s;
         }
+	/** Time Stamping Authority (TSA) URL */
+	public void setTsaurl(String s) {
+	    tsaurl = s;
+	}
+	/** Alias for the TSA's public key certificate */
+	public void setTsacert(String s) {
+	    tsacert = s;
+	}
     }
     
     private File productDir = null;
@@ -843,6 +852,12 @@ public class MakeNBM extends Task {
                 } catch (Exception x) {
                     throw new BuildException(x);
                 }
+                if(signature.tsaurl != null && !signature.tsaurl.isEmpty()) {
+                    signjar.setTsaurl(signature.tsaurl);
+                }
+                if(signature.tsacert != null && !signature.tsacert.isEmpty()) {
+                    signjar.setTsacert(signature.tsacert);
+                }
                 signjar.setStorepass (signature.storepass);
                 signjar.setAlias (signature.alias);
                 signjar.setLocation(getLocation());
@@ -1012,7 +1027,7 @@ public class MakeNBM extends Task {
         Element el = doc.createElement("manifest");
         List<String> attrNames = new ArrayList<>(attr.size());
         for(Object key: attr.keySet()) {
-            attrNames.add(((Attributes.Name)key).toString());
+            attrNames.add(key.toString());
         }
         Collections.sort(attrNames);
         for(String name: attrNames) {

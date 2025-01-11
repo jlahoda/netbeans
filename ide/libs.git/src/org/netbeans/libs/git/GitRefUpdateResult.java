@@ -102,8 +102,7 @@ public enum GitRefUpdateResult {
     IO_FAILURE,
 
     /**
-     * The ref was renamed from another name
-     * <p>
+     * The ref was renamed from another name.
      */
     RENAMED,
 
@@ -134,6 +133,15 @@ public enum GitRefUpdateResult {
      * Remote ref update was rejected for other reason.
      */
     REJECTED_OTHER_REASON,
+
+    /**
+     * One or more objects aren't in the repository.
+     * <p>
+     * This is severe indication of either repository corruption on the
+     * server side, or a bug in the client wherein the client did not supply
+     * all required objects during the pack transfer.
+     */
+    REJECTED_MISSING_OBJECT,
 
     /**
      * Remote ref didn't exist. Can occur on delete request of a non

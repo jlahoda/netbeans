@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.45.1
+#Version 1.67
 
 CLSS public abstract interface java.io.Closeable
 intf java.lang.AutoCloseable
@@ -24,7 +24,6 @@ cons public init(java.lang.String)
 cons public init(java.lang.String,java.lang.Throwable)
 cons public init(java.lang.Throwable)
 supr java.lang.Exception
-hfds serialVersionUID
 
 CLSS public abstract java.io.OutputStream
 cons public init()
@@ -54,7 +53,6 @@ cons public init(java.lang.String)
 cons public init(java.lang.String,java.lang.Throwable)
 cons public init(java.lang.Throwable)
 supr java.lang.Throwable
-hfds serialVersionUID
 
 CLSS public abstract interface !annotation java.lang.FunctionalInterface
  anno 0 java.lang.annotation.Documented()
@@ -83,7 +81,6 @@ cons public init(java.lang.String)
 cons public init(java.lang.String,java.lang.Throwable)
 cons public init(java.lang.Throwable)
 supr java.lang.Exception
-hfds serialVersionUID
 
 CLSS public java.lang.Throwable
 cons protected init(java.lang.String,java.lang.Throwable,boolean,boolean)
@@ -106,8 +103,6 @@ meth public void printStackTrace(java.io.PrintStream)
 meth public void printStackTrace(java.io.PrintWriter)
 meth public void setStackTrace(java.lang.StackTraceElement[])
 supr java.lang.Object
-hfds CAUSE_CAPTION,EMPTY_THROWABLE_ARRAY,NULL_CAUSE_MESSAGE,SELF_SUPPRESSION_MESSAGE,SUPPRESSED_CAPTION,SUPPRESSED_SENTINEL,UNASSIGNED_STACK,backtrace,cause,detailMessage,serialVersionUID,stackTrace,suppressedExceptions
-hcls PrintStreamOrWriter,SentinelHolder,WrappedPrintStream,WrappedPrintWriter
 
 CLSS public abstract interface java.lang.annotation.Annotation
 meth public abstract boolean equals(java.lang.Object)
@@ -145,8 +140,6 @@ meth public final java.security.PermissionCollection getPermissions()
 meth public final java.security.Principal[] getPrincipals()
 meth public java.lang.String toString()
 supr java.lang.Object
-hfds classloader,codesource,debug,hasAllPerm,key,permissions,principals,staticPermissions
-hcls JavaSecurityAccessImpl,Key
 
 CLSS public abstract java.util.Dictionary<%0 extends java.lang.Object, %1 extends java.lang.Object>
 cons public init()
@@ -1698,16 +1691,13 @@ hfds COLON,DOT,FILE_SEP_BSLASH,FILE_SEP_FSLASH,INDEX_NOT_SET,IS_PROCESSING_NEEDE
 
 CLSS public abstract interface org.osgi.framework.BundleListener
  anno 0 java.lang.FunctionalInterface()
- anno 0 org.osgi.annotation.versioning.ConsumerType()
 intf java.util.EventListener
 meth public abstract void bundleChanged(org.osgi.framework.BundleEvent)
 
 CLSS public abstract interface org.osgi.framework.BundleReference
- anno 0 org.osgi.annotation.versioning.ProviderType()
 meth public abstract org.osgi.framework.Bundle getBundle()
 
 CLSS public abstract interface org.osgi.framework.ServiceFactory<%0 extends java.lang.Object>
- anno 0 org.osgi.annotation.versioning.ConsumerType()
 meth public abstract void ungetService(org.osgi.framework.Bundle,org.osgi.framework.ServiceRegistration<{org.osgi.framework.ServiceFactory%0}>,{org.osgi.framework.ServiceFactory%0})
 meth public abstract {org.osgi.framework.ServiceFactory%0} getService(org.osgi.framework.Bundle,org.osgi.framework.ServiceRegistration<{org.osgi.framework.ServiceFactory%0}>)
 
@@ -1735,7 +1725,6 @@ supr java.lang.Object
 hfds ENDPOINT_DELIMITER,LEFT_CLOSED_DELIMITER,LEFT_DELIMITERS,LEFT_OPEN_DELIMITER,RIGHT_CLOSED_DELIMITER,RIGHT_DELIMITERS,RIGHT_OPEN_DELIMITER,empty,hash,left,leftClosed,right,rightClosed,versionRangeString
 
 CLSS public abstract interface org.osgi.framework.wiring.BundleRevision
- anno 0 org.osgi.annotation.versioning.ProviderType()
 fld public final static int TYPE_FRAGMENT = 1
 fld public final static java.lang.String BUNDLE_NAMESPACE = "osgi.wiring.bundle"
 fld public final static java.lang.String HOST_NAMESPACE = "osgi.wiring.host"
@@ -1752,14 +1741,12 @@ meth public abstract org.osgi.framework.Version getVersion()
 meth public abstract org.osgi.framework.wiring.BundleWiring getWiring()
 
 CLSS public abstract interface org.osgi.resource.Resource
- anno 0 org.osgi.annotation.versioning.ConsumerType()
 meth public abstract boolean equals(java.lang.Object)
 meth public abstract int hashCode()
 meth public abstract java.util.List<org.osgi.resource.Capability> getCapabilities(java.lang.String)
 meth public abstract java.util.List<org.osgi.resource.Requirement> getRequirements(java.lang.String)
 
 CLSS public abstract interface org.osgi.util.tracker.ServiceTrackerCustomizer<%0 extends java.lang.Object, %1 extends java.lang.Object>
- anno 0 org.osgi.annotation.versioning.ConsumerType()
 meth public abstract void modifiedService(org.osgi.framework.ServiceReference<{org.osgi.util.tracker.ServiceTrackerCustomizer%0}>,{org.osgi.util.tracker.ServiceTrackerCustomizer%1})
 meth public abstract void removedService(org.osgi.framework.ServiceReference<{org.osgi.util.tracker.ServiceTrackerCustomizer%0}>,{org.osgi.util.tracker.ServiceTrackerCustomizer%1})
 meth public abstract {org.osgi.util.tracker.ServiceTrackerCustomizer%1} addingService(org.osgi.framework.ServiceReference<{org.osgi.util.tracker.ServiceTrackerCustomizer%0}>)

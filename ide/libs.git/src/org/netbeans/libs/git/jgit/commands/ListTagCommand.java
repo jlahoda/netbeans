@@ -21,9 +21,11 @@ package org.netbeans.libs.git.jgit.commands;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.MissingObjectException;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevWalk;
@@ -47,19 +49,19 @@ public class ListTagCommand extends GitCommand {
     }
 
     @Override
-    protected void run () throws GitException {
+    protected void run() throws GitException {
         Repository repository = getRepository();
-        Map<String, Ref> tags = repository.getTags();
-        allTags = new LinkedHashMap<String, GitTag>(tags.size());
-        RevWalk walk = new RevWalk(repository);
-        try {
-            for (Map.Entry<String, Ref> e : tags.entrySet()) {
+        allTags = new LinkedHashMap<>();
+        try (RevWalk walk = new RevWalk(repository)) {
+            for (Ref ref : repository.getRefDatabase().getRefsByPrefix(Constants.R_TAGS)) {
                 GitTag tag;
                 try {
-                    tag = getClassFactory().createTag(walk.parseTag(e.getValue().getLeaf().getObjectId()));
+                    tag = getClassFactory().createTag(walk.parseTag(ref.getLeaf().getObjectId()));
                 } catch (IncorrectObjectTypeException ex) {
-                    tag = getClassFactory().createTag(e.getKey(),
-                            getClassFactory().createRevisionInfo(walk.parseCommit(e.getValue().getLeaf().getObjectId()), repository));
+                    tag = getClassFactory().createTag(
+                            ref.getName().substring(Constants.R_TAGS.length()),
+                            getClassFactory().createRevisionInfo(walk.parseCommit(ref.getLeaf().getObjectId()), repository)
+                    );
                 }
                 if (all || tag.getTaggedObjectType() == GitObjectType.COMMIT) {
                     allTags.put(tag.getTagName(), tag);
@@ -69,17 +71,15 @@ public class ListTagCommand extends GitCommand {
             throw new GitException.MissingObjectException(ex.getObjectId().getName(), GitObjectType.TAG);
         } catch (IOException ex) {
             throw new GitException(ex);
-        } finally {
-            walk.release();
         }
     }
 
     @Override
-    protected String getCommandDescription () {
+    protected String getCommandDescription() {
         return "git tag -l"; //NOI18N
     }
 
-    public Map<String, GitTag> getTags () {
+    public Map<String, GitTag> getTags() {
         return allTags;
     }
 

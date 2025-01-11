@@ -20,13 +20,11 @@
 package org.netbeans.modules.java.hints.providers.code;
 
 import com.sun.source.tree.Tree.Kind;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -54,7 +52,6 @@ import org.netbeans.modules.java.hints.providers.spi.HintProvider;
 import org.netbeans.modules.java.hints.providers.spi.Trigger.Kinds;
 import org.netbeans.modules.java.hints.providers.spi.Trigger.PatternDescription;
 import org.netbeans.spi.editor.hints.ErrorDescription;
-import org.netbeans.spi.editor.hints.Severity;
 import org.netbeans.spi.java.hints.BooleanOption;
 import org.netbeans.spi.java.hints.ConstraintVariableType;
 import org.netbeans.spi.java.hints.Hint;
@@ -80,12 +77,9 @@ public class CodeHintProviderImpl implements HintProvider {
 
     private static final Logger LOG = Logger.getLogger(WorkerImpl.class.getName());
     
+    @Override
     public Map<HintMetadata, ? extends Collection<? extends HintDescription>> computeHints() {
-        return computeHints(findLoader(), "META-INF/nb-hints/hints");
-    }
-
-    private Map<HintMetadata, ? extends Collection<? extends HintDescription>> computeHints(ClassLoader l, String path) {
-        Map<HintMetadata, Collection<HintDescription>> result = new HashMap<HintMetadata, Collection<HintDescription>>();
+        Map<HintMetadata, Collection<HintDescription>> result = new HashMap<>();
         
         for (ClassWrapper c : FSWrapper.listClasses()) {
             try {
@@ -117,7 +111,7 @@ public class CodeHintProviderImpl implements HintProvider {
         if (metadata != null) {
             String id = metadata.id();
 
-            if (id == null || id.length() == 0) {
+            if (id == null || id.isEmpty()) {
                 id = clazz.getName();
             }
             hm = fromAnnotation(id, clazz, null, metadata);
@@ -132,7 +126,7 @@ public class CodeHintProviderImpl implements HintProvider {
             if (localMetadataAnnotation != null) {
                 String localID = localMetadataAnnotation.id();
 
-                if (localID == null || localID.length() == 0) {
+                if (localID == null || localID.isEmpty()) {
                     localID = clazz.getName() + "." + m.getName();
                 }
 
@@ -156,7 +150,7 @@ public class CodeHintProviderImpl implements HintProvider {
                                               .setKind(metadata.hintKind())
                                               .setCustomizerProvider(createCustomizerProvider(clazz, method, id, metadata))
                                               .addSuppressWarnings(metadata.suppressWarnings())
-                                              .addOptions(Options.fromHintOptions(metadata.options()).toArray(new Options[0]))
+                                              .addOptions(Options.fromHintOptions(metadata.options()).toArray(Options[]::new))
                                               .setSourceVersion(metadata.minSourceVersion())
                                               .build();
         return hm;
@@ -176,10 +170,10 @@ public class CodeHintProviderImpl implements HintProvider {
 
             if (useOptions == null) return null;
 
-            allowedOptions = new HashSet<String>(Arrays.asList(useOptions.value()));
+            allowedOptions = new HashSet<>(Arrays.asList(useOptions.value()));
         }
 
-        List<OptionDescriptor> declarativeOptions = new ArrayList<OptionDescriptor>();
+        List<OptionDescriptor> declarativeOptions = new ArrayList<>();
 
         for (FieldWrapper fw : clazz.getFields()) {
             BooleanOption option = fw.getAnnotation(BooleanOption.class);
@@ -259,13 +253,12 @@ public class CodeHintProviderImpl implements HintProvider {
             for (TriggerPattern pattern : patternTriggers.value()) {
                 processPatternHint(hints, pattern, m, metadata);
             }
-            return ;
         }
     }
 
     private static void processPatternHint(Map<HintMetadata, Collection<HintDescription>> hints, TriggerPattern patternTrigger, MethodWrapper m, HintMetadata metadata) {
         String pattern = patternTrigger.value();
-        Map<String, String> constraints = new HashMap<String, String>();
+        Map<String, String> constraints = new HashMap<>();
 
         for (ConstraintVariableType c : patternTrigger.constraints()) {
             constraints.put(c.variable(), c.type());
@@ -282,13 +275,8 @@ public class CodeHintProviderImpl implements HintProvider {
     }
 
     private static void addHint(Map<HintMetadata, Collection<HintDescription>> hints, HintMetadata metadata, HintDescription hint) {
-        Collection<HintDescription> list = hints.get(metadata);
-
-        if (list == null) {
-            hints.put(metadata, list = new LinkedList<HintDescription>());
-        }
-
-        list.add(hint);
+        hints.computeIfAbsent(metadata, k -> new LinkedList<>())
+             .add(hint);
     }
 
     //accessed by tests:
@@ -302,7 +290,7 @@ public class CodeHintProviderImpl implements HintProvider {
             this.methodName = methodName;
         }
 
-        private final AtomicReference<Method> methodRef = new AtomicReference<Method>();
+        private final AtomicReference<Method> methodRef = new AtomicReference<>();
         private Set<FileObject> exceptionThrownFor;
 
         @Override
@@ -320,28 +308,22 @@ public class CodeHintProviderImpl implements HintProvider {
                     return null;
                 }
 
-                if (result instanceof Iterable) {
-                    List<ErrorDescription> out = new LinkedList<ErrorDescription>();
+                if (result instanceof Iterable iterable) {
+                    List<ErrorDescription> out = new LinkedList<>();
 
-                    for (ErrorDescription ed : NbCollections.iterable(NbCollections.checkedIteratorByFilter(((Iterable) result).iterator(), ErrorDescription.class, false))) {
+                    for (ErrorDescription ed : NbCollections.iterable(NbCollections.checkedIteratorByFilter(iterable.iterator(), ErrorDescription.class, false))) {
                         out.add(ed);
                     }
 
                     return out;
                 }
 
-                if (result instanceof ErrorDescription) {
-                    return Collections.singletonList((ErrorDescription) result);
+                if (result instanceof ErrorDescription desc) {
+                    return List.of(desc);
                 }
 
                 //XXX: log if result was ignored...
-            } catch (IllegalAccessException ex) {
-                Exceptions.printStackTrace(ex);
-            } catch (IllegalArgumentException ex) {
-                Exceptions.printStackTrace(ex);
-            } catch (ClassNotFoundException ex) {
-                Exceptions.printStackTrace(ex);
-            } catch (NoSuchMethodException ex) {
+            } catch (IllegalAccessException | IllegalArgumentException | ClassNotFoundException | NoSuchMethodException ex) {
                 Exceptions.printStackTrace(ex);
             } catch (InvocationTargetException ex) {
                 boolean newOccurrence;
@@ -371,81 +353,13 @@ public class CodeHintProviderImpl implements HintProvider {
 
     }
 
-    private static final class EmptyHintMetadataDescription implements Hint {
-
-        public String id() {
-            return "";
-        }
-        
-        public String minSourceVersion() {
-            return "";
-        }
-
-        public String category() {
-            return "general";
-        }
-
-        public boolean enabled() {
-            return true;
-        }
-
-        public Severity severity() {
-            return Severity.VERIFIER;
-        }
-
-        private static final String[] EMPTY_SW = new String[0];
-        
-        public String[] suppressWarnings() {
-            return EMPTY_SW;
-        }
-
-        public Class<? extends Annotation> annotationType() {
-            return Hint.class;
-        }
-
-        public Class<? extends CustomizerProvider> customizerProvider() {
-            return CustomizerProvider.class;
-        }
-
-        public Kind hintKind() {
-            return Kind.INSPECTION;
-        }
-
-        private static final Options[] EMPTY_OPTIONS = new Options[0];
-
-        public Options[] options() {
-            return EMPTY_OPTIONS;
-        }
-
-        @Override public String displayName() {
-            return "";
-        }
-
-        @Override public String description() {
-            return "";
-        }
-
-    }
-
-    private static final class DelegatingCustomizerProvider implements CustomizerProvider {
-
-        private final Class<? extends CustomizerProvider> component;
-
-        public DelegatingCustomizerProvider(Class<? extends CustomizerProvider> component) {
-            this.component = component;
-        }
+    private record DelegatingCustomizerProvider(Class<? extends CustomizerProvider> component) implements CustomizerProvider {
 
         @Override
         public JComponent getCustomizer(Preferences prefs) {
             try {
-                return component.newInstance().getCustomizer(prefs);
-            } catch (SecurityException ex) {
-                Exceptions.printStackTrace(ex);
-            } catch (InstantiationException ex) {
-                Exceptions.printStackTrace(ex);
-            } catch (IllegalAccessException ex) {
-                Exceptions.printStackTrace(ex);
-            } catch (IllegalArgumentException ex) {
+                return component.getDeclaredConstructor().newInstance().getCustomizer(prefs);
+            } catch (ReflectiveOperationException ex) {
                 Exceptions.printStackTrace(ex);
             }
 

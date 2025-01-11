@@ -21,9 +21,11 @@ package org.netbeans.modules.php.editor.model.nodes;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.modules.csl.api.OffsetRange;
 import org.netbeans.modules.php.editor.api.PhpModifiers;
 import org.netbeans.modules.php.editor.api.QualifiedName;
+import org.netbeans.modules.php.editor.model.impl.VariousUtils;
 import org.netbeans.modules.php.editor.parser.astnodes.FieldsDeclaration;
 import org.netbeans.modules.php.editor.parser.astnodes.SingleFieldDeclaration;
 
@@ -32,6 +34,7 @@ import org.netbeans.modules.php.editor.parser.astnodes.SingleFieldDeclaration;
  * @author Radek Matous
  */
 public final class SingleFieldDeclarationInfo extends ASTNodeInfo<SingleFieldDeclaration> {
+
     private final FieldsDeclaration fieldsDeclaration;
 
     private SingleFieldDeclarationInfo(FieldsDeclaration fieldsDeclaration, SingleFieldDeclaration node) {
@@ -65,6 +68,11 @@ public final class SingleFieldDeclarationInfo extends ASTNodeInfo<SingleFieldDec
 
     public PhpModifiers getAccessModifiers() {
         return PhpModifiers.fromBitMask(fieldsDeclaration.getModifier());
+    }
+
+    @CheckForNull
+    public String getFieldType() {
+        return VariousUtils.getDeclaredType(fieldsDeclaration.getFieldType());
     }
 
     @Override

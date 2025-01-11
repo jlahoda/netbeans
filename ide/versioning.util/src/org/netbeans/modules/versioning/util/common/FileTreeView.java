@@ -100,7 +100,7 @@ public abstract class FileTreeView<T extends VCSStatusNode> implements FileViewC
     
     private static final String ICON_KEY_UIMANAGER = "Tree.closedIcon"; //NOI18N
     private static final String ICON_KEY_UIMANAGER_NB = "Nb.Explorer.Folder.icon"; //NOI18N
-    private final static String PATH_SEPARATOR_REGEXP = File.separator.replace("\\", "\\\\"); //NOI18N
+    private static final String PATH_SEPARATOR_REGEXP = File.separator.replace("\\", "\\\\"); //NOI18N
     
     private static Image FOLDER_ICON;
     
@@ -578,7 +578,7 @@ public abstract class FileTreeView<T extends VCSStatusNode> implements FileViewC
                 break;
             }
         }
-        return children.toArray(new Node[children.size()]);
+        return children.toArray(new Node[0]);
     }
 
     private static int findRowIndexInOutline(Node node, Outline outline,
@@ -715,7 +715,7 @@ public abstract class FileTreeView<T extends VCSStatusNode> implements FileViewC
         }
     }
     
-    private static abstract class TreeViewChildren extends Children.Array {
+    private abstract static class TreeViewChildren extends Children.Array {
         abstract void buildSubNodes (Class<?> type);
     }
 
@@ -738,7 +738,7 @@ public abstract class FileTreeView<T extends VCSStatusNode> implements FileViewC
                 ((TreeViewChildren) root.getChildren()).buildSubNodes(type);
                 nodes.add(root);
             }
-            return nodes.toArray(new Node[nodes.size()]);
+            return nodes.toArray(new Node[0]);
         }
     }
     
@@ -866,7 +866,7 @@ public abstract class FileTreeView<T extends VCSStatusNode> implements FileViewC
                 }
                 toCreate.add(node);
             }
-            return toCreate.toArray(new Node[toCreate.size()]);
+            return toCreate.toArray(new Node[0]);
         }
 
         private Image getFolderIcon (File file) {

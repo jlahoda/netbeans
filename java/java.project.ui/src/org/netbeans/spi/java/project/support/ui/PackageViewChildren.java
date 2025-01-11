@@ -825,6 +825,8 @@ final class PackageViewChildren extends Children.Keys<String> implements FileCha
                     Exceptions.printStackTrace(e);
                     return new PasteType[0];
                 }
+            } else if (t.isDataFlavorSupported(DataFlavor.stringFlavor)) {
+                return new PasteType[]{new CreateJavaClassFileFromClipboard(dataFolder, t)};
             }
             else {
                 DataFlavor[] flavors = t.getTransferDataFlavors();
@@ -1172,7 +1174,7 @@ final class PackageViewChildren extends Children.Keys<String> implements FileCha
                 }
                 result.add(set);
             }
-            return result.toArray(new Node.PropertySet[result.size()]);
+            return result.toArray(new Node.PropertySet[0]);
         }
         
         private DataFolder getDataFolder() {

@@ -29,7 +29,7 @@ import org.openide.util.NbPreferences;
 
 /**
  * Shareable search history. Known implementations are explorer search
- * dialog and editor find&replace dialog.
+ * dialog and editor find&amp;replace dialog.
  *
  * Typical use case:
  * Editor registers a listener to listen on lastSelected SearchPattern. If user
@@ -66,14 +66,15 @@ public final class SearchHistory {
      *  newValue - new selected pattern
      *  @deprecated just changes in history
      */
-    public final static String LAST_SELECTED = "last-selected"; //NOI18N
+    @Deprecated
+    public static final String LAST_SELECTED = "last-selected"; //NOI18N
     
     /** Property name for adding pattern that was not in history
      *  Firing:
      *  oldValue - null
      *  newValue - added pattern
      */
-    public final static String ADD_TO_HISTORY = "add-to-history"; //NOI18N
+    public static final String ADD_TO_HISTORY = "add-to-history"; //NOI18N
 
     /** Preferences node for storing history info */
     private static Preferences prefs;
@@ -88,7 +89,7 @@ public final class SearchHistory {
     }
 
     /** @return singleton instance of SearchHistory */
-    public synchronized static SearchHistory getDefault(){
+    public static synchronized SearchHistory getDefault(){
         if (INSTANCE == null) {
             INSTANCE = new SearchHistory();
         }
@@ -107,17 +108,19 @@ public final class SearchHistory {
     }
 
     /** 
-     *  @deprecated Use <code>getSearchPatterns().get(0)</code>
      *  @return last selected SearchPattern 
+     *  @deprecated Use <code>getSearchPatterns().get(0)</code>
      */
+    @Deprecated
     public SearchPattern getLastSelected(){
         return searchPatternsList.get(0);
     }
     
     /** Sets last selected SearchPattern 
-     *  @deprecated Use only <code>add(SearchPattern pattern)</code>
      *  @param pattern last selected pattern
+     *  @deprecated Use only <code>add(SearchPattern pattern)</code>
      */
+    @Deprecated
     public void setLastSelected(SearchPattern pattern){
         SearchPattern oldPattern = searchPatternsList.get(0);
         add(pattern);

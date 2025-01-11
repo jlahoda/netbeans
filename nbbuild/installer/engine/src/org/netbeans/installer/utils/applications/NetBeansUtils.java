@@ -136,7 +136,7 @@ public class NetBeansUtils {
         }
         
         final List<String> ids =
-                new LinkedList(Arrays.asList(id.split(PACK_ID_SEPARATOR)));
+                new LinkedList<>(Arrays.asList(id.split(PACK_ID_SEPARATOR)));
         
         boolean packAdded = false;
         for (int i = 1; i < ids.size(); i++) {
@@ -710,7 +710,7 @@ public class NetBeansUtils {
             sysProp + nbHomeProp    + eq + nbHome,
             sysProp + nbUserdirProp + eq + nbUserdir,
             sysProp + nbDirsProp    + eq + nbDirsString,
-            "-Xms32m", "-XX:MaxPermSize=96m", "-Xverify:none", "-Xmx128m",
+            "-Xms32m", "-Xverify:none", "-Xmx128m",
             "-cp", classpath,
             UPDATER_FRAMENAME, "--nosplash"});
     }

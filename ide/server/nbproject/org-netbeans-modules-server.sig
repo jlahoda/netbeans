@@ -1,5 +1,5 @@
 #Signature file v4.1
-#Version 1.37.1
+#Version 1.59
 
 CLSS public java.lang.Object
 cons public init()
@@ -87,7 +87,6 @@ meth public abstract javax.swing.JComponent getCustomizer()
 meth public abstract org.openide.nodes.Node getBasicNode()
 meth public abstract org.openide.nodes.Node getFullNode()
 meth public abstract void remove()
-meth public abstract java.lang.String getProperty(java.lang.String)
 
 CLSS public abstract interface org.netbeans.spi.server.ServerInstanceProvider
 meth public abstract java.util.List<org.netbeans.api.server.ServerInstance> getInstances()

@@ -155,15 +155,24 @@ public class JdbcUrl extends HashMap<String, String> {
             nameAndType = displayName + " (" + getType() + ")";         //NOI18N
         }
         if (driver != null && driver.getDisplayName() != null
-                && !driver.getDisplayName().equals(displayName)) {
-            return NbBundle.getMessage(DriverListUtil.class,
-                    "JDBC_URL_DRIVER_NAME", //NOI18N
-                    nameAndType, driver.getDisplayName());
+                && !driver.getDisplayName().equals(displayName))
+        {
+            /* If the driver name has been customized such that
+            JDBC_URL_DRIVER_NAME format would yield, for instance,
+            "Oracle Thin / Service ID (SID) on Oracle", then we can just drop
+            the "on Oracle" part. */
+            if (nameAndType.startsWith(driver.getDisplayName())) {
+                return nameAndType;
+            } else {
+                return NbBundle.getMessage(DriverListUtil.class,
+                        "JDBC_URL_DRIVER_NAME", //NOI18N
+                        nameAndType, driver.getDisplayName());
+            }
         } else {
             return nameAndType;
         }
     }
-    
+
     public boolean supportsToken(String token) {
         return supportedTokens.contains(token);
     }
@@ -728,7 +737,8 @@ public class JdbcUrl extends HashMap<String, String> {
                 "',className='" + className + // NOI18N
                 "',type='" + type + // NOI18N
                 "',urlTemplate='" + urlTemplate + // NOI18N
-                "'parseUrl,=" + parseUrl + "]"; // NOI18N
+                "',parseUrl,=" + parseUrl + // NOI18N
+                "',sampleUrl,=" + sampleUrl + "]"; // NOI18N
     }
 
     public String getSampleUser() {

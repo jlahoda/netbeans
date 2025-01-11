@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collection;
 import java.util.List;
+import org.eclipse.jgit.api.errors.CanceledException;
 import org.eclipse.jgit.diff.ContentSource;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffFormatter;
@@ -79,11 +80,10 @@ public class ExportDiffCommand extends GitCommand {
     @Override
     protected void run() throws GitException {
         Repository repository = getRepository();
-        DiffFormatter formatter = new DiffFormatter(out);
-        formatter.setRepository(repository);
-        ObjectReader or = null;
         String workTreePath = repository.getWorkTree().getAbsolutePath();
-        try {
+        try (DiffFormatter formatter = new DiffFormatter(out);
+            ObjectReader or = repository.newObjectReader()) {
+            formatter.setRepository(repository);
             Collection<PathFilter> pathFilters = Utils.getPathFilters(repository.getWorkTree(), roots);
             if (!pathFilters.isEmpty()) {
                 formatter.setPathFilter(PathFilterGroup.create(pathFilters));
@@ -92,7 +92,6 @@ public class ExportDiffCommand extends GitCommand {
                 // work-around for autocrlf
                 formatter.setDiffComparator(new AutoCRLFComparator());
             }
-            or = repository.newObjectReader();
             AbstractTreeIterator firstTree = getIterator(firstCommit, or);
             AbstractTreeIterator secondTree = getIterator(secondCommit, or);
             List<DiffEntry> diffEntries;
@@ -117,13 +116,8 @@ public class ExportDiffCommand extends GitCommand {
                 formatter.format(ent);
             }
             formatter.flush();
-        } catch (IOException ex) {
+        } catch (IOException | CanceledException ex) {
             throw new GitException(ex);
-        } finally {
-            if (or != null) {
-                or.release();
-            }
-            formatter.release();
         }
     }
 

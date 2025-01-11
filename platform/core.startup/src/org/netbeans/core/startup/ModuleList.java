@@ -35,6 +35,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PushbackInputStream;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -680,7 +681,7 @@ final class ModuleList implements Stamps.Updater {
         if (codeName == null)
             throw new IllegalArgumentException("no code name present"); // NOI18N
 
-        Writer w = new OutputStreamWriter(os, "UTF-8"); // NOI18N
+        Writer w = new OutputStreamWriter(os, StandardCharsets.UTF_8);
         w.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"); // NOI18N
         w.write("<!DOCTYPE module PUBLIC \""); // NOI18N
         w.write(PUBLIC_ID);
@@ -1472,9 +1473,11 @@ final class ModuleList implements Stamps.Updater {
                 }
             }
         }
-        private void stepCheckSer(Map/*<String,FileObject>*/ xmlfiles, Map/*<String,Map<String,Object>>*/ dirtyprops) {
+
+        private void stepCheckSer(Map<String,FileObject> xmlfiles, Map<String,Map<String,Object>> dirtyprops) {
             // There is NO step 7!
         }
+
         private void stepUpdateProps(Map<String,Map<String,Object>> dirtyprops) {
             LOG.fine("ModuleList: stepUpdateProps");
             for (Map.Entry<String,Map<String,Object>> entry: dirtyprops.entrySet()) {
@@ -1569,7 +1572,7 @@ final class ModuleList implements Stamps.Updater {
                         LOG.fine("Strange file encountered in modules folder: " + f);
                     }
                 }
-                names = arr.toArray(new String[arr.size()]);
+                names = arr.toArray(new String[0]);
             }
             ev.log(Events.MODULES_FILE_SCANNED, names.length);
             XMLReader reader = null;

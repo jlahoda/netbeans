@@ -273,7 +273,7 @@ public class PreInstallSummaryPanel extends ErrorMessagePanel {
                         downloadSize+=product.getDownloadSize();
                     }
                     // the critical check point - we download all the data
-                    spaceMap.put(downloadDataDirRoot, new Long(downloadSize));                
+                    spaceMap.put(downloadDataDirRoot, downloadSize);                
                     long lastDataSize = 0;
                     
                     for (Product product: toInstall) {
@@ -302,12 +302,13 @@ public class PreInstallSummaryPanel extends ErrorMessagePanel {
                         }
                     }
                 
-                    for (File root: spaceMap.keySet()) {
+                    for (Map.Entry<File, Long> entry: spaceMap.entrySet()) {
+                        File root = entry.getKey();
+
                         try {
                             final long availableSpace =
                                     SystemUtils.getFreeSpace(root);
-                            final long requiredSpace =
-                                    spaceMap.get(root) + REQUIRED_SPACE_ADDITION;
+                            final long requiredSpace = entry.getValue() + REQUIRED_SPACE_ADDITION;
                             
                             if (availableSpace < requiredSpace) {
                                 return StringUtils.format(

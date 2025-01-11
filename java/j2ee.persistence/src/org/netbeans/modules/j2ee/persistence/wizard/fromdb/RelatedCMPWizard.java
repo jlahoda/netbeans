@@ -165,12 +165,16 @@ public class RelatedCMPWizard implements TemplateWizard.Iterator {
 //                        new PersistenceUnitWizardDescriptor(project),
 //                };
 //            } else {
-            return new WizardDescriptor.Panel[]{
-                        new DatabaseTablesPanel.WizardPanel(wizardTitle),
-                        new EntityClassesPanel.WizardPanel(),
-                        new MappingOptionsPanel.WizardPanel(),};
-//            }
+            return TYPE_JPA.equals(type) ? new WizardDescriptor.Panel[] {
+                new DatabaseTablesPanel.WizardPanel(wizardTitle),
+                new EntityClassesPanel.WizardPanel(),
+                new MappingOptionsPanel.WizardPanel()
+            } : new WizardDescriptor.Panel[]{
+                new DatabaseTablesPanel.WizardPanel(null),
+                new EntityClassesPanel.WizardPanel(false, false, true, false)
+            } ;
         }
+//            }
     }
 
     private String[] createSteps() {
@@ -189,10 +193,14 @@ public class RelatedCMPWizard implements TemplateWizard.Iterator {
 //                        NbBundle.getMessage(PersistenceUnitWizardDescriptor.class,"LBL_Step1")
 //                };
 //            } else {
-            return new String[]{
-                        NbBundle.getMessage(RelatedCMPWizard.class, "LBL_DatabaseTables"),
-                        NbBundle.getMessage(RelatedCMPWizard.class, "LBL_EntityClasses"),
-                        NbBundle.getMessage(RelatedCMPWizard.class, "LBL_MappingOptions"),};
+            return TYPE_JPA.equals(type) ? new String[] {
+                NbBundle.getMessage(RelatedCMPWizard.class, "LBL_DatabaseTables"),
+                NbBundle.getMessage(RelatedCMPWizard.class, "LBL_EntityClasses"),
+                NbBundle.getMessage(RelatedCMPWizard.class, "LBL_MappingOptions")
+            } : new String[] {
+                NbBundle.getMessage(RelatedCMPWizard.class, "LBL_DatabaseTables"),
+                NbBundle.getMessage(RelatedCMPWizard.class, "LBL_EntityClasses")
+            };
 //            }
         }
     }
@@ -240,20 +248,17 @@ public class RelatedCMPWizard implements TemplateWizard.Iterator {
         progressPanel = new ProgressPanel();
         final JComponent progressComponent = AggregateProgressFactory.createProgressComponent(handle);
 
-        final Runnable r = new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    handle.start();
-                    createBeans(wiz, progressContributor);
-                } catch (IOException ioe) {
-                    Logger.getLogger("global").log(Level.INFO, null, ioe);
-                    NotifyDescriptor nd = new NotifyDescriptor.Message(ioe.getLocalizedMessage(), NotifyDescriptor.ERROR_MESSAGE);
-                    DialogDisplayer.getDefault().notify(nd);
-                } finally {
-                    generator.uninit();
-                    handle.finish();
-                }
+        final Runnable r = () -> {
+            try {
+                handle.start();
+                createBeans(wiz, progressContributor);
+            } catch (IOException ioe) {
+                Logger.getLogger("global").log(Level.INFO, null, ioe);
+                NotifyDescriptor nd = new NotifyDescriptor.Message(ioe.getLocalizedMessage(), NotifyDescriptor.ERROR_MESSAGE);
+                DialogDisplayer.getDefault().notify(nd);
+            } finally {
+                generator.uninit();
+                handle.finish();
             }
         };
 
@@ -269,7 +274,6 @@ public class RelatedCMPWizard implements TemplateWizard.Iterator {
         // -  the first invocation event of our runnable
         // -  the invocation event which closes the wizard
         // -  the second invocation event of our runnable
-
 
         SwingUtilities.invokeLater(new Runnable() {
             private boolean first = true;
@@ -392,12 +396,7 @@ public class RelatedCMPWizard implements TemplateWizard.Iterator {
 
         } finally {
             handle.finish();
-            SwingUtilities.invokeLater(new Runnable() {
-                @Override
-                public void run() {
-                    progressPanel.close();
-                }
-            });
+            SwingUtilities.invokeLater( () -> progressPanel.close() );
         }
     }
 }

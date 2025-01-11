@@ -82,9 +82,9 @@ final class DefaultEMLookup extends ProxyLookup implements LookupListener, Prope
 
         synchronized (this) {
             if (attachedTo == null) {
-                copy = Collections.<Lookup, Lookup.Result>emptyMap();
+                copy = Collections.emptyMap();
             } else {
-                copy = new HashMap<Lookup, Lookup.Result>(attachedTo);
+                copy = new HashMap<>(attachedTo);
             }
         }
 
@@ -266,7 +266,7 @@ final class DefaultEMLookup extends ProxyLookup implements LookupListener, Prope
                 LookupListener[] ls;
 
                 synchronized (listeners) {
-                    ls = listeners.toArray(new LookupListener[listeners.size()]);
+                    ls = listeners.toArray(new LookupListener[0]);
                 }
 
                 for (int i = 0; i < ls.length; i++) {

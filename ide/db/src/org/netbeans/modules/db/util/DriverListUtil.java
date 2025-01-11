@@ -96,11 +96,19 @@ public class DriverListUtil {
         add("Cloudscape RMI",
         "RmiJdbc.RJDriver",
         "jdbc:rmi://<HOST>[:<PORT>]/jdbc:cloudscape:<DB>");
+
+        add(NbBundle.getMessage(DriverListUtil.class, "DRIVERNAME_JavaDbEmbeddedModular"),
+        "org.apache.derby.iapi.jdbc.AutoloadedDriver",
+        "jdbc:derby:<DB>[;<ADDITIONAL>]", true);
+
+        add(NbBundle.getMessage(DriverListUtil.class, "DRIVERNAME_JavaDbNetworkModular"),
+        "org.apache.derby.client.ClientAutoloadedDriver",
+        "jdbc:derby://<HOST>[:<PORT>]/<DB>[;<ADDITIONAL>]", true);
         
         add(NbBundle.getMessage(DriverListUtil.class, "DRIVERNAME_JavaDbEmbedded"),
         "org.apache.derby.jdbc.EmbeddedDriver",
         "jdbc:derby:<DB>[;<ADDITIONAL>]", true);
-        
+
         add(NbBundle.getMessage(DriverListUtil.class, "DRIVERNAME_JavaDbNetwork"),
         "org.apache.derby.jdbc.ClientDriver",
         "jdbc:derby://<HOST>[:<PORT>]/<DB>[;<ADDITIONAL>]", true);
@@ -213,14 +221,17 @@ public class DriverListUtil {
         "com.microsoft.jdbc.sqlserver.SQLServerDriver",
         "jdbc:microsoft:sqlserver://<HOST>[:<PORT>][;DatabaseName=<DB>]");
 
-        add(NbBundle.getMessage(DriverListUtil.class, "DRIVERNAME_MSSQL2005"),
+        /* Previously we used to say "Microsoft SQL Server 2005" here, but as of driver version 7.2.2
+        (latest per July 2019), the class name is still the same. So don't say "2005" anymore. */
+        url = add(NbBundle.getMessage(DriverListUtil.class, "DRIVERNAME_MSSQL"),
         "com.microsoft.sqlserver.jdbc.SQLServerDriver",
         "jdbc:sqlserver://[<HOST>[\\<INSTANCE>][:<PORT>]][;databaseName=<DB>][;<ADDITIONAL>]", true);
+        url.setSampleUrl("jdbc:sqlserver://localhost:1433");
         
         url = add(NbBundle.getMessage(DriverListUtil.class, "DRIVERNAME_MySQL"),
-                "com.mysql.jdbc.Driver", 
+                "com.mysql.cj.jdbc.Driver", 
                 "jdbc:mysql://[<HOST>[:<PORT>]][/<DB>][?<ADDITIONAL>]", true); // NOI18N
-        url.setSampleUrl("jdbc:mysql://localhost:3306/mysql?zeroDateTimeBehavior=convertToNull");
+        url.setSampleUrl("jdbc:mysql://localhost:3306/mysql?zeroDateTimeBehavior=CONVERT_TO_NULL");
         url.setSampleUser("root");
         url.setSamplePassword("");
 
@@ -233,6 +244,46 @@ public class DriverListUtil {
         url.setSampleUrl("jdbc:mariadb://localhost:3306/mysql");
         url.setSampleUser("root");
         url.setSamplePassword("");
+
+        /* Use the class com.simba.athena.jdbc.Driver instead of
+        com.simba.athena.jdbc42.Driver, per the documentation: "The connector supports the following
+        fully-qualified class names (FQCNs) that are independent of the JDBC version:
+        com.simba.athena.jdbc.Driver". */
+        url = add(NbBundle.getMessage(DriverListUtil.class, "DRIVERNAME_Athena"),
+                NbBundle.getMessage(DriverListUtil.class, "TYPE_Standard"),
+                "com.simba.athena.jdbc.Driver",
+                "jdbc:awsathena://[<ADDITIONAL>]", true); // NOI18N
+        url.setSampleUser("");
+        url.setSamplePassword("");
+        url.setSampleUrl("jdbc:awsathena://AwsRegion=us-west-1;S3OutputLocation=s3://working/dir");
+
+        url = add(NbBundle.getMessage(DriverListUtil.class, "DRIVERNAME_Athena"),
+                NbBundle.getMessage(DriverListUtil.class, "TYPE_Endpoint"),
+                "com.simba.athena.jdbc.Driver",
+                "jdbc:awsathena://<HOST>[:<PORT>][;<ADDITIONAL>]", true); // NOI18N
+        url.setSampleUser("");
+        url.setSamplePassword("");
+        url.setSampleUrl("jdbc:awsathena://athena.us-east-1.amazonaws.com:443;S3OutputLocation=s3://working/dir"); // Make sure the default port gets set.
+
+        /* Use the class com.amazon.redshift.jdbc.Driver instead of
+        com.amazon.redshift.jdbc42.Driver, per the documentation: "The connector supports the
+        following fully-qualified class names (FQCNs) that are independent of the JDBC version:
+        com.amazon.redshift.jdbc.Driver". */
+        url = add(NbBundle.getMessage(DriverListUtil.class, "DRIVERNAME_Redshift"),
+                NbBundle.getMessage(DriverListUtil.class, "TYPE_UserName"),
+                "com.amazon.redshift.jdbc.Driver",
+                "jdbc:redshift://[<HOST>[:<PORT>]][/<DB>][;<ADDITIONAL>]", true); // NOI18N
+        url.setSampleUser("");
+        url.setSamplePassword("");
+        url.setSampleUrl("jdbc:redshift://examplecluster.abc123xyz789.us-west-2.redshift.amazonaws.com:5439/dev"); // Make sure the default port gets set.
+
+        url = add(NbBundle.getMessage(DriverListUtil.class, "DRIVERNAME_Redshift"),
+                NbBundle.getMessage(DriverListUtil.class, "TYPE_IAM"),
+                "com.amazon.redshift.jdbc.Driver",
+                "jdbc:redshift:iam://[<HOST>[:<PORT>]][/<DB>][;<ADDITIONAL>]", true); // NOI18N
+        url.setSampleUser("");
+        url.setSamplePassword("");
+        url.setSampleUrl("jdbc:redshift:iam://examplecluster.abc123xyz789.us-west-2.redshift.amazonaws.com:5439/dev"); // Make sure the default port gets set.
 
         add("MySQL (MM.MySQL driver)",
         "org.gjt.mm.mysql.Driver",

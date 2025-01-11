@@ -39,7 +39,6 @@ import java.util.regex.Pattern;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
-import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
@@ -56,12 +55,18 @@ import org.openide.util.NbBundle;
 import org.openide.util.NbCollections;
 import org.openide.util.lookup.ServiceProvider;
 
+import static javax.lang.model.element.ElementKind.PACKAGE;
+
 @ServiceProvider(service = Processor.class)
-@SupportedSourceVersion(SourceVersion.RELEASE_6)
 public class NbBundleProcessor extends AbstractProcessor {
 
     public @Override Set<String> getSupportedAnnotationTypes() {
         return Collections.singleton(NbBundle.Messages.class.getCanonicalName());
+    }
+
+    @Override
+    public SourceVersion getSupportedSourceVersion() {
+        return SourceVersion.latest();
     }
 
     public @Override boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
@@ -134,7 +139,7 @@ public class NbBundleProcessor extends AbstractProcessor {
                     pairs.put(key, value);
                     compilationUnits.put(key, simplename);
                     if (!runningComments.isEmpty()) {
-                        comments.put(key, runningComments.toArray(new String[runningComments.size()]));
+                        comments.put(key, runningComments.toArray(new String[0]));
                         runningComments.clear();
                     }
                 }
@@ -291,23 +296,27 @@ public class NbBundleProcessor extends AbstractProcessor {
 
     private String findPackage(Element e) {
         switch (e.getKind()) {
-        case PACKAGE:
-            return ((PackageElement) e).getQualifiedName().toString();
-        default:
-            return findPackage(e.getEnclosingElement());
+            case PACKAGE:
+                return ((PackageElement) e).getQualifiedName().toString();
+            default:
+                return findPackage(e.getEnclosingElement());
         }
     }
 
     private String findCompilationUnitName(Element e) {
         switch (e.getKind()) {
-        case PACKAGE:
-            return "package-info";
-        case CLASS:
-        case INTERFACE:
-        case ENUM:
-        case ANNOTATION_TYPE:
-            switch (e.getEnclosingElement().getKind()) {
             case PACKAGE:
+                return "package-info";
+            case CLASS:
+            case INTERFACE:
+            case ENUM:
+            case ANNOTATION_TYPE:
+                if (e.getEnclosingElement().getKind() == PACKAGE) {
+                    return e.getSimpleName().toString();
+                }
+        }
+        if ("RECORD".equals(e.getKind().name())) {  //TODO JDK 11 migration -> merge with switch above
+            if (e.getEnclosingElement().getKind() == PACKAGE) {
                 return e.getSimpleName().toString();
             }
         }
@@ -375,7 +384,7 @@ public class NbBundleProcessor extends AbstractProcessor {
                 }
             }
         }
-        processingEnv.getMessager().printMessage(Kind.WARNING, "Undocumented format parameter {" + i + "}", e, mirror, value);
+        processingEnv.getMessager().printMessage(Kind.WARNING, "Undocumented format parameter {" + i + "} prepend line: # {" + i + "} - some text,", e, mirror, value);
     }
 
 }

@@ -219,7 +219,7 @@ public class BindingCustomizer extends JPanel {
 
     private boolean showImportData() {
         String path = bindingDescriptor.getPath();
-        Class clazz = bindingComponent.getBeanClass();
+        Class<?> clazz = bindingComponent.getBeanClass();
         boolean show = "elements".equals(path) // NOI18N
             && (JList.class.isAssignableFrom(clazz)
                 || JComboBox.class.isAssignableFrom(clazz)
@@ -234,7 +234,7 @@ public class BindingCustomizer extends JPanel {
 
     private boolean showDisplayExpression() {
         String path = bindingDescriptor.getPath();
-        Class clazz = bindingComponent.getBeanClass();
+        Class<?> clazz = bindingComponent.getBeanClass();
         return "elements".equals(path) // NOI18N
             && (JList.class.isAssignableFrom(clazz)
                 /*|| JComboBox.class.isAssignableFrom(clazz)*/);
@@ -495,8 +495,8 @@ public class BindingCustomizer extends JPanel {
         }
 
         Comparator<RADComponent> c = new RADComponentComparator();
-        Collections.sort(nonvisualList, c);
-        Collections.sort(visualList, c);
+        nonvisualList.sort(c);
+        visualList.sort(c);
 
         allComponents = new ArrayList<RADComponent>(nonvisualList.size() + visualList.size() + 1);
         allComponents.addAll(nonvisualList);
@@ -1244,7 +1244,7 @@ private void importDataButtonActionPerformed(java.awt.event.ActionEvent evt) {//
                     TypeHelper t = desc.getGenericValueType();
                     String className = t.getName();
                     if (className == null) {
-                        Class clazz = desc.getValueType();
+                        Class<?> clazz = desc.getValueType();
                         className = clazz.getName();
                     }
                     columnToType.put(desc.getPath(), className);

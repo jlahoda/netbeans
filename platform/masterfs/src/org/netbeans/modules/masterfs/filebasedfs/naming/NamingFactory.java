@@ -47,7 +47,7 @@ public final class NamingFactory {
 
         List<FileInfo> checkDirs = new ArrayList<FileInfo>();
         FileNaming fileName = null;
-        final List<FileInfo> list = new ArrayList(queue);
+        final List<FileInfo> list = new ArrayList<>(queue);
         for (int i = 0; i < list.size(); ) {
             FileInfo f = list.get(i);
             if("\\\\".equals(f.getFile().getPath())) {
@@ -250,7 +250,7 @@ public final class NamingFactory {
         int index = Math.abs(key) % names.length;
         NameRef ref = getReference(names[index], file.getFile());
 
-        FileNaming cachedElement = (ref != null) ? (FileNaming) ref.get() : null;
+        FileNaming cachedElement = (ref != null) ? ref.get() : null;
         Boolean cachedIsDirectory = null;
         Boolean fileIsDirectory = null;
         if (ignoreCache) {
@@ -351,7 +351,7 @@ public final class NamingFactory {
     ) {
         FileName retVal = null;
         //TODO: check all tests for isFile & isDirectory
-        if (type.equals(FileType.unknown)) {
+        if (type == FileType.unknown) {
             if (f.isDirectory()) {
                 type = FileType.directory;
             } else {
@@ -387,7 +387,7 @@ public final class NamingFactory {
     }
 
     
-    synchronized static String dump(Integer id, File file) {
+    static synchronized String dump(Integer id, File file) {
         StringBuilder sb = new StringBuilder();
         final String hex = Integer.toHexString(id);
 

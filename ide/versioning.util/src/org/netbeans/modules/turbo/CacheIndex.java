@@ -68,7 +68,7 @@ public abstract class CacheIndex {
                 LOG.finer("   " + ret);
             }
 
-            return ret.toArray(new File[ret.size()]);
+            return ret.toArray(new File[0]);
         }
     }
 
@@ -82,7 +82,7 @@ public abstract class CacheIndex {
             values.addAll(c);
         }
 
-        Set<File> ret = new HashSet();
+        Set<File> ret = new HashSet<>();
         for (Set<File> valuesSet : values) {
             synchronized(this) {
                 ret.addAll(valuesSet);
@@ -94,7 +94,7 @@ public abstract class CacheIndex {
             LOG.finer("   " + ret);
         }
 
-        return ret.toArray(new File[ret.size()]);
+        return ret.toArray(new File[0]);
     }
 
     public void add(File file) {

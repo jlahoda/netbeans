@@ -147,13 +147,19 @@ public @interface TemplateRegistration {
     String page() default "";
 
     /** Selects some of provided technologies. The 
-     * <a href="http://bits.netbeans.org/html+java/">HTML/Java API</a>
+     * <a href="https://bits.netbeans.org/html+java/dev">HTML/Java API</a>
      * provides support for technology ids since version 1.1. 
      * With this attribute one can specify the preferred technologies
      * to use in this wizard as well.
      * 
-     * @return list of preferred technology ids
+     * @return Strings array of preferred technology ids
      * @since 1.4
      */
     String[] techIds() default {};
+
+    /**
+     * Specifies the default handler to instantiate the template. 
+     * @since 1.23
+     */
+    Class<? extends CreateFromTemplateHandler> createHandlerClass() default CreateFromTemplateHandler.class;
 }

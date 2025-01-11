@@ -28,6 +28,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.netbeans.core.network.proxy.pac.impl.NbPacScriptEvaluatorFactory;
+import org.netbeans.junit.NbModuleSuite;
 import org.netbeans.junit.NbTestCase;
 
 /**
@@ -56,6 +57,14 @@ public class PacEngineTest extends NbTestCase {
     }
 
    
+    public static final junit.framework.Test suite() {
+        NbModuleSuite.Configuration cfg = NbModuleSuite.emptyConfiguration().
+                honorAutoloadEager(true).
+                enableClasspathModules(false).
+                gui(false);
+        
+        return cfg.clusters("platform|webcommon|ide").addTest(PacEngineTest.class).suite();
+    }
    
 
     /**
@@ -87,7 +96,7 @@ public class PacEngineTest extends NbTestCase {
 
         PacScriptEvaluator pacEvaluator = factory.createPacScriptEvaluator(pacSource);
 
-        URI testURL = new URI("http://netbeans.apache.org");  // doesn't actually matter which URL we use
+        URI testURL = new URI("https://netbeans.apache.org");  // doesn't actually matter which URL we use
         List<Proxy> proxies = pacEvaluator.findProxyForURL(testURL);
 
         assertEquals(expectedReturnedProxies, proxies.size());
@@ -99,7 +108,7 @@ public class PacEngineTest extends NbTestCase {
 
         PacScriptEvaluator pacEvaluator = factory.createPacScriptEvaluator(pacSource);
 
-        URI testURL = new URI("http://netbeans.apache.org");  // doesn't actually matter which URL we use
+        URI testURL = new URI("https://netbeans.apache.org");  // doesn't actually matter which URL we use
         List<Proxy> proxies = pacEvaluator.findProxyForURL(testURL);
 
         assertEquals(Collections.singletonList(Proxy.NO_PROXY), proxies);
@@ -110,7 +119,7 @@ public class PacEngineTest extends NbTestCase {
 
         PacScriptEvaluator pacEvaluator = factory.createPacScriptEvaluator(pacSource);
 
-        URI testURL = new URI("http://netbeans.apache.org");  // doesn't actually matter which URL we use
+        URI testURL = new URI("https://netbeans.apache.org");  // doesn't actually matter which URL we use
         List<Proxy> proxies = pacEvaluator.findProxyForURL(testURL);
 
         assertEquals(Collections.singletonList(Proxy.NO_PROXY), proxies);

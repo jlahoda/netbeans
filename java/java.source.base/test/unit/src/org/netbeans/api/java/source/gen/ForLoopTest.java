@@ -106,7 +106,7 @@ public class ForLoopTest extends GeneratorTestMDRCompat {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
     
@@ -157,7 +157,7 @@ public class ForLoopTest extends GeneratorTestMDRCompat {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
     
@@ -217,7 +217,7 @@ public class ForLoopTest extends GeneratorTestMDRCompat {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
     
@@ -276,7 +276,7 @@ public class ForLoopTest extends GeneratorTestMDRCompat {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
     
@@ -324,7 +324,7 @@ public class ForLoopTest extends GeneratorTestMDRCompat {
                 WhileLoopTree wlt = (WhileLoopTree) stmts.get(0);
                 ExpressionStatementTree statement = (ExpressionStatementTree) wlt.getStatement();
                 VariableTree var = make.Variable(
-                        make.Modifiers(Collections.<Modifier>emptySet()), 
+                        make.Modifiers(Collections.<Modifier>emptySet()),
                         "properties",
                         make.Identifier("Properties"),
                         statement.getExpression()
@@ -337,7 +337,7 @@ public class ForLoopTest extends GeneratorTestMDRCompat {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
     
@@ -385,7 +385,7 @@ public class ForLoopTest extends GeneratorTestMDRCompat {
                 ForLoopTree foor = (ForLoopTree) stmts.get(0);
                 ExpressionStatementTree statement = (ExpressionStatementTree) foor.getStatement();
                 VariableTree var = make.Variable(
-                        make.Modifiers(Collections.<Modifier>emptySet()), 
+                        make.Modifiers(Collections.<Modifier>emptySet()),
                         "properties",
                         make.Identifier("Properties"),
                         statement.getExpression()
@@ -398,7 +398,7 @@ public class ForLoopTest extends GeneratorTestMDRCompat {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
     
@@ -444,7 +444,7 @@ public class ForLoopTest extends GeneratorTestMDRCompat {
                 WhileLoopTree wlt = (WhileLoopTree) stmts.get(0);
                 ExpressionStatementTree statement = (ExpressionStatementTree) wlt.getStatement();
                 VariableTree var = make.Variable(
-                        make.Modifiers(Collections.<Modifier>emptySet()), 
+                        make.Modifiers(Collections.<Modifier>emptySet()),
                         "properties",
                         make.Identifier("Properties"),
                         statement.getExpression()
@@ -457,7 +457,7 @@ public class ForLoopTest extends GeneratorTestMDRCompat {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
     
@@ -512,7 +512,7 @@ public class ForLoopTest extends GeneratorTestMDRCompat {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
     
@@ -565,7 +565,7 @@ public class ForLoopTest extends GeneratorTestMDRCompat {
         };
         src.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -609,7 +609,7 @@ public class ForLoopTest extends GeneratorTestMDRCompat {
         };
         testSource.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -649,7 +649,7 @@ public class ForLoopTest extends GeneratorTestMDRCompat {
         };
         testSource.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -693,7 +693,7 @@ public class ForLoopTest extends GeneratorTestMDRCompat {
         };
         testSource.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -736,7 +736,7 @@ public class ForLoopTest extends GeneratorTestMDRCompat {
         };
         testSource.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 
@@ -780,7 +780,7 @@ public class ForLoopTest extends GeneratorTestMDRCompat {
         };
         testSource.runModificationTask(task).commit();
         String res = TestUtilities.copyFileToString(testFile);
-        System.err.println(res);
+        //System.err.println(res);
         assertEquals(golden, res);
     }
 

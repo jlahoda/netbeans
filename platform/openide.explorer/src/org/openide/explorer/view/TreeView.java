@@ -139,7 +139,7 @@ public abstract class TreeView extends JScrollPane {
     //
 
     /** Main <code>JTree</code> component. */
-    transient protected JTree tree;
+    protected transient JTree tree;
 
     /** model */
     transient NodeTreeModel treeModel;
@@ -181,21 +181,21 @@ public abstract class TreeView extends JScrollPane {
     transient boolean dropTargetPopupAllowed = true;
     
     // default DnD actions
-    transient private int allowedDragActions = DnDConstants.ACTION_COPY_OR_MOVE | DnDConstants.ACTION_REFERENCE;
-    transient private int allowedDropActions = DnDConstants.ACTION_COPY_OR_MOVE | DnDConstants.ACTION_REFERENCE;
+    private transient int allowedDragActions = DnDConstants.ACTION_COPY_OR_MOVE | DnDConstants.ACTION_REFERENCE;
+    private transient int allowedDropActions = DnDConstants.ACTION_COPY_OR_MOVE | DnDConstants.ACTION_REFERENCE;
     
     /** Quick Search support */
-    transient private QuickSearch qs;
+    private transient QuickSearch qs;
     
     /** wait cursor is shown automatically during expanding */
-    transient private boolean autoWaitCursor = true;
+    private transient boolean autoWaitCursor = true;
 
     /** Holds VisualizerChildren for all visible nodes */
     private final VisualizerHolder visHolder = new VisualizerHolder();
     /** reference to the last visible search field */
     private static Reference<TreeView> lastSearchField = new WeakReference<TreeView>(null);
 
-    transient private boolean removedNodeWasSelected = false;
+    private transient boolean removedNodeWasSelected = false;
 
     /** Constructor.
     */
@@ -405,6 +405,30 @@ public abstract class TreeView extends JScrollPane {
     public void setRootVisible(boolean visible) {
         tree.setRootVisible(visible);
         tree.setShowsRootHandles(!visible);
+    }
+
+
+    /**
+     * Set the <code>scrollsOnExpand</code> property on the
+     * underlying tree component.
+     * @see javax.swing.JTree#setScrollsOnExpand(boolean)
+     *
+     * @param newValue the new value of the property
+     * @since 6.73
+     */
+    public void setScrollsOnExpand(boolean newValue) {
+        tree.setScrollsOnExpand(newValue);
+    }
+
+    /**
+     * Returns the value of the <code>scrollsOnExpand</code> property of
+     * the underlying tree component.
+     *
+     * @return the value of the <code>scrollsOnExpand</code> property
+     * @since 6.73
+     */
+    public boolean getScrollsOnExpand() {
+        return tree.getScrollsOnExpand();
     }
 
     /**
@@ -1112,7 +1136,7 @@ public abstract class TreeView extends JScrollPane {
             if (!toAdd.isEmpty()) {
                 contextLookup = new ProxyLookup(
                     contextLookup,
-                    Lookups.fixed((Object[])toAdd.toArray(new Node[toAdd.size()])));
+                    Lookups.fixed((Object[])toAdd.toArray(new Node[0])));
             }
             return contextLookup;
         }
@@ -1184,7 +1208,7 @@ public abstract class TreeView extends JScrollPane {
         removedNodeWasSelected = remSel != null;
         if (remSel != null) {
             try {
-                sm.removeSelectionPaths(remSel.toArray(new TreePath[remSel.size()]));
+                sm.removeSelectionPaths(remSel.toArray(new TreePath[0]));
             } catch (NullPointerException e) {
                 // if editing of label of removed node was in progress
                 // BasicTreeUI will try to cancel editing and repaint node 
@@ -1447,7 +1471,7 @@ public abstract class TreeView extends JScrollPane {
                     ll.add(n);
                 }
             }
-            callSelectionChanged(ll.toArray(new Node[ll.size()]));
+            callSelectionChanged(ll.toArray(new Node[0]));
         }
 
         /** Checks whether given Node is a subnode of rootContext.
@@ -1758,7 +1782,7 @@ public abstract class TreeView extends JScrollPane {
         public void updateUI() {
             super.updateUI();
             setBorder(BorderFactory.createEmptyBorder());
-            if( getTransferHandler() != null && getTransferHandler() instanceof UIResource ) {
+            if( getTransferHandler() instanceof UIResource ) {
                 //we handle drag and drop in our own way, so let's just fool the UI with a dummy
                 //TransferHandler to ensure that multiple selection is not lost when drag starts
                 setTransferHandler( new DummyTransferHandler() );

@@ -41,6 +41,7 @@ import org.netbeans.modules.refactoring.java.api.IntroduceLocalExtensionRefactor
 import org.netbeans.modules.refactoring.java.api.IntroduceLocalExtensionRefactoring.Equality;
 import org.netbeans.modules.refactoring.java.api.JavaRefactoringUtils;
 import org.netbeans.modules.refactoring.java.spi.RefactoringVisitor;
+import org.netbeans.modules.refactoring.java.spi.ToPhaseException;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.util.MapFormat;
@@ -65,6 +66,17 @@ public class IntroduceLocalExtensionTransformer extends RefactoringVisitor {
         this.refactoring = refactoring;
         this.initialized = false;
         this.getterSetterMap = new HashMap<>();
+    }
+
+    @Override
+    public void setWorkingCopy(WorkingCopy workingCopy) throws ToPhaseException {
+        if (!initialized) {
+            FileObject origin = SourceUtils.getFile(refactoring.getRefactoringSource().lookup(TreePathHandle.class).getElementHandle(), workingCopy.getClasspathInfo());
+            if (origin != null) {
+                SourceUtils.forceSource(workingCopy, origin);
+            }
+        }
+        super.setWorkingCopy(workingCopy);
     }
 
     @Override
@@ -122,7 +134,8 @@ public class IntroduceLocalExtensionTransformer extends RefactoringVisitor {
 
             // create new class
             Tree newClassTree;
-            final Set<Modifier> modifiers = new HashSet(source.getModifiers());
+            final Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
+            modifiers.addAll(source.getModifiers());
             modifiers.remove(Modifier.ABSTRACT);
             modifiers.remove(Modifier.STATIC);
             if(noInterface) {
@@ -199,7 +212,9 @@ public class IntroduceLocalExtensionTransformer extends RefactoringVisitor {
         setterBody.append(longName).append(" = ").append(parName).append(";"); //NOI18N
         setterBody.append("}");//NOI18N
 
-        Set<Modifier> mods = new HashSet<>(useModifiers);
+        Set<Modifier> mods = EnumSet.noneOf(Modifier.class);
+        mods.addAll(useModifiers);
+
         if (staticMod) {
             mods.add(Modifier.STATIC);
         }

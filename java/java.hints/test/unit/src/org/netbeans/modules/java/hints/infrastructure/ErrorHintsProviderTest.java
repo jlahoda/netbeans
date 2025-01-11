@@ -23,8 +23,10 @@ import org.netbeans.modules.java.hints.spiimpl.TestCompilerSettings;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.prefs.Preferences;
+import javax.lang.model.SourceVersion;
 import javax.swing.text.Document;
 import org.netbeans.api.java.classpath.ClassPath;
 import org.netbeans.api.java.lexer.JavaTokenId;
@@ -70,7 +72,6 @@ public class ErrorHintsProviderTest extends NbTestCase {
     @Override
     protected void setUp() throws Exception {
         SourceUtilsTestUtil.prepareTest(new String[] {"org/netbeans/modules/java/editor/resources/layer.xml"}, new Object[0]);
-
         clearWorkDir();
         
         if (cache == null) {
@@ -86,7 +87,7 @@ public class ErrorHintsProviderTest extends NbTestCase {
         }, true).get();
     }
     
-    private void prepareTest(String capitalizedName) throws Exception {
+    private void prepareTest(String capitalizedName, String sourceLevel) throws Exception {
         FileObject workFO = FileUtil.toFileObject(getWorkDir());
         
         assertNotNull(workFO);
@@ -125,7 +126,11 @@ public class ErrorHintsProviderTest extends NbTestCase {
         testSource = packageRoot.getFileObject(capitalizedName + ".java");
         
         assertNotNull(testSource);
-        
+
+        if (sourceLevel != null) {
+            SourceUtilsTestUtil.setSourceLevel(testSource, sourceLevel);
+        }
+
         js = JavaSource.forFileObject(testSource);
         
         assertNotNull(js);
@@ -136,7 +141,11 @@ public class ErrorHintsProviderTest extends NbTestCase {
     }
     
     private void performTest(String name, boolean specialMacTreatment) throws Exception {
-        prepareTest(name);
+        performTest(name, specialMacTreatment, null);
+    }
+
+    private void performTest(String name, boolean specialMacTreatment, String sourceLevel) throws Exception {
+        prepareTest(name, sourceLevel);
         
         DataObject testData = DataObject.find(testSource);
         EditorCookie ec = testData.getLookup().lookup(EditorCookie.class);
@@ -171,7 +180,7 @@ public class ErrorHintsProviderTest extends NbTestCase {
     }
     
     public void testShortErrors5() throws Exception {
-        performTest("TestShortErrors5", true);
+        performTest("TestShortErrors5", false);
     }
     
     public void testShortErrors6() throws Exception {
@@ -183,7 +192,7 @@ public class ErrorHintsProviderTest extends NbTestCase {
     }
     
     public void testShortErrors8() throws Exception {
-        performTest("TestShortErrors8", false);
+        performTest("TestShortErrors8", false, "21");
     }
     
     public void testShortErrors9() throws Exception {
@@ -219,7 +228,7 @@ public class ErrorHintsProviderTest extends NbTestCase {
         TestCompilerSettings.commandLine = "-Xlint:serial";
 
         try {
-            performTest("TestShortErrorsSVUIDWarning", true);
+            performTest("TestShortErrorsSVUIDWarning", false);
         } finally {
             TestCompilerSettings.commandLine = null;
         }
@@ -230,6 +239,13 @@ public class ErrorHintsProviderTest extends NbTestCase {
     }
     
     public void testTestUnicodeError() throws Exception {
+        //only run this test with javac 17 and higher, there were adjustments to the
+        //diagnostics in previous versions:
+        try {
+            SourceVersion.valueOf("RELEASE_17");
+        } catch (IllegalArgumentException ex) {
+            return ;
+        }
         performTest("TestUnicodeError", false);
     }
     
@@ -243,6 +259,15 @@ public class ErrorHintsProviderTest extends NbTestCase {
                            "public class |A| {\n" +
                            "    public A() {}\n" +
                            "}\n");
+    }
+
+    public void testUnnamedClass() throws Exception {
+        performFullInlinedTest("Test.java",
+                               "void main() {\n" +
+                               "}\n",
+                               "21",
+                               //TODO: needs to be adjusted when the error in javac is fixed:
+                               "0:0-0:13::Test.java:1:1: compiler.err.preview.feature.disabled.plural: (compiler.misc.feature.implicit.classes)");
     }
 
     private void performInlinedTest(String name, String code) throws Exception {
@@ -290,6 +315,53 @@ public class ErrorHintsProviderTest extends NbTestCase {
             golden.add(e);
         }
         
+        assertEquals(golden, actual);
+    }
+
+    private void performFullInlinedTest(String name, String code, String sourceLevel, String... expected) throws Exception {
+        FileObject workFO = FileUtil.toFileObject(getWorkDir());
+
+        assertNotNull(workFO);
+
+        FileObject sourceRoot = workFO.createFolder("src");
+        FileObject buildRoot  = workFO.createFolder("build");
+
+        SourceUtilsTestUtil.prepareTest(sourceRoot, buildRoot, cacheFO);
+
+        testSource = FileUtil.createData(sourceRoot, name);
+
+        assertNotNull(testSource);
+
+        org.netbeans.api.java.source.TestUtilities.copyStringToFile(testSource, code);
+
+        js = JavaSource.forFileObject(testSource);
+
+        assertNotNull(js);
+
+        SourceUtilsTestUtil.setSourceLevel(testSource, sourceLevel);
+        SourceUtilsTestUtil.setCompilerOptions(sourceRoot, Arrays.asList("-XDrawDiagnostics"));
+
+        info = SourceUtilsTestUtil.getCompilationInfo(js, Phase.RESOLVED);
+
+        assertNotNull(info);
+
+        DataObject testData = DataObject.find(testSource);
+        EditorCookie ec = testData.getLookup().lookup(EditorCookie.class);
+        Document doc = ec.openDocument();
+
+        doc.putProperty(Language.class, JavaTokenId.language());
+
+        List<String> actual = new ArrayList<>();
+
+        for (ErrorDescription ed : new ErrorHintsProvider().computeErrors(info, doc, Utilities.JAVA_MIME_TYPE)) {
+            String err = ed.getRange().getBegin().getLine() + ":" + ed.getRange().getBegin().getColumn() + "-" +
+                         ed.getRange().getEnd().getLine() + ":" + ed.getRange().getEnd().getColumn() + "::" +
+                         ed.getDescription();
+            actual.add(err);
+        }
+
+        List<String> golden = Arrays.asList(expected);
+
         assertEquals(golden, actual);
     }
 

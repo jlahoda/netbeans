@@ -134,7 +134,7 @@ public abstract class FileSystem implements Serializable {
 
     /** Used for synchronization purpose*/
     private static final Object internLock = new Object();
-    private transient static ThreadLocal<EventControl> thrLocal = new ThreadLocal<EventControl>();
+    private static transient ThreadLocal<EventControl> thrLocal = new ThreadLocal<EventControl>();
 
     /** Empty status */
     private static final StatusDecorator STATUS_NONE = new StatusDecorator() {
@@ -152,7 +152,7 @@ public abstract class FileSystem implements Serializable {
     * It can be invalid if there is another filesystem with the
     * same name in the filesystem pool.
     */
-    transient private boolean valid = false;
+    private transient boolean valid = false;
 
     /** True if the filesystem is assigned to pool.
     * Is modified from Repository methods.
@@ -455,13 +455,13 @@ public abstract class FileSystem implements Serializable {
      * will be honored as of org.openide.filesystems 7.25:
      * <dl>
      * <dt>{@code displayName}</dt>
-     * <dd>Value of {@link Status#annotateName}. Often used with {@code bundlevalue} in an {@link XMLFileSystem}.</dd>
+     * <dd>Value of <a href="https://github.com/apache/netbeans/tree/master/platform/openide.filesystems.nb/src/org/netbeans/modules/openide/filesystems/FileSystemStatus.java">FileSystemStatus#annotateName</a>. Often used with {@code bundlevalue} in an {@link XMLFileSystem}.</dd>
      * <dt>{@code SystemFileSystem.localizingBundle}</dt>
      * <dd>Name of a bundle (as per {@link NbBundle#getBundle(String)}) in which to look up a display name.
      * The bundle key is the {@link FileObject#getPath}.
      * {@code displayName} is preferred for new code.</dd>
      * <dt>{@code iconBase}</dt>
-     * <dd>Resource path to icon for {@link Status#annotateIcon}.
+     * <dd>Resource path to icon for <a href="https://github.com/apache/netbeans/tree/master/platform/openide.filesystems.nb/src/org/netbeans/modules/openide/filesystems/FileSystemStatus.java">FileSystemStatus#annotateIcon</a>.
      * {@code _32} will be inserted before the file suffix for 32x32 icons.</dd>
      * <dt>{@code SystemFileSystem.icon} and {@code SystemFileSystem.icon32}</dt>
      * <dd>Icon specified directly as a {@link URL} (usually {@code nbresloc} protocol)
@@ -765,7 +765,7 @@ public abstract class FileSystem implements Serializable {
 
     /** Class used to notify events for the filesystem.
     */
-    static abstract class EventDispatcher extends Object implements Runnable {
+    abstract static class EventDispatcher extends Object implements Runnable {
         public final void run() {
             dispatch(false, null);
         }

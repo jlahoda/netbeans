@@ -57,26 +57,17 @@ public abstract class AdminFactory {
      */
     static AdminFactory getInstance(final GlassFishVersion version)
             throws CommandException {
-        switch (version) {
-            // Use HTTP interface for any GlassFish older than 3.
-            case GF_1:
-                throw new CommandException(
-                        CommandException.UNSUPPORTED_VERSION);
-            case GF_2:
-            case GF_2_1:
-            case GF_2_1_1:
-                return AdminFactoryHttp.getInstance();
-            // Use REST interface for GlassFish 3 and 4.
-            case GF_3:
-            case GF_3_0_1:
-            case GF_3_1:
-            case GF_3_1_1:
-            case GF_3_1_2:
-            case GF_4:
-                return AdminFactoryRest.getInstance();
-            // Anything else is not unknown.
-            default:
-                throw new CommandException(CommandException.UNKNOWN_VERSION);
+        // Use REST interface for GlassFish 3 and newer.
+        if (GlassFishVersion.ge(version, GlassFishVersion.GF_3)) {
+            return AdminFactoryRest.getInstance();
+        }
+        // Use HTTP interface for any GlassFish older than 3.
+        else if (GlassFishVersion.ge(version, GlassFishVersion.GF_2)) {
+            return AdminFactoryHttp.getInstance();
+        }
+        // Anything else is not unknown.
+        else {
+            throw new CommandException(CommandException.UNKNOWN_VERSION);
         }
     }
 

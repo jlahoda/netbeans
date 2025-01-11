@@ -98,23 +98,15 @@ public class AbstractGitTestCase extends NbTestCase {
     }
 
     protected void write(File file, String str) throws IOException {
-        FileWriter w = null;
-        try {
-            w = new FileWriter(file);
+        try (FileWriter w = new FileWriter(file)) {
             w.write(str);
             w.flush();
-        } finally {
-            if (w != null) {
-                w.close();
-            }
         }
     }
 
     protected String read(File file) throws IOException {
         StringBuilder sb = new StringBuilder();
-        BufferedReader r = null;
-        try {
-            r = new BufferedReader(new FileReader(file));
+        try (BufferedReader r = new BufferedReader(new FileReader(file))) {
             String s = r.readLine();
             if (s != null) {
                 while( true ) {
@@ -124,12 +116,20 @@ public class AbstractGitTestCase extends NbTestCase {
                     sb.append('\n');
                 }
             }
-        } finally {
-            if (r != null) {
-                r.close();
-            }
         }
         return sb.toString();
+    }
+
+    protected boolean containsCRorLF(File file) throws IOException {
+        try (BufferedReader r = new BufferedReader(new FileReader(file))) {
+            int i;
+            while ((i = r.read()) > -1) {
+                if (i == '\n' || i == '\r') {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     protected static void assertStatus (Map<File, GitStatus> statuses, File workDir, File file, boolean tracked, Status headVsIndex, Status indexVsWorking, Status headVsWorking, boolean conflict) {
@@ -219,8 +219,8 @@ public class AbstractGitTestCase extends NbTestCase {
             DirCacheEntry e = cache.getEntry(relativePath);
             assertNotNull(e);
             assertEquals(relativePath, e.getPathString());
-            if (f.lastModified() != e.getLastModified()) {
-                assertEquals((f.lastModified() / 1000) * 1000, (e.getLastModified() / 1000) * 1000);
+            if (f.lastModified() != e.getLastModifiedInstant().toEpochMilli()) {
+                assertEquals((f.lastModified() / 1000) * 1000, (e.getLastModifiedInstant().toEpochMilli() / 1000) * 1000);
             }
             try (InputStream in = new FileInputStream(f)) {
                 assertEquals(e.getObjectId(), repository.newObjectInserter().idFor(Constants.OBJ_BLOB, f.length(), in));

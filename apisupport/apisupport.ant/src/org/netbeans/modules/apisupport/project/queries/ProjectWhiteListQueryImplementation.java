@@ -104,7 +104,7 @@ public class ProjectWhiteListQueryImplementation implements WhiteListQueryImplem
     private void fireChangeAllExistingResults(final TreeSet<String> privatePackages) {
             final Set<ProjectWhiteListImplementation> set;
             synchronized (results) {
-                set = new HashSet(results);
+                set = new HashSet<>(results);
             }
 
             RP.post(new Runnable() {
@@ -194,7 +194,7 @@ public class ProjectWhiteListQueryImplementation implements WhiteListQueryImplem
 
                 publicPackagesStr = attrs.getValue("OpenIDE-Module-Public-Packages");
                 if(publicPackagesStr != null && !"".equals(publicPackagesStr)) {
-                    publicPackagesStr = publicPackagesStr.replaceAll(" ", "");
+                    publicPackagesStr = publicPackagesStr.replace(" ", "");
                 }
 
                 if (publicPackagesStr != null && !"-".equals(publicPackagesStr)) {

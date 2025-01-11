@@ -81,6 +81,7 @@ public class ActionNoBlock extends Action {
      * {@link ActionNoBlock#ActionNoBlock(String menuPath, String popupPath, KeyStroke[] keystrokes)}
      * instead.
      */
+    @Deprecated
     public ActionNoBlock(String menuPath, String popupPath, Shortcut[] shortcuts) {
         super(menuPath, popupPath, shortcuts);
     }
@@ -312,7 +313,7 @@ public class ActionNoBlock extends Action {
                             } else {
                                 // action implements javax.swing.Action
                                 try {
-                                    ((javax.swing.Action) systemActionClass.newInstance()).actionPerformed(
+                                    ((javax.swing.Action) systemActionClass.getDeclaredConstructor().newInstance()).actionPerformed(
                                             new ActionEvent(new Container(), 0, null));
                                 } catch (Exception e) {
                                     throw new JemmyException("Exception when trying to create instance of action \"" + systemActionClass.getName() + "\".", e);

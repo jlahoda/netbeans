@@ -63,7 +63,7 @@ public final class ParserLoader extends URLClassLoader {
     /** Creates new ParserLoader */
     private ParserLoader(URL[] locations) {
         super(locations);
-        parentLoader = (ClassLoader) Lookup.getDefault().lookup(ClassLoader.class);
+        parentLoader = Lookup.getDefault().lookup(ClassLoader.class);
     }
 
     /**
@@ -102,7 +102,7 @@ public final class ParserLoader extends URLClassLoader {
      * ASSUMPTION parentLoader see bootstrap resources
      */
     public Class loadClass(String name) throws ClassNotFoundException {
-        Class clazz = null;
+        Class<?> clazz = null;
         
         if (name.startsWith(PARSER_PACKAGE)) {
                 

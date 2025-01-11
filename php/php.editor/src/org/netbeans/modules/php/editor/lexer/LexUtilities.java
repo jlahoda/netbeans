@@ -175,7 +175,8 @@ public final class LexUtilities {
             Token<?extends PHPTokenId> token = ts.token();
 
             if ((token.id() == tokenUpId && textEquals(token.text(), up))
-                    || (tokenUpId == PHPTokenId.PHP_CURLY_OPEN && token.id() == PHPTokenId.PHP_TOKEN && token.text().charAt(token.text().length() - 1) == '{')) {
+                    || (tokenUpId == PHPTokenId.PHP_CURLY_OPEN && token.id() == PHPTokenId.PHP_TOKEN && token.text().charAt(token.text().length() - 1) == '{')
+                    || (up == '[' && token.id() == PHPTokenId.PHP_ATTRIBUTE)) /* #[ */ {
                 balance++;
             } else if (token.id() == tokenDownId && textEquals(token.text(), down)) {
                 if (balance == 0) {
@@ -198,7 +199,8 @@ public final class LexUtilities {
             TokenId id = token.id();
 
             if (token.id() == tokenUpId && textEquals(token.text(), up)
-                    || (tokenUpId == PHPTokenId.PHP_CURLY_OPEN && token.id() == PHPTokenId.PHP_TOKEN && token.text().charAt(token.text().length() - 1) == '{')) {
+                    || (tokenUpId == PHPTokenId.PHP_CURLY_OPEN && token.id() == PHPTokenId.PHP_TOKEN && token.text().charAt(token.text().length() - 1) == '{')
+                    || (up == '[' && token.id() == PHPTokenId.PHP_ATTRIBUTE)) /* #[ */ {
                 if (balance == 0) {
                     return new OffsetRange(ts.offset(), ts.offset() + token.length());
                 }
@@ -505,6 +507,7 @@ public final class LexUtilities {
         Token token;
         int balance = 0;
         int curlyBalance = 0;
+        boolean isInQuotes = false; // GH-6731 for checking a variable in string
         do {
             token = ts.token();
             if (token.id() == PHPTokenId.PHP_TOKEN) {
@@ -517,6 +520,14 @@ public final class LexUtilities {
                         break;
                     default:
                         //no-op
+                }
+            } else if (token.id() == PHPTokenId.PHP_CONSTANT_ENCAPSED_STRING) {
+                // GH-6731 for checking a variable in string
+                // e.g. "example {$example}"
+                if ((token.text().length() == 1 && TokenUtilities.textEquals(token.text(), "\"")) // NOI18N
+                        || (!TokenUtilities.startsWith(token.text(), "\"") && TokenUtilities.endsWith(token.text(), "\"")) // NOI18N
+                        || (TokenUtilities.startsWith(token.text(), "\"") && !TokenUtilities.endsWith(token.text(), "\""))) { // NOI18N
+                    isInQuotes = !isInQuotes;
                 }
             } else if ((token.id() == PHPTokenId.PHP_SEMICOLON || token.id() == PHPTokenId.PHP_OPENTAG)
                     && ts.moveNext()) {
@@ -582,7 +593,7 @@ public final class LexUtilities {
                 break;
             } else if (token.id() == PHPTokenId.PHP_CURLY_CLOSE) {
                 curlyBalance--;
-                if (curlyBalance == -1 && ts.moveNext()) {
+                if (!isInQuotes && curlyBalance == -1 && ts.moveNext()) {
                     // we are after previous blog close
                     LexUtilities.findNext(ts, Arrays.asList(
                             PHPTokenId.WHITESPACE,
@@ -598,7 +609,7 @@ public final class LexUtilities {
                 }
             } else if (token.id() == PHPTokenId.PHP_CURLY_OPEN) {
                 curlyBalance++;
-                if (curlyBalance == 1 && ts.moveNext()) {
+                if (!isInQuotes && curlyBalance == 1 && ts.moveNext()) {
                     // we are at the begining of a blog
                     LexUtilities.findNext(ts, Arrays.asList(
                             PHPTokenId.WHITESPACE,
@@ -634,4 +645,16 @@ public final class LexUtilities {
 
         return start;
     }
+
+    /**
+     * Check whether the token id is an operator(PHP_OPERATOR or
+     * PHP_TEXTUAL_OPERATOR). PHP_TEXTUAL_OPERATOR is "AND", "OR", or "XOR".
+     *
+     * @param id the token id
+     * @return {@code true} the token id is an operator, otherwise {@code false}
+     */
+    public static boolean isPHPOperator(PHPTokenId id) {
+        return id == PHPTokenId.PHP_OPERATOR || id == PHPTokenId.PHP_TEXTUAL_OPERATOR;
+    }
+
 }

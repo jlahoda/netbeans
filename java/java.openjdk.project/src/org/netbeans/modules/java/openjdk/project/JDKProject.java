@@ -44,6 +44,7 @@ import org.netbeans.api.java.classpath.ClassPath;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectInformation;
 import org.netbeans.api.project.ProjectManager;
+import org.netbeans.modules.java.openjdk.common.BuildUtils;
 import org.netbeans.modules.java.openjdk.project.ConfigurationImpl.ProviderImpl;
 import org.netbeans.modules.java.openjdk.project.ModuleDescription.ModuleRepository;
 import org.netbeans.modules.java.openjdk.project.customizer.CustomizerProviderImpl;
@@ -56,6 +57,7 @@ import org.netbeans.spi.project.support.ant.PropertyProvider;
 import org.netbeans.spi.project.support.ant.PropertyUtils;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
+import org.openide.util.BaseUtilities;
 import org.openide.util.ChangeSupport;
 import org.openide.util.Exceptions;
 import org.openide.util.ImageUtilities;
@@ -123,7 +125,7 @@ public class JDKProject implements Project {
         properties.setProperty("os", osKey);
         properties.setProperty("generalized-os", generalizedOsKey);
         properties.setProperty("legacy-os", legacyOsKey);
-        FileObject jdkRoot = moduleRepository != null ? moduleRepository.getJDKRoot() : projectDir.getFileObject("..");
+        FileObject jdkRoot = moduleRepository != null ? moduleRepository.getJDKRoot() : BuildUtils.getFileObject(projectDir, "..");
         properties.setProperty("jdkRoot", stripTrailingSlash(jdkRoot.toURI().toString()));
         configurations = ConfigurationImpl.getProvider(jdkRoot);
 
@@ -139,7 +141,7 @@ public class JDKProject implements Project {
         
         evaluator = PropertyUtils.sequentialPropertyEvaluator(properties);
         
-        boolean closed = projectDir.getFileObject("src/closed/share/classes/javax/swing/plaf/basic/icons/JavaCup16.png") != null;
+        boolean closed = BuildUtils.getFileObject(projectDir, "src/closed/share/classes/javax/swing/plaf/basic/icons/JavaCup16.png") != null;
         boolean modular = currentModule != null;
         Configuration configuration =  modular ? MODULAR_CONFIGURATION
                                                : closed ? LEGACY_CLOSED_CONFIGURATION : LEGACY_OPEN_CONFIGURATION;
@@ -173,7 +175,7 @@ public class JDKProject implements Project {
                     break;
             }
 
-            FileObject shareClasses = projectDir.getFileObject("share/classes");
+            FileObject shareClasses = BuildUtils.getFileObject(projectDir, "share/classes");
 
             if (shareClasses != null && Arrays.stream(shareClasses.getChildren()).anyMatch(c -> c.isFolder() && c.getNameExt().contains("."))) {
                 List<String> submodules = Arrays.stream(shareClasses.getChildren()).filter(c -> c.isFolder()).map(c -> c.getNameExt()).collect(Collectors.toList());
@@ -219,6 +221,8 @@ public class JDKProject implements Project {
                                     new CustomizerProviderImpl(this),
                                     new Settings(this),
                                     new BinaryForSourceQueryImpl(this, cpp.getSourceCP()),
+                                    CProjectConfigurationProviderImpl.create(this),
+                                    new UnitTestForSourceQueryImpl(this),
                                     this);
         this.lookup = LookupProviderSupport.createCompositeLookup(base, "Projects/" + PROJECT_KEY + "/Lookup");
         } catch (Throwable t) {
@@ -296,7 +300,7 @@ public class JDKProject implements Project {
         public URL getLocation() {
             if (location == null) {
                 try {
-                    location = new URL(evaluator.evaluate(relPath)).toURI().normalize().toURL();
+                    location = BaseUtilities.normalizeURI(new URL(evaluator.evaluate(relPath)).toURI()).toURL();
                 } catch (MalformedURLException | URISyntaxException ex) {
                     Exceptions.printStackTrace(ex); //XXX
                 }
@@ -373,7 +377,8 @@ public class JDKProject implements Project {
             Arrays.asList(Pair.<String, String>of("${basedir}/share/native/", null),
                           Pair.<String, String>of("${basedir}/${os}/native/", null),
                           Pair.<String, String>of("${basedir}/${generalized-os}/native/", null),
-                          Pair.<String, String>of("${outputRoot}/support/headers/${module}/", null)),
+                          Pair.<String, String>of("${outputRoot}/support/headers/${module}/", null),
+                          Pair.<String, String>of("${outputRoot}/support/modules_include/${module}/", null)),
             Arrays.<Pair<String, String>>asList()
     );
 
@@ -384,7 +389,7 @@ public class JDKProject implements Project {
             if (repository != null) {
                 return repository.findModule(projectDirectory.getNameExt()) != null;
             } else {
-                return projectDirectory.getFileObject("src/share/classes/java/lang/Object.java") != null;
+                return BuildUtils.getFileObject(projectDirectory, "src/share/classes/java/lang/Object.java") != null;
             }
         } catch (Exception ex) {
             Logger.getLogger(JDKProject.class.getName()).log(Level.FINE, null, ex);
@@ -408,7 +413,7 @@ public class JDKProject implements Project {
                 if (prj != null)
                     return prj;
 
-                if (projectDirectory.getFileObject("src/share/classes/java/lang/Object.java") != null) {
+                if (BuildUtils.getFileObject(projectDirectory, "src/share/classes/java/lang/Object.java") != null) {
                     //legacy project:
                     return new JDKProject(projectDirectory, null, null);
                 }
