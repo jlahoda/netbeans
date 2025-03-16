@@ -82,6 +82,7 @@ import org.openide.filesystems.FileObject;
 import org.openide.text.NbDocument;
 import org.openide.util.Exceptions;
 import org.openide.util.ImageUtilities;
+import org.openide.util.NbBundle.Messages;
 import org.openide.xml.XMLUtil;
 
 /**
@@ -94,6 +95,7 @@ public class CompletionProviderImpl implements CompletionProvider {
     private static final Logger LOG = Logger.getLogger(CompletionProviderImpl.class.getName());
 
     @Override
+    @Messages("DN_NoParameter=No parameter.")
     public CompletionTask createTask(int queryType, JTextComponent component) {
         if ((queryType & TOOLTIP_QUERY_TYPE) != 0) {
             return new AsyncCompletionTask(new AsyncCompletionQuery() {
@@ -121,17 +123,22 @@ public class CompletionProviderImpl implements CompletionProvider {
                         StringBuilder signatures = new StringBuilder();
                         signatures.append("<html>");
                         for (SignatureInformation info : help.getSignatures()) {
-                            if (info.getParameters().isEmpty()) {
-                                signatures.append("No parameter.<br>");
+                            if (info.getParameters() == null || info.getParameters().isEmpty()) {
+                                if (info.getLabel().isEmpty()) {
+                                    signatures.append(Bundle.DN_NoParameter());
+                                } else {
+                                    signatures.append(info.getLabel());
+                                }
+                                signatures.append("<br>");
                                 continue;
                             }
                             String sigSep = "";
                             int idx = 0;
                             for (ParameterInformation pi : info.getParameters()) {
+                                signatures.append(sigSep);
                                 if (idx == help.getActiveParameter()) {
                                     signatures.append("<b>");
                                 }
-                                signatures.append(sigSep);
                                 String label;
                                 if (pi.getLabel().isLeft()) {
                                     label = pi.getLabel().getLeft();

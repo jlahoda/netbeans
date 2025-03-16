@@ -28,6 +28,7 @@ import javax.swing.JEditorPane;
 import javax.swing.text.JTextComponent;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import javax.swing.text.StyledDocument;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionList;
@@ -42,15 +43,20 @@ import org.eclipse.lsp4j.DidSaveTextDocumentParams;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
 import org.eclipse.lsp4j.InsertTextFormat;
+import org.eclipse.lsp4j.ParameterInformation;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ServerCapabilities;
+import org.eclipse.lsp4j.SignatureHelp;
+import org.eclipse.lsp4j.SignatureHelpOptions;
+import org.eclipse.lsp4j.SignatureHelpParams;
+import org.eclipse.lsp4j.SignatureInformation;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.eclipse.lsp4j.jsonrpc.messages.Tuple.Two;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.lsp4j.services.TextDocumentService;
 import org.eclipse.lsp4j.services.WorkspaceService;
-import org.netbeans.editor.BaseTextUI;
 import org.netbeans.junit.MockServices;
 import org.netbeans.junit.NbTestCase;
 import org.netbeans.modules.editor.NbEditorKit;
@@ -231,6 +237,33 @@ public class CompletionProviderImplTest extends NbTestCase {
         assertFalse(notInvoked.get());
     }
 
+    public void testSignatureTest1() throws IOException {
+        runSignatureTest(
+                """
+                foo.method(|
+                """,
+                new TestTextDocumentService() {
+                    @Override
+                    public CompletableFuture<SignatureHelp> signatureHelp(SignatureHelpParams params) {
+                        SignatureHelp result = new SignatureHelp(List.of(
+                            new SignatureInformation(""),
+                            new SignatureInformation("String s"),
+                            new SignatureInformation("String s1, String s2, String s3", (String) null, List.of(new ParameterInformation("String s1"), createParameterInformationForIntegers(11, 20), new ParameterInformation("String s3")))
+                        ), 1, 1);
+                        return CompletableFuture.completedFuture(result);
+                    }
+                },
+                "<html>" + Bundle.DN_NoParameter() + "<br>String s<br>String s1, <b>String s2</b>, String s3<br>");
+    }
+
+    private static ParameterInformation createParameterInformationForIntegers(int start, int end) {
+        ParameterInformation result = new ParameterInformation();
+
+        result.setLabel(new Two<>(start, end));
+
+        return result;
+    }
+
     private void runCompletionDefaultActionTest(String testCodeWithCaret,
                                                 TextDocumentService documentService,
                                                 String expectedOutput) throws IOException {
@@ -255,6 +288,57 @@ public class CompletionProviderImplTest extends NbTestCase {
                                    TextDocumentService documentService,
                                    Function<InitializeResult, InitializeResult> adjustInitializeResult,
                                    CompletionValidator validator) throws IOException {
+        runAnyCompletionTest(testCodeWithCaret, documentService, adjustInitializeResult, c -> {
+            CompletionTask task = new CompletionProviderImpl().createTask(CompletionProvider.COMPLETION_QUERY_TYPE, c);
+            CompletionResultSetImpl resultImpl = CompletionImpl.get().createTestResultSet(task, CompletionProvider.COMPLETION_QUERY_TYPE);
+            task.query(resultImpl.getResultSet());
+            while (!resultImpl.isFinished()) {
+                try {
+                    Thread.sleep(1); //XXX
+                } catch (InterruptedException ex) {
+                    Exceptions.printStackTrace(ex);
+                }
+            }
+            validator.validate(c, resultImpl.getItems());
+        });
+    }
+
+    interface CompletionValidator {
+        public void validate(JTextComponent c, List<? extends org.netbeans.spi.editor.completion.CompletionItem> items);
+    }
+
+    private void runSignatureTest(String testCodeWithCaret,
+                                  TextDocumentService documentService,
+                                  String toolTipText) throws IOException {
+        runSignatureTest(testCodeWithCaret, documentService, init -> {
+            init.getCapabilities().setSignatureHelpProvider(new SignatureHelpOptions());
+            return init;
+        }, toolTipText);
+    }
+
+    private void runSignatureTest(String testCodeWithCaret,
+                                  TextDocumentService documentService,
+                                  Function<InitializeResult, InitializeResult> adjustInitializeResult,
+                                  String toolTipText) throws IOException {
+        runAnyCompletionTest(testCodeWithCaret, documentService, adjustInitializeResult, c -> {
+            CompletionTask task = new CompletionProviderImpl().createTask(CompletionProvider.TOOLTIP_QUERY_TYPE, c);
+            CompletionResultSetImpl resultImpl = CompletionImpl.get().createTestResultSet(task, CompletionProvider.TOOLTIP_QUERY_TYPE);
+            task.query(resultImpl.getResultSet());
+            while (!resultImpl.isFinished()) {
+                try {
+                    Thread.sleep(1); //XXX
+                } catch (InterruptedException ex) {
+                    Exceptions.printStackTrace(ex);
+                }
+            }
+            assertEquals(toolTipText, resultImpl.getToolTip().getTipText());
+        });
+    }
+
+    private void runAnyCompletionTest(String testCodeWithCaret,
+                                      TextDocumentService documentService,
+                                      Function<InitializeResult, InitializeResult> adjustInitializeResult,
+                                      Consumer<JTextComponent> runCompletion) throws IOException {
         MockLSP.createServer = () -> new TestLanguageServer(documentService, adjustInitializeResult);
         MockServices.setServices(MimeDataProviderImpl.class, MockMimeResolver.class);
 
@@ -275,21 +359,7 @@ public class CompletionProviderImplTest extends NbTestCase {
         c.setEditorKit(new NbEditorKit());
         c.setDocument(doc);
         c.setCaretPosition(4);
-        CompletionTask task = new CompletionProviderImpl().createTask(CompletionProvider.COMPLETION_QUERY_TYPE, c);
-        CompletionResultSetImpl resultImpl = CompletionImpl.get().createTestResultSet(task, CompletionProvider.COMPLETION_QUERY_TYPE);
-        task.query(resultImpl.getResultSet());
-        while (!resultImpl.isFinished()) {
-            try {
-                Thread.sleep(1); //XXX
-            } catch (InterruptedException ex) {
-                Exceptions.printStackTrace(ex);
-            }
-        }
-        validator.validate(c, resultImpl.getItems());
-    }
-
-    interface CompletionValidator {
-        public void validate(JTextComponent c, List<? extends org.netbeans.spi.editor.completion.CompletionItem> items);
+        runCompletion.accept(c);
     }
 
     @Override
