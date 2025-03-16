@@ -27,9 +27,11 @@ import java.util.List;
 import javax.swing.JEditorPane;
 import javax.swing.text.JTextComponent;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.swing.text.StyledDocument;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionList;
+import org.eclipse.lsp4j.CompletionOptions;
 import org.eclipse.lsp4j.CompletionParams;
 import org.eclipse.lsp4j.DidChangeConfigurationParams;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
@@ -48,8 +50,10 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.lsp4j.services.TextDocumentService;
 import org.eclipse.lsp4j.services.WorkspaceService;
+import org.netbeans.editor.BaseTextUI;
 import org.netbeans.junit.MockServices;
 import org.netbeans.junit.NbTestCase;
+import org.netbeans.modules.editor.NbEditorKit;
 import org.netbeans.modules.editor.completion.CompletionImpl;
 import org.netbeans.modules.editor.completion.CompletionResultSetImpl;
 import org.netbeans.modules.lsp.client.TestUtils.MimeDataProviderImpl;
@@ -86,7 +90,6 @@ public class CompletionProviderImplTest extends NbTestCase {
         assertEquals(template, converted);
     }
 
-    //TODO: also test that CC is not called when CC is not supported in the configuration!
     public void testCommitWithResolveInsertPlainTextAndAdditionalEdits() throws IOException {
         runCompletionDefaultActionTest(
                 """
@@ -143,7 +146,7 @@ public class CompletionProviderImplTest extends NbTestCase {
                     }
                 },
                 """
-                new-oo.inserted
+                new-oo.inserted(args);
                 """);
     }
 
@@ -176,10 +179,83 @@ public class CompletionProviderImplTest extends NbTestCase {
                 """);
     }
 
+    public void testNoCompletionWhenNotEnabled() throws IOException {
+        AtomicBoolean notInvoked = new AtomicBoolean();
+
+        runCompletionTest(
+                """
+                foo.ins|
+                """,
+                new TestTextDocumentService() {
+                    @Override
+                    public CompletableFuture<Either<List<CompletionItem>, CompletionList>> completion(CompletionParams position) {
+                        notInvoked.set(true);
+                        return super.completion(position);
+                    }
+                },
+                init -> init,
+                (c, items) -> {
+                    assertEquals(0, items.size());
+                });
+        assertFalse(notInvoked.get());
+    }
+
+    public void testNoResolveProvider() throws IOException {
+        AtomicBoolean notInvoked = new AtomicBoolean();
+
+        runCompletionDefaultActionTest(
+                """
+                foo.ins|
+                """,
+                new TestTextDocumentService() {
+                    @Override
+                    public CompletableFuture<Either<List<CompletionItem>, CompletionList>> completion(CompletionParams position) {
+                        return CompletableFuture.completedFuture(Either.forLeft(List.of(
+                            new CompletionItem("inserted")
+                        )));
+                    }
+                    @Override
+                    public CompletableFuture<CompletionItem> resolveCompletionItem(CompletionItem unresolved) {
+                        notInvoked.set(true);
+
+                        return super.resolveCompletionItem(unresolved);
+                    }
+                },
+                init -> {
+                    init.getCapabilities().setCompletionProvider(new CompletionOptions(false, List.of()));
+                    return init;
+                },
+                """
+                foo.inserted
+                """);
+        assertFalse(notInvoked.get());
+    }
+
     private void runCompletionDefaultActionTest(String testCodeWithCaret,
                                                 TextDocumentService documentService,
                                                 String expectedOutput) throws IOException {
-        MockLSP.createServer = () -> new TestLanguageServer(documentService);
+        runCompletionDefaultActionTest(testCodeWithCaret, documentService, init -> {
+            init.getCapabilities().setCompletionProvider(new CompletionOptions(true, List.of()));
+            return init;
+        }, expectedOutput);
+    }
+
+    private void runCompletionDefaultActionTest(String testCodeWithCaret,
+                                                TextDocumentService documentService,
+                                                Function<InitializeResult, InitializeResult> adjustInitializeResult,
+                                                String expectedOutput) throws IOException {
+        runCompletionTest(testCodeWithCaret, documentService, adjustInitializeResult, (c, items) -> {
+            assertEquals(1, items.size());
+            items.get(0).defaultAction(c);
+            assertEquals(expectedOutput, c.getText());
+        });
+    }
+
+    private void runCompletionTest(String testCodeWithCaret,
+                                   TextDocumentService documentService,
+                                   Function<InitializeResult, InitializeResult> adjustInitializeResult,
+                                   CompletionValidator validator) throws IOException {
+        MockLSP.createServer = () -> new TestLanguageServer(documentService, adjustInitializeResult);
         MockServices.setServices(MimeDataProviderImpl.class, MockMimeResolver.class);
 
         FileObject folder = FileUtil.createMemoryFileSystem().getRoot().createFolder("myfolder");
@@ -195,7 +271,8 @@ public class CompletionProviderImplTest extends NbTestCase {
 
         EditorCookie ec = testFile.getLookup().lookup(EditorCookie.class);
         StyledDocument doc = ec.openDocument();
-        JTextComponent c = new JEditorPane();
+        JEditorPane c = new JEditorPane();
+        c.setEditorKit(new NbEditorKit());
         c.setDocument(doc);
         c.setCaretPosition(4);
         CompletionTask task = new CompletionProviderImpl().createTask(CompletionProvider.COMPLETION_QUERY_TYPE, c);
@@ -208,10 +285,11 @@ public class CompletionProviderImplTest extends NbTestCase {
                 Exceptions.printStackTrace(ex);
             }
         }
-        List<? extends org.netbeans.spi.editor.completion.CompletionItem> items = resultImpl.getItems();
-        assertEquals(1, items.size());
-        items.get(0).defaultAction(c);
-        assertEquals(expectedOutput, c.getText());
+        validator.validate(c, resultImpl.getItems());
+    }
+
+    interface CompletionValidator {
+        public void validate(JTextComponent c, List<? extends org.netbeans.spi.editor.completion.CompletionItem> items);
     }
 
     @Override

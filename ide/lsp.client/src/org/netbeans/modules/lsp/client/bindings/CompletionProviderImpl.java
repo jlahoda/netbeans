@@ -176,6 +176,11 @@ public class CompletionProviderImpl implements CompletionProvider {
                     if (server == null) {
                         return ;
                     }
+                    CompletionOptions completionOptions = server.getInitResult().getCapabilities().getCompletionProvider();
+                    if (completionOptions == null) {
+                        //no completion in the server
+                        return ;
+                    }
                     String uri = Utils.toURI(file);
                     CompletionParams params;
                     params = new CompletionParams(new TextDocumentIdentifier(uri),
@@ -221,7 +226,7 @@ public class CompletionProviderImpl implements CompletionProvider {
                             }
                             private void commit(String appendText) {
                                 CompletionItem resolved;
-                                if (i.getTextEdit() == null) {
+                                if (i.getTextEdit() == null && hasCompletionResolve(completionOptions)) {
                                     CompletionItem resolvedTemp = i;
                                     try {
                                         resolvedTemp = server.getTextDocumentService().resolveCompletionItem(resolvedTemp).get();
@@ -333,7 +338,7 @@ public class CompletionProviderImpl implements CompletionProvider {
                                     @Override
                                     protected void query(CompletionResultSet resultSet, Document doc, int caretOffset) {
                                         CompletionItem resolved;
-                                        if ((i.getDetail() == null || i.getDocumentation() == null) && hasCompletionResolve(server)) {
+                                        if ((i.getDetail() == null || i.getDocumentation() == null) && hasCompletionResolve(completionOptions)) {
                                             CompletionItem temp;
                                             try {
                                                 temp = server.getTextDocumentService().resolveCompletionItem(i).get();
@@ -429,12 +434,8 @@ public class CompletionProviderImpl implements CompletionProvider {
         }, component);
     }
     
-    private boolean hasCompletionResolve(LSPBindings server) {
-        ServerCapabilities capabilities = server.getInitResult().getCapabilities();
-        if (capabilities == null) return false;
-        CompletionOptions completionProvider = capabilities.getCompletionProvider();
-        if (completionProvider == null) return false;
-        Boolean resolveProvider = completionProvider.getResolveProvider();
+    private boolean hasCompletionResolve(CompletionOptions completionOptions) {
+        Boolean resolveProvider = completionOptions.getResolveProvider();
         return resolveProvider != null && resolveProvider;
     }
 
