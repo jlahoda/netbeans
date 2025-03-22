@@ -68,7 +68,6 @@ import org.netbeans.editor.BaseDocument;
 import org.netbeans.editor.Utilities;
 import org.netbeans.lib.editor.codetemplates.api.CodeTemplate;
 import org.netbeans.lib.editor.codetemplates.api.CodeTemplateManager;
-import org.netbeans.modules.editor.NbEditorDocument;
 import org.netbeans.modules.editor.NbEditorUtilities;
 import org.netbeans.modules.lsp.client.LSPBindings;
 import org.netbeans.modules.lsp.client.Utils;
@@ -83,6 +82,7 @@ import org.openide.filesystems.FileObject;
 import org.openide.text.NbDocument;
 import org.openide.util.Exceptions;
 import org.openide.util.ImageUtilities;
+import org.openide.util.NbBundle.Messages;
 import org.openide.xml.XMLUtil;
 
 /**
@@ -95,6 +95,7 @@ public class CompletionProviderImpl implements CompletionProvider {
     private static final Logger LOG = Logger.getLogger(CompletionProviderImpl.class.getName());
 
     @Override
+    @Messages("DN_NoParameter=No parameter.")
     public CompletionTask createTask(int queryType, JTextComponent component) {
         if ((queryType & TOOLTIP_QUERY_TYPE) != 0) {
             return new AsyncCompletionTask(new AsyncCompletionQuery() {
@@ -122,17 +123,22 @@ public class CompletionProviderImpl implements CompletionProvider {
                         StringBuilder signatures = new StringBuilder();
                         signatures.append("<html>");
                         for (SignatureInformation info : help.getSignatures()) {
-                            if (info.getParameters().isEmpty()) {
-                                signatures.append("No parameter.<br>");
+                            if (info.getParameters() == null || info.getParameters().isEmpty()) {
+                                if (info.getLabel().isEmpty()) {
+                                    signatures.append(Bundle.DN_NoParameter());
+                                } else {
+                                    signatures.append(info.getLabel());
+                                }
+                                signatures.append("<br>");
                                 continue;
                             }
                             String sigSep = "";
                             int idx = 0;
                             for (ParameterInformation pi : info.getParameters()) {
+                                signatures.append(sigSep);
                                 if (idx == help.getActiveParameter()) {
                                     signatures.append("<b>");
                                 }
-                                signatures.append(sigSep);
                                 String label;
                                 if (pi.getLabel().isLeft()) {
                                     label = pi.getLabel().getLeft();
@@ -177,6 +183,11 @@ public class CompletionProviderImpl implements CompletionProvider {
                     if (server == null) {
                         return ;
                     }
+                    CompletionOptions completionOptions = server.getInitResult().getCapabilities().getCompletionProvider();
+                    if (completionOptions == null) {
+                        //no completion in the server
+                        return ;
+                    }
                     String uri = Utils.toURI(file);
                     CompletionParams params;
                     params = new CompletionParams(new TextDocumentIdentifier(uri),
@@ -213,8 +224,7 @@ public class CompletionProviderImpl implements CompletionProvider {
                         }
                         String sortText = i.getSortText() != null ? i.getSortText() : i.getLabel();
                         CompletionItemKind kind = i.getKind();
-                        Icon ic = Icons.getCompletionIcon(kind);
-                        ImageIcon icon = new ImageIcon(ImageUtilities.icon2Image(ic));
+                        ImageIcon icon = ImageUtilities.icon2ImageIcon(Icons.getCompletionIcon(kind));
                         resultSet.addItem(new org.netbeans.spi.editor.completion.CompletionItem() {
                             @Override
                             public void defaultAction(JTextComponent jtc) {
@@ -222,7 +232,7 @@ public class CompletionProviderImpl implements CompletionProvider {
                             }
                             private void commit(String appendText) {
                                 CompletionItem resolved;
-                                if (i.getTextEdit() == null) {
+                                if (i.getTextEdit() == null && hasCompletionResolve(completionOptions)) {
                                     CompletionItem resolvedTemp = i;
                                     try {
                                         resolvedTemp = server.getTextDocumentService().resolveCompletionItem(resolvedTemp).get();
@@ -247,7 +257,13 @@ public class CompletionProviderImpl implements CompletionProvider {
                                         TextEdit mainEdit;
 
                                         if (edit != null ) {
-                                            mainEdit = edit.getLeft();
+                                            TextEdit providedMainEdit = edit.getLeft();
+                                            if (resolved.getInsertTextFormat() == InsertTextFormat.Snippet) {
+                                                template = CodeTemplateManager.get(doc).createTemporary(convertSnippet2CodeTemplate(providedMainEdit.getNewText()));
+                                                mainEdit = new TextEdit(providedMainEdit.getRange(), "");
+                                            } else {
+                                                mainEdit = providedMainEdit;
+                                            }
                                         } else {
                                             String toAdd;
                                             if (resolved.getInsertTextFormat() == InsertTextFormat.Snippet) {
@@ -334,7 +350,7 @@ public class CompletionProviderImpl implements CompletionProvider {
                                     @Override
                                     protected void query(CompletionResultSet resultSet, Document doc, int caretOffset) {
                                         CompletionItem resolved;
-                                        if ((i.getDetail() == null || i.getDocumentation() == null) && hasCompletionResolve(server)) {
+                                        if ((i.getDetail() == null || i.getDocumentation() == null) && hasCompletionResolve(completionOptions)) {
                                             CompletionItem temp;
                                             try {
                                                 temp = server.getTextDocumentService().resolveCompletionItem(i).get();
@@ -430,12 +446,8 @@ public class CompletionProviderImpl implements CompletionProvider {
         }, component);
     }
     
-    private boolean hasCompletionResolve(LSPBindings server) {
-        ServerCapabilities capabilities = server.getInitResult().getCapabilities();
-        if (capabilities == null) return false;
-        CompletionOptions completionProvider = capabilities.getCompletionProvider();
-        if (completionProvider == null) return false;
-        Boolean resolveProvider = completionProvider.getResolveProvider();
+    private boolean hasCompletionResolve(CompletionOptions completionOptions) {
+        Boolean resolveProvider = completionOptions.getResolveProvider();
         return resolveProvider != null && resolveProvider;
     }
 

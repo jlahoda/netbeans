@@ -27,8 +27,11 @@ import java.util.stream.Collectors;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import org.eclipse.lsp4j.DocumentSymbol;
+import org.eclipse.lsp4j.DocumentSymbolOptions;
 import org.eclipse.lsp4j.DocumentSymbolParams;
+import org.eclipse.lsp4j.InitializeResult;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
@@ -46,9 +49,9 @@ import org.openide.util.Pair;
  * @author lahvac
  */
 public class NavigatorPanelImpl extends AbstractNavigatorPanel<Pair<LSPBindings, Either<SymbolInformation, DocumentSymbol>>> implements BackgroundTask {
-    static final NavigatorPanelImpl INSTANCE = new NavigatorPanelImpl();
 
-    public NavigatorPanelImpl() {
+    public NavigatorPanelImpl(LSPBindings bindings) {
+        setDisplayName(bindings);
     }
 
     @Override
@@ -64,6 +67,8 @@ public class NavigatorPanelImpl extends AbstractNavigatorPanel<Pair<LSPBindings,
     @Override
     public void run(LSPBindings bindings, FileObject file) {
         if (isCurrentFile(file)) {
+            setDisplayName(bindings);
+
             try {
                 String uri = Utils.toURI(file);
                 List<Pair<LSPBindings, Either<SymbolInformation, DocumentSymbol>>> symbols = bindings.getTextDocumentService().documentSymbol(new DocumentSymbolParams(new TextDocumentIdentifier(uri))).get().stream().map(e -> Pair.of(bindings, e)).collect(Collectors.toList());
@@ -85,6 +90,15 @@ public class NavigatorPanelImpl extends AbstractNavigatorPanel<Pair<LSPBindings,
     @Override
     protected Node[] createNodes(FileObject currentFile, Pair<LSPBindings, Either<SymbolInformation, DocumentSymbol>> sym) {
         return new Node[] {new NodeImpl(sym.first(), Utils.toURI(currentFile), sym.second())};
+    }
+
+    private void setDisplayName(LSPBindings bindings) {
+        InitializeResult initResult = bindings.getInitResult();
+        ServerCapabilities capa = initResult.getCapabilities();
+        Either<Boolean, DocumentSymbolOptions> symbolProvider = capa != null ? capa.getDocumentSymbolProvider() : null;
+        String displayName = symbolProvider != null && symbolProvider.isRight() ? symbolProvider.getRight().getLabel() : null;
+
+        setDisplayName(displayName);
     }
 
     private static final class NodeImpl extends AbstractNode {
@@ -140,6 +154,7 @@ public class NavigatorPanelImpl extends AbstractNavigatorPanel<Pair<LSPBindings,
                 this.open = createOpenAction(server, symbol.getLeft().getLocation().getUri(), symbol.getLeft().getLocation().getRange());
             } else {
                 setDisplayName(symbol.getRight().getName());
+                setShortDescription(symbol.getRight().getDetail());
                 setIconBaseWithExtension(Icons.getSymbolIconBase(symbol.getRight().getKind()));
                 this.open = createOpenAction(server, currentFileUri, symbol.getRight().getRange());
             }
@@ -148,6 +163,7 @@ public class NavigatorPanelImpl extends AbstractNavigatorPanel<Pair<LSPBindings,
         public NodeImpl(LSPBindings server, String currentFileUri, DocumentSymbol symbol) {
             super(createChildren(server, currentFileUri, symbol));
             setDisplayName(symbol.getName());
+            setShortDescription(symbol.getDetail());
             setIconBaseWithExtension(Icons.getSymbolIconBase(symbol.getKind()));
             this.open = createOpenAction(server, currentFileUri, symbol.getRange());
         }

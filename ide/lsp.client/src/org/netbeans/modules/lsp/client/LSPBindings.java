@@ -253,7 +253,7 @@ public class LSPBindings {
             description.failedCount++;
             if (description.failedCount == INVALID_START_MAX_COUNT) {
                 NotificationDisplayer.getDefault().notify(Bundle.TITLE_FailedToStart(mimeType),
-                                                          ImageUtilities.loadImageIcon("/org/netbeans/modules/lsp/client/resources/error_16.png", false),
+                                                          ImageUtilities.loadIcon("org/netbeans/modules/lsp/client/resources/error_16.png"),
                                                           Bundle.DETAIL_FailedToStart(),
                                                           null);
             }
@@ -450,7 +450,9 @@ public class LSPBindings {
        tdcc.setCodeAction(codeActionCapa);
        CompletionCapabilities completionCapa = new CompletionCapabilities();
        CompletionItemCapabilities completionItemCapa = new CompletionItemCapabilities();
-       completionItemCapa.setResolveSupport(new CompletionItemResolveSupportCapabilities(List.of("documentation", "textEdit")));
+       completionItemCapa.setLabelDetailsSupport(true);
+       completionItemCapa.setSnippetSupport(true);
+       completionItemCapa.setResolveSupport(new CompletionItemResolveSupportCapabilities(List.of("additionalTextEdits", "documentation", "textEdit")));
        completionCapa.setCompletionItem(completionItemCapa);
        tdcc.setCompletion(completionCapa);
        WorkspaceClientCapabilities wcc = new WorkspaceClientCapabilities();

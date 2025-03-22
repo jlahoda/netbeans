@@ -2425,7 +2425,7 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
      * @param uri file URI
      * @param mergedDiags the diagnostics
      */
-    private void publishDiagnostics(String uri, List<Diagnostic> mergedDiags) {
+    public void publishDiagnostics(String uri, List<Diagnostic> mergedDiags) {
         knownFiles.put(uri, Instant.now());
         client.publishDiagnostics(new PublishDiagnosticsParams(uri, mergedDiags));
     }
