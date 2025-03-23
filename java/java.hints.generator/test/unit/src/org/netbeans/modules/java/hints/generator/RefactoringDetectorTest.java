@@ -18,8 +18,11 @@
  */
 package org.netbeans.modules.java.hints.generator;
 
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.netbeans.api.java.source.JavaSource;
@@ -258,7 +261,9 @@ public class RefactoringDetectorTest extends TestBase {
             "        return str.toLowerCase();\n"+
             "    }\n"+
             "}\n")
-            .baseline()
+            .baseline("test/record/TestRecord1.java",
+                      "test/record/TestRecord2.java",
+                      "test/record/TestRecord3.java")
             .insert("test/record/TestRecord1.java", 143, "Locale.US")
             .parseFile("test/record/TestRecord1.java")
             .insert("test/record/TestRecord2.java", 143, "Locale.US")
@@ -270,7 +275,7 @@ public class RefactoringDetectorTest extends TestBase {
     private final class StreamingTestBase {
         private final FileObject sourceRoot;
         private FileObject mainFile;
-        private EditorPeer detector;
+        private Map<FileObject, EditorPeer> file2Detector = new HashMap<>();
 
         public StreamingTestBase() throws Exception {
             sourceRoot = setUpTest();
@@ -306,11 +311,27 @@ public class RefactoringDetectorTest extends TestBase {
         }
 
         public StreamingTestBase baseline() throws Exception {
-            JavaSource.forFileObject(mainFile).runUserActionTask(cc -> {
-                cc.toPhase(Phase.RESOLVED); //XXX
-                detector = RefactoringDetector.editorPeer(cc);
-            }, true);
-            
+            return baseline(mainFile);
+        }
+
+        public StreamingTestBase baseline(String... fileNames) throws Exception {
+            return baseline(Arrays.stream(fileNames).map(fileName -> {
+                try {
+                    return FileUtil.createData(sourceRoot, fileName);
+                } catch (IOException ex) {
+                    throw new IllegalStateException(ex);
+                }
+            }).toArray(FileObject[]::new));
+        }
+
+        private StreamingTestBase baseline(FileObject... files) throws Exception {
+            for (FileObject file : files) {
+                JavaSource.forFileObject(file).runUserActionTask(cc -> {
+                    cc.toPhase(Phase.RESOLVED); //XXX
+                    file2Detector.put(file, RefactoringDetector.editorPeer(cc));
+                }, true);
+            }
+
             return this;
         }
 
@@ -327,7 +348,7 @@ public class RefactoringDetectorTest extends TestBase {
         private StreamingTestBase parse(FileObject file, String... expectedPatterns) throws Exception {
             JavaSource.forFileObject(file).runUserActionTask(cc -> {
                 cc.toPhase(Phase.RESOLVED); //XXX
-                Set<String> actual = detector.reparse(cc).stream().map(pd -> pd.getInputPattern()).collect(Collectors.toSet());
+                Set<String> actual = file2Detector.get(file).reparse(cc).stream().map(pd -> pd.getInputPattern()).collect(Collectors.toSet());
                 Set<String> expected = new HashSet<>(Arrays.asList(expectedPatterns));
                 
                 assertEquals(expected, actual);

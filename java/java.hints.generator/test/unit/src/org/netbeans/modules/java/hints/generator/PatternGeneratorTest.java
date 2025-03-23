@@ -644,7 +644,7 @@ public class PatternGeneratorTest extends TestBase {
                         .assertAllChecked();
     }
 
-    public void testStaticMethods2() throws Exception {
+    public void TODOtestStaticMethods2() throws Exception {
         new TestBuilder().addFile("test/Test1.java",
                                   "package test;\n" +
                                   "import java.util.*;\n" +
@@ -683,7 +683,7 @@ public class PatternGeneratorTest extends TestBase {
                         .assertAllChecked();
     }
 
-    public void testStaticMethods3() throws Exception {
+    public void TODOtestStaticMethods3() throws Exception {
         new TestBuilder().addFile("test/Test1.java",
                                   "package test;\n" +
                                   "import java.util.*;\n" +

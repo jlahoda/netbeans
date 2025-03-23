@@ -1403,7 +1403,11 @@ public class PatternGenerator {
             for (Entry<String, Map<FileObject, Integer>> existingEntry : pattern2File2Count.entrySet()) {
                 Set<Tree> currentFileUses = currentFileStatistics.remove(existingEntry.getKey());
 
-                existingEntry.getValue().put(currentFile, currentFileUses != null ? currentFileUses.size() : 0);
+                if (currentFileUses == null) {
+                    continue;
+                }
+
+                existingEntry.getValue().put(currentFile, existingEntry.getValue().getOrDefault(currentFile, 0) + currentFileUses.size());
             }
             for (Entry<String, Set<Tree>> currentFileEntry : currentFileStatistics.entrySet()) {
                 pattern2File2Count.computeIfAbsent(currentFileEntry.getKey(), p -> new WeakHashMap<>())

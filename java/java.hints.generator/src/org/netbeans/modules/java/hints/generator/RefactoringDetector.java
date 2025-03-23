@@ -285,7 +285,7 @@ public class RefactoringDetector {
         public void run(CompilationInfo info) throws Exception {
             HintsSettings hs = HintsSettings.getSettingsFor(info.getFileObject());
             HintMetadata hm = HintMetadata.Builder.create("AdaptiveRefactoringDetectorEnabler")
-                                                  .setEnabled(false)
+                                                  .setEnabled(true)
                                                   .build();
 
             if (!hs.isEnabled(hm)) {
