@@ -48,6 +48,9 @@
                 <file name="annotations.xml" url="annotations/java.text.annotations.xml" />
             </folder>
             <folder name="time">
+                <folder name="format">
+                    <file name="annotations.xml" url="annotations/java.time.format.annotations.xml" />
+                </folder>
                 <file name="annotations.xml" url="annotations/java.time.annotations.xml" />
             </folder>
             <folder name="security">
