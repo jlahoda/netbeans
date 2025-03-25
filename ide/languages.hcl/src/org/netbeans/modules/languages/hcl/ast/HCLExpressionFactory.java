@@ -18,10 +18,9 @@
  */
 package org.netbeans.modules.languages.hcl.ast;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.antlr.v4.runtime.NoViableAltException;
@@ -149,7 +148,10 @@ public final class HCLExpressionFactory extends HCLElementFactory {
             HCLParser.TupleContext tuple = ctx.tuple();
             List<HCLExpression> elements = new LinkedList<>();
             for (HCLParser.ExpressionContext ec : tuple.expression()) {
-                elements.add(expr(ec));
+                HCLExpression e = expr(ec);
+                if (e != null) {
+                    elements.add(created(e, ec));
+                }
             }
             return new HCLCollection.Tuple(elements);
         }
@@ -175,16 +177,23 @@ public final class HCLExpressionFactory extends HCLElementFactory {
         if (ctx == null) {
             return null;
         }
-        List<HCLExpression> args = Collections.emptyList();
+        if (ctx.exception != null) {
+            return null;
+        }
+        List<HCLExpression> args = List.of();
         boolean expand = false;
         if (ctx.arguments() != null) {
-            args = new ArrayList<>(ctx.arguments().expression().size());
-            for (HCLParser.ExpressionContext ectx : ctx.arguments().expression()) {
-                args.add(expr(ectx));
-            }
+            args =  ctx.arguments().expression().stream()
+                    .map(this::expr)
+                    .filter(Objects::nonNull)
+                    .toList();
             expand = ctx.arguments().ELLIPSIS() != null;
         }
-        return created(new HCLFunction(id(ctx.IDENTIFIER()), args, expand), ctx);
+        HCLIdentifier name = ctx.IDENTIFIER() != null
+                ? id(ctx.IDENTIFIER())
+                : id(ctx.scopedId());
+
+        return created(new HCLFunction(name, args, expand), ctx);
     }
 
     private static HCLArithmeticOperation.Operator binOp(int tokenType) {
