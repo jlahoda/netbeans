@@ -101,8 +101,8 @@ public class HyperlinkProviderImpl implements HyperlinkProviderExt {
             //TODO: beep
             return ;
         }
-        LSPBindings server = LSPBindings.getBindings(file);
-        if (server == null) {
+        List<LSPBindings> servers = LSPBindings.getBindings(file);
+        if (servers.isEmpty()) {
             return ;
         }
         String uri = Utils.toURI(file);
@@ -111,33 +111,34 @@ public class HyperlinkProviderImpl implements HyperlinkProviderExt {
             params = new DefinitionParams(new TextDocumentIdentifier(uri),
                                           Utils.createPosition(doc, offset));
             //TODO: Location or Location[]
-            CompletableFuture<Either<List<? extends Location>, List<? extends LocationLink>>> def = server.getTextDocumentService().definition(params);
-            def.handleAsync((locations, exception) -> {
-                if (exception != null) {
-                    exception.printStackTrace();
+            for (LSPBindings server : servers) {
+                CompletableFuture<Either<List<? extends Location>, List<? extends LocationLink>>> def = server.getTextDocumentService().definition(params);
+
+                try {
+                    Either<List<? extends Location>, List<? extends LocationLink>> locations = def.get();
+                    if (locations == null) {
+                        continue;
+                    }
+                    String targetUri;
+                    Range targetRange;
+                    if (locations.isLeft() && locations.getLeft().size() == 1) { //TODO: what to do when there are multiple locations?
+                        targetUri = locations.getLeft().get(0).getUri();
+                        targetRange = locations.getLeft().get(0).getRange();
+                    } else if (locations.isRight() && locations.getRight().size() == 1) { //TODO: what to do when there are multiple locations?
+                        targetUri = locations.getRight().get(0).getTargetUri();
+                        targetRange = locations.getRight().get(0).getTargetRange();
+                    } else {
+                        continue;
+                    }
+                    Utils.open(targetUri, targetRange);
+                    return ;
+                } catch (InterruptedException ex) {
+                    Exceptions.printStackTrace(ex);
+                } catch (ExecutionException ex) {
+                    Exceptions.printStackTrace(ex);
                 }
-                if (locations == null) {
-                    return null;
-                }
-                String targetUri;
-                Range targetRange;
-                if (locations.isLeft() && locations.getLeft().size() == 1) { //TODO: what to do when there are multiple locations?
-                    targetUri = locations.getLeft().get(0).getUri();
-                    targetRange = locations.getLeft().get(0).getRange();
-                } else if (locations.isRight() && locations.getRight().size() == 1) { //TODO: what to do when there are multiple locations?
-                    targetUri = locations.getRight().get(0).getTargetUri();
-                    targetRange = locations.getRight().get(0).getTargetRange();
-                } else {
-                    return null;
-                }
-                Utils.open(targetUri, targetRange);
-                return null;
-            }).get();
+            }
         } catch (BadLocationException ex) {
-            Exceptions.printStackTrace(ex);
-        } catch (InterruptedException ex) {
-            Exceptions.printStackTrace(ex);
-        } catch (ExecutionException ex) {
             Exceptions.printStackTrace(ex);
         }
     }

@@ -21,6 +21,7 @@ package org.netbeans.modules.lsp.client.bindings;
 import java.awt.Color;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
@@ -85,7 +86,7 @@ public class MarkOccurrences implements BackgroundTask, CaretListener, PropertyC
     @NbBundle.Messages(
             "LBL_ES_TOOLTIP=Mark Occurrences"
     )
-    public void run(LSPBindings bindings, FileObject file) {
+    public void run(List<LSPBindings> servers, FileObject file) {
         Document localDoc;
         int localCaretPos;
 
@@ -100,7 +101,7 @@ public class MarkOccurrences implements BackgroundTask, CaretListener, PropertyC
             return;
         }
 
-        List<int[]> highlights = computeHighlights(localDoc, localCaretPos);
+        List<int[]> highlights = computeHighlights(servers, localDoc, localCaretPos);
 
         if (highlights != null && !highlights.isEmpty()) {
             AttributeSet attr = getColoring(localDoc);
@@ -120,7 +121,7 @@ public class MarkOccurrences implements BackgroundTask, CaretListener, PropertyC
         }
     }
 
-    private List<int[]> computeHighlights(Document doc, int caretPos) {
+    private List<int[]> computeHighlights(List<LSPBindings> servers, Document doc, int caretPos) {
         if(caretPos < 0) {
             return null;
         }
@@ -128,26 +129,16 @@ public class MarkOccurrences implements BackgroundTask, CaretListener, PropertyC
         if (file == null) {
             return null;
         }
-        LSPBindings server = LSPBindings.getBindings(file);
-        if (server == null) {
-            return null;
-        }
-        if (!Utils.isEnabled(server.getInitResult().getCapabilities().getDocumentHighlightProvider())) {
-            return null;
-        }
-        String uri = Utils.toURI(file);
-        try {
-            return server
-                    .getTextDocumentService()
-                    .documentHighlight(new DocumentHighlightParams(new TextDocumentIdentifier(uri), Utils.createPosition(doc, caretPos)))
-                    .get()
-                    .stream()
-                    .map(h -> new int[]{Utils.getOffset(doc, h.getRange().getStart()),Utils.getOffset(doc, h.getRange().getEnd())})
-                    .collect(Collectors.toList());
-        } catch (BadLocationException | InterruptedException | ExecutionException ex) {
-            Exceptions.printStackTrace(ex);
-            return null;
-        }
+
+        List<int[]> output = new ArrayList<>();
+
+        Utils.handleBindings(servers,
+                             capa -> Utils.isEnabled(capa.getDocumentHighlightProvider()),
+                             () -> new DocumentHighlightParams(new TextDocumentIdentifier(Utils.toURI(file)), Utils.createPosition(doc, caretPos)),
+                             (server, param) -> server.getTextDocumentService().documentHighlight(param),
+                             (server, result) -> result.stream().map(h -> new int[]{Utils.getOffset(doc, h.getRange().getStart()),Utils.getOffset(doc, h.getRange().getEnd())}).forEach(output::add));
+
+        return output;
     }
 
     private AttributeSet getColoring(Document doc) {
