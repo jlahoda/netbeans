@@ -186,7 +186,7 @@ public class RefactoringActionsProvider extends ActionsImplementationProvider{
             List<LSPBindings> servers = file != null ? LSPBindings.getBindings(file) : List.of();
             return servers;
         }
-        return null;
+        return List.of();
     }
 
     public static boolean isFromEditor(EditorCookie ec) {

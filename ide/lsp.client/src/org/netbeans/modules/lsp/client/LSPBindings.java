@@ -400,7 +400,7 @@ public class LSPBindings {
                     LOG.log(Level.WARNING, null, ex);
                 }
             }
-//            startFailed(inDescription, mt);
+            startFailed(serverDescription, mt);
         }
         return servers;
     }
