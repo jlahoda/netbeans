@@ -1093,7 +1093,7 @@ public final class ElementUtilities {
      * @param e the {@code Element} for which the annotations should be retrieved
      * @return the annotations with which the given {@code Element} has been
      *         annotated and any externally attached annotations.
-     * @since 2.76
+     * @since 2.78
      */
     public List<? extends AnnotationMirror> getAugmentedAnnotationMirrors(Element e) {
         return AugmentedAnnotations.getAugmentedAnnotationMirrors(info, e);
