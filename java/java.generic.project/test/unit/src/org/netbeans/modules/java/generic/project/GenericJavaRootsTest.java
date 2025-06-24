@@ -62,18 +62,46 @@ public class GenericJavaRootsTest extends NbTestCase {
         List<Root> roots = bachRoots.getRoots();
         List<String> actualRoots = roots.stream().map(r -> root2String(wdFO.toURL(), r)).collect(Collectors.toList());
         List<String> expectedRoots = Arrays.asList(
+                """
+                name: foo
+                source-root: foo/java/
+                target-root: .bach/out/main/classes/java-9/foo/
+                source-level: 9
+                module-path:
+                source-path: foo/java/
+                extra-options:
+                """,
+                """
+                name: foo (java-17)
+                source-root: foo/java-17/
+                target-root: .bach/out/main/classes/java-17/foo
+                source-level: 17
+                module-path:
+                source-path: foo/java-17/
+                extra-options:
+                """,
+                """
+                name: foo (java-11)
+                source-root: foo/java-11/
+                target-root: .bach/out/main/classes/java-11/foo
+                source-level: 11
+                module-path:
+                source-path: foo/java-11/
+                extra-options:
+                """
         );
+        expectedRoots.get(0).equals(actualRoots.get(0));
         assertEquals(expectedRoots, actualRoots);
     }
 
     private String root2String(URL projectDir, Root root) {
-        return "name: " + root.getDisplayName() + "\n" +
-               "source-root: " + url2String(projectDir, root.getRoot()) + "\n" +
-               "target-root: " + url2String(projectDir, root.getTarget()) + "\n" +
-               "source-level: " + root.getSourceLevel() + "\n" +
-               "module-path: " + classPath2String(projectDir, root.getModulePath()) + "\n" +
-               "source-path: " + classPath2String(projectDir, root.getSourcePath()) + "\n" +
-               "extra-options: " + root.getExtraCompilationOptions().stream().collect(Collectors.joining(" ")) + "\n";
+        return stripTrailing("name: " + root.getDisplayName()) + "\n" +
+               stripTrailing("source-root: " + url2String(projectDir, root.getRoot())) + "\n" +
+               stripTrailing("target-root: " + url2String(projectDir, root.getTarget())) + "\n" +
+               stripTrailing("source-level: " + root.getSourceLevel()) + "\n" +
+               stripTrailing("module-path: " + classPath2String(projectDir, root.getModulePath())) + "\n" +
+               stripTrailing("source-path: " + classPath2String(projectDir, root.getSourcePath())) + "\n" +
+               stripTrailing("extra-options: " + root.getExtraCompilationOptions().stream().collect(Collectors.joining(" "))) + "\n";
     }
 
     private String url2String(URL projectDir, URL url) {
@@ -88,6 +116,10 @@ public class GenericJavaRootsTest extends NbTestCase {
         return cp.entries().stream().map(e -> e.getURL()).map(u -> url2String(projectDir, u)).collect(Collectors.joining(", "));
     }
 
+    private String stripTrailing(String input) {
+        return input.trim();
+    }
+
     private void createFile(String path, String code) throws IOException {
         try (OutputStream out = wdFO.getFileObject(path, false).getOutputStream()) {
             out.write(code.getBytes());
@@ -95,19 +127,21 @@ public class GenericJavaRootsTest extends NbTestCase {
     }
 
     private static final String INPUT =
-            "+ cache\n" +
-            "+ load modules\n" +
-            "+ compile\n" +
-            "Compile 1 module in main space...\n" +
-            "+ compile-classes main\n" +
-            "+ javac --release 9 --module foo --module-source-path ./*/java -d .bach/out/main/classes/java-9\n" +
-            "+ compile-modules main\n" +
-            "TODO Here be a better implemenation...\n" +
-            "+ javac --release 17 --class-path .bach/out/main/classes/java-9/foo -implicit:none -d .bach/out/main/classes/java-17/foo foo/java-17/foo/Foo.java\n" +
-            "+ javac --release 11 --class-path .bach/out/main/classes/java-9/foo -implicit:none -d .bach/out/main/classes/java-11/foo foo/java-11/foo/Foo.java\n" +
-            "+ jar --create --file .bach/out/main/modules/foo.jar --module-version 0-ea -C .bach/out/main/classes/java-9/foo . --release 11 -C .bach/out/main/classes/java-11/foo . --release 17 -C .bach/out/main/classes/java-17/foo .\n" +
-            "+ hash .bach/out/main/modules\n" +
-            "Hash [SHA-256]                                                   Size [Bytes] Path\n" +
-            "2a07f328c0f6d8e7859b4fe52aa8646a1b7b42ccd14abb00700bc7e7c0bf6f90         2246 .bach/out/main/modules/foo.jar\n" +
-            "+ test";
+            """
+            + cache
+            + load modules
+            + compile
+            Compile 1 module in main space...
+            + compile-classes main
+            + javac --release 9 --module foo --module-source-path ./*/java -d .bach/out/main/classes/java-9
+            + compile-modules main
+            TODO Here be a better implemenation...
+            + javac --release 17 --class-path .bach/out/main/classes/java-9/foo -implicit:none -d .bach/out/main/classes/java-17/foo foo/java-17/foo/Foo.java
+            + javac --release 11 --class-path .bach/out/main/classes/java-9/foo -implicit:none -d .bach/out/main/classes/java-11/foo foo/java-11/foo/Foo.java
+            + jar --create --file .bach/out/main/modules/foo.jar --module-version 0-ea -C .bach/out/main/classes/java-9/foo . --release 11 -C .bach/out/main/classes/java-11/foo . --release 17 -C .bach/out/main/classes/java-17/foo .
+            + hash .bach/out/main/modules
+            Hash [SHA-256]                                                   Size [Bytes] Path
+            2a07f328c0f6d8e7859b4fe52aa8646a1b7b42ccd14abb00700bc7e7c0bf6f90         2246 .bach/out/main/modules/foo.jar
+            + test
+            """;
 }

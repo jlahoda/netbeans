@@ -150,7 +150,7 @@ public class GenericJavaRoot {
         update.schedule(1000);
     }
 
-    private void updateRoots(String log) {
+    void updateRoots(String log) {
         List<Root> newRoots = new ArrayList<>();
         Map<String, URL> name2Module = new HashMap<>(); //TODO: incorrect, only inferred from --module/module-source-path!
         String defaultSourceLevel = project.getProjectJavaPlatform().getSpecification().getVersion().toString();
