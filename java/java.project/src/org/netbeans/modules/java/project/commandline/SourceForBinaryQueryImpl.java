@@ -16,17 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.netbeans.modules.java.generic.project;
+package org.netbeans.modules.java.project.commandline;
 
 import java.net.URL;
 import javax.swing.event.ChangeListener;
 import org.netbeans.api.java.queries.SourceForBinaryQuery;
 
-import org.netbeans.modules.java.generic.project.GenericJavaRoot.Root;
+import org.netbeans.modules.java.project.commandline.CommandLineBasedJavaRoot.Root;
 import org.netbeans.spi.java.queries.SourceForBinaryQueryImplementation2;
-import org.netbeans.spi.java.queries.SourceLevelQueryImplementation2;
 import org.openide.filesystems.FileObject;
-import org.openide.filesystems.FileUtil;
 import org.openide.filesystems.URLMapper;
 
 /**
@@ -35,15 +33,15 @@ import org.openide.filesystems.URLMapper;
  */
 public class SourceForBinaryQueryImpl implements SourceForBinaryQueryImplementation2 {
 
-    private final GenericJavaProject project;
+    private final CommandLineBasedJavaRoot roots;
 
-    public SourceForBinaryQueryImpl(GenericJavaProject project) {
-        this.project = project;
+    public SourceForBinaryQueryImpl(CommandLineBasedJavaRoot roots) {
+        this.roots = roots;
     }
 
     @Override
     public Result findSourceRoots2(URL url) {
-        for (Root r : project.getRoots().getRoots()) { //TODO: performance?
+        for (Root r : roots.getRoots()) { //TODO: performance?
             if (url.equals(r.getTarget())) { //TODO: equals on URL!
                 return new Result() { //TODO: cache!
                     @Override

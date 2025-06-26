@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.netbeans.modules.java.generic.project;
+package org.netbeans.modules.java.project.commandline;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -25,7 +25,7 @@ import org.netbeans.api.java.classpath.ClassPath;
 import org.netbeans.api.java.classpath.GlobalPathRegistry;
 import org.netbeans.api.java.classpath.JavaClassPathConstants;
 import org.netbeans.api.java.platform.JavaPlatform;
-import org.netbeans.modules.java.generic.project.GenericJavaRoot.Root;
+import org.netbeans.modules.java.project.commandline.CommandLineBasedJavaRoot.Root;
 import org.netbeans.spi.java.classpath.ClassPathProvider;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
@@ -37,18 +37,16 @@ import org.openide.filesystems.URLMapper;
  */
 public class ClassPathProviderImpl implements ClassPathProvider {
 
-    private final GenericJavaProject project;
-//    private final Map<Root, RootClassPathDescription> root2Path = new WeakHashMap<>(); //TODO: should be cleared on changes?
-
-    public ClassPathProviderImpl(GenericJavaProject project) {
-        this.project = project;
-        project.getRoots().addChangeListener(evt -> updateClassPathsRegistration());
+    private final CommandLineBasedJavaRoot roots;
+    public ClassPathProviderImpl(CommandLineBasedJavaRoot roots) {
+        this.roots = roots;
+        roots.addChangeListener(evt -> updateClassPathsRegistration());
         updateClassPathsRegistration();
     }
 
     @Override
     public ClassPath findClassPath(FileObject fo, String type) {
-        for (Root r : project.getRoots().getRoots()) { //TODO: performance?
+        for (Root r : roots.getRoots()) { //TODO: performance?
             FileObject root = URLMapper.findFileObject(r.getRoot());
 
             if (root == null) continue;
@@ -76,7 +74,7 @@ public class ClassPathProviderImpl implements ClassPathProvider {
         Set<ClassPath> newCompileCP = new LinkedHashSet<>();
         Set<ClassPath> newSourceCP = new LinkedHashSet<>();
         newBootCP.add(JavaPlatform.getDefault().getBootstrapLibraries());
-        for (Root r : project.getRoots().getRoots()) {
+        for (Root r : roots.getRoots()) {
             newCompileCP.add(r.getModulePath());
             newSourceCP.add(r.getSourcePath());
         }

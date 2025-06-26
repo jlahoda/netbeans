@@ -27,6 +27,8 @@ import org.netbeans.api.java.platform.JavaPlatform;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectManager.Result;
 import org.netbeans.modules.java.generic.project.ui.customizer.CustomizerProviderImpl;
+import org.netbeans.spi.java.project.support.CommandLineBasedProject;
+import org.netbeans.spi.java.project.support.CommandLineBasedProject.Configuration;
 import org.netbeans.spi.project.ProjectFactory;
 import org.netbeans.spi.project.ProjectFactory2;
 import org.netbeans.spi.project.ProjectState;
@@ -35,6 +37,7 @@ import org.openide.util.ImageUtilities;
 import org.openide.util.Lookup;
 import org.openide.util.NbPreferences;
 import org.openide.util.lookup.Lookups;
+import org.openide.util.lookup.ProxyLookup;
 import org.openide.util.lookup.ServiceProvider;
 
 /**
@@ -50,21 +53,19 @@ public class GenericJavaProject implements Project {
 
     private final FileObject projectDir;
     private final Lookup lookup;
-    private final GenericJavaRoot roots;
+    private final CommandLineBasedConfigurationUpdater roots;
     private final AtomicReference<BuildConfiguration> buildConfigurations = new AtomicReference<>();
 
     public GenericJavaProject(FileObject projectDir) {
         this.projectDir = projectDir;
-        this.roots = new GenericJavaRoot(this);
-        this.lookup = Lookups.fixed(new SourcesImpl(this),
-                                    new LogicalViewProviderImpl(this),
-                                    new ClassPathProviderImpl(this),
-                                    new SourceLevelQueryImpl(this),
-                                    new SourceForBinaryQueryImpl(this),
-                                    new ActionProviderImpl(this),
-                                    new CompilerOptionsQueryImpl(this),
-                                    new CustomizerProviderImpl(this),
-                                    this); //XXX
+        Configuration configuration = new Configuration(this);
+        this.roots = new CommandLineBasedConfigurationUpdater(this, configuration);
+        Lookup projectSpecificLookup =
+                Lookups.fixed(new LogicalViewProviderImpl(this),
+                              new ActionProviderImpl(this),
+                              new CustomizerProviderImpl(this),
+                              this); //XXX
+        this.lookup = new ProxyLookup(projectSpecificLookup, CommandLineBasedProject.projectLookupBase(configuration));
         buildConfigurations.set(BuildConfiguration.read(getBuildPreferences(projectDir)));
     }
 
@@ -78,7 +79,7 @@ public class GenericJavaProject implements Project {
         return lookup;
     }
 
-    public GenericJavaRoot getRoots() {
+    public CommandLineBasedConfigurationUpdater getRoots() {
         return roots;
     }
 

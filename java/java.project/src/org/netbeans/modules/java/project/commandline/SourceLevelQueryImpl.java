@@ -16,18 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.netbeans.modules.java.generic.project;
+package org.netbeans.modules.java.project.commandline;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
 import javax.swing.event.ChangeListener;
 
-import org.netbeans.api.java.classpath.ClassPath;
-import org.netbeans.api.java.classpath.GlobalPathRegistry;
-import org.netbeans.api.java.classpath.JavaClassPathConstants;
-import org.netbeans.api.java.platform.JavaPlatform;
-import org.netbeans.modules.java.generic.project.GenericJavaRoot.Root;
-import org.netbeans.spi.java.classpath.ClassPathProvider;
+import org.netbeans.modules.java.project.commandline.CommandLineBasedJavaRoot.Root;
 import org.netbeans.spi.java.queries.SourceLevelQueryImplementation2;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
@@ -39,15 +32,15 @@ import org.openide.filesystems.URLMapper;
  */
 public class SourceLevelQueryImpl implements SourceLevelQueryImplementation2 {
 
-    private final GenericJavaProject project;
+    private final CommandLineBasedJavaRoot roots;
 
-    public SourceLevelQueryImpl(GenericJavaProject project) {
-        this.project = project;
+    public SourceLevelQueryImpl(CommandLineBasedJavaRoot roots) {
+        this.roots = roots;
     }
 
     @Override
     public Result getSourceLevel(FileObject fo) {
-        for (Root r : project.getRoots().getRoots()) { //TODO: performance?
+        for (Root r : roots.getRoots()) { //TODO: performance?
             FileObject root = URLMapper.findFileObject(r.getRoot());
 
             if (root == null) continue;

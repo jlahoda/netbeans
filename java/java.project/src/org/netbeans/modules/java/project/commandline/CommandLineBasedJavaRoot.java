@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.netbeans.modules.java.generic.project;
+package org.netbeans.modules.java.project.commandline;
 
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.DirectiveTree;
@@ -44,9 +44,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
+import javax.lang.model.SourceVersion;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.tools.JavaFileObject;
@@ -57,6 +57,9 @@ import org.netbeans.spi.java.classpath.ClassPathFactory;
 import org.netbeans.spi.java.classpath.ClassPathImplementation;
 import org.netbeans.spi.java.classpath.PathResourceImplementation;
 import org.netbeans.spi.java.classpath.support.ClassPathSupport;
+import org.netbeans.spi.java.project.support.CommandLineBasedProject;
+import org.netbeans.spi.java.project.support.CommandLineBasedProject.Configuration;
+import org.netbeans.spi.java.project.support.CommandLineBasedProject.ToolRun;
 import org.openide.filesystems.FileChangeAdapter;
 import org.openide.filesystems.FileChangeListener;
 import org.openide.filesystems.FileEvent;
@@ -73,16 +76,15 @@ import org.openide.util.RequestProcessor.Task;
  *
  * @author jlahoda
  */
-public class GenericJavaRoot {
-    private static final RequestProcessor WORKER = new RequestProcessor(GenericJavaRoot.class.getName(), 1, false, false);
+public class CommandLineBasedJavaRoot {
+    private static final RequestProcessor WORKER = new RequestProcessor(CommandLineBasedJavaRoot.class.getName(), 1, false, false);
     private static final String PATH_SEPARATOR = System.getProperty("path.separator");
 
     private final Map<String, ClassPath> modulePathElement2ClassPath = new HashMap<>(); //TODO: cleanup?
     private File configurationFile;
     private List<Root> roots = new ArrayList<>();
     private final ChangeSupport cs = new ChangeSupport(this);
-    private final GenericJavaProject project;
-    private final URI projectDir;
+    private final Configuration configuration;
     private AllModules allModules = new AllModules();
     private final FileChangeListener listener = new FileChangeAdapter() {
         @Override
@@ -108,29 +110,13 @@ public class GenericJavaRoot {
     };
     private final Task update;
 
-    public GenericJavaRoot(GenericJavaProject project) {
-        this.project = project;
-        this.projectDir = project.getProjectDirectory().toURI();
+    public CommandLineBasedJavaRoot(Configuration configuration) {
+        this.configuration = configuration;
         this.roots = Collections.emptyList();
         this.update = WORKER.create(() -> {
-            File newFile = new File(project.getConfigurationFile());
-            if (!Objects.equals(configurationFile, newFile)) {
-                if (configurationFile != null) {
-                    FileUtil.removeFileChangeListener(listener, configurationFile);
-                }
-                configurationFile = newFile;
-                FileUtil.addFileChangeListener(listener, configurationFile);
-            }
-            if (configurationFile.isFile()) {
-                try {
-                    updateRoots(Files.readString(configurationFile.toPath())); //TODO: encoding? UTF-8 might be OK.
-                } catch (IOException ex) {
-                    Exceptions.printStackTrace(ex);
-                }
-            }
+            updateRoots(configuration.getRuns());
         });
-        GenericJavaProject.getRootPreferences(project.getProjectDirectory())
-                          .addPreferenceChangeListener(evt -> scheduleUpdateRoots());
+        configuration.addChangeListener(evt -> scheduleUpdateRoots());
         scheduleUpdateRoots();
     }
 
@@ -150,16 +136,16 @@ public class GenericJavaRoot {
         update.schedule(1000);
     }
 
-    void updateRoots(String log) {
+    void updateRoots(List<ToolRun> toolRuns) {
         List<Root> newRoots = new ArrayList<>();
         Map<String, URL> name2Module = new HashMap<>(); //TODO: incorrect, only inferred from --module/module-source-path!
-        String defaultSourceLevel = project.getProjectJavaPlatform().getSpecification().getVersion().toString();
-        for (String line : log.split("\\R")) {
-            if (!line.startsWith("+ javac ")) {
+        String defaultSourceLevel = SourceVersion.latest().name(); //TODO: infer from the javac location, or alike
+        for (ToolRun toolRun : toolRuns) {
+            if (toolRun.kind != CommandLineBasedProject.ToolKind.JAVAC) {
                 continue;
             }
-            line = line.substring("+ javac ".length());
-            String[] parts = line.split(" +");
+            URI cwd = new File(toolRun.cwd).toURI();
+            List<String> arguments = toolRun.toolArguments;
             String release = defaultSourceLevel;
             String module = null;
             String moduleSourcePath = null;
@@ -168,45 +154,45 @@ public class GenericJavaRoot {
             String outDir = null;
             List<String> extraArgs = new ArrayList<>();
             List<String> inputFiles = new ArrayList<>();
-            for (int i = 0; i < parts.length; i++) {
-                switch (parts[i]) {
+            for (int i = 0; i < arguments.size(); i++) {
+                switch (arguments.get(i)) {
                     case "--release":
-                        release = parts[++i];
+                        release = arguments.get(++i);
                         break;
                     case "--module":
-                        module = parts[++i];
+                        module = arguments.get(++i);
                         break;
                     case "--module-source-path":
-                        moduleSourcePath = parts[++i];
+                        moduleSourcePath = arguments.get(++i);
                         break;
                     case "-classpath":
                     case "--class-path":
-                        classPath = classPathFromString(parts[++i]);
+                        classPath = classPathFromString(cwd, arguments.get(++i));
                         break;
                     case "-d":
-                        outDir = parts[++i];
+                        outDir = arguments.get(++i);
                         break;
                     case "--module-path":
                         ArrayList<Object> modulePathElements = new ArrayList<>();
-                        for (String element : parts[++i].split(PATH_SEPARATOR)) {
+                        for (String element : arguments.get(++i).split(PATH_SEPARATOR)) {
                             modulePathElements.add(modulePathElement2ClassPath.computeIfAbsent(element, el -> {
-                                return ClassPathFactory.createClassPath(new ModuleClassPathImplementation(new File(new File(projectDir), element)));
+                                return ClassPathFactory.createClassPath(new ModuleClassPathImplementation(new File(cwd.resolve(element))));
                             }));
                         }
                         modulePath = ClassPathSupport.createProxyClassPath(modulePathElements.toArray(ClassPath[]::new));
                         break;
                     case "--patch-module":
-                        String spec = parts[++i];
+                        String spec = arguments.get(++i);
                         String[] els = spec.split("=");
                         extraArgs.add("--patch-module");
-                        extraArgs.add(els[0] + "=" + projectDir.resolve(els[1]).getPath()); //Ugh.
+                        extraArgs.add(els[0] + "=" + cwd.resolve(els[1]).getPath()); //Ugh.
                         break;
                     case "-implicit:none": break; //ignore...
                     default:
-                        if (parts[i].endsWith(".java")) {//TODO: case sensitive
-                            inputFiles.add(parts[i]);
+                        if (arguments.get(i).endsWith(".java")) {//TODO: case sensitive
+                            inputFiles.add(arguments.get(i));
                         } else {
-                            extraArgs.add(parts[i]);
+                            extraArgs.add(arguments.get(i));
                         }
                         break;
                 }
@@ -227,15 +213,15 @@ public class GenericJavaRoot {
                     URL outDirURL;
                     try {
                         if (moduleSourcePathParts[0].contains("*")) {
-                            rootURL = projectDir.resolve(moduleSourcePathParts[0].replace("*", oneModule)).toURL();
+                            rootURL = cwd.resolve(moduleSourcePathParts[0].replace("*", oneModule)).toURL();
                         } else {
-                            rootURL = projectDir.resolve(moduleSourcePathParts[0]).resolve(oneModule).toURL();
+                            rootURL = cwd.resolve(moduleSourcePathParts[0]).resolve(oneModule).toURL();
                         }
                         if (!rootURL.toString().endsWith("/")) {//TODO: performance
                             rootURL = new URL(rootURL.toString() + "/");
                         }
                         if (!outDir.endsWith("/")) outDir += "/";
-                        outDirURL = projectDir.resolve(outDir).resolve(oneModule + "/").toURL();
+                        outDirURL = cwd.resolve(outDir).resolve(oneModule + "/").toURL();
                         name2Module.put(oneModule, outDirURL);
                         File moduleInfo = new File(new File(rootURL.toURI()), "module-info.java");
                         ClassPath currentProjectModuleCP = ClassPathFactory.createClassPath(new ModuleInfoClassPathImplementation(allModules, moduleInfo));
@@ -257,7 +243,7 @@ public class GenericJavaRoot {
                 URL rootURL;
                 if (inputFiles.size() > 0) {
                     try {
-                        FileObject file = URLMapper.findFileObject(projectDir.resolve(inputFiles.get(0)).toURL());
+                        FileObject file = URLMapper.findFileObject(cwd.resolve(inputFiles.get(0)).toURL());
                         if (file == null) {
                             System.err.println("input file does not exist!");
                             continue;
@@ -299,7 +285,7 @@ public class GenericJavaRoot {
                             ClassPathSupport.createProxyClassPath(classPath, thisModularModuleCP),
                             thisModularModuleCP,
                             ClassPathSupport.createClassPath(rootURL),
-                            projectDir.resolve(outDir).toURL(),
+                            cwd.resolve(outDir).toURL(),
                             extraArgs);
                     newRoots.add(root);
                 } catch (MalformedURLException | URISyntaxException ex) {
@@ -315,13 +301,13 @@ public class GenericJavaRoot {
         cs.fireChange();
     }
 
-    private ClassPath classPathFromString(String spec) {
+    private ClassPath classPathFromString(URI cwd, String spec) {
         List<URL> roots = new ArrayList<>();
         for (String piece : spec.split(Pattern.quote(PATH_SEPARATOR))) {
             piece = piece.replace(PATH_SEPARATOR, "/");
             File entry = new File(piece);
             if (!entry.isAbsolute()) {
-                entry = new File(projectDir.resolve(piece));
+                entry = new File(cwd.resolve(piece));
             }
             roots.add(FileUtil.urlForArchiveOrDir(entry));
         }

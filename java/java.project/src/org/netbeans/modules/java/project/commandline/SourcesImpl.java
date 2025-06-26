@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.netbeans.modules.java.generic.project;
+package org.netbeans.modules.java.project.commandline;
 
 import java.beans.PropertyChangeListener;
 import java.io.File;
@@ -39,7 +39,8 @@ import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.api.project.SourceGroup;
 import org.netbeans.api.project.Sources;
 import static org.netbeans.api.project.Sources.TYPE_GENERIC;
-import org.netbeans.modules.java.generic.project.GenericJavaRoot.Root;
+import org.netbeans.modules.java.project.commandline.CommandLineBasedJavaRoot.Root;
+import org.netbeans.spi.java.project.support.CommandLineBasedProject.Configuration;
 import org.netbeans.spi.project.support.GenericSources;
 import org.openide.filesystems.FileAttributeEvent;
 import org.openide.filesystems.FileChangeListener;
@@ -57,15 +58,14 @@ import org.openide.util.*;
 public class SourcesImpl implements Sources, FileChangeListener, ChangeListener {
 
     private final ChangeSupport cs = new ChangeSupport(this);
-    private final GenericJavaProject project;
+    private final Configuration configuration;
+    private final CommandLineBasedJavaRoot roots;
     private final Map<Root, SourceGroup> root2SourceGroup = new HashMap<Root, SourceGroup>();
 
-    public SourcesImpl(GenericJavaProject project) {
-        this.project = project;
-        project.getRoots().addChangeListener(this);
-//        for (Root r : project.getRoots()) {
-//            r.addChangeListener(this);
-//        }
+    public SourcesImpl(Configuration configuration, CommandLineBasedJavaRoot roots) {
+        this.configuration = configuration;
+        this.roots = roots;
+        roots.addChangeListener(this);
     }
 
     private boolean initialized;
@@ -88,14 +88,15 @@ public class SourcesImpl implements Sources, FileChangeListener, ChangeListener 
     private final Set<File> seen = new HashSet<>();
     
     private synchronized void recompute() {
+        //TODO: the generic source groups should be voluntary?
         key2SourceGroups.clear();
 
-        for (SourceGroup sg : GenericSources.genericOnly(project).getSourceGroups(TYPE_GENERIC)) {
+        for (SourceGroup sg : GenericSources.genericOnly(configuration.getProject()).getSourceGroups(TYPE_GENERIC)) {
             addSourceGroup(TYPE_GENERIC, sg);
         }
 
         Set<File> newFiles = new HashSet<>();
-        for (Root root : project.getRoots().getRoots()) {
+        for (Root root : roots.getRoots()) {
             URL srcURL = root.getRoot();
 
             if ("file".equals(srcURL.getProtocol())) {
@@ -113,15 +114,15 @@ public class SourcesImpl implements Sources, FileChangeListener, ChangeListener 
                 SourceGroup sg = root2SourceGroup.get(root);
 
                 if (sg == null) {
-                    sg = new SourceGroupImpl(GenericSources.group(project, src, root.getDisplayName(), root.getDisplayName(), null, null), root.getIncludes(), root.getExcludes());
+                    sg = new SourceGroupImpl(GenericSources.group(configuration.getProject(), src, root.getDisplayName(), root.getDisplayName(), null, null), root.getIncludes(), root.getExcludes());
 
                     root2SourceGroup.put(root, sg);
                 }
 
                 addSourceGroup(JavaProjectConstants.SOURCES_TYPE_JAVA, sg);
 
-                if (!FileUtil.isParentOf(project.getProjectDirectory(), src)) {
-                    addSourceGroup(TYPE_GENERIC, GenericSources.group(project, src, root.getDisplayName(), root.getDisplayName(), null, null));
+                if (!FileUtil.isParentOf(configuration.getProject().getProjectDirectory(), src)) {
+                    addSourceGroup(TYPE_GENERIC, GenericSources.group(configuration.getProject(), src, root.getDisplayName(), root.getDisplayName(), null, null));
                 }
             }
         }
@@ -133,7 +134,7 @@ public class SourcesImpl implements Sources, FileChangeListener, ChangeListener 
             FileUtil.addFileChangeListener(this, a);
             seen.add(a);
             FileOwnerQuery.markExternalOwner(Utilities.toURI(a), null, FileOwnerQuery.EXTERNAL_ALGORITHM_TRANSIENT);
-            FileOwnerQuery.markExternalOwner(Utilities.toURI(a), project, FileOwnerQuery.EXTERNAL_ALGORITHM_TRANSIENT);
+            FileOwnerQuery.markExternalOwner(Utilities.toURI(a), configuration.getProject(), FileOwnerQuery.EXTERNAL_ALGORITHM_TRANSIENT);
         }
         for (File r : removed) {
             FileUtil.removeFileChangeListener(this, r);
