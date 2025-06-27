@@ -18,9 +18,12 @@
  */
 package org.netbeans.modules.cloud.oracle.items;
 
+import com.oracle.bmc.Region;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Represents Oracle Cloud Resource identified by Oracle Cloud Identifier (OCID)
@@ -28,9 +31,14 @@ import java.util.Objects;
  * @author Jan Horvath
  */
 public abstract class OCIItem {
+    
+    private static final Logger LOG = Logger.getLogger(OCIItem.class.getName());
+    
     final OCID id;
     final String name;
     final String compartmentId;
+    final String tenancyId;
+    final String regionCode;
     String description;
     final transient PropertyChangeSupport changeSupport;
 
@@ -40,16 +48,20 @@ public abstract class OCIItem {
     * @param id OCID of the item
     * @param compartmentId OCID of the compartmentId
     * @param name Name of the item
+    * @param tenancyId Tenancy OCID of the item
+    * @param regionCode Region code of the item
     */
-    public OCIItem(OCID id, String compartmentId, String name) {
+    public OCIItem(OCID id, String compartmentId, String name, String tenancyId, String regionCode) {
         this.id = id;
         this.name = name;
         this.compartmentId = compartmentId;
+        this.tenancyId = tenancyId;
+        this.regionCode = regionCode;
         changeSupport = new PropertyChangeSupport(this);
     }
 
     public OCIItem() {
-        this(null, null, null);
+        this(null, null, null, null, null);
     }
     
     /**
@@ -87,6 +99,24 @@ public abstract class OCIItem {
     public String getCompartmentId() {
         return compartmentId;
     }
+
+    /**
+     * OCID of the tenancyId.
+     *
+     * @return OCID of the tenancyId
+     */
+    public String getTenancyId() {
+        return tenancyId;
+    }
+
+    /**
+     * 3 digit region code.
+     *
+     * @return 3 digit region code
+     */
+    public String getRegionCode() {
+        return regionCode;
+    }
     
     /**
      * Short description of the item.
@@ -120,6 +150,10 @@ public abstract class OCIItem {
      */
     public void removeChangeListener(PropertyChangeListener listener) {
         changeSupport.removePropertyChangeListener(listener);
+    }
+    
+    protected void firePropertyChange(String propertyName, Object oldValue, Object newValue) {
+        changeSupport.firePropertyChange(propertyName, oldValue, newValue);
     }
 
     public int maxInProject() {
@@ -158,6 +192,18 @@ public abstract class OCIItem {
     
     public void fireRefNameChanged(String oldRefName, String referenceName) {
         changeSupport.firePropertyChange("referenceName", oldRefName, referenceName);
+    }
+    
+    public String getRegion() {
+        if (getRegionCode() != null) {
+            try {
+                Region region = Region.fromRegionCodeOrId(getRegionCode());
+                return region.getRegionId();
+            } catch (IllegalArgumentException e) {
+                LOG.log(Level.INFO, "Unknown Region Code", e);
+            }
+        }
+        return null;
     }
     
 }

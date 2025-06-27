@@ -20,28 +20,43 @@
 import * as vscode from 'vscode';
 import * as jdkUtils from 'jdk-utils';
 
-import { isRHExtensionActive, waitForNblsCommandToBeAvailable } from './extensionUtils';
+import { isRHExtensionActive, waitForNblsCommandToBeAvailable, currentClientJDK } from './extensionUtils';
 import { getJavaVersion } from './javaUtil';
 import { getProjectFrom } from './project';
 
 const CONFIGURE_JDK_COMMAND = 'nbls.jdk.configuration'
 const CONFIGURE_JDK = 'Configure JDK';
 
-export async function validateJDKCompatibility(javaPath: string | null) {
+export async function validateJDKCompatibility(projectPath: string | null) {
     // In this case RH will try it's best to validate Java versions
     if (isRHExtensionActive()) return;
 
     const projectJavaVersion = await getProjectJavaVersion();
-    const ideJavaVersion = await parseJavaVersion(javaPath);
-    if (projectJavaVersion && ideJavaVersion && ideJavaVersion < projectJavaVersion) {
-        const value = await vscode.window.showWarningMessage(`Source level (JDK ${projectJavaVersion}) not compatible with current JDK installation (JDK ${ideJavaVersion})`, CONFIGURE_JDK);
+    // at this point, the NBLS client should be running, so clientRuntimeJDK should be set.
+    const ideJavaVersion = await parseJavaVersion(await currentClientJDK());
+    const ideProjectJavaVersion = await parseJavaVersion(projectPath);
+
+    let conflictingVersion : number = 0;
+
+    if (projectJavaVersion) {
+        // project settings is preferred, if defined.
+        if (ideProjectJavaVersion) {
+            if (ideProjectJavaVersion < projectJavaVersion) {
+                conflictingVersion = ideProjectJavaVersion;
+            } 
+        } else if (ideJavaVersion && ideJavaVersion < projectJavaVersion) {
+            conflictingVersion = ideJavaVersion;
+        }
+    }
+    if (conflictingVersion) {
+        const value = await vscode.window.showWarningMessage(`Source level (JDK ${projectJavaVersion}) not compatible with current JDK installation (JDK ${conflictingVersion})`, CONFIGURE_JDK);
         if (value === CONFIGURE_JDK) {
             vscode.commands.executeCommand(CONFIGURE_JDK_COMMAND);
         }
     }
 }
 
-async function parseJavaVersion(javaPath: string | null): Promise<number | undefined> {
+export async function parseJavaVersion(javaPath: string | null): Promise<number | undefined> {
     if (!javaPath) return undefined;
 
     const javaRuntime = await jdkUtils.getRuntime(javaPath, { checkJavac: true });

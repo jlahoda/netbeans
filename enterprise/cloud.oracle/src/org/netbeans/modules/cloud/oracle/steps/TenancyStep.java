@@ -28,8 +28,9 @@ import org.netbeans.api.progress.ProgressHandle;
 import org.netbeans.modules.cloud.oracle.OCIManager;
 import org.netbeans.modules.cloud.oracle.OCIProfile;
 import org.netbeans.modules.cloud.oracle.assets.AbstractStep;
-import org.netbeans.modules.cloud.oracle.assets.Steps;
+import org.netbeans.modules.cloud.oracle.assets.CloudAssets;
 import org.netbeans.modules.cloud.oracle.assets.Steps.Values;
+import org.netbeans.modules.cloud.oracle.items.IncompatibleTenancyItem;
 import org.netbeans.modules.cloud.oracle.items.TenancyItem;
 import org.openide.NotifyDescriptor;
 import org.openide.util.NbBundle;
@@ -49,7 +50,16 @@ public final class TenancyStep extends AbstractStep<TenancyItem> {
     
     private List<OCIProfile> profiles = new LinkedList<>();
     private final AtomicReference<TenancyItem> selected = new AtomicReference<>();
+    private final boolean autoselect;
 
+    public TenancyStep(boolean autoselect) {
+        this.autoselect = autoselect;
+    }
+    
+    public TenancyStep() {
+        this.autoselect = false;
+    }
+    
     @Override
     public NotifyDescriptor createInput() {
         if (onlyOneChoice()) {
@@ -60,7 +70,7 @@ public final class TenancyStep extends AbstractStep<TenancyItem> {
         for (OCIProfile p : profiles) {
             Tenancy t = p.getTenancyData();
             if (t != null) {
-                items.add(new NotifyDescriptor.QuickPick.Item(p.getId(), Bundle.SelectProfile_Description(t.getName(), t.getHomeRegionKey())));
+                items.add(new NotifyDescriptor.QuickPick.Item(p.getId(), Bundle.SelectProfile_Description(t.getName(), p.getRegion().getRegionCode())));
             }
         }
         if (profiles.stream().filter(p -> p.getTenancy().isPresent()).count() == 0) {
@@ -72,14 +82,40 @@ public final class TenancyStep extends AbstractStep<TenancyItem> {
     @Override
     public void prepare(ProgressHandle h, Values values) {
         h.progress(Bundle.CollectingProfiles_Text());
+        if (autoselect) {
+            OCIProfile profile = getProfileFromCloudAssets();
+            if(profiles != null) {
+                profiles = List.of(profile);
+                return;
+            }
+        }
+        
         profiles = OCIManager.getDefault().getConnectedProfiles();
+    }
+
+    private OCIProfile getProfileFromCloudAssets() {
+        String tenancyId = CloudAssets.getDefault().getTenancyId();
+        if (tenancyId == null) {
+            return null;
+        }
+        return OCIManager.getDefault().getConnectedProfiles()
+                .stream()
+                .filter(p -> tenancyId.equals(p.getTenancy().get().getTenancyId()))
+                .findFirst()
+                .orElse(null);
     }
 
     @Override
     public void setValue(String value) {
         for (OCIProfile profile : profiles) {
             if (profile.getId().equals(value)) {
-                profile.getTenancy().ifPresent(t -> this.selected.set(t));
+                profile.getTenancy().ifPresent(t -> {
+                    if (CloudAssets.getDefault().isTenancyCompatible(t)) {
+                        this.selected.set(t);
+                    } else {
+                        this.selected.set(new IncompatibleTenancyItem());
+                    }
+                });
                 break;
             }
         }
@@ -97,5 +133,4 @@ public final class TenancyStep extends AbstractStep<TenancyItem> {
     public boolean onlyOneChoice() {
         return profiles.stream().filter(p -> p.getTenancy().isPresent()).count() == 1;
     }
-    
 }

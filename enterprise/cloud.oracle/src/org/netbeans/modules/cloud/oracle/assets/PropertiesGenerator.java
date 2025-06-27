@@ -25,9 +25,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.netbeans.api.db.explorer.ConnectionManager;
 import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.modules.cloud.oracle.bucket.BucketItem;
+import org.netbeans.modules.cloud.oracle.database.DatabaseItem;
+import org.netbeans.modules.cloud.oracle.developer.MetricsNamespaceItem;
 import org.netbeans.modules.cloud.oracle.items.OCIItem;
 import org.netbeans.modules.cloud.oracle.vault.VaultItem;
 
@@ -53,13 +54,23 @@ public final class PropertiesGenerator {
             "oci.config.instance-principal.enabled",
             "oci.vault.config.enabled",
             "oci.vault.vaults[0].ocid",
-            "oci.vault.vaults[0].compartment-ocid"
+            "oci.vault.vaults[0].compartment-ocid",
+            "micronaut.metrics.enabled",
+            "micronaut.metrics.binders.files.enabled",
+            "micronaut.metrics.binders.jdbc.enabled",
+            "micronaut.metrics.binders.jvm.enabled",
+            "micronaut.metrics.binders.logback.enabled",
+            "micronaut.metrics.binders.processor.enabled",
+            "micronaut.metrics.binders.uptime.enabled",
+            "micronaut.metrics.binders.web.enabled",
+            "micronaut.metrics.export.oraclecloud.enabled",
+            "micronaut.metrics.export.oraclecloud.namespace",
+            "micronaut.metrics.export.oraclecloud.compartmentId"
     );
 
     public PropertiesGenerator(boolean local) {
         Collection<OCIItem> items = CloudAssets.getDefault().getItems();
         VaultItem vault = null;
-        DatabaseConnection conn = null;
         for (OCIItem item : items) {
             if ("Vault".equals(item.getKey().getPath())) {
                 vault = (VaultItem) item;
@@ -77,15 +88,9 @@ public final class PropertiesGenerator {
                     application.put("micronaut.object-storage.oracle-cloud." + nameLowercase + ".bucket", item.getKey().getValue()); //NOI18N
                     application.put("micronaut.object-storage.oracle-cloud." + nameLowercase + ".namespace", ((BucketItem) item).getNamespace()); //NOI18N
                     break;
-                case "Databases": //NOI18N
-                    DatabaseConnection[] connections = ConnectionManager.getDefault().getConnections();
-                    for (int i = 0; i < connections.length; i++) {
-                        if (item.getKey().getValue().equals(
-                                connections[i].getConnectionProperties().get("OCID"))) { //NOI18N
-                            conn = connections[i];
-                            break;
-                        }
-                    }
+                case "Database": //NOI18N
+                    DatabaseConnection conn = ((DatabaseItem) item).getCorrespondingConnection();
+                   
                     if (conn != null) {
                         
                         if (vault != null) {
@@ -113,6 +118,20 @@ public final class PropertiesGenerator {
                             }
                         }
                     }
+                    break;
+                case "MetricsNamespace": //NOI18N                    
+                    application.put("micronaut.metrics.enabled", "true"); //NOI18N
+                    application.put("micronaut.metrics.binders.files.enabled", "true"); //NOI18N
+                    application.put("micronaut.metrics.binders.jdbc.enabled", "true"); //NOI18N
+                    application.put("micronaut.metrics.binders.jvm.enabled", "true"); //NOI18N
+                    application.put("micronaut.metrics.binders.logback.enabled", "true"); //NOI18N
+                    application.put("micronaut.metrics.binders.processor.enabled", "true"); //NOI18N
+                    application.put("micronaut.metrics.binders.uptime.enabled", "true"); //NOI18N
+                    application.put("micronaut.metrics.binders.web.enabled", "true"); //NOI18N
+                    application.put("micronaut.metrics.export.oraclecloud.enabled", "true"); //NOI18N
+                    application.put("micronaut.metrics.export.oraclecloud.namespace", ((MetricsNamespaceItem) item).getName()); //NOI18N
+                    application.put("micronaut.metrics.export.oraclecloud.compartmentId", ((MetricsNamespaceItem) item).getCompartmentId()); //NOI18N
+
             }
         }
         if (!local) {
@@ -120,6 +139,7 @@ public final class PropertiesGenerator {
         }
         if (vault != null) {
             bootstrap.put("oci.vault.config.enabled", "true"); // NOI18N
+            bootstrap.put("micronaut.config-client.enabled", "true"); // NOI18N
             bootstrap.put("oci.vault.vaults[0].ocid", vault.getKey().getValue()); //NOI18N
             bootstrap.put("oci.vault.vaults[0].compartment-ocid", vault.getCompartmentId()); //NOI18N
         }

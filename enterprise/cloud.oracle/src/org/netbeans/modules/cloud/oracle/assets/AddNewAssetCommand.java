@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.netbeans.api.project.Project;
 import org.netbeans.modules.cloud.oracle.actions.AddADBAction;
+import org.netbeans.modules.cloud.oracle.actions.OCIItemCreator;
 import org.netbeans.modules.cloud.oracle.database.DatabaseItem;
 import org.netbeans.modules.cloud.oracle.steps.ItemTypeStep;
 import org.netbeans.modules.cloud.oracle.items.OCIItem;
@@ -55,12 +56,20 @@ public class AddNewAssetCommand implements CommandProvider {
 
     private static final Map<String, String[]> DEP_MAP = new HashMap() {
         {
-            put("Databases", new String[]{"io.micronaut.oraclecloud", "micronaut-oraclecloud-atp"}); //NOI18N
+            put("Database", new String[]{"io.micronaut.oraclecloud", "micronaut-oraclecloud-atp",
+                                            "io.micronaut.sql", "micronaut-jdbc-hikari"}); //NOI18N
             put("Bucket", new String[]{"io.micronaut.objectstorage", "micronaut-object-storage-oracle-cloud"}); //NOI18N
             put("Vault", new String[]{"io.micronaut.oraclecloud", "micronaut-oraclecloud-vault"}); //NOI18N
+            put("MetricsNamespace", new String[]{"io.micronaut.oraclecloud", "micronaut-oraclecloud-micrometer"}); //NOI18N
         }
     };
 
+    private static final Map<String, String[]> ANNOTATION_PROCESSOR_MAP = new HashMap() {
+        {
+            put("MetricsNamespace", new String[]{"io.micronaut.micrometer", "micronaut-micrometer-annotation"}); //NOI18N
+        }
+    };
+        
     @Override
     public Set<String> getCommands() {
         return Collections.unmodifiableSet(COMMANDS);
@@ -69,43 +78,81 @@ public class AddNewAssetCommand implements CommandProvider {
     @Override
     public CompletableFuture<Object> runCommand(String command, List<Object> arguments) {
         CompletableFuture future = new CompletableFuture();
+        boolean showSetRefNameStep = CloudAssets.getDefault().itemExistWithoutReferanceName(DatabaseItem.class);
         Steps.NextStepProvider nsProvider = Steps.NextStepProvider.builder()
                     .stepForClass(ItemTypeStep.class, (s) -> {
-                        if ("Databases".equals(s.getValue())) {
+                        if ("Database".equals(s.getValue())) {
                             return new DatabaseConnectionStep();
-                        } 
+                        }
                         return new TenancyStep();
                     }).stepForClass(TenancyStep.class, (s) -> new CompartmentStep())
                     .stepForClass(CompartmentStep.class, (s) -> new SuggestedStep(null))
-                    .stepForClass(SuggestedStep.class, (s) -> new ProjectStep())
+                    .stepForClass(ProjectStep.class, (s) -> new ItemTypeStep())
                     .build();
         Steps.getDefault()
-                .executeMultistep(new ItemTypeStep(), Lookups.fixed(nsProvider))
+                .executeMultistep(new ProjectStep(), Lookups.fixed(nsProvider))
                 .thenAccept(values -> {
                     Project project = values.getValueForStep(ProjectStep.class);
-                    OCIItem item;
-                    if ("Databases".equals(values.getValueForStep(ItemTypeStep.class))) {
-                        item = values.getValueForStep(DatabaseConnectionStep.class);
-                        if (item == null) {
+                    CompletableFuture<? extends OCIItem> item = null;
+                    String itemType = values.getValueForStep(ItemTypeStep.class);
+                    if ("Database".equals(itemType)) {
+                        DatabaseItem i = values.getValueForStep(DatabaseConnectionStep.class);
+                        if (i == null) {
                             item = new AddADBAction().addADB();
+                        } else {
+                            if (showSetRefNameStep) {
+                                SetReferenceNameAction action = new SetReferenceNameAction(i);
+                                item = action.setReferenceName().thenAccept(referenceName -> {
+                                    if (referenceName == null) {
+                                        future.completeExceptionally(new IllegalArgumentException("Reference name not set"));
+                                        return;
+                                    }
+                                    CloudAssets.getDefault().setReferenceName(i, referenceName);
+                                }).thenCompose(val -> CompletableFuture.completedFuture(i));
+                            } else {
+                                item = CompletableFuture.completedFuture(i);
+                            }
                         }
                     } else {
-                        item = values.getValueForStep(SuggestedStep.class);
+                        OCIItem i = values.getValueForStep(SuggestedStep.class);
+                        if (i == null) {
+                            future.cancel(true);
+                            return;
+                        } else {
+                            item = CompletableFuture.completedFuture(i);
+                        }
                     }
-                    if (item == null) {
-                        future.cancel(true);
-                        return;
+                    
+                    if (values.getValueForStep(SuggestedStep.class) instanceof CreateNewResourceItem) {
+                        OCIItemCreator creator = OCIItemCreator.getCreator(itemType);
+                        if (creator != null) {
+                            CompletableFuture<Map<String, Object>> vals = creator.steps();
+                            item = vals.thenCompose(params -> {
+                                return creator.create(values, params);
+                            });
+                        }
                     }
-                    CloudAssets.getDefault().addItem(item);
-                    String[] art = DEP_MAP.get(item.getKey().getPath());
-                    try {
-                        DependencyUtils.addDependency(project, art[0], art[1]);
+                    
+                    item.thenAccept(i -> {
+                        CloudAssets.getDefault().addItem(i);
+                        String[] art = DEP_MAP.get(i.getKey().getPath());
+                        String[] processor = ANNOTATION_PROCESSOR_MAP.get(i.getKey().getPath());
+                        try {
+                            if (art != null && art.length > 1) {
+                                DependencyUtils.addDependency(project, art);
+                            }
+                            if (processor != null && processor.length > 1) {
+                                DependencyUtils.addAnnotationProcessor(project, processor[0], processor[1]);
+                            }
+                        } catch (IllegalStateException e) {
+                            if ("Database".equals(itemType)) {
+                                CloudAssets.getDefault().removeReferenceNameFor(i);
+                            }
+                            future.completeExceptionally(e);
+                        }
                         future.complete(null);
-                    } catch (IllegalStateException e) {
-                        future.completeExceptionally(e);
-                    }
+                    });
                 });
         return future;
     }
-
 }

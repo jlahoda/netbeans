@@ -72,13 +72,19 @@ public class KeyNode extends OCINode {
                     .limit(88)
                     .build();
 
+            String tenancyId = session.getTenancy().isPresent() ? session.getTenancy().get().getKey().getValue() : null;
+            String regionCode = session.getRegion().getRegionCode();
+
             return client.listKeys(listKeysRequest)
                     .getItems()
                     .stream()
                     .map(d -> new KeyItem(
-                    OCID.of(d.getId(), "Vault/Key"), //NOI18N
+                            OCID.of(d.getId(), "Vault/Key"), //NOI18N
                             d.getCompartmentId(),
-                    d.getDisplayName())
+                            d.getDisplayName(),
+                            vault.getKey().getValue(),
+                            tenancyId,
+                            regionCode)
                     )
                     .collect(Collectors.toList());
         };

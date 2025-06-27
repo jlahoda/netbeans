@@ -30,6 +30,8 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -44,6 +46,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -51,10 +54,13 @@ import java.util.stream.Collectors;
 import javax.swing.event.ChangeListener;
 import org.netbeans.api.db.explorer.ConnectionManager;
 import org.netbeans.api.db.explorer.DatabaseConnection;
+import static org.netbeans.modules.cloud.oracle.NotificationUtils.showWarningMessage;
 import org.netbeans.modules.cloud.oracle.bucket.BucketItem;
-import org.netbeans.modules.cloud.oracle.compute.ClusterItem;
+import org.netbeans.modules.cloud.oracle.assets.k8s.ClusterItem;
 import org.netbeans.modules.cloud.oracle.compute.ComputeInstanceItem;
 import org.netbeans.modules.cloud.oracle.database.DatabaseItem;
+import org.netbeans.modules.cloud.oracle.developer.ContainerRepositoryItem;
+import org.netbeans.modules.cloud.oracle.developer.MetricsNamespaceItem;
 import org.netbeans.modules.cloud.oracle.items.OCID;
 import org.netbeans.modules.cloud.oracle.items.OCIItem;
 import org.netbeans.modules.cloud.oracle.vault.VaultItem;
@@ -63,6 +69,7 @@ import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.util.ChangeSupport;
 import org.openide.util.Exceptions;
+import org.openide.util.NbBundle;
 import org.openide.util.Parameters;
 
 /**
@@ -71,6 +78,10 @@ import org.openide.util.Parameters;
  *
  * @author Jan Horvath
  */
+@NbBundle.Messages({
+    "MSG_TenancyNotCompatible=Tenancy must be the same accross all selected Cloud Assets",
+    "MSG_AddItemsAgain=Missing information. Please remove than add following items again: {0}",  
+})
 public final class CloudAssets {
 
     private static final Logger LOG = Logger.getLogger(CloudAssets.class.getName());
@@ -88,6 +99,8 @@ public final class CloudAssets {
 
     private final ChangeSupport changeSupport;
     private final Gson gson;
+    
+    private final ItemsChangeListener itemsListener = new ItemsChangeListener();
 
     CloudAssets() {
         this.gson = new GsonBuilder()
@@ -107,7 +120,7 @@ public final class CloudAssets {
             boolean update = false;
             for (Iterator it = items.iterator(); it.hasNext();) {
                 OCIItem item = (OCIItem) it.next();
-                if (!ocids.contains(item.getKey().getValue()) && "Databases".equals(item.getKey().getPath())) { //NOI18N
+                if (!ocids.contains(item.getKey().getValue()) && "Database".equals(item.getKey().getPath())) { //NOI18N
                     it.remove();
                     update = true;
                 }
@@ -126,20 +139,33 @@ public final class CloudAssets {
         return instance;
     }
 
-    public synchronized void addItem(OCIItem newItem) {
+    public synchronized boolean addItem(OCIItem newItem) {
         Parameters.notNull("newItem cannot be null", newItem);
         long presentCount = items.stream()
                 .filter(i -> i.getKey().getPath().equals(newItem.getKey().getPath()))
                 .count();
-        if (newItem.maxInProject() > presentCount) {
+        if (newItem.maxInProject() > presentCount && isTenancyCompatible(newItem, true)) {
+            if (newItem instanceof Validator) {
+                Validator.Result result = ((Validator) newItem).validate();
+                if (result.status == Validator.ValidationStatus.WARNING) {
+                    showWarningMessage(result.message);
+                }
+                if (result.status == Validator.ValidationStatus.ERROR) {
+                    showWarningMessage(result.message);
+                    return false;
+                }
+            }
             items.add(newItem);
+            newItem.addChangeListener(itemsListener);
             update();
             storeAssets();
         }
+        return true;
     }
 
     synchronized void removeItem(OCIItem item) {
         boolean update = false;
+        item.removeChangeListener(itemsListener);
         if (refNames.remove(item) != null) {
             update = true;
         }
@@ -157,6 +183,42 @@ public final class CloudAssets {
             SuggestionAnalyzer analyzer = new DependenciesAnalyzer();
             setSuggestions(analyzer.findSuggestions(projects));
         });
+    }
+    
+    public synchronized String getTenancyId() {
+        Optional<OCIItem> ociItem = items.stream().findFirst();
+        return ociItem == null || ociItem.isEmpty() ? null : ociItem.get().getTenancyId();
+    }
+    
+    public synchronized boolean isTenancyCompatible(OCIItem toCheck) {
+        return isTenancyCompatible(toCheck, false);
+    }
+    
+    public synchronized boolean isTenancyCompatible(OCIItem toCheck, boolean showWarning) {
+        List<OCIItem> itemsMissingInfo = new ArrayList<> ();
+        for(OCIItem item: items) {
+            if (item != null && item.getTenancyId() == null) {
+                itemsMissingInfo.add(item);
+            } else if (itemsMissingInfo.isEmpty() && item != null && !toCheck.getTenancyId().equals(item.getTenancyId())) {
+                if (showWarning) {
+                    showWarningMessage(Bundle.MSG_TenancyNotCompatible());
+                }
+                return false;
+            }
+        }
+        if (!itemsMissingInfo.isEmpty()) {
+            suggestToAddItemsAgain(itemsMissingInfo);
+            return false;
+        }
+        
+        return true;
+    }
+
+    private void suggestToAddItemsAgain(List<OCIItem> itemsForRemoval) {
+        String itemNames = itemsForRemoval.stream()
+                .map(OCIItem::getName)
+                .collect(Collectors.joining(", "));
+        showWarningMessage(Bundle.MSG_AddItemsAgain(itemNames));
     }
 
     private synchronized void setSuggestions(Set<SuggestedItem> newSuggested) {
@@ -192,7 +254,23 @@ public final class CloudAssets {
         list.addAll(items);
         return list;
     }
-
+    
+    /**
+     * Returns a <code>Collection</code> of all items for a given path
+     * 
+     * @param path
+     * @return 
+     */
+    public List<OCIItem> getItems(String path) {
+        List<OCIItem> result = new ArrayList<> ();
+        for (OCIItem item : items) {
+            if (path != null && path.equals(item.getKey().getPath())) {
+                result.add(item);
+            } 
+        }
+        return result;
+    }
+    
     /**
      * Returns a <code>Collection</code> of items assigned by user. This doesn't
      * include suggested items.
@@ -202,26 +280,55 @@ public final class CloudAssets {
     public Collection<OCIItem> getAssignedItems() {
         return Collections.unmodifiableCollection(items);
     }
+    
+    public <T extends OCIItem> T getItem(Class<T> clazz) {
+        for (OCIItem item : items) {
+            if (clazz.isInstance(item)) {
+                return (T) item;
+            } 
+        }
+        return null;
+    }
+    
+    public boolean itemExistWithoutReferanceName(Class<? extends OCIItem> cls) {
+        return getReferenceNamesByClass(cls).isEmpty() && 
+                CloudAssets.getDefault().getItems().stream().anyMatch(item -> cls.isInstance(item));
+    }
+    
+    public boolean referenceNameExist(String itemPath, String refName) {
+        for (Entry<OCIItem, String> refEntry : refNames.entrySet()) {
+            if (refEntry.getKey().getKey().getPath().equals(itemPath)
+                    && refName.equals(refEntry.getValue())) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    public void removeReferenceNameFor(OCIItem item) {
+        refNames.remove(item);
+    }
 
     public boolean setReferenceName(OCIItem item, String refName) {
         Parameters.notNull("refName", refName); //NOI18N
-        Parameters.notNull("OCIItem", item); //NOI18N
-        for (Entry<OCIItem, String> refEntry : refNames.entrySet()) {
-            if (refEntry.getKey().getKey().getPath().equals(item.getKey().getPath())
-                    && refName.equals(refEntry.getValue())) {
-                return false;
-            }
+        Parameters.notNull("OCIItem", item); //NOI18N   
+        if (referenceNameExist(item.getKey().getPath(), refName)) {
+            return false;
         }
         String oldRefName = refNames.get(item);
         refNames.put(item, refName);
         storeAssets();
         item.fireRefNameChanged(oldRefName, refName);
-//        item.fireRefNameChanged(null, refName);
         return true;
     }
 
     public String getReferenceName(OCIItem item) {
         return refNames.get(item);
+    }
+
+    public List<String> getReferenceNamesByClass(Class<? extends OCIItem> cls) {
+        return refNames.entrySet().stream().filter(entry -> cls.isInstance(entry.getKey()))
+                .map(entry -> entry.getValue()).collect(Collectors.toList());
     }
 
     private void setReferenceName(String ocid, String refName) {
@@ -325,7 +432,7 @@ public final class CloudAssets {
                                     .get("id").getAsJsonObject() //NOI18N
                                     .get("path").getAsString(); //NOI18N
                             switch (path) {
-                                case "Databases": //NOI18N
+                                case "Database": //NOI18N
                                     loaded.add(gson.fromJson(element, DatabaseItem.class));
                                     break;
                                 case "Bucket": //NOI18N
@@ -339,6 +446,12 @@ public final class CloudAssets {
                                     break;
                                 case "Vault": //NOI18N
                                     loaded.add(gson.fromJson(element, VaultItem.class));
+                                    break;
+                                case "ContainerRepository": //NOI18N
+                                    loaded.add(gson.fromJson(element, ContainerRepositoryItem.class));
+                                    break;
+                                case "MetricsNamespace": //NOI18N
+                                    loaded.add(gson.fromJson(element, MetricsNamespaceItem.class));
                                     break;
                             }
                         }
@@ -374,6 +487,9 @@ public final class CloudAssets {
                 }
             }
             reader.endObject();
+            for (OCIItem oCIItem : loaded) {
+                oCIItem.addChangeListener(itemsListener);
+            }
             items = loaded;
             for (Entry<String, String> entry : loadingRefNames.entrySet()) {
                 setReferenceName(entry.getKey(), entry.getValue());
@@ -396,4 +512,12 @@ public final class CloudAssets {
         }
 
     }
+    
+    private final class ItemsChangeListener implements PropertyChangeListener {
+        @Override
+        public void propertyChange(PropertyChangeEvent evt) {
+            CloudAssets.this.storeAssets();
+        }
+    }
+    
 }
