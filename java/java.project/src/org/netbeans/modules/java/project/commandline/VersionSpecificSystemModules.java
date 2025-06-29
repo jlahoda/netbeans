@@ -18,26 +18,13 @@
  */
 package org.netbeans.modules.java.project.commandline;
 
-import com.sun.tools.javac.api.JavacTaskImpl;
-import com.sun.source.util.JavacTask;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Arrays;
-import java.util.EnumSet;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import javax.tools.JavaFileManager;
-import javax.tools.JavaFileManager.Location;
-import javax.tools.JavaFileObject;
-import javax.tools.JavaFileObject.Kind;
-import javax.tools.StandardJavaFileManager;
-import javax.tools.StandardLocation;
-import javax.tools.ToolProvider;
 import org.netbeans.api.java.classpath.ClassPath;
+import org.netbeans.api.java.platform.JavaPlatform;
 import org.netbeans.spi.java.classpath.support.ClassPathSupport;
 import org.openide.filesystems.FileUtil;
 import org.openide.modules.Places;
@@ -55,33 +42,34 @@ public class VersionSpecificSystemModules {
             File systemModulesDir = Places.getCacheSubdirectory("java/system");
             File systemModules = new File(systemModulesDir, version);
             if (!systemModules.isDirectory()) {
-                try {
-                    JavacTask task = (JavacTask) ToolProvider.getSystemJavaCompiler().getTask(null, null, d -> {}, Arrays.asList("--release", version), Arrays.asList("java.base"), null);
-                    task.analyze();
-                    JavaFileManager fm = ((JavacTaskImpl) task).getContext().get(JavaFileManager.class);
-                    for (Set<Location> locations : fm.listLocationsForModules(StandardLocation.SYSTEM_MODULES)) {
-                        for (Location location : locations) {
-                            String name = fm.inferModuleName(location);
-                            File moduleDir = new File(systemModules, name);
-                            Location moduleLocation = fm.getLocationForModule(StandardLocation.SYSTEM_MODULES, name);
-                            for (JavaFileObject fo : fm.list(moduleLocation, "", EnumSet.allOf(Kind.class), true)) {
-                                String binaryName = fm.inferBinaryName(moduleLocation, fo);
-                                File target = new File(moduleDir, binaryName.replace(".", "/") + ".class");
-                                target.getParentFile().mkdirs();
-                                try (InputStream in = fo.openInputStream();
-                                     OutputStream out = new FileOutputStream(target)) {
-                                    FileUtil.copy(in, out);
-                                }
-                            }
-                        }
-                    }
-                } catch (IOException ex) {
-                    Exceptions.printStackTrace(ex);
+                if (!generateVersionClasses(systemModules, version)) {
+                    return JavaPlatform.getDefault().getBootstrapLibraries();
                 }
-                
             }
             return ClassPathSupport.createClassPath(FileUtil.urlForArchiveOrDir(systemModules));
         });
     }
-    
+
+    static boolean generateVersionClasses(File target, String version) {
+        try {
+            File javaLauncher = FileUtil.toFile(JavaPlatform.getDefault().findTool("java"));
+            URL dumpJarLocation = DumpVersionSpecificSystemModules.class.getProtectionDomain().getCodeSource().getLocation();
+            Process p = new ProcessBuilder(javaLauncher.getAbsolutePath(),
+                                           "--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
+                                           "--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
+                                           "-cp", FileUtil.archiveOrDirForURL(dumpJarLocation).getAbsolutePath(),
+                                           DumpVersionSpecificSystemModules.class.getName(),
+                                           target.getAbsolutePath(),
+                                           version)
+                    .inheritIO().start();
+            if (p.waitFor() != 0) {
+                return false;
+            }
+        } catch (InterruptedException | IOException ex) {
+            Exceptions.printStackTrace(ex);
+            return false;
+        }
+
+        return true;
+    }
 }

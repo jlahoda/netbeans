@@ -61,10 +61,8 @@ import org.netbeans.spi.java.project.support.CommandLineBasedProject;
 import org.netbeans.spi.java.project.support.CommandLineBasedProject.Configuration;
 import org.netbeans.spi.java.project.support.CommandLineBasedProject.ToolRun;
 import org.openide.filesystems.FileChangeAdapter;
-import org.openide.filesystems.FileChangeListener;
 import org.openide.filesystems.FileEvent;
 import org.openide.filesystems.FileObject;
-import org.openide.filesystems.FileRenameEvent;
 import org.openide.filesystems.FileUtil;
 import org.openide.filesystems.URLMapper;
 import org.openide.util.ChangeSupport;
@@ -79,35 +77,13 @@ import org.openide.util.RequestProcessor.Task;
 public class CommandLineBasedJavaRoot {
     private static final RequestProcessor WORKER = new RequestProcessor(CommandLineBasedJavaRoot.class.getName(), 1, false, false);
     private static final String PATH_SEPARATOR = System.getProperty("path.separator");
+    private static final String FILE_SEPARATOR = System.getProperty("file.separator");
 
     private final Map<String, ClassPath> modulePathElement2ClassPath = new HashMap<>(); //TODO: cleanup?
-    private File configurationFile;
-    private List<Root> roots = new ArrayList<>();
     private final ChangeSupport cs = new ChangeSupport(this);
+    private final AllModules allModules = new AllModules();
     private final Configuration configuration;
-    private AllModules allModules = new AllModules();
-    private final FileChangeListener listener = new FileChangeAdapter() {
-        @Override
-        public void fileChanged(FileEvent fe) {
-            scheduleUpdateRoots();
-        }
-        @Override
-        public void fileDeleted(FileEvent fe) {
-            scheduleUpdateRoots();
-        }
-        @Override
-        public void fileDataCreated(FileEvent fe) {
-            scheduleUpdateRoots();
-        }
-        @Override
-        public void fileRenamed(FileRenameEvent fe) {
-            scheduleUpdateRoots();
-        }
-        @Override
-        public void fileFolderCreated(FileEvent fe) {
-            scheduleUpdateRoots();
-        }
-    };
+    private List<Root> roots = new ArrayList<>();
     private final Task update;
 
     public CommandLineBasedJavaRoot(Configuration configuration) {
@@ -188,6 +164,7 @@ public class CommandLineBasedJavaRoot {
                         extraArgs.add(els[0] + "=" + cwd.resolve(els[1]).getPath()); //Ugh.
                         break;
                     case "-implicit:none": break; //ignore...
+                    //TODO: processor module path(!!!)
                     default:
                         if (arguments.get(i).endsWith(".java")) {//TODO: case sensitive
                             inputFiles.add(arguments.get(i));
@@ -215,7 +192,13 @@ public class CommandLineBasedJavaRoot {
                         if (moduleSourcePathParts[0].contains("*")) {
                             rootURL = cwd.resolve(moduleSourcePathParts[0].replace("*", oneModule)).toURL();
                         } else {
-                            rootURL = cwd.resolve(moduleSourcePathParts[0]).resolve(oneModule).toURL();
+                            String moduleSourcePathElement = moduleSourcePathParts[0];
+
+                            if (!moduleSourcePathElement.endsWith(FILE_SEPARATOR)) {
+                                moduleSourcePathElement += FILE_SEPARATOR;
+                            }
+
+                            rootURL = cwd.resolve(moduleSourcePathElement).resolve(oneModule).toURL();
                         }
                         if (!rootURL.toString().endsWith("/")) {//TODO: performance
                             rootURL = new URL(rootURL.toString() + "/");
@@ -264,10 +247,7 @@ public class CommandLineBasedJavaRoot {
                             file = file.getParent();
                         }
                         rootURL = file.toURL();
-                    } catch (IOException ex) {
-                        Exceptions.printStackTrace(ex);
-                        continue;
-                    } catch (URISyntaxException ex) {
+                    } catch (IOException | URISyntaxException ex) {
                         Exceptions.printStackTrace(ex);
                         continue;
                     }
@@ -490,29 +470,28 @@ public class CommandLineBasedJavaRoot {
                 return resources;
             }
             List<PathResourceImplementation> newResources = new ArrayList<>();
-            if (moduleInfo.canRead())
-            try {
-                Set<String> dependencies = new HashSet<>();
-                JavacTask task = (JavacTask) ToolProvider.getSystemJavaCompiler().getTask(null, null, d -> {}, null, null, Arrays.asList(new JFOImpl(Files.readString(moduleInfo.toPath()))));
-                CompilationUnitTree cut = task.parse().iterator().next();
-                ModuleTree module = cut.getModule();
-                for (DirectiveTree d : module.getDirectives()) {
-                    if (d.getKind() == Kind.REQUIRES) {
-                        dependencies.add(((RequiresTree) d).getModuleName().toString());
+            if (moduleInfo.canRead()) {
+                try {
+                    Set<String> dependencies = new HashSet<>();
+                    JavacTask task = (JavacTask) ToolProvider.getSystemJavaCompiler().getTask(null, null, d -> {}, null, null, Arrays.asList(new JFOImpl(Files.readString(moduleInfo.toPath()))));
+                    CompilationUnitTree cut = task.parse().iterator().next();
+                    ModuleTree module = cut.getModule();
+                    for (DirectiveTree d : module.getDirectives()) {
+                        if (d.getKind() == Kind.REQUIRES) {
+                            dependencies.add(((RequiresTree) d).getModuleName().toString());
+                        }
                     }
-                }
-                for (Iterator<Map.Entry<String, URL>> it = allModules.getName2ProjectModule().entrySet().iterator(); it.hasNext(); ) {
-                    Map.Entry<String, URL> name2Binary = it.next();
-                    if (dependencies.contains(name2Binary.getKey())) {
-                        newResources.add(ClassPathSupport.createResource(name2Binary.getValue()));
+                    for (Iterator<Map.Entry<String, URL>> it = allModules.getName2ProjectModule().entrySet().iterator(); it.hasNext(); ) {
+                        Map.Entry<String, URL> name2Binary = it.next();
+                        if (dependencies.contains(name2Binary.getKey())) {
+                            newResources.add(ClassPathSupport.createResource(name2Binary.getValue()));
+                        }
                     }
+                } catch (IOException | URISyntaxException ex) {
+                    Exceptions.printStackTrace(ex);
                 }
-            } catch (IOException | URISyntaxException ex) {
-                Exceptions.printStackTrace(ex);
             }
             resources = newResources;
-            System.err.println("module: " + moduleInfo);
-            System.err.println("path: " + newResources);
             return newResources;
         }
 
