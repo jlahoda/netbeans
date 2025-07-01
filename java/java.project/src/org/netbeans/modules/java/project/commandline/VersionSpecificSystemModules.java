@@ -21,7 +21,9 @@ package org.netbeans.modules.java.project.commandline;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.netbeans.api.java.classpath.ClassPath;
 import org.netbeans.api.java.platform.JavaPlatform;
@@ -31,8 +33,7 @@ import org.openide.modules.Places;
 import org.openide.util.Exceptions;
 
 /**
- *
- * @author jlahoda
+ * TODO: JDK 8 support
  */
 public class VersionSpecificSystemModules {
     private static final Map<String, ClassPath> VERSION_TO_SYSTEM_MODULES = new HashMap<>();
@@ -41,16 +42,30 @@ public class VersionSpecificSystemModules {
         return VERSION_TO_SYSTEM_MODULES.computeIfAbsent(version, v -> {
             File systemModulesDir = Places.getCacheSubdirectory("java/system");
             File systemModules = new File(systemModulesDir, version);
-            if (!systemModules.isDirectory()) {
-                if (!generateVersionClasses(systemModules, version)) {
-                    return JavaPlatform.getDefault().getBootstrapLibraries();
+            File javaBaseModuleInfo = new File(new File(systemModules, "java.base"),
+                                               "module-info.class");
+            if (!javaBaseModuleInfo.canRead()) {
+                generateVersionClasses(systemModules, version);
+            }
+
+            if (javaBaseModuleInfo.canRead()) {
+                File[] modules = systemModules.listFiles();
+
+                if (modules != null) {
+                    List<URL> components = new ArrayList<>();
+
+                    for (File module : modules) {
+                        components.add(FileUtil.urlForArchiveOrDir(module));
+                    }
+
+                    return ClassPathSupport.createClassPath(components.toArray(URL[]::new));
                 }
             }
-            return ClassPathSupport.createClassPath(FileUtil.urlForArchiveOrDir(systemModules));
+            return JavaPlatform.getDefault().getBootstrapLibraries();
         });
     }
 
-    static boolean generateVersionClasses(File target, String version) {
+    static void generateVersionClasses(File target, String version) {
         try {
             File javaLauncher = FileUtil.toFile(JavaPlatform.getDefault().findTool("java"));
             URL dumpJarLocation = DumpVersionSpecificSystemModules.class.getProtectionDomain().getCodeSource().getLocation();
@@ -62,14 +77,10 @@ public class VersionSpecificSystemModules {
                                            target.getAbsolutePath(),
                                            version)
                     .inheritIO().start();
-            if (p.waitFor() != 0) {
-                return false;
-            }
+            p.waitFor();
         } catch (InterruptedException | IOException ex) {
             Exceptions.printStackTrace(ex);
-            return false;
         }
-
-        return true;
     }
+
 }

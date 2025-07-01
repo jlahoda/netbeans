@@ -93,7 +93,9 @@ public class CommandLineBasedJavaRoot {
             updateRoots(configuration.getRuns());
         });
         configuration.addChangeListener(evt -> scheduleUpdateRoots());
-        scheduleUpdateRoots();
+        //TODO: currently synchronous mostly to aid tests - better synchronous or asynchonous?
+//        scheduleUpdateRoots();
+        updateRoots(configuration.getRuns());
     }
 
     public List<Root> getRoots() {
@@ -115,7 +117,9 @@ public class CommandLineBasedJavaRoot {
     void updateRoots(List<ToolRun> toolRuns) {
         List<Root> newRoots = new ArrayList<>();
         Map<String, URL> name2Module = new HashMap<>(); //TODO: incorrect, only inferred from --module/module-source-path!
-        String defaultSourceLevel = SourceVersion.latest().name(); //TODO: infer from the javac location, or alike
+        //when JDK 18+ is the baseline, should be:
+//        String defaultSourceLevel = String.valueOf(SourceVersion.latest().runtimeVersion().feature()); //TODO: infer from the javac location, or alike
+        String defaultSourceLevel = String.valueOf(SourceVersion.latest().ordinal()); //TODO: infer from the javac location, or alike
         for (ToolRun toolRun : toolRuns) {
             if (toolRun.kind != CommandLineBasedProject.ToolKind.JAVAC) {
                 continue;
@@ -125,6 +129,7 @@ public class CommandLineBasedJavaRoot {
             String release = defaultSourceLevel;
             String module = null;
             String moduleSourcePath = null;
+            String sourcePath = null;
             ClassPath classPath = ClassPath.EMPTY;
             ClassPath modulePath = ClassPath.EMPTY;
             String outDir = null;
@@ -140,6 +145,9 @@ public class CommandLineBasedJavaRoot {
                         break;
                     case "--module-source-path":
                         moduleSourcePath = arguments.get(++i);
+                        break;
+                    case "-sourcepath":
+                        sourcePath = arguments.get(++i);
                         break;
                     case "-classpath":
                     case "--class-path":
@@ -224,7 +232,17 @@ public class CommandLineBasedJavaRoot {
                 }
             } else {
                 URL rootURL;
-                if (inputFiles.size() > 0) {
+                if (sourcePath != null) {
+                    try {
+                        rootURL = cwd.resolve(sourcePath).toURL();
+                        if (!rootURL.toString().endsWith("/")) {//TODO: performance
+                            rootURL = new URL(rootURL.toString() + "/");
+                        }
+                    } catch (MalformedURLException ex) {
+                        Exceptions.printStackTrace(ex);
+                        continue;
+                    }
+                } else if (inputFiles.size() > 0) {
                     try {
                         FileObject file = URLMapper.findFileObject(cwd.resolve(inputFiles.get(0)).toURL());
                         if (file == null) {

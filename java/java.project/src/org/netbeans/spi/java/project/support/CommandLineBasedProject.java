@@ -26,6 +26,7 @@ import org.netbeans.modules.java.project.commandline.ClassPathProviderImpl;
 import org.netbeans.modules.java.project.commandline.CommandLineBasedJavaRoot;
 import org.netbeans.modules.java.project.commandline.CompilerOptionsQueryImpl;
 import org.netbeans.modules.java.project.commandline.SourceForBinaryQueryImpl;
+import org.netbeans.modules.java.project.commandline.SourceLevelQueryImpl;
 import org.netbeans.modules.java.project.commandline.SourcesImpl;
 import org.openide.util.ChangeSupport;
 import org.openide.util.Lookup;
@@ -41,6 +42,7 @@ public class CommandLineBasedProject {
         return Lookups.fixed(new ClassPathProviderImpl(root),
                              new CompilerOptionsQueryImpl(root),
                              new SourceForBinaryQueryImpl(root),
+                             new SourceLevelQueryImpl(root),
                              new SourcesImpl(configuration, root));
     }
 

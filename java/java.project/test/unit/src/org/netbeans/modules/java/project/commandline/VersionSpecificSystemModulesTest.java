@@ -32,7 +32,7 @@ public class VersionSpecificSystemModulesTest extends NbTestCase {
     public void testDumpVersionSpecificClasses() throws Exception {
         clearWorkDir();
         File wd = getWorkDir();
-        assertTrue(VersionSpecificSystemModules.generateVersionClasses(wd, "11"));
+        VersionSpecificSystemModules.generateVersionClasses(wd, "11");
         File javaBaseModuleInfo = new File(new File(wd, "java.base"), "module-info.class");
         assertTrue(javaBaseModuleInfo.canRead());
     }
