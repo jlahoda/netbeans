@@ -282,7 +282,6 @@ public class TextDocumentSyncServerCapabilityHandler {
 
     @SuppressWarnings("AssignmentToMethodParameter")
     private void ensureDidOpenSent(Document doc, boolean sync) {
-        //TODO: should send the even to new servers, that didn't get it yet.
         FileObject file = NbEditorUtilities.getFileObject(doc);
 
         if (file == null)

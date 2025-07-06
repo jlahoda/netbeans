@@ -463,7 +463,7 @@ public class CompletionProviderImpl implements CompletionProvider {
             return 0;
         }
         List<LSPBindings> servers = LSPBindings.getBindings(file);
-        if (servers == null) {
+        if (servers.isEmpty()) {
             return 0;
         }
         return servers.stream().anyMatch(server -> isTriggerCharacter(server, typedText)) ? COMPLETION_QUERY_TYPE : 0;

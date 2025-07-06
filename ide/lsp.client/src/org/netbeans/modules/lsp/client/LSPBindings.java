@@ -84,6 +84,7 @@ import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.lsp4j.services.TextDocumentService;
 import org.eclipse.lsp4j.services.WorkspaceService;
 import org.eclipse.lsp4j.util.Preconditions;
+import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.editor.mimelookup.MimeLookup;
 import org.netbeans.api.progress.*;
 import org.netbeans.api.project.FileOwnerQuery;
@@ -154,7 +155,7 @@ public class LSPBindings {
     private static final Map<FileObject, Map<Object/*BackgroundTask|SimpleBackgroundTask*/, RequestProcessor.Task>> backgroundTasks = new WeakHashMap<>();
     private final Set<FileObject> openedFiles = new HashSet<>();
 
-    public static synchronized List<LSPBindings> getBindings(FileObject file) {
+    public static synchronized @NonNull List<LSPBindings> getBindings(FileObject file) {
         List<LSPBindings> fromWorkspace = List.of();
 
         for (Entry<FileObject, Map<String, LSPBindings>> e : workspace2Extension2Server.entrySet()) {
