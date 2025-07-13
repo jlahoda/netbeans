@@ -58,6 +58,7 @@ import org.eclipse.lsp4j.TextDocumentEdit;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.editor.document.LineDocument;
 import org.netbeans.api.editor.document.LineDocumentUtils;
 import org.netbeans.lib.editor.util.swing.DocumentUtilities;
@@ -329,6 +330,15 @@ public class Utils {
     public static boolean isTrue(Boolean b) {
         return b != null && b;
     }
+
+    public static @NonNull ServerCapabilities getCapabilities(LSPBindings server) {
+        if (server.getInitResult() != null && server.getInitResult().getCapabilities() != null) {
+            return server.getInitResult().getCapabilities();
+        } else {
+            return new ServerCapabilities();
+        }
+    }
+
     public static boolean isEnabled(Either<Boolean, ?> settings) {
         return settings != null && (settings.isLeft() ? isTrue(settings.getLeft())
                                                        : settings.getRight() != null);
@@ -360,15 +370,7 @@ public class Utils {
                 return ;
             }
 
-            ServerCapabilities serverCapabilities;
-
-            if (server.getInitResult() != null && server.getInitResult().getCapabilities() != null) {
-                serverCapabilities = server.getInitResult().getCapabilities();
-            } else {
-                serverCapabilities = new ServerCapabilities();
-            }
-
-            if (!filter.test(serverCapabilities)) {
+            if (!filter.test(getCapabilities(server))) {
                 continue;
             }
 

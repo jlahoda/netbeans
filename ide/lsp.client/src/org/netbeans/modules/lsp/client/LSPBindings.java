@@ -294,8 +294,6 @@ public class LSPBindings {
                 }
             };
 
-//            boolean foundServer = false;
-
             final Lookup lkp = prj != null ? Lookups.fixed(prj, mimeTypeInfo, restarter) : Lookups.fixed(mimeTypeInfo, restarter);
             serverDescription.mimeTypes = Collections.singleton(mt);
             // If this is a MultiMimeLanguageServerProvider, then retrieve all 
@@ -307,11 +305,12 @@ public class LSPBindings {
 
             if (desc != null) {
                 LSPBindings b = LanguageServerProviderAccessor.getINSTANCE().getBindings(desc);
+
                 if (b != null) {
                     servers.add(b);
                     continue;
                 }
-//                foundServer = true;
+
                 try {
                     LanguageClientImpl lci = new LanguageClientImpl();
                     LanguageServer server = LanguageServerProviderAccessor.getINSTANCE().getServer(desc);

@@ -44,7 +44,7 @@ public final class LspNavigatorPanelDynamicRegistration implements NavigatorPane
                 List<LSPBindings> bindings = LSPBindings.getBindings(file);
                 if (!bindings.isEmpty()) {
                     return bindings.stream()
-                                   .filter(server -> Utils.isEnabled(server.getInitResult().getCapabilities().getDocumentSymbolProvider()))
+                                   .filter(server -> Utils.isEnabled(Utils.getCapabilities(server).getDocumentSymbolProvider()))
                                    .map(NavigatorPanelImpl::new)
                                    .toList();
                 } else {
