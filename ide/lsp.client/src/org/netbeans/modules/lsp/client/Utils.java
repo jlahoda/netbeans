@@ -95,6 +95,16 @@ public class Utils {
         return 0;
     }
 
+    public static int getLineEnd(Document doc, int line) {
+        int start = LineDocumentUtils.getLineStartFromIndex((LineDocument) doc, line);
+        try {
+            return LineDocumentUtils.getLineEnd((LineDocument) doc, start);
+        } catch (BadLocationException ex) {
+            Exceptions.printStackTrace(ex);
+        }
+        return 0;
+    }
+
     public static void applyWorkspaceEdit(WorkspaceEdit edit) {
         if (edit.getDocumentChanges() != null) {
             for (Either<TextDocumentEdit, ResourceOperation> change : edit.getDocumentChanges()) {

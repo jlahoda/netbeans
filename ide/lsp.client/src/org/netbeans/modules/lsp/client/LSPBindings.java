@@ -82,7 +82,7 @@ import org.eclipse.lsp4j.services.LanguageClientAware;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.lsp4j.services.TextDocumentService;
 import org.eclipse.lsp4j.services.WorkspaceService;
-import org.eclipse.lsp4j.util.Preconditions;
+import org.eclipse.lsp4j.jsonrpc.util.Preconditions;
 import org.netbeans.api.editor.mimelookup.MimeLookup;
 import org.netbeans.api.progress.*;
 import org.netbeans.api.project.FileOwnerQuery;
