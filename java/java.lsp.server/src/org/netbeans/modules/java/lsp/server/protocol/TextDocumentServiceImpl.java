@@ -289,7 +289,6 @@ import org.openide.util.NbBundle;
 import org.openide.util.NbBundle.Messages;
 import org.openide.util.Pair;
 import org.openide.util.RequestProcessor;
-import org.openide.util.WeakSet;
 import org.openide.util.lookup.Lookups;
 import org.openide.util.lookup.ProxyLookup;
 import org.openide.util.lookup.ServiceProvider;
@@ -307,6 +306,7 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
     private static final String NETBEANS_JAVADOC_LOAD_TIMEOUT = "javadoc.load.timeout";// NOI18N
     private static final String NETBEANS_COMPLETION_WARNING_TIME = "completion.warning.time";// NOI18N
     private static final String NETBEANS_JAVA_ON_SAVE_ORGANIZE_IMPORTS = "java.onSave.organizeImports";// NOI18N
+    private static final String NETBEANS_CODE_COMPLETION_COMMIT_CHARS = "java.completion.commit.chars";// NOI18N
     private static final String URL = "url";// NOI18N
     private static final String INDEX = "index";// NOI18N
     private static final String DIAGNOSTIC_ID = "id";// NOI18N
@@ -340,7 +340,7 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
     @ServiceProvider(service=IndexingAware.class, position=0)
     public static final class RefreshDocument implements IndexingAware {
 
-        private final Set<TextDocumentServiceImpl> delegates = new WeakSet<>();
+        private final Set<TextDocumentServiceImpl> delegates = Collections.newSetFromMap(new WeakHashMap<>());
 
         public synchronized void register(TextDocumentServiceImpl delegate) {
             delegates.add(delegate);
@@ -384,6 +384,7 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
         AtomicReference<Sampler> samplerRef = new AtomicReference<>();
         AtomicLong samplingStart = new AtomicLong();
         AtomicLong samplingWarningLength = new AtomicLong(DEFAULT_COMPLETION_WARNING_LENGTH);
+        AtomicReference<List<String>> codeCompletionCommitChars = new AtomicReference<>(List.of());
         long completionStart = System.currentTimeMillis();
         COMPLETION_SAMPLER_WORKER.post(() -> {
             if (!done.get()) {
@@ -428,7 +429,10 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
             ConfigurationItem completionWarningLength = new ConfigurationItem();
             completionWarningLength.setScopeUri(uri);
             completionWarningLength.setSection(client.getNbCodeCapabilities().getConfigurationPrefix() + NETBEANS_COMPLETION_WARNING_TIME);
-            return client.configuration(new ConfigurationParams(Arrays.asList(conf, completionWarningLength))).thenApply(c -> {
+            ConfigurationItem commitCharacterConfig = new ConfigurationItem();
+            commitCharacterConfig.setScopeUri(uri);
+            commitCharacterConfig.setSection(client.getNbCodeCapabilities().getConfigurationPrefix() + NETBEANS_CODE_COMPLETION_COMMIT_CHARS);
+            return client.configuration(new ConfigurationParams(Arrays.asList(conf, completionWarningLength, commitCharacterConfig))).thenApply(c -> {
                 if (c != null && !c.isEmpty()) {
                     if (c.get(0) instanceof JsonPrimitive) {
                         JsonPrimitive javadocTimeSetting = (JsonPrimitive) c.get(0);
@@ -439,6 +443,10 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
                         JsonPrimitive samplingWarningsLengthSetting = (JsonPrimitive) c.get(1);
 
                         samplingWarningLength.set(samplingWarningsLengthSetting.getAsLong());
+                    }
+                    if(c.get(2) instanceof JsonArray){
+                        JsonArray commitCharsJsonArray = (JsonArray) c.get(2);
+                        codeCompletionCommitChars.set(commitCharsJsonArray.asList().stream().map(ch -> ch.toString()).collect(Collectors.toList()));
                     }
                 }
                 final int caret = Utils.getOffset(doc, params.getPosition());
@@ -502,8 +510,8 @@ public class TextDocumentServiceImpl implements TextDocumentService, LanguageCli
                                 }).collect(Collectors.toList()));
                             }
                         }
-                        if (completion.getCommitCharacters() != null) {
-                            item.setCommitCharacters(completion.getCommitCharacters().stream().map(ch -> ch.toString()).collect(Collectors.toList()));
+                        if (codeCompletionCommitChars.get() != null) {
+                            item.setCommitCharacters(codeCompletionCommitChars.get());
                         }
                         lastCompletions.add(completion);
                         item.setData(new CompletionData(uri, index.getAndIncrement()));
