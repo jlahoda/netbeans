@@ -2,8 +2,8 @@ Name: JDK External Annotations
 Description: External Annotations for JDK
 Origin: JetBrains, IntelliJ Community
 License: Apache-2.0
-Version: 468d9bd86c6065a31d78bfbcc9bc08c0af80d07c
-URL: https://raw.githubusercontent.com/JetBrains/intellij-community/468d9bd86c6065a31d78bfbcc9bc08c0af80d07c/java/jdkAnnotations
+Version: 73943d0839fdc7364be735ec4953f172db31130b
+URL: https://raw.githubusercontent.com/JetBrains/intellij-community/73943d0839fdc7364be735ec4953f172db31130b/java/jdkAnnotations
 Files: java.beans.annotations.xml java.awt.geom.annotations.xml java.awt.im.annotations.xml java.awt.dnd.annotations.xml java.awt.event.annotations.xml java.awt.datatransfer.annotations.xml java.awt.annotations.xml java.text.annotations.xml java.time.format.annotations.xml java.time.annotations.xml java.security.annotations.xml java.util.jar.annotations.xml java.util.zip.annotations.xml java.util.stream.annotations.xml java.util.regex.annotations.xml java.util.function.annotations.xml java.util.concurrent.locks.annotations.xml java.util.concurrent.atomic.annotations.xml java.util.concurrent.annotations.xml java.util.annotations.xml java.lang.ref.annotations.xml java.lang.reflect.annotations.xml java.lang.annotations.xml java.lang.invoke.annotations.xml java.nio.file.spi.annotations.xml java.nio.file.annotations.xml java.nio.charset.annotations.xml java.nio.channels.annotations.xml java.nio.annotations.xml java.math.annotations.xml java.sql.annotations.xml java.io.annotations.xml java.net.annotations.xml javax.annotation.processing.annotations.xml javax.naming.event.annotations.xml javax.accessibility.annotations.xml javax.tools.annotations.xml javax.swing.text.html.annotations.xml javax.swing.tree.annotations.xml javax.swing.plaf.basic.annotations.xml javax.swing.plaf.annotations.xml javax.swing.event.annotations.xml javax.swing.annotations.xml javax.swing.table.annotations.xml javax.swing.border.annotations.xml javax.xml.bind.annotation.annotations.xml org.w3c.dom.annotations.xml com.sun.jdi.event.annotations.xml com.sun.jdi.request.annotations.xml com.sun.jdi.annotations.xml
 
                               Apache License
