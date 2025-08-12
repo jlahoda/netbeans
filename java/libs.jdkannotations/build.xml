@@ -24,7 +24,7 @@
     <import file="../../nbbuild/templates/projectized.xml"/>
     <target name="compile" depends="projectized-common.compile,-copy-annotations.xml" />
     <target name="-copy-annotations.xml">
-        <copy todir="${build.classes.dir}/org/netbeans/modules/java/editor/base/annotations">
+        <copy todir="${build.classes.dir}/org/netbeans/libs/jdkannotations/annotations">
             <fileset dir="external" includes="*.xml" />
         </copy>
     </target>

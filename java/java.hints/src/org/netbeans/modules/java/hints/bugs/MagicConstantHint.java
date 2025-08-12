@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
@@ -50,7 +51,10 @@ import org.openide.util.NbCollections;
 public class MagicConstantHint {
 
     @TriggerTreeKind({Kind.METHOD_INVOCATION, Kind.NEW_CLASS})
-    @Messages("ERR_NotAValidValue=Not a valid value")
+    @Messages({
+        "# {0} - the list of valid values",
+        "ERR_NotAValidValue=Not a valid value, expected one of: {0}"
+    })
     public static List<ErrorDescription> hint(HintContext ctx) {
         Element el = ctx.getInfo().getTrees().getElement(ctx.getPath());
 
@@ -71,6 +75,7 @@ public class MagicConstantHint {
             for (AnnotationMirror am : annotations) {
                 if (!((TypeElement) am.getAnnotationType().asElement()).getQualifiedName().contentEquals("org.intellij.lang.annotations.MagicConstant")) continue;
 
+                //TODO: caching(!)
                 for (Entry<? extends ExecutableElement, ? extends AnnotationValue> e : am.getElementValues().entrySet()) {
                     boolean isFlagsFromClass = e.getKey().getSimpleName().contentEquals("flagsFromClass");
                     boolean isValuesFromClass = e.getKey().getSimpleName().contentEquals("valuesFromClass");
@@ -103,7 +108,7 @@ public class MagicConstantHint {
 
             //TODO: "values" vs. "flags":
             if (!validValues.contains(resolved)) {
-                result.add(ErrorDescriptionFactory.forTree(ctx, arguments.get(currentParam), Bundle.ERR_NotAValidValue()));
+                result.add(ErrorDescriptionFactory.forTree(ctx, arguments.get(currentParam), Bundle.ERR_NotAValidValue(validValues.stream().map(ve -> ctx.getInfo().getElementUtilities().getElementName(ve, false)).collect(Collectors.joining(", ")))));
             }
         }
 

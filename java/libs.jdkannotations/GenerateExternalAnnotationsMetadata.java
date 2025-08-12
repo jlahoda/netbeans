@@ -94,8 +94,15 @@ public class GenerateExternalAnnotationsMetadata {
                 }
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                    layer.write(indent() + "<folder name=\"" + dir.getFileName().toString() + "\">\n");
-                    indent += 4;
+                    if (jdkAnnotations.equals(dir)) {
+                        for (String layerDir : LAYER_DIRECTORIES) {
+                            layer.write(indent() + "<folder name=\"" + layerDir + "\">\n");
+                            indent += 4;
+                        }
+                    } else {
+                        layer.write(indent() + "<folder name=\"" + dir.getFileName().toString() + "\">\n");
+                        indent += 4;
+                    }
                     return FileVisitResult.CONTINUE;
                 }
 
@@ -123,8 +130,15 @@ public class GenerateExternalAnnotationsMetadata {
 
                 @Override
                 public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                    indent -= 4;
-                    layer.write(indent() + "</folder>\n");
+                    if (jdkAnnotations.equals(dir)) {
+                        for (String layerDir : LAYER_DIRECTORIES) {
+                            indent -= 4;
+                            layer.write("</folder>\n");
+                        }
+                    } else {
+                        indent -= 4;
+                        layer.write(indent() + "</folder>\n");
+                    }
                     return FileVisitResult.CONTINUE;
                 }
             });
@@ -423,4 +437,8 @@ public class GenerateExternalAnnotationsMetadata {
             Copyright (C) JetBrains s.r.o.
             https://www.jetbrains.com/idea/
             """;
+
+    private static final String[] LAYER_DIRECTORIES = new String[] {
+        "java", "annotations", "external"
+    };
 }

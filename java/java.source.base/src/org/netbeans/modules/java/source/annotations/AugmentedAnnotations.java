@@ -70,6 +70,7 @@ import javax.lang.model.util.Elements;
 import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.java.source.ClasspathInfo.PathKind;
 import org.netbeans.api.java.source.CompilationInfo;
+import org.netbeans.api.java.source.CompilationInfo.CacheClearPolicy;
 import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectUtils;
@@ -97,13 +98,11 @@ public class AugmentedAnnotations {
     private static final Map<FileObject, Reference<ParsedAnnotationsXML>> userAnnotations2DOMCache = new WeakHashMap<>();
 
     public static List<? extends AnnotationMirror> getAugmentedAnnotationMirrors(CompilationInfo info, Element e) {
-        FileObject root = binaryRootFor(info, e);
+        ParsedAnnotationsXML parsedAnnotations = findParsedAnnotations(info, e);
 
-        if (root == null) return e.getAnnotationMirrors();
-
-        ParsedAnnotationsXML parsedAnnotations = findParsedAnnotations(info, root, e);
-
-        if (parsedAnnotations == null) return e.getAnnotationMirrors();
+        if (parsedAnnotations == null || parsedAnnotations.encodedElement2DOMElement.isEmpty()) {
+            return e.getAnnotationMirrors();
+        }
 
         String serializedElement = serialize(e);
         org.w3c.dom.Element externalAnnotation = parsedAnnotations.encodedElement2DOMElement.get(serializedElement);
@@ -290,7 +289,7 @@ public class AugmentedAnnotations {
         }
     }
 
-    private static @CheckForNull ParsedAnnotationsXML findParsedAnnotations(CompilationInfo info, FileObject binaryRoot, Element e) {
+    private static @CheckForNull ParsedAnnotationsXML findParsedAnnotations(CompilationInfo info, Element e) {
         String packageName = info.getElements().getPackageOf(e).getQualifiedName().toString();
 
         FileObject data = FileUtil.getConfigFile("java/annotations/external/" + packageName.replace('.', '/') + "/annotations.xml");
@@ -309,6 +308,12 @@ public class AugmentedAnnotations {
             }
 
             return cachedDOM;
+        }
+
+        FileObject binaryRoot = binaryRootFor(info, e);
+
+        if (binaryRoot == null) {
+            return null;
         }
 
         return findAugmentElementAnnotationsRoot(info, binaryRoot);
@@ -448,32 +453,43 @@ public class AugmentedAnnotations {
     }
 
     private static FileObject binaryRootFor(CompilationInfo info, Element forElement) {
+        //TODO: maybe getFileObjectOf:
         TypeElement topLevel = info.getElementUtilities().outermostTypeElement(forElement);
 
         if (topLevel == null) {
             return null;
         }
 
-        String fqn = topLevel.getQualifiedName().toString().replace('.', '/');
-        FileObject found = info.getClasspathInfo().getClassPath(PathKind.BOOT).findResource(fqn + ".class");
+        record RootHolder(FileObject root) {}
 
-        if (found != null) {
-            return info.getClasspathInfo().getClassPath(PathKind.BOOT).findOwnerRoot(found);
+        Map<TypeElement, RootHolder> binaryRootCache = (Map<TypeElement, RootHolder>) info.getCachedValue(AugmentedAnnotations.class);
+
+        if (binaryRootCache == null) {
+            info.putCachedValue(AugmentedAnnotations.class, binaryRootCache = new HashMap<>(), CacheClearPolicy.ON_SIGNATURE_CHANGE);
         }
 
-        found = info.getClasspathInfo().getClassPath(PathKind.COMPILE).findResource(fqn + ".class");
+        return binaryRootCache.computeIfAbsent(topLevel, te -> {
+            String fqn = topLevel.getQualifiedName().toString().replace('.', '/');
+            FileObject found = info.getClasspathInfo().getClassPath(PathKind.BOOT).findResource(fqn + ".class");
 
-        if (found != null) {
-            return info.getClasspathInfo().getClassPath(PathKind.COMPILE).findOwnerRoot(found);
-        }
+            if (found != null) {
+                return new RootHolder(info.getClasspathInfo().getClassPath(PathKind.BOOT).findOwnerRoot(found));
+            }
 
-        found = info.getClasspathInfo().getClassPath(PathKind.SOURCE).findResource(fqn + ".java");
+            found = info.getClasspathInfo().getClassPath(PathKind.COMPILE).findResource(fqn + ".class");
 
-        if (found != null) {
-            return info.getClasspathInfo().getClassPath(PathKind.SOURCE).findOwnerRoot(found);
-        }
+            if (found != null) {
+                return new RootHolder(info.getClasspathInfo().getClassPath(PathKind.COMPILE).findOwnerRoot(found));
+            }
 
-        return null;
+            found = info.getClasspathInfo().getClassPath(PathKind.SOURCE).findResource(fqn + ".java");
+
+            if (found != null) {
+                return new RootHolder(info.getClasspathInfo().getClassPath(PathKind.SOURCE).findOwnerRoot(found));
+            }
+
+            return new RootHolder(null);
+        }).root();
     }
 
     private static DeclaredType declaredTypeForName(CompilationInfo info, String fqn) {
