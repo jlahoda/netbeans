@@ -27,15 +27,17 @@ import com.sun.source.tree.StatementTree;
 import com.sun.source.tree.Tree.Kind;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.SourcePositions;
+import com.sun.source.util.Trees;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
+import java.lang.ref.WeakReference;
+import java.net.MalformedURLException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -44,6 +46,7 @@ import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.logging.Level;
@@ -67,6 +70,7 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVisitor;
 import javax.lang.model.util.Elements;
+import javax.tools.JavaFileObject;
 import org.netbeans.api.annotations.common.CheckForNull;
 import org.netbeans.api.java.source.ClasspathInfo.PathKind;
 import org.netbeans.api.java.source.CompilationInfo;
@@ -76,8 +80,9 @@ import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectUtils;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
+import org.openide.filesystems.URLMapper;
 import org.openide.modules.Places;
-import org.openide.util.Exceptions;
+import org.openide.util.*;
 import org.openide.xml.XMLUtil;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -87,7 +92,7 @@ import org.xml.sax.SAXException;
 
 public class AugmentedAnnotations {
 
-    private static final Logger LOG = Logger.getLogger(AugmentedAnnotations.class.getName());
+    private static final Logger LOG = Logger.getLogger(AugmentedAnnotations.class.getName()); //-J-Dorg.netbeans.modules.java.source.annotations.AugmentedAnnotations.level=0
     public static final String NS = "http://www.netbeans.org/ns/external-annotations-java/1";
 
     private static byte[] augmentedAnnotationsOverride = null;
@@ -453,7 +458,6 @@ public class AugmentedAnnotations {
     }
 
     private static FileObject binaryRootFor(CompilationInfo info, Element forElement) {
-        //TODO: maybe getFileObjectOf:
         TypeElement topLevel = info.getElementUtilities().outermostTypeElement(forElement);
 
         if (topLevel == null) {
@@ -469,26 +473,51 @@ public class AugmentedAnnotations {
         }
 
         return binaryRootCache.computeIfAbsent(topLevel, te -> {
-            String fqn = topLevel.getQualifiedName().toString().replace('.', '/');
-            FileObject found = info.getClasspathInfo().getClassPath(PathKind.BOOT).findResource(fqn + ".class");
+            long s = System.nanoTime();
+            try {
+                JavaFileObject origin = info.getElements().getFileObjectOf(topLevel);
 
-            if (found != null) {
-                return new RootHolder(info.getClasspathInfo().getClassPath(PathKind.BOOT).findOwnerRoot(found));
+                if (origin == null) {
+                    return null;
+                }
+
+                FileObject originFO;
+
+                try {
+                    originFO = URLMapper.findFileObject(origin.toUri().toURL());
+                } catch (MalformedURLException ex) {
+                    LOG.log(Level.FINE, null, ex);
+                    return null;
+                }
+
+                if (originFO == null) {
+                    return null;
+                }
+
+                while (topLevel.getEnclosingElement() != null && topLevel.getEnclosingElement().getKind() == ElementKind.PACKAGE && originFO != null) {
+                    originFO = originFO.getParent();
+                }
+                return new RootHolder(originFO);
+            } finally {
+                if (LOG.isLoggable(Level.FINE)) {
+                    Trees trees = info.getTrees();
+                    long time = System.nanoTime() - s;
+                    synchronized (rootComputationCummulativePerJavac) {
+                        WeakJavacReference found = null;
+
+                        for (WeakJavacReference ref : rootComputationCummulativePerJavac) {
+                            if (ref.get() == trees) {
+                                found = ref;
+                            }
+                        }
+                        if (found == null) {
+                            rootComputationCummulativePerJavac.add(found = new WeakJavacReference(trees));
+                        }
+
+                        found.cummulativeTime += time;
+                    }
+                }
             }
-
-            found = info.getClasspathInfo().getClassPath(PathKind.COMPILE).findResource(fqn + ".class");
-
-            if (found != null) {
-                return new RootHolder(info.getClasspathInfo().getClassPath(PathKind.COMPILE).findOwnerRoot(found));
-            }
-
-            found = info.getClasspathInfo().getClassPath(PathKind.SOURCE).findResource(fqn + ".java");
-
-            if (found != null) {
-                return new RootHolder(info.getClasspathInfo().getClassPath(PathKind.SOURCE).findOwnerRoot(found));
-            }
-
-            return new RootHolder(null);
         }).root();
     }
 
@@ -782,21 +811,29 @@ public class AugmentedAnnotations {
 
     }
 
-    private static final class Pair<A, B> {
-        private final A a;
-        private final B b;
-        private Pair(A a, B b) {
-            this.a = a;
-            this.b = b;
+    //statistics:
+    private static final Set<WeakJavacReference> rootComputationCummulativePerJavac = Collections.newSetFromMap(new IdentityHashMap<>());
+
+    private static final class WeakJavacReference extends WeakReference<Trees> implements Runnable {
+
+        private long cummulativeTime;
+
+        public WeakJavacReference(Trees trees) {
+            super(trees, Utilities.activeReferenceQueue());
         }
-        public static <A, B> Pair<A, B> of(A a, B b) {
-            return new Pair<A, B>(a, b);
+
+        @Override
+        public void run() {
+            long timeToReport;
+
+            synchronized (rootComputationCummulativePerJavac) {
+                timeToReport = cummulativeTime;
+                rootComputationCummulativePerJavac.remove(this);
+            }
+
+            LOG.log(Level.FINE, "Cummulative time spend searching for binary roots for javac instance: {0}ms", timeToReport / 1000 / 1000.);
         }
-        public A first() {
-            return a;
-        }
-        public B second() {
-            return b;
-        }
+
     }
+
 }
