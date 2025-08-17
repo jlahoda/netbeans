@@ -460,7 +460,7 @@ public class AugmentedAnnotations {
     private static FileObject binaryRootFor(CompilationInfo info, Element forElement) {
         TypeElement topLevel = info.getElementUtilities().outermostTypeElement(forElement);
 
-        if (topLevel == null) {
+        if (topLevel == null || topLevel.asType().getKind() == TypeKind.ERROR) {
             return null;
         }
 
