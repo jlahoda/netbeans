@@ -36,21 +36,23 @@ import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.netbeans.modules.lsp.client.LSPBindings;
-import org.netbeans.modules.lsp.client.LSPBindings.BackgroundTask;
+import org.netbeans.modules.lsp.client.LSPBindings.SimpleBackgroundTask;
 import org.netbeans.modules.lsp.client.Utils;
 import org.openide.filesystems.FileObject;
 import org.openide.nodes.AbstractNode;
 import org.openide.nodes.Children;
 import org.openide.nodes.Node;
-import org.openide.util.Pair;
 
 /**
  *
  * @author lahvac
  */
-public class NavigatorPanelImpl extends AbstractNavigatorPanel<Pair<LSPBindings, Either<SymbolInformation, DocumentSymbol>>> implements BackgroundTask {
+public class NavigatorPanelImpl extends AbstractNavigatorPanel<Either<SymbolInformation, DocumentSymbol>> implements SimpleBackgroundTask {
+
+    private final LSPBindings bindings;
 
     public NavigatorPanelImpl(LSPBindings bindings) {
+        this.bindings = bindings;
         setDisplayName(bindings);
     }
 
@@ -65,13 +67,13 @@ public class NavigatorPanelImpl extends AbstractNavigatorPanel<Pair<LSPBindings,
     }
 
     @Override
-    public void run(LSPBindings bindings, FileObject file) {
+    public void run(FileObject file) {
         if (isCurrentFile(file)) {
             setDisplayName(bindings);
 
             try {
                 String uri = Utils.toURI(file);
-                List<Pair<LSPBindings, Either<SymbolInformation, DocumentSymbol>>> symbols = bindings.getTextDocumentService().documentSymbol(new DocumentSymbolParams(new TextDocumentIdentifier(uri))).get().stream().map(e -> Pair.of(bindings, e)).collect(Collectors.toList());
+                List<Either<SymbolInformation, DocumentSymbol>> symbols = bindings.getTextDocumentService().documentSymbol(new DocumentSymbolParams(new TextDocumentIdentifier(uri))).get().stream().collect(Collectors.toList());
 
                 setKeys(symbols);
                 expandAll();
@@ -88,15 +90,23 @@ public class NavigatorPanelImpl extends AbstractNavigatorPanel<Pair<LSPBindings,
     }
 
     @Override
-    protected Node[] createNodes(FileObject currentFile, Pair<LSPBindings, Either<SymbolInformation, DocumentSymbol>> sym) {
-        return new Node[] {new NodeImpl(sym.first(), Utils.toURI(currentFile), sym.second())};
+    protected Node[] createNodes(FileObject currentFile, Either<SymbolInformation, DocumentSymbol> sym) {
+        return new Node[] {new NodeImpl(bindings, Utils.toURI(currentFile), sym)};
     }
 
     private void setDisplayName(LSPBindings bindings) {
         InitializeResult initResult = bindings.getInitResult();
         ServerCapabilities capa = initResult.getCapabilities();
         Either<Boolean, DocumentSymbolOptions> symbolProvider = capa != null ? capa.getDocumentSymbolProvider() : null;
-        String displayName = symbolProvider != null && symbolProvider.isRight() ? symbolProvider.getRight().getLabel() : null;
+        String displayName;
+
+        if (symbolProvider != null && symbolProvider.isRight()) {
+            displayName = symbolProvider.getRight().getLabel();
+        } else if (initResult.getServerInfo() != null) {
+            displayName = initResult.getServerInfo().getName();
+        } else {
+            displayName = null;
+        }
 
         setDisplayName(displayName);
     }
