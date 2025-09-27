@@ -195,7 +195,7 @@ public class LSPBindings {
     }
 
     @SuppressWarnings("AccessingNonPublicFieldOfAnotherObject")
-    public static synchronized List<LSPBindings> getBindingsImpl(Project prj, FileObject file, String mimeType) {
+    public static synchronized @NonNull List<LSPBindings> getBindingsImpl(Project prj, FileObject file, String mimeType) {
         FileObject dir;
 
         if (prj == null) {
@@ -205,7 +205,7 @@ public class LSPBindings {
                 dirFile.getName().startsWith("vcs-") &&
                 dirFile.getAbsolutePath().startsWith(System.getProperty("java.io.tmpdir"))) {
                 //diff dir, don't start servers:
-                return null;
+                return List.of();
             }
         } else {
             dir = prj.getProjectDirectory();
@@ -238,7 +238,7 @@ public class LSPBindings {
     }
 
     @SuppressWarnings({"AccessingNonPublicFieldOfAnotherObject", "ResultOfObjectAllocationIgnored"})
-    private static List<LSPBindings> buildBindings(Project prj, String mt, FileObject dir, URI baseUri) {
+    private static @NonNull List<LSPBindings> buildBindings(Project prj, String mt, FileObject dir, URI baseUri) {
         MimeTypeInfo mimeTypeInfo = new MimeTypeInfo(mt);
         List<LSPBindings> servers = new ArrayList<>();
         Map<LanguageServerProvider, ServerDescription> provider2Description =
