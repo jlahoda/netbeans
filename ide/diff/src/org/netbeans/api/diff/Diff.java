@@ -24,6 +24,8 @@ import java.beans.PropertyChangeListener;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Collection;
+import org.netbeans.modules.diff.DiffAction;
+import org.openide.filesystems.FileObject;
 
 import org.openide.util.Lookup;
 
@@ -113,5 +115,9 @@ public abstract class Diff extends Object {
             public void removePropertyChangeListener(PropertyChangeListener l) {}
     
         };
+    }
+
+    public static void showDiff(FileObject fo1, FileObject fo2, FileObject type) {
+        DiffAction.performAction(fo1, fo2, type);
     }
 }

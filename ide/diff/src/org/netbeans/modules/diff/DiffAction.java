@@ -201,7 +201,7 @@ public class DiffAction extends NodeAction {
      * This is expected not to be called in AWT thread.
      * @param type Use the type of that FileObject to load both files.
      */
-    static void performAction(FileObject fo1, FileObject fo2, FileObject type) {
+    public static void performAction(FileObject fo1, FileObject fo2, FileObject type) {
         //System.out.println("performAction("+fo1+", "+fo2+")");
         //doDiff(fo1, fo2);
         Diff diff = Diff.getDefault();
