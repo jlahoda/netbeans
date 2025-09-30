@@ -166,4 +166,12 @@ public interface NbCodeLanguageClient extends LanguageClient {
     @JsonRequest("output/reset")
     public CompletableFuture<Void> resetOutput(String outputName);
     
+    /**
+     * TODO
+     * @param params the page to show
+     */
+    @JsonRequest("window/executeCommand")
+    public default CompletableFuture<Void> executeCommand(@NonNull ExecuteCommandParams params) {
+        throw new UnsupportedOperationException();
+    }
 }

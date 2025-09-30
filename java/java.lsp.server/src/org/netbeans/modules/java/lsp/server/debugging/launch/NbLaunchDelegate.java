@@ -60,6 +60,8 @@ import org.netbeans.api.extexecution.ExecutionDescriptor;
 import org.netbeans.api.extexecution.ExecutionService;
 import org.netbeans.api.java.classpath.ClassPath;
 import org.netbeans.api.java.queries.UnitTestForSourceQuery;
+import org.netbeans.api.lsp.Command;
+import org.netbeans.api.lsp.CommandRunner;
 import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectUtils;
@@ -78,6 +80,8 @@ import org.netbeans.modules.nativeimage.api.debug.StartDebugParameters;
 import org.netbeans.spi.project.ActionProgress;
 import org.netbeans.spi.project.ActionProvider;
 import org.netbeans.api.project.ContainedProjectFilter;
+import org.netbeans.modules.java.lsp.server.protocol.ExecuteCommandParams;
+import org.netbeans.modules.java.lsp.server.protocol.NbCodeLanguageClient;
 import org.netbeans.spi.project.NestedClass;
 import org.netbeans.spi.project.ProjectConfiguration;
 import org.netbeans.spi.project.ProjectConfigurationProvider;
@@ -247,6 +251,18 @@ public abstract class NbLaunchDelegate {
                     runContext.add(selectConfiguration);
                 }
 
+                LanguageClient client = context.getLspSession().getLookup().lookup(LanguageClient.class);
+
+                if (client instanceof NbCodeLanguageClient) {
+                    NbCodeLanguageClient nbClient = (NbCodeLanguageClient) client;
+                    runContext.add(new CommandRunner() {
+                        @Override
+                        public void runCommand(Command cmd) {
+                            nbClient.executeCommand(new ExecuteCommandParams(cmd.getCommand(), cmd.getArguments()));
+                        }
+                    });
+                }
+
                 Lookup lookup = new ProxyLookup(
                     createTargetLookup(prj, singleMethod, nestedClass, toRun, projectFilter),
                     Lookups.fixed(runContext.toArray(new Object[runContext.size()]))
@@ -284,7 +300,6 @@ public abstract class NbLaunchDelegate {
                             msg = supportive == null ?
                                  Bundle.ERR_UnsupportedLaunch() : Bundle.ERR_UnsupportedLaunchConfig(selectConfiguration.getDisplayName(), recommended);
                         }
-                        LanguageClient client = context.getLspSession().getLookup().lookup(LanguageClient.class);
                         if (client != null) {
                             client.showMessage(new MessageParams(MessageType.Warning, msg));
                             // first complete the future

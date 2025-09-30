@@ -1390,6 +1390,12 @@ public final class Server {
             logWarning("Reset output: " + outputName); //NOI18N
             return CompletableFuture.completedFuture(null);
         }
+
+        @Override
+        public CompletableFuture<Void> executeCommand(ExecuteCommandParams params) {
+            logWarning("executeCommand: " + params); //NOI18N
+            return CompletableFuture.completedFuture(null);
+        }
     };
 
 

@@ -243,5 +243,10 @@ class NbCodeClientWrapper implements NbCodeLanguageClient {
     public CompletableFuture<Void> resetOutput(String outputName) {
         return remote.resetOutput(outputName);
     }
-    
+
+    @Override
+    public CompletableFuture<Void> executeCommand(ExecuteCommandParams params) {
+        return remote.executeCommand(params);
+    }
+
 }
