@@ -18,19 +18,36 @@
  */
 package org.netbeans.modules.javascript2.debug.impl;
 
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.net.URI;
 import org.netbeans.api.debugger.Breakpoint;
 import org.netbeans.modules.javascript2.debug.breakpoints.JSLineBreakpoint;
-import org.netbeans.modules.lsp.client.debugger.spi.BreakpointConvertor;
-import org.openide.util.lookup.ServiceProvider;
+import org.openide.util.Lookup;
 
-@ServiceProvider(service=BreakpointConvertor.class)
-public class BreakpointConvertorImpl implements BreakpointConvertor {
+public class BreakpointConvertorImpl {
 
-    @Override
-    public void convert(Breakpoint b, ConvertedBreakpointConsumer breakpointConsumer) {
-        if (b instanceof JSLineBreakpoint jsBreak) {
-            breakpointConsumer.lineBreakpoint(jsBreak.getFileObject().toURI(), jsBreak.getLineNumber(), jsBreak.getCondition());
-        }
+    public static Object create() throws ClassNotFoundException {
+        ClassLoader cl = Lookup.getDefault().lookup(ClassLoader.class);
+        Class<?> convertorSPI = cl.loadClass("org.netbeans.modules.lsp.client.debugger.spi.BreakpointConvertor");
+        return Proxy.newProxyInstance(cl, new Class<?>[] {convertorSPI}, new InvocationHandler() {
+            @Override
+            public Object invoke(Object o, Method method, Object[] os) throws Throwable {
+                return switch (method.getName()) {
+                    case "convert" -> {
+                        Breakpoint b = (Breakpoint) os[0];
+                        if (b instanceof JSLineBreakpoint jsBreak) {
+                            Class<?> consumerClass = method.getParameterTypes()[1];
+                            Method lineBreakpointMethod = consumerClass.getDeclaredMethod("lineBreakpoint", URI.class, int.class, String.class);
+                            lineBreakpointMethod.invoke(os[1], jsBreak.getFileObject().toURI(), jsBreak.getLineNumber(), jsBreak.getCondition());
+                        }
+                        yield null;
+                    }
+                    default -> throw new UnsupportedOperationException();
+                };
+            }
+        });
     }
-    
+
 }
