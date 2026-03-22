@@ -32,6 +32,9 @@ import javax.swing.SwingUtilities;
 import org.netbeans.api.project.Project;
 import org.netbeans.spi.project.ActionProgress;
 import org.netbeans.spi.project.ActionProvider;
+import org.netbeans.spi.project.ProjectConfiguration;
+import org.netbeans.spi.project.ProjectConfigurationProvider;
+import org.netbeans.spi.project.ProjectContainerProvider;
 import org.netbeans.spi.project.ui.support.ProjectActionPerformer;
 import org.openide.awt.Actions;
 import org.openide.awt.DynamicMenuContent;
@@ -159,7 +162,7 @@ public class ProjectAction extends LookupSensitiveAction implements ContextAware
         Mutex.EVENT.writeAccess(new Runnable() {
             @Override public void run() {
                 final AtomicBoolean started = new AtomicBoolean();
-                ap.invokeAction(command, Lookups.singleton(new ActionProgress() {
+                ActionProgress progress = new ActionProgress() {
                     @Override protected void started() {
                         started.set(true);
                     }
@@ -170,7 +173,11 @@ public class ProjectAction extends LookupSensitiveAction implements ContextAware
                             a.resultChanged(null);
                         }
                     }
-                }));
+                };
+
+                Lookup context = ActionsUtil.augmentLookupIfNeeded(p, command, Lookups.fixed(progress));
+                
+                ap.invokeAction(command, context);
                 if (started.get()) {
                     a.setEnabled(false);
                 } else if (!queue.isEmpty()) {

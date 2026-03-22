@@ -182,7 +182,11 @@ public final class DAPDebugger implements IDebugProtocolClient {
                 });
             });
         }
-        return CompletableFuture.allOf(connection, initialized);
+        CompletableFuture<Void> failureHandled = connection.exceptionally(exc -> {
+            terminated(null);
+            return null;
+        });
+        return CompletableFuture.allOf(failureHandled, initialized);
     }
 
     @Override
@@ -502,7 +506,7 @@ public final class DAPDebugger implements IDebugProtocolClient {
         cs.removeChangeListener(l);
     }
 
-    public static void startDebugger(DAPConfiguration config, Type type) throws Exception {
+    public static CompletableFuture<Void> startDebugger(DAPConfiguration config, Type type) throws Exception {
         SessionProvider sessionProvider = new SessionProvider () {
             @Override
             public String getSessionName () {
@@ -535,6 +539,7 @@ public final class DAPDebugger implements IDebugProtocolClient {
             startDebugging (di);
         DAPDebugger debugger = es[0].lookupFirst(null, DAPDebugger.class);
         debugger.connect(config, type);
+        return debugger.getTerminated();
     }
 
     //non-standard extension of vscode-js-debug:

@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import org.netbeans.modules.lsp.client.debugger.DAPConfigurationAccessor;
 import org.netbeans.modules.lsp.client.debugger.DAPDebugger;
 import org.netbeans.modules.lsp.client.debugger.DAPDebugger.Type;
@@ -99,6 +100,19 @@ public class DAPConfiguration {
             DAPDebugger.startDebugger(this, Type.ATTACH);
         } catch (Exception ex) {
             Exceptions.printStackTrace(ex);
+        }
+    }
+
+    /**
+     * Attach to an already running DAP server/debuggee, based on the configuration up to
+     * this point.
+     */
+    public CompletableFuture<Void> attachWaitable() {
+        try {
+            return DAPDebugger.startDebugger(this, Type.ATTACH);
+        } catch (Exception ex) {
+            Exceptions.printStackTrace(ex);
+            return CompletableFuture.completedFuture(null);
         }
     }
 

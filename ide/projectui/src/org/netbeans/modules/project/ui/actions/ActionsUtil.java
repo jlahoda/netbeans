@@ -34,10 +34,14 @@ import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.api.project.Project;
 import org.netbeans.spi.project.ActionProvider;
 import org.netbeans.api.project.ProjectUtils;
+import org.netbeans.spi.project.ProjectConfiguration;
+import org.netbeans.spi.project.ProjectConfigurationProvider;
 import org.openide.filesystems.FileObject;
 import org.openide.loaders.DataObject;
 import org.openide.util.Lookup;
 import org.openide.util.Pair;
+import org.openide.util.lookup.Lookups;
+import org.openide.util.lookup.ProxyLookup;
 
 /** Nice utility methods to be used in ProjectBased Actions
  * 
@@ -156,7 +160,7 @@ class ActionsUtil {
             List<String> commands = Arrays.asList(ap.getSupportedActions());
             if ( commands.contains( command ) ) {
                 try {
-                if (context == null || ap.isActionEnabled(command, context)) {
+                if (context == null || ap.isActionEnabled(command, augmentLookupIfNeeded(project, command, context))) {
                     //System.err.println("cS: true project=" + project + " command=" + command + " context=" + context);
                     return true;
                 }
@@ -169,7 +173,16 @@ class ActionsUtil {
         return false;
     }
     
-    
+    public static Lookup augmentLookupIfNeeded(Project p, String command, Lookup baseLookup) {
+        ProjectConfigurationProvider pcp = p.getLookup().lookup(ProjectConfigurationProvider.class);
+        ProjectConfiguration activeConfiguration = pcp != null ? pcp.getActiveConfiguration() : null;
+
+        if (activeConfiguration != null && pcp.configurationsAffectAction(command)) {
+            return new ProxyLookup(baseLookup, Lookups.fixed(activeConfiguration));
+        } else {
+            return baseLookup;
+        }
+    }
     
     public static String formatProjectSensitiveName( String namePattern, Project projects[] ) {
      
