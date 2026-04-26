@@ -806,6 +806,21 @@ public class NPECheckTest extends NbTestCase {
                 .assertWarnings();
     }
     
+    public void test222871NewClass() throws Exception {
+        HintTest.create()
+                .input("package test;\n" +
+                       "public class Test {\n" +
+                       "    private void t(@CheckForNull String onSuccess, @CheckForNull Integer onError) {\n" +
+                       "        new Test(onSuccess != null || onError != null);\n" +
+                       "        new Test(onSuccess == null || onError == null);\n" +
+                       "    }\n" +
+                       "    public Test(boolean b) {}\n" +
+                       "    @interface CheckForNull {}\n" +
+                       "}")
+                .run(NPECheck.class)
+                .assertWarnings();
+    }
+
     public void testWhileInitializeWithField() throws Exception {
         HintTest.create()
                 .input("package test;\n" +
@@ -1676,6 +1691,19 @@ public class NPECheckTest extends NbTestCase {
                 .assertWarnings("4:41-4:50:verifier:ERR_NotNull");
     }
     
+    public void testNETBEANS407a2() throws Exception {
+        HintTest.create()
+                .input("package test;\n" +
+                       "public class Test {\n" +
+                       "  public void test(Object o) {\n" +
+                       "    boolean b1 = o instanceof Integer;\n" +
+                       "    System.out.println(o.toString());\n" +
+                       "  }\n" +
+                       "}")
+                .run(NPECheck.class)
+                .assertWarnings();
+    }
+
     public void testNETBEANS407b() throws Exception {
         HintTest.create()
                 .input("package test;\n" +
@@ -1968,6 +1996,41 @@ public class NPECheckTest extends NbTestCase {
                        """)
                 .run(NPECheck.class)
                 .assertWarnings("9:12-9:21:verifier:ERR_NotNull");
+    }
+
+    public void testCompoundString() throws Exception {
+        HintTest.create()
+                .sourceLevel("21")
+                .input("""
+                       package test;
+                       public class Test {
+                           private void test(@NullAllowed String str) {
+                               str += "";
+                               str.length();
+                           }
+                       }
+                       @interface NullAllowed {}
+                       """)
+                .run(NPECheck.class)
+                .assertWarnings();
+    }
+
+    public void testCompoundInteger() throws Exception {
+        HintTest.create()
+                .sourceLevel("21")
+                .input("""
+                       package test;
+                       public class Test {
+                           private void test(@NullAllowed Integer i) {
+                               i += 0;
+                               if (i != null) {}
+                           }
+                       }
+                       @interface NullAllowed {}
+                       """)
+                .run(NPECheck.class)
+                .assertWarnings("3:8-3:9:verifier:ERR_UnboxingPotentialNullValue",
+                                "4:12-4:21:verifier:ERR_NotNullWouldBeNPE");
     }
 
     private void performAnalysisTest(String fileName, String code, String... golden) throws Exception {
