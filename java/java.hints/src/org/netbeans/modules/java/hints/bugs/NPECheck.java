@@ -53,7 +53,6 @@ import org.netbeans.api.java.source.support.CancellableTreeScanner;
 import org.netbeans.spi.editor.hints.ErrorDescription;
 import org.openide.util.NbBundle;
 
-import static org.netbeans.modules.java.hints.bugs.NPECheck.State.*;
 import org.netbeans.modules.java.hints.errors.Utilities;
 import org.netbeans.spi.java.hints.*;
 import org.netbeans.spi.java.hints.Hint.Options;
@@ -89,18 +88,18 @@ public class NPECheck {
         }
         
         TreePath expr = ctx.getVariables().get("$expr");
-        State r = computeExpressionsState(ctx).get(expr.getLeaf());
+        StateEnum r = computeExpressionsState(ctx).get(expr.getLeaf());
 
         State elementState = getStateFromAnnotations(ctx.getInfo(), e);
 
         if (elementState != null && elementState.isNotNull()) {
             String key = null;
 
-            if (r == NULL) {
+            if (r == StateEnum.NULL) {
                 key = "ERR_AssigningNullToNotNull";
             }
 
-            if (r == POSSIBLE_NULL_REPORT || r == POSSIBLE_NULL_REPORT_WEAK) {
+            if (r == StateEnum.POSSIBLE_NULL_REPORT || r == StateEnum.POSSIBLE_NULL_REPORT_WEAK) {
                 key = "ERR_PossibleAssigingNullToNotNull";
             }
 
@@ -131,7 +130,7 @@ public class NPECheck {
         TreePath var = ctx.getVariables().get("$var");
 
         if (isPrimitiveWrapperType(e.asType())) {
-            State r = computeExpressionsState(ctx).get(var.getLeaf());
+            StateEnum r = computeExpressionsState(ctx).get(var.getLeaf());
             String key = switch (r) {
                 case null -> null;
                 case NULL -> "ERR_UnboxingNullValue"; // NOI18N
@@ -228,11 +227,11 @@ public class NPECheck {
         }
         assert npPath != null;
 
-        Map<Tree, State> expressionsState = computeExpressionsState(ctx);
-        State s = expressionsState.get(npPath.getLeaf());
+        Map<Tree, StateEnum> expressionsState = computeExpressionsState(ctx);
+        StateEnum s = expressionsState.get(npPath.getLeaf());
         String k;
         
-        if (s == null || s == POSSIBLE_NULL) {
+        if (s == null || s == StateEnum.POSSIBLE_NULL) {
             boolean report = ctx.getPreferences().getBoolean(KEY_UNBOXING_UNKNOWN_VALUES, DEF_UNBOXING_UNKNOWN_VALUES);
             if (!report) {
                 return null;
@@ -295,14 +294,14 @@ public class NPECheck {
             return null;
         }
 
-        State r = computeExpressionsState(ctx).get(select.getLeaf());
-        if (r == NULL) {
+        StateEnum r = computeExpressionsState(ctx).get(select.getLeaf());
+        if (r == StateEnum.NULL) {
             String displayName = NbBundle.getMessage(NPECheck.class, "ERR_DereferencingNull");
             
             return ErrorDescriptionFactory.forName(ctx, ctx.getPath(), displayName);
         }
 
-        if (r == State.POSSIBLE_NULL_REPORT || r == State.POSSIBLE_NULL_REPORT_WEAK) {
+        if (r == StateEnum.POSSIBLE_NULL_REPORT || r == StateEnum.POSSIBLE_NULL_REPORT_WEAK) {
             String displayName = NbBundle.getMessage(NPECheck.class, "ERR_PossiblyDereferencingNull");
             
             return ErrorDescriptionFactory.forName(ctx, ctx.getPath(), displayName);
@@ -316,14 +315,14 @@ public class NPECheck {
         if (colExpr == null) {
             return null;
         }
-        State r =  computeExpressionsState(ctx).get(colExpr.getLeaf());
-        if (r == NULL) {
+        StateEnum r =  computeExpressionsState(ctx).get(colExpr.getLeaf());
+        if (r == StateEnum.NULL) {
             String displayName = NbBundle.getMessage(NPECheck.class, "ERR_DereferencingNull");
             
             return ErrorDescriptionFactory.forName(ctx, ctx.getPath(), displayName);
         }
 
-        if (r == State.POSSIBLE_NULL_REPORT || r == State.POSSIBLE_NULL_REPORT_WEAK) {
+        if (r == StateEnum.POSSIBLE_NULL_REPORT || r == StateEnum.POSSIBLE_NULL_REPORT_WEAK) {
             String displayName = NbBundle.getMessage(NPECheck.class, "ERR_PossiblyDereferencingNull");
             
             return ErrorDescriptionFactory.forName(ctx, ctx.getPath(), displayName);
@@ -334,15 +333,15 @@ public class NPECheck {
     @TriggerPattern("$select.$variable")
     public static ErrorDescription memberSelect(HintContext ctx) {
         TreePath select = ctx.getVariables().get("$select");
-        State r = computeExpressionsState(ctx).get(select.getLeaf());
+        StateEnum r = computeExpressionsState(ctx).get(select.getLeaf());
         
-        if (r == NULL) {
+        if (r == StateEnum.NULL) {
             String displayName = NbBundle.getMessage(NPECheck.class, "ERR_DereferencingNull");
             
             return ErrorDescriptionFactory.forName(ctx, ctx.getPath(), displayName);
         }
 
-        if (r == State.POSSIBLE_NULL_REPORT || r == State.POSSIBLE_NULL_REPORT_WEAK) {
+        if (r == StateEnum.POSSIBLE_NULL_REPORT || r == StateEnum.POSSIBLE_NULL_REPORT_WEAK) {
             String displayName = NbBundle.getMessage(NPECheck.class, "ERR_PossiblyDereferencingNull");
             
             return ErrorDescriptionFactory.forName(ctx, ctx.getPath(), displayName);
@@ -357,7 +356,7 @@ public class NPECheck {
      * 
      */
     public static boolean isSafeToDereference(CompilationInfo info, TreePath path) {
-        State r = computeExpressionsState(info, null).get(path.getLeaf());
+        StateEnum r = computeExpressionsState(info, null).get(path.getLeaf());
         // copied from warning issued on redundant != null.
         return r != null && r.isNotNull();
     }
@@ -365,12 +364,12 @@ public class NPECheck {
     @TriggerTreeKind(Kind.METHOD_INVOCATION)
     public static List<ErrorDescription> methodInvocation(HintContext ctx) {
         MethodInvocationTree mit = (MethodInvocationTree) ctx.getPath().getLeaf();
-        List<State> paramStates = new ArrayList<>(mit.getArguments().size());
-        Map<Tree, State> expressionsState = computeExpressionsState(ctx);
+        List<StateEnum> paramStates = new ArrayList<>(mit.getArguments().size());
+        Map<Tree, StateEnum> expressionsState = computeExpressionsState(ctx);
 
         for (Tree param : mit.getArguments()) {
-            State r = expressionsState.get(param);
-            paramStates.add(r != null ? r : State.POSSIBLE_NULL);
+            StateEnum r = expressionsState.get(param);
+            paramStates.add(r != null ? r : StateEnum.POSSIBLE_NULL);
         }
 
         Element e = ctx.getInfo().getTrees().getElement(ctx.getPath());
@@ -385,7 +384,7 @@ public class NPECheck {
         List<? extends VariableElement> params = ee.getParameters();
 
         for (VariableElement param : params) {
-            if (getStateFromAnnotations(ctx.getInfo(), param) == NOT_NULL && (!ee.isVarArgs() || param != params.get(params.size() - 1))) {
+            if (getStateFromAnnotations(ctx.getInfo(), param).thisTypeState == StateEnum.NOT_NULL && (!ee.isVarArgs() || param != params.get(params.size() - 1))) {
                 switch (paramStates.get(index)) {
                     case NULL:
                         result.add(ErrorDescriptionFactory.forTree(ctx, mit.getArguments().get(index), NbBundle.getMessage(NPECheck.class, "ERR_NULL_TO_NON_NULL_ARG")));
@@ -407,10 +406,10 @@ public class NPECheck {
     })
     public static ErrorDescription notNullTest(HintContext ctx) {
         TreePath variable = ctx.getVariables().get("$variable");
-        State r = computeExpressionsState(ctx).get(variable.getLeaf());
+        StateEnum r = computeExpressionsState(ctx).get(variable.getLeaf());
         
         if (r != null && r.isNotNull() && !ignore(ctx, false)) {
-            String displayName = NbBundle.getMessage(NPECheck.class, r == State.NOT_NULL_BE_NPE ? "ERR_NotNullWouldBeNPE" : "ERR_NotNull");
+            String displayName = NbBundle.getMessage(NPECheck.class, r == StateEnum.NOT_NULL_BE_NPE ? "ERR_NotNullWouldBeNPE" : "ERR_NotNull");
             
             return ErrorDescriptionFactory.forName(ctx, ctx.getPath(), displayName);
         }
@@ -424,10 +423,10 @@ public class NPECheck {
     })
     public static ErrorDescription nullTest(HintContext ctx) {
         TreePath variable = ctx.getVariables().get("$variable");
-        State r = computeExpressionsState(ctx).get(variable.getLeaf());
+        StateEnum r = computeExpressionsState(ctx).get(variable.getLeaf());
         
         if (r != null && r.isNotNull() && !ignore(ctx, true)) {
-            String displayName = NbBundle.getMessage(NPECheck.class, r == State.NOT_NULL_BE_NPE ? "ERR_NotNullWouldBeNPE" : "ERR_NotNull");
+            String displayName = NbBundle.getMessage(NPECheck.class, r == StateEnum.NOT_NULL_BE_NPE ? "ERR_NotNullWouldBeNPE" : "ERR_NotNull");
             
             return ErrorDescriptionFactory.forName(ctx, ctx.getPath(), displayName);
         }
@@ -488,7 +487,7 @@ public class NPECheck {
     @TriggerPattern("return $expression;")
     public static ErrorDescription returnNull(HintContext ctx) {
         TreePath expression = ctx.getVariables().get("$expression");
-        State returnState = computeExpressionsState(ctx).get(expression.getLeaf());
+        StateEnum returnState = computeExpressionsState(ctx).get(expression.getLeaf());
 
         if (returnState == null) return null;
 
@@ -534,8 +533,8 @@ public class NPECheck {
     private static final Object KEY_EXPRESSION_STATE = new Object();
     private static final Object KEY_CONDITIONAL_PARAMETER = new Object();
     
-    private static Map<Tree, State> computeExpressionsState(CompilationInfo info, HintContext ctx) {
-        Map<Tree, State> result = (Map<Tree, State>) info.getCachedValue(KEY_EXPRESSION_STATE);
+    private static Map<Tree, StateEnum> computeExpressionsState(CompilationInfo info, HintContext ctx) {
+        Map<Tree, StateEnum> result = (Map<Tree, StateEnum>) info.getCachedValue(KEY_EXPRESSION_STATE);
         
         if (result != null) {
             return result;
@@ -550,8 +549,8 @@ public class NPECheck {
         return result;
     }
     //Cancelling:
-    private static Map<Tree, State> computeExpressionsState(HintContext ctx) {
-        Map<Tree, State> result = (Map<Tree, State>) ctx.getInfo().getCachedValue(KEY_EXPRESSION_STATE);
+    private static Map<Tree, StateEnum> computeExpressionsState(HintContext ctx) {
+        Map<Tree, StateEnum> result = (Map<Tree, StateEnum>) ctx.getInfo().getCachedValue(KEY_EXPRESSION_STATE);
         
         if (result != null) {
             return result;
@@ -566,14 +565,12 @@ public class NPECheck {
         return result;
     }
     
-    private static State getStateFromAnnotations(CompilationInfo info, Element e) {
-        return getStateFromAnnotations(info, e, State.POSSIBLE_NULL);
-    }
-
     private static final AnnotationMirrorGetter OVERRIDE_ANNOTATIONS = Lookup.getDefault().lookup(AnnotationMirrorGetter.class);
-    
-    private static State getStateFromAnnotations(CompilationInfo info, Element e, State def) {
-        if (e == null) return def;
+
+    private static State getStateFromAnnotations(CompilationInfo info, Element e) {
+        StateEnum def = StateEnum.POSSIBLE_NULL;
+
+        if (e == null) return new State(def);
         
         Iterable<? extends AnnotationMirror> mirrors = OVERRIDE_ANNOTATIONS != null ? OVERRIDE_ANNOTATIONS.getAnnotationMirrors(info, e) : null;
         
@@ -583,19 +580,19 @@ public class NPECheck {
             String simpleName = ((TypeElement) am.getAnnotationType().asElement()).getSimpleName().toString();
 
             if ("Nullable".equals(simpleName) || "NullAllowed".equals(simpleName)) {
-                return State.POSSIBLE_NULL_REPORT;
+                return new State(StateEnum.POSSIBLE_NULL_REPORT);
             }
 
             if ("CheckForNull".equals(simpleName)) {
-                return State.POSSIBLE_NULL_REPORT;
+                return new State(StateEnum.POSSIBLE_NULL_REPORT);
             }
 
             if ("NotNull".equals(simpleName) || "NonNull".equals(simpleName) || "Nonnull".equals(simpleName)) {
-                return State.NOT_NULL;
+                return new State(StateEnum.NOT_NULL);
             }
         }
 
-        return def;
+        return new State(def);
     }
     
     public interface AnnotationMirrorGetter {
@@ -619,7 +616,7 @@ public class NPECheck {
         private final Map<Tree, Collection<Map<VariableElement, State>>> resumeBefore = new IdentityHashMap<>();
         private final Map<Tree, Collection<Map<VariableElement, State>>> resumeAfter = new IdentityHashMap<>();
         private       Map<TypeMirror, Map<VariableElement, State>> resumeOnExceptionHandler = new IdentityHashMap<>();
-        private final Map<Tree, State> expressionState = new IdentityHashMap<>();
+        private final Map<Tree, StateEnum> expressionState = new IdentityHashMap<>(); //the null state of the top-level type of the expression
         private final List<TreePath> pendingFinally = new LinkedList<>();
         private       List<State> pendingYields = new ArrayList<>();
         private final TypeElement throwableEl;
@@ -710,12 +707,12 @@ public class NPECheck {
             TypeMirror currentType = tree != null ? info.getTrees().getTypeMirror(new TreePath(getCurrentPath(), tree)) : null;
             
             if ((tree != null && tree.getKind() == Kind.LAMBDA_EXPRESSION) || (currentType != null && currentType.getKind().isPrimitive())) {
-                r = State.NOT_NULL;
+                r = new State(StateEnum.NOT_NULL);
             }
             
             if (r != null) {
 //                expressionState.put(tree, r);
-                expressionState.put(tree, mergeIn(expressionState, tree, r));
+                expressionState.put(tree, mergeIn(expressionState, tree, r.thisTypeState));
             }
             
             resume(tree, resumeAfter);
@@ -767,10 +764,10 @@ public class NPECheck {
                 VariableElement var = (VariableElement) e;
 
                 if ("java.lang.String".equals(e.asType().toString())) {
-                    variable2State.put(var, NOT_NULL);
+                    variable2State.put(var, new State(StateEnum.NOT_NULL));
                 } else if (isPrimitiveWrapperType(e.asType())) {
-                    if (!hasDefiniteValue(var)) {
-                        variable2State.put(var, NOT_NULL_BE_NPE);
+                    if (!isDefinitellyNotNull(var)) {
+                        variable2State.put(var, new State(StateEnum.NOT_NULL_BE_NPE));
                     }
                 }
         }
@@ -797,7 +794,7 @@ public class NPECheck {
             
             if (e != null) {
                 if (e.getKind() == ElementKind.EXCEPTION_PARAMETER) {
-                    r = NOT_NULL;
+                    r = new State(StateEnum.NOT_NULL);
                 }
                 variable2State.put((VariableElement) e, r);
                 TreePath pp = getCurrentPath().getParentPath();
@@ -814,7 +811,7 @@ public class NPECheck {
             State expr = scan(node.getExpression(), p);
             boolean wasNPE = false;
             
-            if (expr == State.NULL || expr == State.POSSIBLE_NULL || expr == State.POSSIBLE_NULL_REPORT || expr == POSSIBLE_NULL_REPORT_WEAK) {
+            if (expr != null && (!expr.isNotNull())) {
                 wasNPE = true;
             }
             
@@ -822,15 +819,15 @@ public class NPECheck {
             
             if (isVariableElement(site) && wasNPE) {
                 if (variable2State != null) {
-                    if (!hasDefiniteValue(variable2State, (VariableElement) site)) {
-                        variable2State.put((VariableElement) site, NOT_NULL_BE_NPE);
+                    if (!isDefinitellyNotNull(variable2State, (VariableElement) site)) {
+                        setThisState(variable2State, (VariableElement) site, StateEnum.NOT_NULL_BE_NPE);
                     }
                 } else {
-                    if (!hasDefiniteValue(variable2StateWhenTrue, (VariableElement) site)) {
-                        variable2StateWhenTrue.put((VariableElement) site, NOT_NULL_BE_NPE);
+                    if (!isDefinitellyNotNull(variable2StateWhenTrue, (VariableElement) site)) {
+                        setThisState(variable2StateWhenTrue, (VariableElement) site, StateEnum.NOT_NULL_BE_NPE);
                     }
-                    if (!hasDefiniteValue(variable2StateWhenFalse, (VariableElement) site)) {
-                        variable2StateWhenFalse.put((VariableElement) site, NOT_NULL_BE_NPE);
+                    if (!isDefinitellyNotNull(variable2StateWhenFalse, (VariableElement) site)) {
+                        setThisState(variable2StateWhenFalse, (VariableElement) site, StateEnum.NOT_NULL_BE_NPE);
                     }
                 }
             }
@@ -838,7 +835,7 @@ public class NPECheck {
             if (site != null && site.getKind() == ElementKind.ENUM) {
                 Element enumConst = info.getTrees().getElement(getCurrentPath());
                 if (enumConst != null && enumConst.getKind() == ElementKind.ENUM_CONSTANT) {
-                    return State.NOT_NULL;
+                    return new State(StateEnum.NOT_NULL);
                 }
             }
             
@@ -848,9 +845,9 @@ public class NPECheck {
         @Override
         public State visitLiteral(LiteralTree node, Void p) {
             if (node.getValue() == null) {
-                return State.NULL;
+                return new State(StateEnum.NULL);
             } else {
-                return State.NOT_NULL;
+                return new State(StateEnum.NOT_NULL);
             }
         }
 
@@ -929,26 +926,26 @@ public class NPECheck {
             }
             
             if (kind == Kind.EQUAL_TO) {
-                if (right == State.NULL) {
+                if (right != null && right.thisTypeState == StateEnum.NULL) {
                     Element e = info.getTrees().getElement(new TreePath(getCurrentPath(), node.getLeftOperand()));
                     
-                    if (isVariableElement(e) && !hasDefiniteValue((VariableElement) e)) {
+                    if (isVariableElement(e) && !isDefinitellyNotNull((VariableElement) e)) {
                         ensureStateSplit();
 
-                        variable2StateWhenTrue.put((VariableElement) e, State.NULL);
-                        variable2StateWhenFalse.put((VariableElement) e, State.NOT_NULL);
+                        setThisState(variable2StateWhenTrue, (VariableElement) e, StateEnum.NULL);
+                        setThisState(variable2StateWhenFalse, (VariableElement) e, StateEnum.NOT_NULL);
                         
                         return null;
                     }
                 }
-                if (left == State.NULL) {
+                if (left != null && left.thisTypeState == StateEnum.NULL) {
                     Element e = info.getTrees().getElement(new TreePath(getCurrentPath(), node.getRightOperand()));
                     
-                    if (isVariableElement(e) && !hasDefiniteValue((VariableElement) e)) {
+                    if (isVariableElement(e) && !isDefinitellyNotNull((VariableElement) e)) {
                         ensureStateSplit();
 
-                        variable2StateWhenTrue.put((VariableElement) e, State.NULL);
-                        variable2StateWhenFalse.put((VariableElement) e, State.NOT_NULL);
+                        setThisState(variable2StateWhenTrue, (VariableElement) e, StateEnum.NULL);
+                        setThisState(variable2StateWhenFalse, (VariableElement) e, StateEnum.NOT_NULL);
                         
                         return null;
                     }
@@ -956,26 +953,26 @@ public class NPECheck {
             }
             
             if (kind == Kind.NOT_EQUAL_TO) {
-                if (right == State.NULL) {
+                if (right != null && right.thisTypeState == StateEnum.NULL) {
                     Element e = info.getTrees().getElement(new TreePath(getCurrentPath(), node.getLeftOperand()));
                     
-                    if (isVariableElement(e) && !hasDefiniteValue((VariableElement) e)) {
+                    if (isVariableElement(e) && !isDefinitellyNotNull((VariableElement) e)) {
                         ensureStateSplit();
 
-                        variable2StateWhenTrue.put((VariableElement) e, State.NOT_NULL);
-                        variable2StateWhenFalse.put((VariableElement) e, State.NULL);
+                        setThisState(variable2StateWhenTrue, (VariableElement) e, StateEnum.NOT_NULL);
+                        setThisState(variable2StateWhenFalse, (VariableElement) e, StateEnum.NULL);
                         
                         return null;
                     }
                 }
-                if (left == State.NULL) {
+                if (left != null && left.thisTypeState == StateEnum.NULL) {
                     Element e = info.getTrees().getElement(new TreePath(getCurrentPath(), node.getRightOperand()));
                     
-                    if (isVariableElement(e) && !hasDefiniteValue((VariableElement) e)) {
+                    if (isVariableElement(e) && !isDefinitellyNotNull((VariableElement) e)) {
                         ensureStateSplit();
 
-                        variable2StateWhenTrue.put((VariableElement) e, State.NOT_NULL);
-                        variable2StateWhenFalse.put((VariableElement) e, State.NULL);
+                        setThisState(variable2StateWhenTrue, (VariableElement) e, StateEnum.NOT_NULL);
+                        setThisState(variable2StateWhenFalse, (VariableElement) e, StateEnum.NULL);
                         
                         return null;
                     }
@@ -1002,8 +999,8 @@ public class NPECheck {
                 if (setState) {
                     ensureStateSplit();
 
-                    variable2StateWhenTrue.put((VariableElement) e, NOT_NULL);
-                    variable2StateWhenFalse.put((VariableElement) e, POSSIBLE_NULL_REPORT_WEAK);
+                    setThisState(variable2StateWhenTrue, (VariableElement) e, StateEnum.NOT_NULL);
+                    setThisState(variable2StateWhenFalse, (VariableElement) e, StateEnum.POSSIBLE_NULL_REPORT_WEAK);
                 }
             }
             
@@ -1053,7 +1050,7 @@ public class NPECheck {
                 recordResumeOnExceptionHandler((ExecutableElement) invoked);
             }
             
-            return State.NOT_NULL;
+            return new State(StateEnum.NOT_NULL);
         }
 
         @Override
@@ -1069,7 +1066,7 @@ public class NPECheck {
             Element e = info.getTrees().getElement(getCurrentPath());
             
             if (e == null || e.getKind() != ElementKind.METHOD) {
-                return State.POSSIBLE_NULL;
+                return new State(StateEnum.POSSIBLE_NULL);
             } else {
                 recordResumeOnExceptionHandler((ExecutableElement) e);
                 visitAssertMethods(node, e);
@@ -1093,7 +1090,7 @@ public class NPECheck {
                 case "toHexString":case "toOctalString": case "toBinaryString": // NOI18N
                 case "valueOf":// NOI18N
                 case "decode":// NOI18N
-                    return NOT_NULL;
+                    return new State(StateEnum.NOT_NULL);
                     
                 case "getLong": // NOI18N
                 case "getShort": // NOI18N
@@ -1112,9 +1109,9 @@ public class NPECheck {
                         return null;
                     }
                     if (m.getKind().isPrimitive()) {
-                        return NOT_NULL;
+                        return new State(StateEnum.NOT_NULL);
                     } else if (NPECheck.isSafeToDereference(ctx.getInfo(), parPath)) {
-                        return NOT_NULL;
+                        return new State(StateEnum.NOT_NULL);
                     } else {
                         return null;
                     }
@@ -1128,14 +1125,14 @@ public class NPECheck {
             if (!node.getArguments().isEmpty()) {
                 String ownerFQN = ((TypeElement) e.getEnclosingElement()).getQualifiedName().toString();
                 Tree argument = null;
-                State targetState = null;
+                StateEnum targetState = null;
 
                 switch (e.getSimpleName().toString()) {
                     case "assertNotNull":
                     case "requireNonNull":
                     case "requireNonNullElse":
-                    case "requireNonNullElseGet": targetState = State.NOT_NULL; break;
-                    case "assertNull": targetState = State.NULL; break;
+                    case "requireNonNullElseGet": targetState = StateEnum.NOT_NULL; break;
+                    case "assertNull": targetState = StateEnum.NULL; break;
                 }
 
                 switch (ownerFQN) {
@@ -1149,7 +1146,7 @@ public class NPECheck {
                 Element param = argument != null && targetState != null ? info.getTrees().getElement(new TreePath(getCurrentPath(), argument)) : null;
 
                 if (param != null && isVariableElement(param)) {
-                    variable2State.put((VariableElement) param, targetState);
+                    setThisState(variable2State, (VariableElement) param, targetState);
                 }
             }
         }
@@ -1161,11 +1158,11 @@ public class NPECheck {
             Element e = info.getTrees().getElement(getCurrentPath());
 
             if (e == null || !isVariableElement(e)) {
-                return State.POSSIBLE_NULL;
+                return new State(StateEnum.POSSIBLE_NULL);
             }
             if (e.getKind() == ElementKind.ENUM_CONSTANT) {
                 // enum constants are never null
-                return State.NOT_NULL;
+                return new State(StateEnum.NOT_NULL);
             }
 
             if (variable2State != null) {
@@ -1325,7 +1322,7 @@ public class NPECheck {
         @Override
         public State visitArrayAccess(ArrayAccessTree node, Void p) {
             super.visitArrayAccess(node, p);
-            return State.POSSIBLE_NULL;
+            return new State(StateEnum.POSSIBLE_NULL);
         }
 
         @Override
@@ -1342,7 +1339,7 @@ public class NPECheck {
                 handleGeneralizedSwitch(node, node.getExpression(), node.getCases());
                 if (pendingYields.isEmpty()) {
                     //should not happen (for valid source)
-                    return State.POSSIBLE_NULL;
+                    return new State(StateEnum.POSSIBLE_NULL);
                 }
                 State result = pendingYields.get(0);
                 for (State s : pendingYields.subList(1, pendingYields.size())) {
@@ -1359,7 +1356,7 @@ public class NPECheck {
 
             Element selectorElement = info.getTrees().getElement(new TreePath(getCurrentPath(), expression));
             VariableElement selectorVariable =
-                isVariableElement(selectorElement) && !hasDefiniteValue((VariableElement) selectorElement) ? (VariableElement) selectorElement
+                isVariableElement(selectorElement) && !isDefinitellyNotNull((VariableElement) selectorElement) ? (VariableElement) selectorElement
                                                                                                            : null;
 
             Map<VariableElement, State> origVariable2State = new HashMap<>(variable2State);
@@ -1383,7 +1380,7 @@ public class NPECheck {
                 }
 
                 if (selectorVariable != null) {
-                    variable2State.put(selectorVariable, hasNull ? State.NULL : State.NOT_NULL);
+                    setThisState(variable2State, selectorVariable, hasNull ? StateEnum.NULL : StateEnum.NOT_NULL);
                 }
 
                 State caseResult = scan(ct, null);
@@ -1629,15 +1626,31 @@ public class NPECheck {
             }
         }
         
-        private State mergeIn(Map m, Object k, State nue) {
+        private State mergeIn(Map<VariableElement, State> m, VariableElement k, State nue) {
             if (m.containsKey(k)) {
-                State prev = (State)m.get(k);
-                return State.collect(nue, prev);
+                return State.collect(nue, m.get(k));
             } else {
                 return nue;
             }
         }
         
+        private StateEnum mergeIn(Map<Tree, StateEnum> m, Tree k, StateEnum nue) {
+            if (m.containsKey(k)) {
+                return StateEnum.collect(nue, m.get(k));
+            } else {
+                return nue;
+            }
+        }
+
+        private void setThisState(Map<VariableElement, State> target, VariableElement forElement, StateEnum newThisState) {
+            State existing = target.get(forElement);
+            if (existing != null) {
+                target.put(forElement, existing.setThisState(newThisState));
+            } else {
+                target.put(forElement, new State(newThisState));
+            }
+        }
+
         private void mergeSplitVariable2State() {
             if (variable2State != null) {
                 return ;
@@ -1677,12 +1690,12 @@ public class NPECheck {
             return result;
         }
 
-        private boolean hasDefiniteValue(VariableElement el) {
-            return variable2State != null ? hasDefiniteValue(variable2State, el)
-                                          : hasDefiniteValue(variable2StateWhenTrue, el) && hasDefiniteValue(variable2StateWhenFalse, el);
+        private boolean isDefinitellyNotNull(VariableElement el) {
+            return variable2State != null ? isDefinitellyNotNull(variable2State, el)
+                                          : isDefinitellyNotNull(variable2StateWhenTrue, el) && isDefinitellyNotNull(variable2StateWhenFalse, el);
         }
 
-        private boolean hasDefiniteValue(Map<VariableElement, State> in, VariableElement el) {
+        private boolean isDefinitellyNotNull(Map<VariableElement, State> in, VariableElement el) {
             State s = in.get(el);
 
             return s != null && s.isNotNull();
@@ -1693,8 +1706,30 @@ public class NPECheck {
         }
         
     }
-    
-    static enum State {
+
+    static class State {
+
+        public static State collect(State s1, State s2) {
+            return new State(StateEnum.collect(s1 != null ? s1.thisTypeState : StateEnum.POSSIBLE_NULL,
+                                               s2 != null ? s2.thisTypeState : StateEnum.POSSIBLE_NULL));
+        }
+
+        private final StateEnum thisTypeState;
+
+        public State(StateEnum thisTypeState) {
+            this.thisTypeState = thisTypeState;
+        }
+
+        public boolean isNotNull() {
+            return thisTypeState.isNotNull();
+        }
+
+        public State setThisState(StateEnum newThisState) {
+            return new State(newThisState);
+        }
+    }
+
+    static enum StateEnum {
         NULL,
         POSSIBLE_NULL,
         POSSIBLE_NULL_REPORT,
@@ -1702,7 +1737,7 @@ public class NPECheck {
         NOT_NULL,
         NOT_NULL_BE_NPE;
         
-        public @CheckForNull State reverse() {
+        public @CheckForNull StateEnum reverse() {
             switch (this) {
                 case NULL:
                     return NOT_NULL;
@@ -1725,7 +1760,7 @@ public class NPECheck {
             return this == POSSIBLE_NULL_REPORT || this == POSSIBLE_NULL_REPORT_WEAK;
         }
 
-        public static State collect(State s1, State s2) {
+        public static StateEnum collect(StateEnum s1, StateEnum s2) {
             if (s1 == s2) return s1;
             if (s1 == NULL || s2 == NULL) return POSSIBLE_NULL_REPORT;
             if (s1 == POSSIBLE_NULL_REPORT || s2 == POSSIBLE_NULL_REPORT) return POSSIBLE_NULL_REPORT;
