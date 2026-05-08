@@ -2033,6 +2033,56 @@ public class NPECheckTest extends NbTestCase {
                                 "4:12-4:21:verifier:ERR_NotNullWouldBeNPE");
     }
 
+    public void testTypeAnnotations1() throws Exception {
+        HintTest.create()
+                .sourceLevel("21")
+                .input("""
+                       package test;
+                       import java.lang.annotation.*;
+                       public class Test {
+                           private void test(Box<@NullAllowed String> boxOfString) {
+                               boxOfString.get().toString();
+                           }
+                       }
+                       class Box<T> {
+                           private final T t;
+                           public Box(T t) { this.t = t; }
+                           public T get() { return t; }
+                       }
+                       @Target(ElementType.TYPE_USE)
+                       @interface NullAllowed {}
+                       """)
+                .run(NPECheck.class)
+                .assertWarnings("4:26-4:34:verifier:Possibly Dereferencing null");
+    }
+
+    public void testTypeAnnotations2() throws Exception {
+        HintTest.create()
+                .sourceLevel("21")
+                .input("""
+                       package test;
+                       import java.lang.annotation.*;
+                       import java.util.*;
+                       public class Test {
+                           private void test(Box<@NotNull List<@NullAllowed String>> boxOfStrings) {
+                               boxOfStrings.get().get(1).toString();
+                           }
+                       }
+                       class Box<T> {
+                           private final T t;
+                           public Box(T t) { this.t = t; }
+                           public @NullAllowed T get() { return t; }
+                       }
+                       @Target(ElementType.TYPE_USE)
+                       @interface NullAllowed {}
+                       @Target(ElementType.TYPE_USE)
+                       @interface NotNull {}
+                       """)
+                .run(NPECheck.class)
+                .assertWarnings("5:27-5:30:verifier:Possibly Dereferencing null",
+                                "5:34-5:42:verifier:Possibly Dereferencing null");
+    }
+
     private void performAnalysisTest(String fileName, String code, String... golden) throws Exception {
         HintTest.create()
                 .input(fileName, code)

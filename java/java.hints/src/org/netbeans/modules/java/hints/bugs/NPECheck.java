@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -44,6 +45,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
@@ -571,30 +573,74 @@ public class NPECheck {
         StateEnum def = StateEnum.POSSIBLE_NULL;
 
         if (e == null) return new State(def);
-        
+
         Iterable<? extends AnnotationMirror> mirrors = OVERRIDE_ANNOTATIONS != null ? OVERRIDE_ANNOTATIONS.getAnnotationMirrors(info, e) : null;
-        
+
         if (mirrors == null) mirrors = e.getAnnotationMirrors();
-        
+
+        StateEnum fromDeclaration = getStateFromAnnotations(mirrors, def);
+
+        if (e.getKind().isVariable()) {
+            //XXX:
+            //- should include with OVERRIDE_ANNOTATIONS?
+            //- adjust default(!)
+            State result = getStateFromAnnotations(info, e.asType(), def);
+            if (fromDeclaration != StateEnum.POSSIBLE_NULL) {
+                //TODO: correct?
+                result = result.setThisState(fromDeclaration);
+            }
+            return result;
+        }
+
+        return new State(fromDeclaration);
+    }
+
+    private static State getStateFromAnnotations(CompilationInfo info, TypeMirror type, StateEnum fallbackState) {
+        return getStateFromAnnotations(info, type, ta -> null, fallbackState);
+    }
+
+    private static State getStateFromAnnotations(CompilationInfo info, TypeMirror type, Function<TypeMirror, State> type2StateMapper, StateEnum fallbackState) {
+        State state = type2StateMapper.apply(type);
+
+        if (state != null) {
+            //TODO: should presumably merge with other aspects?
+            return state;
+        }
+
+        StateEnum thisTypeState = getStateFromAnnotations(type.getAnnotationMirrors(), fallbackState);
+        List<State> typeParameters = null;
+
+        if (type.getKind() == TypeKind.DECLARED) {
+            DeclaredType dt = (DeclaredType) type;
+
+            typeParameters = dt.getTypeArguments()
+                               .stream()
+                               .map(ta -> getStateFromAnnotations(info, ta, type2StateMapper, fallbackState))
+                               .toList();
+        }
+
+        return new State(thisTypeState, typeParameters);
+    }
+
+    private static StateEnum getStateFromAnnotations(Iterable<? extends AnnotationMirror> mirrors, StateEnum fallbackState) {
         for (AnnotationMirror am : mirrors) {
             String simpleName = ((TypeElement) am.getAnnotationType().asElement()).getSimpleName().toString();
 
             if ("Nullable".equals(simpleName) || "NullAllowed".equals(simpleName)) {
-                return new State(StateEnum.POSSIBLE_NULL_REPORT);
+                return StateEnum.POSSIBLE_NULL_REPORT;
             }
 
             if ("CheckForNull".equals(simpleName)) {
-                return new State(StateEnum.POSSIBLE_NULL_REPORT);
+                return StateEnum.POSSIBLE_NULL_REPORT;
             }
 
             if ("NotNull".equals(simpleName) || "NonNull".equals(simpleName) || "Nonnull".equals(simpleName)) {
-                return new State(StateEnum.NOT_NULL);
+                return StateEnum.NOT_NULL;
             }
         }
-
-        return new State(def);
+        return fallbackState;
     }
-    
+
     public interface AnnotationMirrorGetter {
         public Iterable<? extends AnnotationMirror> getAnnotationMirrors(CompilationInfo info, Element el);
     }
@@ -808,15 +854,33 @@ public class NPECheck {
 
         @Override
         public State visitMemberSelect(MemberSelectTree node, Void p) {
-            State expr = scan(node.getExpression(), p);
-            boolean wasNPE = false;
-            
-            if (expr != null && (!expr.isNotNull())) {
-                wasNPE = true;
+            State derefedState = scan(node.getExpression(), p);
+            TreePath derefed = new TreePath(getCurrentPath(), node.getExpression());
+
+            handleDereference(derefedState, derefed);
+
+            Element site = info.getTrees().getElement(derefed);
+
+            // special case: if the memberSelect selects enum field = constant, it is never null.
+            if (site != null && site.getKind() == ElementKind.ENUM) {
+                Element enumConst = info.getTrees().getElement(getCurrentPath());
+                if (enumConst != null && enumConst.getKind() == ElementKind.ENUM_CONSTANT) {
+                    return new State(StateEnum.NOT_NULL);
+                }
             }
             
-            Element site = info.getTrees().getElement(new TreePath(getCurrentPath(), node.getExpression()));
-            
+            return getStateFromAnnotations(info, info.getTrees().getElement(getCurrentPath()));
+        }
+
+        private void handleDereference(State derefState, TreePath derefed) {
+            boolean wasNPE = false;
+
+            if (derefState != null && !derefState.isNotNull()) {
+                wasNPE = true;
+            }
+
+            Element site = info.getTrees().getElement(derefed);
+
             if (isVariableElement(site) && wasNPE) {
                 if (variable2State != null) {
                     if (!isDefinitellyNotNull(variable2State, (VariableElement) site)) {
@@ -831,15 +895,6 @@ public class NPECheck {
                     }
                 }
             }
-            // special case: if the memberSelect selects enum field = constant, it is never null.
-            if (site != null && site.getKind() == ElementKind.ENUM) {
-                Element enumConst = info.getTrees().getElement(getCurrentPath());
-                if (enumConst != null && enumConst.getKind() == ElementKind.ENUM_CONSTANT) {
-                    return new State(StateEnum.NOT_NULL);
-                }
-            }
-            
-            return getStateFromAnnotations(info, info.getTrees().getElement(getCurrentPath()));
         }
 
         @Override
@@ -1023,7 +1078,7 @@ public class NPECheck {
             
             State elseSection = scan(node.getFalseExpression(), p);
 
-            State result = State.collect(thenSection, elseSection);
+            State result = State.strictMerge(thenSection, elseSection);
             
             mergeSplitVariable2State();
             mergeIntoVariable2State(variableStatesAfterThen);
@@ -1056,7 +1111,37 @@ public class NPECheck {
         @Override
         public State visitMethodInvocation(MethodInvocationTree node, Void p) {
             scan(node.getTypeArguments(), p);
-            scan(node.getMethodSelect(), p);
+
+            State receiverState;
+            TypeMirror receiverType;
+            ExpressionTree methodSelect = node.getMethodSelect();
+
+            switch (methodSelect.getKind()) {
+                case IDENTIFIER -> {
+                    receiverState = new State(StateEnum.POSSIBLE_NULL); //TODO - should be "this"
+                    receiverType = null; //TODO - should be "this"
+                }
+                case MEMBER_SELECT -> {
+                    TreePath prevPath = this.currentPath;
+                    try {
+                        this.currentPath = new TreePath(getCurrentPath(), methodSelect);
+                        ExpressionTree selected = ((MemberSelectTree) methodSelect).getExpression();
+                        TreePath selectedPath = new TreePath(currentPath, selected);
+
+                        receiverState = scan(selected, p);
+                        handleDereference(receiverState, selectedPath);
+                        receiverType = info.getTrees().getTypeMirror(selectedPath);
+                    } finally {
+                        this.currentPath = prevPath;
+                    }
+                }
+                default -> {
+                    //XXX: should not happend?
+                    receiverState = new State(StateEnum.POSSIBLE_NULL);
+                    receiverType = null;
+                    scan(methodSelect, p);
+                }
+            }
             
             for (Tree param : node.getArguments()) {
                 scan(param, p);
@@ -1073,6 +1158,25 @@ public class NPECheck {
                 State s = visitPrimitiveWrapperMethods(node, e);
                 if (s != null) {
                     return s;
+                }
+                if (receiverType != null) { //ideally should be always true
+                    if (receiverType.getKind() == TypeKind.DECLARED) {
+                        DeclaredType receiver = (DeclaredType) receiverType;
+                        Map<TypeMirror, State> marker2State = new HashMap<>();
+                        List<? extends TypeMirror> ta = receiver.getTypeArguments();
+
+                        if (receiverState.typeParameters != null && ta.size() == receiverState.typeParameters.size()) {
+                            for (int i = 0; i < ta.size(); i++) {
+                                marker2State.put(ta.get(i), receiverState.typeParameters.get(i));
+                            }
+                            TypeMirror instantiatedReturnType = ((ExecutableType) info.getTypes().asMemberOf(receiver, e)).getReturnType();
+                            State instantiatedState = getStateFromAnnotations(info, instantiatedReturnType, marker2State::get, StateEnum.POSSIBLE_NULL);
+                            TypeMirror declaredReturnType = ((ExecutableElement) e).getReturnType();
+                            State declaredState = getStateFromAnnotations(info, declaredReturnType, null);
+
+                            return State.weakMerge(instantiatedState, declaredState);
+                        }
+                    }
                 }
             }
             
@@ -1184,7 +1288,7 @@ public class NPECheck {
                     whenFalse = getStateFromAnnotations(info, e);
                 }
 
-                return State.collect(whenTrue, whenFalse);
+                return State.strictMerge(whenTrue, whenFalse);
             }
             
         }
@@ -1343,7 +1447,7 @@ public class NPECheck {
                 }
                 State result = pendingYields.get(0);
                 for (State s : pendingYields.subList(1, pendingYields.size())) {
-                    result = State.collect(result, s);
+                    result = State.strictMerge(result, s);
                 }
                 return result;
             } finally {
@@ -1628,7 +1732,7 @@ public class NPECheck {
         
         private State mergeIn(Map<VariableElement, State> m, VariableElement k, State nue) {
             if (m.containsKey(k)) {
-                return State.collect(nue, m.get(k));
+                return State.strictMerge(nue, m.get(k));
             } else {
                 return nue;
             }
@@ -1636,7 +1740,7 @@ public class NPECheck {
         
         private StateEnum mergeIn(Map<Tree, StateEnum> m, Tree k, StateEnum nue) {
             if (m.containsKey(k)) {
-                return StateEnum.collect(nue, m.get(k));
+                return StateEnum.strictCollect(nue, m.get(k));
             } else {
                 return nue;
             }
@@ -1661,7 +1765,7 @@ public class NPECheck {
                 State trueState = e.getValue();
                 State falseState = variable2StateWhenFalse.get(e.getKey());
 
-                variable2State.put(e.getKey(), State.collect(trueState, falseState));
+                variable2State.put(e.getKey(), State.strictMerge(trueState, falseState));
             }
 
             variable2StateWhenTrue = null;
@@ -1709,15 +1813,30 @@ public class NPECheck {
 
     static class State {
 
-        public static State collect(State s1, State s2) {
-            return new State(StateEnum.collect(s1 != null ? s1.thisTypeState : StateEnum.POSSIBLE_NULL,
-                                               s2 != null ? s2.thisTypeState : StateEnum.POSSIBLE_NULL));
+        public static State strictMerge(State s1, State s2) {
+            return new State(StateEnum.strictCollect(s1 != null ? s1.thisTypeState : StateEnum.POSSIBLE_NULL,
+                                                     s2 != null ? s2.thisTypeState : StateEnum.POSSIBLE_NULL),
+                             /*XXX: properly merge type parameters!*/
+                             s1 != null ? s1.typeParameters : List.of());
+        }
+
+        public static State weakMerge(State s1, State s2) {
+            return new State(StateEnum.weakCollect(s1 != null ? s1.thisTypeState : null,
+                                                   s2 != null ? s2.thisTypeState : null),
+                             /*XXX: properly merge type parameters!*/
+                             s1 != null ? s1.typeParameters : List.of());
         }
 
         private final StateEnum thisTypeState;
+        private final List<State> typeParameters;
 
         public State(StateEnum thisTypeState) {
+            this(thisTypeState, null);
+        }
+
+        public State(StateEnum thisTypeState, List<State> typeParameters) {
             this.thisTypeState = thisTypeState;
+            this.typeParameters = typeParameters;
         }
 
         public boolean isNotNull() {
@@ -1725,7 +1844,7 @@ public class NPECheck {
         }
 
         public State setThisState(StateEnum newThisState) {
-            return new State(newThisState);
+            return new State(newThisState, typeParameters);
         }
     }
 
@@ -1760,7 +1879,13 @@ public class NPECheck {
             return this == POSSIBLE_NULL_REPORT || this == POSSIBLE_NULL_REPORT_WEAK;
         }
 
-        public static StateEnum collect(StateEnum s1, StateEnum s2) {
+        public static StateEnum weakCollect(StateEnum s1, StateEnum s2) {
+            if (s1 == null) return s2;
+            if (s2 == null) return s1;
+            return strictCollect(s1, s2);
+        }
+
+        public static StateEnum strictCollect(StateEnum s1, StateEnum s2) {
             if (s1 == s2) return s1;
             if (s1 == NULL || s2 == NULL) return POSSIBLE_NULL_REPORT;
             if (s1 == POSSIBLE_NULL_REPORT || s2 == POSSIBLE_NULL_REPORT) return POSSIBLE_NULL_REPORT;
