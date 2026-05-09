@@ -2083,6 +2083,143 @@ public class NPECheckTest extends NbTestCase {
                                 "5:34-5:42:verifier:Possibly Dereferencing null");
     }
 
+    public void testTypeAnnotations3() throws Exception {
+        HintTest.create()
+                .sourceLevel("21")
+                .input("""
+                       package test;
+                       import java.lang.annotation.*;
+                       import java.util.*;
+                       public class Test {
+                           private void test(Box<@NotNull String> boxOfStrings) {
+                               boxOfStrings.get().get(1).toString();
+                           }
+                       }
+                       class Box<T> {
+                           private final T t;
+                           public Box(T t) { this.t = t; }
+                           public List<@NullAllowed T> get() { return null; }
+                       }
+                       @Target(ElementType.TYPE_USE)
+                       @interface NullAllowed {}
+                       @Target(ElementType.TYPE_USE)
+                       @interface NotNull {}
+                       """)
+                .run(NPECheck.class)
+                .assertWarnings("5:34-5:42:verifier:Possibly Dereferencing null");
+    }
+
+    public void testTypeAnnotations4() throws Exception {
+        HintTest.create()
+                .sourceLevel("21")
+                .input("""
+                       package test;
+                       import java.lang.annotation.*;
+                       import java.util.*;
+                       public class Test {
+                           private void test() {
+                               List<String> l = new ArrayList<@NullAllowed String>();
+                               l.get(0).toString();
+                           }
+                       }
+                       @Target(ElementType.TYPE_USE)
+                       @interface NullAllowed {}
+                       """)
+                .run(NPECheck.class)
+                .assertWarnings("6:17-6:25:verifier:Possibly Dereferencing null");
+    }
+
+    public void testTypeAnnotationsRemapping() throws Exception {
+        //needs to properly map types on assign(!!!!)
+        HintTest.create()
+                .sourceLevel("21")
+                .input("""
+                       package test;
+                       import java.lang.annotation.*;
+                       import java.util.*;
+                       public class Test {
+                           private void test() {
+                               I<String, Integer> i = new C<@NotNull Integer, @NullAllowed String>(0, null);
+                               i.a().toString(); //warning
+                               i.b().toString(); //no warning
+                           }
+                       }
+                       interface I<A, B> {
+                           public A a();
+                           public B b();
+                       }
+                       record C<B, A>(B b, A a) implements I<A, B> {}
+                       @Target(ElementType.TYPE_USE)
+                       @interface NullAllowed {}
+                       @Target(ElementType.TYPE_USE)
+                       @interface NotNull {}
+                       """)
+                .run(NPECheck.class)
+                .assertWarnings("6:14-6:22:verifier:Possibly Dereferencing null");
+    }
+
+    //TODO: other types of assignment(!)
+
+    public void testTypeAnnotationsStringMergeTypeParams() throws Exception {
+        HintTest.create()
+                .sourceLevel("21")
+                .input("""
+                       package test;
+                       import java.lang.annotation.*;
+                       import java.util.*;
+                       public class Test {
+                           private void test(boolean b) {
+                               List<String> l;
+                               if (b) {
+                                   l = new ArrayList<@NotNull String>();
+                               } else {
+                                   l = new ArrayList<@NullAllowed String>();
+                               }
+                               l.get(0).toString();
+                           }
+                       }
+                       @Target(ElementType.TYPE_USE)
+                       @interface NullAllowed {}
+                       @Target(ElementType.TYPE_USE)
+                       @interface NotNull {}
+                       """)
+                .run(NPECheck.class)
+                .assertWarnings("11:17-11:25:verifier:Possibly Dereferencing null");
+    }
+
+    public void testTypeAnnotationsStringMergeTypeParamsRemapping() throws Exception {
+        HintTest.create()
+                .sourceLevel("21")
+                .input("""
+                       package test;
+                       import java.lang.annotation.*;
+                       import java.util.*;
+                       public class Test {
+                           private void test(boolean b) {
+                               I<String, Integer> i;
+                               if (b) {
+                                   i = new C<@NotNull Integer, @NullAllowed String>(0, null);
+                               } else {
+                                   i = new C<@NotNull Integer, @NotNull String>(0, "");
+                               }
+                               i.a().toString(); //warning
+                               i.b().toString(); //no warning
+                           }
+                       }
+                       interface I<A, B> {
+                           public A a();
+                           public B b();
+                       }
+                       record C<B, A>(B b, A a) implements I<A, B> {}
+                       @Target(ElementType.TYPE_USE)
+                       @interface NullAllowed {}
+                       @Target(ElementType.TYPE_USE)
+                       @interface NotNull {}
+                       """)
+                .run(NPECheck.class)
+                .assertWarnings("11:14-11:22:verifier:Possibly Dereferencing null");
+    }
+
     private void performAnalysisTest(String fileName, String code, String... golden) throws Exception {
         HintTest.create()
                 .input(fileName, code)

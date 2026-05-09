@@ -38,6 +38,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -789,6 +790,11 @@ public class NPECheck {
 
             scan(node.getVariable(), p);
             
+            TypeMirror variableType = info.getTrees().getTypeMirror(new TreePath(getCurrentPath(), node.getVariable()));
+            TypeMirror expressionType = info.getTrees().getTypeMirror(new TreePath(getCurrentPath(), node.getExpression()));
+
+            r = aliasToTargetType(expressionType, variableType, r);
+
             if (isVariableElement(e)) {
                 variable2State.put((VariableElement) e, r);
             }
@@ -837,7 +843,14 @@ public class NPECheck {
             State r = scan(node.getInitializer(), p);
             
             mergeSplitVariable2State();
-            
+
+            if (node.getInitializer() != null) {
+                TypeMirror targetType = info.getTrees().getTypeMirror(new TreePath(getCurrentPath(), node.getType()));
+                TypeMirror initType = info.getTrees().getTypeMirror(new TreePath(getCurrentPath(), node.getInitializer()));
+
+                r = aliasToTargetType(initType, targetType, r);
+            }
+
             if (e != null) {
                 if (e.getKind() == ElementKind.EXCEPTION_PARAMETER) {
                     r = new State(StateEnum.NOT_NULL);
@@ -848,7 +861,7 @@ public class NPECheck {
                     addScopedVariable(pp.getLeaf(), (VariableElement)e);
                 }
             }
-            
+
             return r;
         }
 
@@ -1089,7 +1102,7 @@ public class NPECheck {
         @Override
         public State visitNewClass(NewClassTree node, Void p) {
             scan(node.getEnclosingExpression(), p);
-            scan(node.getIdentifier(), p);
+            State typeState = scan(node.getIdentifier(), p);
             scan(node.getTypeArguments(), p);
             
             for (Tree param : node.getArguments()) {
@@ -1104,8 +1117,12 @@ public class NPECheck {
             if (invoked != null && invoked.getKind() == ElementKind.CONSTRUCTOR) {
                 recordResumeOnExceptionHandler((ExecutableElement) invoked);
             }
-            
-            return new State(StateEnum.NOT_NULL);
+
+            if (typeState != null) {
+                return typeState.setThisState(StateEnum.NOT_NULL);
+            } else {
+                return new State(StateEnum.NOT_NULL);
+            }
         }
 
         @Override
@@ -1291,6 +1308,24 @@ public class NPECheck {
                 return State.strictMerge(whenTrue, whenFalse);
             }
             
+        }
+
+        @Override
+        public State visitParameterizedType(ParameterizedTypeTree node, Void p) {
+            State baseState = scan(node.getType(), p);
+            List<State> taStates = node.getTypeArguments().stream().map(ta -> scan(ta, p)).toList();
+
+            return new State(baseState.thisTypeState, taStates);
+        }
+
+        @Override
+        public State visitAnnotatedType(AnnotatedTypeTree node, Void p) {
+            super.visitAnnotatedType(node, p);
+
+            //TODO: merge with underlying state?
+            TypeMirror type = info.getTrees().getTypeMirror(getCurrentPath());
+
+            return getStateFromAnnotations(info, type, StateEnum.POSSIBLE_NULL);
         }
 
         @Override
@@ -1808,7 +1843,56 @@ public class NPECheck {
         private boolean isVariableElement(Element ve) {
             return NPECheck.isVariableElement(ctx, ve);
         }
-        
+
+        private State aliasToTargetType(TypeMirror sourceType, TypeMirror targetType, State state) {
+            if (sourceType == null || sourceType.getKind() != TypeKind.DECLARED ||
+                targetType == null || targetType.getKind() != TypeKind.DECLARED) {
+                return state;
+            }
+            DeclaredType source = (DeclaredType) sourceType;
+            DeclaredType target = (DeclaredType) targetType;
+
+            if (state.typeParameters == null || source.getTypeArguments().size() != state.typeParameters.size()) {
+                //anything to reconcile the situation?
+                return state;
+            }
+
+            Map<TypeMirror, State> marker2State = new HashMap<>();
+            List<? extends TypeMirror> ta = source.getTypeArguments();
+
+            for (int i = 0; i < ta.size(); i++) {
+                marker2State.put(ta.get(i), state.typeParameters.get(i));
+            }
+
+            //TODO: is this a reasonable reliable way to do the remapping?
+            TypeMirror remappedTargetType = info.getTypeUtilities().asSuper(source, (TypeElement) target.asElement());
+
+            if (remappedTargetType == null || remappedTargetType.getKind() != TypeKind.DECLARED) {
+                return state;
+            }
+
+            DeclaredType remappedTarget = (DeclaredType) remappedTargetType;
+
+            if (remappedTarget.getTypeArguments().size() != target.getTypeArguments().size()) {
+                return state;
+            }
+
+            List<State> typeParams = new ArrayList<>();
+
+            for (int i = 0; i < remappedTarget.getTypeArguments().size(); i++) {
+                State nested = marker2State.get(remappedTarget.getTypeArguments().get(i));
+
+                if (nested == null) {
+                    nested = new State(StateEnum.POSSIBLE_NULL);
+                } else {
+                    nested = aliasToTargetType(remappedTarget.getTypeArguments().get(i), target.getTypeArguments().get(i), nested);
+                }
+
+                typeParams.add(nested);
+            }
+
+            return new State(state.thisTypeState, typeParams);
+        }
     }
 
     static class State {
@@ -1816,15 +1900,35 @@ public class NPECheck {
         public static State strictMerge(State s1, State s2) {
             return new State(StateEnum.strictCollect(s1 != null ? s1.thisTypeState : StateEnum.POSSIBLE_NULL,
                                                      s2 != null ? s2.thisTypeState : StateEnum.POSSIBLE_NULL),
-                             /*XXX: properly merge type parameters!*/
-                             s1 != null ? s1.typeParameters : List.of());
+                             mergeTypeParams(s1 != null ? s1.typeParameters : null,
+                                             s2 != null ? s2.typeParameters : null,
+                                             true));
         }
 
         public static State weakMerge(State s1, State s2) {
             return new State(StateEnum.weakCollect(s1 != null ? s1.thisTypeState : null,
                                                    s2 != null ? s2.thisTypeState : null),
-                             /*XXX: properly merge type parameters!*/
-                             s1 != null ? s1.typeParameters : List.of());
+                             mergeTypeParams(s1 != null ? s1.typeParameters : null,
+                                             s2 != null ? s2.typeParameters : null,
+                                             false));
+        }
+
+        private static List<State> mergeTypeParams(List<State> typeParams1, List<State> typeParams2, boolean strict) {
+            if (typeParams1 == null) {
+                return typeParams2;
+            } else if (typeParams2 == null) {
+                return typeParams1;
+            } else if (typeParams1.size() == typeParams2.size()) {
+                List<State> typeParams = new ArrayList<>();
+                for (int i = 0; i < typeParams1.size(); i++) {
+                    typeParams.add(strict ? strictMerge(typeParams1.get(i), typeParams2.get(i))
+                                          : weakMerge(typeParams1.get(i), typeParams2.get(i)));
+                }
+                return typeParams;
+            } else {
+                //TODO: anything can be done here?
+                return null;
+            }
         }
 
         private final StateEnum thisTypeState;
@@ -1845,6 +1949,15 @@ public class NPECheck {
 
         public State setThisState(StateEnum newThisState) {
             return new State(newThisState, typeParameters);
+        }
+
+        @Override
+        public String toString() {
+            if (typeParameters != null) {
+                return thisTypeState + "<" + typeParameters.stream().map(Object::toString).collect(Collectors.joining(", ")) + ">";
+            }
+
+            return thisTypeState.toString();
         }
     }
 
