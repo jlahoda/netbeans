@@ -2220,6 +2220,34 @@ public class NPECheckTest extends NbTestCase {
                 .assertWarnings("11:14-11:22:verifier:Possibly Dereferencing null");
     }
 
+    public void testTypeAnnotationsArrays() throws Exception {
+        HintTest.create()
+                .sourceLevel("21")
+                .input("""
+                       package test;
+                       import java.lang.annotation.*;
+                       import java.util.*;
+                       public class Test {
+                           private void test(@NotNull String[] arr1, @NullAllowed String[] arr2) {
+                               if (arr1[0] != null) {
+                                   System.err.println("null!");
+                               }
+                               arr2[0].toString();
+                           }
+                       }
+                       @Target(ElementType.TYPE_USE)
+                       @interface NullAllowed {}
+                       @Target(ElementType.TYPE_USE)
+                       @interface NotNull {}
+                       """)
+                .run(NPECheck.class)
+                .assertWarnings("5:12-5:27:verifier:ERR_NotNull",
+                                "8:16-8:24:verifier:Possibly Dereferencing null");
+    }
+
+    //TODO: check full "assignment" type in hints
+    //TODO: when a declaration has annotations, the state on assign should be sensibly merged to it
+
     private void performAnalysisTest(String fileName, String code, String... golden) throws Exception {
         HintTest.create()
                 .input(fileName, code)

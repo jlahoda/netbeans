@@ -26,11 +26,9 @@ import com.sun.source.util.TreePath;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +43,7 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeKind;
@@ -610,6 +609,7 @@ public class NPECheck {
 
         StateEnum thisTypeState = getStateFromAnnotations(type.getAnnotationMirrors(), fallbackState);
         List<State> typeParameters = null;
+        State arrayComponentState = null;
 
         if (type.getKind() == TypeKind.DECLARED) {
             DeclaredType dt = (DeclaredType) type;
@@ -618,9 +618,13 @@ public class NPECheck {
                                .stream()
                                .map(ta -> getStateFromAnnotations(info, ta, type2StateMapper, fallbackState))
                                .toList();
+        } else if (type.getKind() == TypeKind.ARRAY) {
+            ArrayType at = (ArrayType) type;
+
+            arrayComponentState = getStateFromAnnotations(info, at.getComponentType(), type2StateMapper, fallbackState);
         }
 
-        return new State(thisTypeState, typeParameters);
+        return new State(thisTypeState, typeParameters, arrayComponentState);
     }
 
     private static StateEnum getStateFromAnnotations(Iterable<? extends AnnotationMirror> mirrors, StateEnum fallbackState) {
@@ -849,6 +853,8 @@ public class NPECheck {
                 TypeMirror initType = info.getTrees().getTypeMirror(new TreePath(getCurrentPath(), node.getInitializer()));
 
                 r = aliasToTargetType(initType, targetType, r);
+            } else {
+                r = getStateFromAnnotations(info, e);
             }
 
             if (e != null) {
@@ -1460,8 +1466,11 @@ public class NPECheck {
 
         @Override
         public State visitArrayAccess(ArrayAccessTree node, Void p) {
-            super.visitArrayAccess(node, p);
-            return new State(StateEnum.POSSIBLE_NULL);
+            State exprState = scan(node.getExpression(), p);
+            scan(node.getIndex(), p);
+
+            return exprState != null && exprState.componentTypeState != null ? exprState.componentTypeState
+                                                                     : new State(StateEnum.POSSIBLE_NULL);
         }
 
         @Override
@@ -1902,7 +1911,11 @@ public class NPECheck {
                                                      s2 != null ? s2.thisTypeState : StateEnum.POSSIBLE_NULL),
                              mergeTypeParams(s1 != null ? s1.typeParameters : null,
                                              s2 != null ? s2.typeParameters : null,
-                                             true));
+                                             true),
+                             (s1 != null && s1.componentTypeState != null) ||
+                             (s2 != null && s2.componentTypeState != null) ?
+                             strictMerge(s1 != null ? s1.componentTypeState : null,
+                                         s2 != null ? s2.componentTypeState : null) : null);
         }
 
         public static State weakMerge(State s1, State s2) {
@@ -1910,7 +1923,11 @@ public class NPECheck {
                                                    s2 != null ? s2.thisTypeState : null),
                              mergeTypeParams(s1 != null ? s1.typeParameters : null,
                                              s2 != null ? s2.typeParameters : null,
-                                             false));
+                                             false),
+                             (s1 != null && s1.componentTypeState != null) ||
+                             (s2 != null && s2.componentTypeState != null) ?
+                             weakMerge(s1 != null ? s1.componentTypeState : null,
+                                       s2 != null ? s2.componentTypeState : null) : null);
         }
 
         private static List<State> mergeTypeParams(List<State> typeParams1, List<State> typeParams2, boolean strict) {
@@ -1933,14 +1950,28 @@ public class NPECheck {
 
         private final StateEnum thisTypeState;
         private final List<State> typeParameters;
+        private final State componentTypeState;
 
         public State(StateEnum thisTypeState) {
-            this(thisTypeState, null);
+            this(thisTypeState, null, null);
         }
 
         public State(StateEnum thisTypeState, List<State> typeParameters) {
+            this(thisTypeState, typeParameters, null);
+        }
+
+        public State(StateEnum thisTypeState, State componentTypeState) {
+            this(thisTypeState, null, componentTypeState);
+        }
+
+        private State(StateEnum thisTypeState, List<State> typeParameters, State componentTypeState) {
+            if (typeParameters != null && componentTypeState != null) {
+                throw new IllegalStateException("Cannot have both type parameters and component type set.");
+            }
+
             this.thisTypeState = thisTypeState;
             this.typeParameters = typeParameters;
+            this.componentTypeState = componentTypeState;
         }
 
         public boolean isNotNull() {
@@ -1953,8 +1984,12 @@ public class NPECheck {
 
         @Override
         public String toString() {
-            if (typeParameters != null) {
+            if (typeParameters != null && !typeParameters.isEmpty()) {
                 return thisTypeState + "<" + typeParameters.stream().map(Object::toString).collect(Collectors.joining(", ")) + ">";
+            }
+
+            if (componentTypeState != null) {
+                return thisTypeState + "[" + componentTypeState + "]";
             }
 
             return thisTypeState.toString();
