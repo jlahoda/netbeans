@@ -19,6 +19,8 @@
 
 package org.netbeans.modules.java.hints.bugs;
 
+import java.io.File;
+import java.nio.file.Path;
 import org.netbeans.junit.NbTestCase;
 import org.netbeans.modules.java.hints.test.api.HintTest;
 import org.openide.filesystems.FileUtil;
@@ -2245,7 +2247,103 @@ public class NPECheckTest extends NbTestCase {
                                 "8:16-8:24:verifier:Possibly Dereferencing null");
     }
 
-    //TODO: check full "assignment" type in hints
+    public void testJSpecifyNullMarked() throws Exception {
+        HintTest.create()
+                .sourceLevel("21")
+                .classpath(FileUtil.urlForArchiveOrDir(new File(System.getProperty("hints-jspecify.jar.location"))))
+                .input("""
+                       package test;
+                       import org.jspecify.annotations.NullMarked;
+                       import org.jspecify.annotations.Nullable;
+                       @NullMarked
+                       public class Test {
+                           public String test(@Nullable String s) {
+                               return s;
+                           }
+                       }
+                       """)
+                .run(NPECheck.class)
+                .assertWarnings("6:15-6:16:verifier:ERR_ReturningPossibleNullFromNonNull");
+    }
+
+    public void testJSpecifyUnspecified() throws Exception {
+        HintTest.create()
+                .sourceLevel("21")
+                .classpath(FileUtil.urlForArchiveOrDir(new File(System.getProperty("hints-jspecify.jar.location"))))
+                .input("""
+                       package test;
+                       import org.jspecify.annotations.NullMarked;
+                       import org.jspecify.annotations.Nullable;
+                       import org.jspecify.annotations.NullnessUnspecified;
+                       @NullMarked
+                       public class Test {
+                           public @NullnessUnspecified String test(@Nullable String s) {
+                               return s;
+                           }
+                           public Object test(@NullnessUnspecified Object o) {
+                               if (o instanceof String s) {
+                                   return s;
+                               } else {
+                                   return o; //can't say anything
+                               }
+                           }
+                       }
+                       """)
+                .input("org/jspecify/annotations/NullnessUnspecified.java",
+                       """
+                       package org.jspecify.annotations;
+                       import java.lang.annotation.*;
+                       @Target(ElementType.TYPE_USE)
+                       public @interface NullnessUnspecified {}
+                       """)
+                .run(NPECheck.class)
+                .assertWarnings();
+    }
+
+    public void testNotNullReturnType() throws Exception {
+        HintTest.create()
+                .sourceLevel("21")
+                .input("""
+                       package test;
+                       import java.lang.annotation.*;
+                       public class Test {
+                           public @NotNull String test(@NullAllowed String s) {
+                               return s;
+                           }
+                       }
+                       @Target(ElementType.TYPE_USE)
+                       @interface NullAllowed {}
+                       @Target(ElementType.TYPE_USE)
+                       @interface NotNull {}
+                       """)
+                .run(NPECheck.class)
+                .assertWarnings("4:15-4:16:verifier:ERR_ReturningPossibleNullFromNonNull");
+    }
+
+    public void testSynchronizedHint() throws Exception {
+        HintTest.create()
+                .sourceLevel("21")
+                .input("""
+                       package test;
+                       import java.lang.annotation.*;
+                       public class Test {
+                           public void test(@NullAllowed String s) {
+                               Object o = null;
+                               synchronized (o) {}
+                               synchronized (s) {}
+                           }
+                       }
+                       @Target(ElementType.TYPE_USE)
+                       @interface NullAllowed {}
+                       """)
+                .run(NPECheck.class)
+                .assertWarnings("5:22-5:23:verifier:Synchronizing on null",
+                                "6:22-6:23:verifier:Synchronizing on possible null");
+    }
+
+    //TODO: NullnessUnspecified
+
+    //TODO: check full "assignment" type in hints;; needs to remap parameter types(!!!)
     //TODO: when a declaration has annotations, the state on assign should be sensibly merged to it
 
     private void performAnalysisTest(String fileName, String code, String... golden) throws Exception {

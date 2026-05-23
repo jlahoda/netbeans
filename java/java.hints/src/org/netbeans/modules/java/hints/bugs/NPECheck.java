@@ -33,6 +33,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
@@ -59,6 +60,7 @@ import org.netbeans.modules.java.hints.errors.Utilities;
 import org.netbeans.spi.java.hints.*;
 import org.netbeans.spi.java.hints.Hint.Options;
 import org.openide.util.Lookup;
+import org.openide.util.NbBundle.Messages;
 
 /**
  *
@@ -136,7 +138,7 @@ public class NPECheck {
             String key = switch (r) {
                 case null -> null;
                 case NULL -> "ERR_UnboxingNullValue"; // NOI18N
-                case POSSIBLE_NULL, POSSIBLE_NULL_REPORT, POSSIBLE_NULL_REPORT_WEAK ->
+                case POSSIBLE_NULL_REPORT, POSSIBLE_NULL_REPORT_WEAK ->
                     "ERR_UnboxingPotentialNullValue"; // NOI18N
                 default -> null;
             };
@@ -233,7 +235,7 @@ public class NPECheck {
         StateEnum s = expressionsState.get(npPath.getLeaf());
         String k;
         
-        if (s == null || s == StateEnum.POSSIBLE_NULL) {
+        if (s == null || s == StateEnum.POSSIBLE_NULL || s == StateEnum.POSSIBLE_NULL_EXPLICIT_UNSPECIFIED) {
             boolean report = ctx.getPreferences().getBoolean(KEY_UNBOXING_UNKNOWN_VALUES, DEF_UNBOXING_UNKNOWN_VALUES);
             if (!report) {
                 return null;
@@ -243,7 +245,6 @@ public class NPECheck {
             case NULL:
                 k = "ERR_UnboxingNullValue"; // NOI18N
                 break;
-            case POSSIBLE_NULL:
             case POSSIBLE_NULL_REPORT:
             case POSSIBLE_NULL_REPORT_WEAK:
                 k = "ERR_UnboxingPotentialNullValue"; // NOI18N
@@ -532,6 +533,31 @@ public class NPECheck {
         return null;
     }
     
+    @TriggerPattern("synchronized ($expression) { $statements$; }")
+    @Messages({
+        "ERR_SynchronizingOnNull=Synchronizing on null",
+        "ERR_SynchronizingOnPossibleNull=Synchronizing on possible null",
+    })
+    public static ErrorDescription synchronizedNull(HintContext ctx) {
+        TreePath expression = ctx.getVariables().get("$expression");
+        StateEnum expressionState = computeExpressionsState(ctx).get(expression.getLeaf());
+
+        if (expressionState == null) return null;
+
+        String message = switch (expressionState) {
+            case NULL -> Bundle.ERR_SynchronizingOnNull();
+            case POSSIBLE_NULL_REPORT, POSSIBLE_NULL_REPORT_WEAK ->
+                Bundle.ERR_SynchronizingOnPossibleNull();
+            default -> null;
+        };
+
+        if (message != null) {
+            return ErrorDescriptionFactory.forName(ctx, expression, message);
+        }
+
+        return null;
+    }
+
     private static final Object KEY_EXPRESSION_STATE = new Object();
     private static final Object KEY_CONDITIONAL_PARAMETER = new Object();
     
@@ -570,29 +596,35 @@ public class NPECheck {
     private static final AnnotationMirrorGetter OVERRIDE_ANNOTATIONS = Lookup.getDefault().lookup(AnnotationMirrorGetter.class);
 
     private static State getStateFromAnnotations(CompilationInfo info, Element e) {
-        StateEnum def = StateEnum.POSSIBLE_NULL;
+        if (e == null) return new State(StateEnum.POSSIBLE_NULL);
 
-        if (e == null) return new State(def);
-
+        StateEnum typeDefault = getDefaultState(e, StateEnum.POSSIBLE_NULL);
+        StateEnum declarationDefault = StateEnum.POSSIBLE_NULL;
         Iterable<? extends AnnotationMirror> mirrors = OVERRIDE_ANNOTATIONS != null ? OVERRIDE_ANNOTATIONS.getAnnotationMirrors(info, e) : null;
 
         if (mirrors == null) mirrors = e.getAnnotationMirrors();
 
-        StateEnum fromDeclaration = getStateFromAnnotations(mirrors, def);
+        State result;
 
         if (e.getKind().isVariable()) {
             //XXX:
             //- should include with OVERRIDE_ANNOTATIONS?
             //- adjust default(!)
-            State result = getStateFromAnnotations(info, e.asType(), def);
-            if (fromDeclaration != StateEnum.POSSIBLE_NULL) {
-                //TODO: correct?
-                result = result.setThisState(fromDeclaration);
-            }
-            return result;
+            result = getStateFromAnnotations(info, e.asType(), typeDefault);
+        } else if (e.getKind() == ElementKind.METHOD) {
+            result = getStateFromAnnotations(info, ((ExecutableType) e.asType()).getReturnType(), typeDefault);
+        } else {
+            result = new State(StateEnum.POSSIBLE_NULL);
         }
 
-        return new State(fromDeclaration);
+        StateEnum fromDeclaration = getStateFromAnnotations(mirrors, declarationDefault);
+
+        if (fromDeclaration != StateEnum.POSSIBLE_NULL) {
+            //TODO: correct?
+            result = result.setThisState(fromDeclaration);
+        }
+
+        return result;
     }
 
     private static State getStateFromAnnotations(CompilationInfo info, TypeMirror type, StateEnum fallbackState) {
@@ -642,7 +674,37 @@ public class NPECheck {
             if ("NotNull".equals(simpleName) || "NonNull".equals(simpleName) || "Nonnull".equals(simpleName)) {
                 return StateEnum.NOT_NULL;
             }
+
+            String fqnName = ((TypeElement) am.getAnnotationType().asElement()).getQualifiedName().toString();
+
+            if ("org.jspecify.annotations.NullnessUnspecified".equals(fqnName)) {
+                return StateEnum.POSSIBLE_NULL_EXPLICIT_UNSPECIFIED;
+            }
         }
+        return fallbackState;
+    }
+
+    private static StateEnum getDefaultState(Element el, StateEnum fallbackState) {
+        while (el != null) {
+            for (AnnotationMirror am : el.getAnnotationMirrors()) {
+                String fqnName = ((TypeElement) am.getAnnotationType().asElement()).getQualifiedName().toString();
+
+                if ("org.jspecify.annotations.NullMarked".equals(fqnName)) {
+                    return StateEnum.NOT_NULL;
+                }
+
+                if ("org.jspecify.annotations.NullUnmarked".equals(fqnName)) {
+                    return StateEnum.POSSIBLE_NULL_REPORT;
+                }
+
+                if ("org.jspecify.annotations.NullnessUnspecified".equals(fqnName)) {
+                    return StateEnum.POSSIBLE_NULL_EXPLICIT_UNSPECIFIED;
+                }
+            }
+
+            el = el.getEnclosingElement();
+        }
+
         return fallbackState;
     }
 
@@ -1159,7 +1221,7 @@ public class NPECheck {
                     }
                 }
                 default -> {
-                    //XXX: should not happend?
+                    //XXX: should not happen?
                     receiverState = new State(StateEnum.POSSIBLE_NULL);
                     receiverType = null;
                     scan(methodSelect, p);
@@ -1999,6 +2061,7 @@ public class NPECheck {
     static enum StateEnum {
         NULL,
         POSSIBLE_NULL,
+        POSSIBLE_NULL_EXPLICIT_UNSPECIFIED, //mostly to support/help with JSpecify's "NullnessUnspecified"
         POSSIBLE_NULL_REPORT,
         POSSIBLE_NULL_REPORT_WEAK, //the value may or may not be null, and the fact should be reported, but when merging with other states, this should behave as POSSIBLE_NULL
         NOT_NULL,
@@ -2009,6 +2072,7 @@ public class NPECheck {
                 case NULL:
                     return NOT_NULL;
                 case POSSIBLE_NULL:
+                case POSSIBLE_NULL_EXPLICIT_UNSPECIFIED:
                 case POSSIBLE_NULL_REPORT:
                 case POSSIBLE_NULL_REPORT_WEAK:
                     return this;
