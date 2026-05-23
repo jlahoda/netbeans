@@ -100,7 +100,7 @@ public class NPECheck {
                 key = "ERR_AssigningNullToNotNull";
             }
 
-            if (r == POSSIBLE_NULL_REPORT || r == POSSIBLE_NULL_REPORT_WEAK) {
+            if (r == POSSIBLE_NULL_REPORT) {
                 key = "ERR_PossibleAssigingNullToNotNull";
             }
 
@@ -135,7 +135,7 @@ public class NPECheck {
             String key = switch (r) {
                 case null -> null;
                 case NULL -> "ERR_UnboxingNullValue"; // NOI18N
-                case POSSIBLE_NULL, POSSIBLE_NULL_REPORT, POSSIBLE_NULL_REPORT_WEAK ->
+                case POSSIBLE_NULL, POSSIBLE_NULL_REPORT ->
                     "ERR_UnboxingPotentialNullValue"; // NOI18N
                 default -> null;
             };
@@ -244,7 +244,6 @@ public class NPECheck {
                 break;
             case POSSIBLE_NULL:
             case POSSIBLE_NULL_REPORT:
-            case POSSIBLE_NULL_REPORT_WEAK:
                 k = "ERR_UnboxingPotentialNullValue"; // NOI18N
                 break;
             case NOT_NULL_BE_NPE:
@@ -302,7 +301,7 @@ public class NPECheck {
             return ErrorDescriptionFactory.forName(ctx, ctx.getPath(), displayName);
         }
 
-        if (r == State.POSSIBLE_NULL_REPORT || r == State.POSSIBLE_NULL_REPORT_WEAK) {
+        if (r == State.POSSIBLE_NULL_REPORT) {
             String displayName = NbBundle.getMessage(NPECheck.class, "ERR_PossiblyDereferencingNull");
             
             return ErrorDescriptionFactory.forName(ctx, ctx.getPath(), displayName);
@@ -323,7 +322,7 @@ public class NPECheck {
             return ErrorDescriptionFactory.forName(ctx, ctx.getPath(), displayName);
         }
 
-        if (r == State.POSSIBLE_NULL_REPORT || r == State.POSSIBLE_NULL_REPORT_WEAK) {
+        if (r == State.POSSIBLE_NULL_REPORT) {
             String displayName = NbBundle.getMessage(NPECheck.class, "ERR_PossiblyDereferencingNull");
             
             return ErrorDescriptionFactory.forName(ctx, ctx.getPath(), displayName);
@@ -342,7 +341,7 @@ public class NPECheck {
             return ErrorDescriptionFactory.forName(ctx, ctx.getPath(), displayName);
         }
 
-        if (r == State.POSSIBLE_NULL_REPORT || r == State.POSSIBLE_NULL_REPORT_WEAK) {
+        if (r == State.POSSIBLE_NULL_REPORT) {
             String displayName = NbBundle.getMessage(NPECheck.class, "ERR_PossiblyDereferencingNull");
             
             return ErrorDescriptionFactory.forName(ctx, ctx.getPath(), displayName);
@@ -390,7 +389,7 @@ public class NPECheck {
                     case NULL:
                         result.add(ErrorDescriptionFactory.forTree(ctx, mit.getArguments().get(index), NbBundle.getMessage(NPECheck.class, "ERR_NULL_TO_NON_NULL_ARG")));
                         break;
-                    case POSSIBLE_NULL_REPORT, POSSIBLE_NULL_REPORT_WEAK:
+                    case POSSIBLE_NULL_REPORT:
                         result.add(ErrorDescriptionFactory.forTree(ctx, mit.getArguments().get(index), NbBundle.getMessage(NPECheck.class, "ERR_POSSIBLENULL_TO_NON_NULL_ARG")));
                         break;
                 }
@@ -518,7 +517,7 @@ public class NPECheck {
             case NULL:
                 if (expected.isNotNull()) key = "ERR_ReturningNullFromNonNull";
                 break;
-            case POSSIBLE_NULL_REPORT, POSSIBLE_NULL_REPORT_WEAK:
+            case POSSIBLE_NULL_REPORT:
                 if (expected.isNotNull()) key = "ERR_ReturningPossibleNullFromNonNull";
                 break;
         }
@@ -814,7 +813,7 @@ public class NPECheck {
             State expr = scan(node.getExpression(), p);
             boolean wasNPE = false;
             
-            if (expr == State.NULL || expr == State.POSSIBLE_NULL || expr == State.POSSIBLE_NULL_REPORT || expr == POSSIBLE_NULL_REPORT_WEAK) {
+            if (expr == State.NULL || expr == State.POSSIBLE_NULL || expr == State.POSSIBLE_NULL_REPORT) {
                 wasNPE = true;
             }
             
@@ -1003,7 +1002,6 @@ public class NPECheck {
                     ensureStateSplit();
 
                     variable2StateWhenTrue.put((VariableElement) e, NOT_NULL);
-                    variable2StateWhenFalse.put((VariableElement) e, POSSIBLE_NULL_REPORT_WEAK);
                 }
             }
             
@@ -1698,7 +1696,6 @@ public class NPECheck {
         NULL,
         POSSIBLE_NULL,
         POSSIBLE_NULL_REPORT,
-        POSSIBLE_NULL_REPORT_WEAK, //the value may or may not be null, and the fact should be reported, but when merging with other states, this should behave as POSSIBLE_NULL
         NOT_NULL,
         NOT_NULL_BE_NPE;
         
@@ -1708,7 +1705,6 @@ public class NPECheck {
                     return NOT_NULL;
                 case POSSIBLE_NULL:
                 case POSSIBLE_NULL_REPORT:
-                case POSSIBLE_NULL_REPORT_WEAK:
                     return this;
                 case NOT_NULL:
                 case NOT_NULL_BE_NPE:
@@ -1722,7 +1718,7 @@ public class NPECheck {
         }
 
         public boolean isPossibleNulLReport() {
-            return this == POSSIBLE_NULL_REPORT || this == POSSIBLE_NULL_REPORT_WEAK;
+            return this == POSSIBLE_NULL_REPORT;
         }
 
         public static State collect(State s1, State s2) {

@@ -1713,7 +1713,10 @@ public class NPECheckTest extends NbTestCase {
                        "  }\n" +
                        "}")
                 .run(NPECheck.class)
-                .assertWarnings("3:45-3:53:verifier:Possibly Dereferencing null");
+                .assertWarnings();
+        //originally, there was this warning:
+        //3:45-3:53:verifier:Possibly Dereferencing null
+        //but the warning is very hard to defend, if the instanceof fails, we simply don't know anything
     }
     
     public void testNETBEANS407c() throws Exception {
@@ -2031,6 +2034,26 @@ public class NPECheckTest extends NbTestCase {
                 .run(NPECheck.class)
                 .assertWarnings("3:8-3:9:verifier:ERR_UnboxingPotentialNullValue",
                                 "4:12-4:21:verifier:ERR_NotNullWouldBeNPE");
+    }
+
+    public void testIfAndInstanceOf() throws Exception {
+        HintTest.create()
+                .sourceLevel("21")
+                .input("""
+                       package test;
+                       public class Test {
+                           public @NotNull Object test(Object o) {
+                               if (o instanceof String s) {
+                                   return s;
+                               } else {
+                                   return o; //can't say anything
+                               }
+                           }
+                       }
+                       @interface NotNull {}
+                       """)
+                .run(NPECheck.class)
+                .assertWarnings();
     }
 
     private void performAnalysisTest(String fileName, String code, String... golden) throws Exception {
