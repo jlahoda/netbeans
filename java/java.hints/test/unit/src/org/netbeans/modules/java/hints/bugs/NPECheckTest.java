@@ -2270,6 +2270,31 @@ public class NPECheckTest extends NbTestCase {
                                 "8:16-8:24:verifier:Possibly Dereferencing null");
     }
 
+    public void testTypeAnnotationsNestedTypesWarnings1() throws Exception {
+        HintTest.create()
+                .sourceLevel("21")
+                .input("""
+                       package test;
+                       import java.lang.annotation.*;
+                       import java.util.*;
+                       public class Test {
+                           private void test1(List<@NotNull String[]> arr) {
+                               test2(arr);
+                           }
+                           private void test2(List<@NullAllowed String[]> arr) {
+                               test1(arr);
+                           }
+                       }
+                       @Target(ElementType.TYPE_USE)
+                       @interface NullAllowed {}
+                       @Target(ElementType.TYPE_USE)
+                       @interface NotNull {}
+                       """)
+                .run(NPECheck.class)
+                .assertWarnings("5:14-5:17:verifier:Nullness states mismatch",
+                                "8:14-8:17:verifier:Nullness states mismatch");
+    }
+
     public void testJSpecifyNullMarked() throws Exception {
         HintTest.create()
                 .sourceLevel("21")
@@ -2323,6 +2348,26 @@ public class NPECheckTest extends NbTestCase {
                 .assertWarnings();
     }
 
+    public void testJSpecifyNullMarkedLocalVariables1() throws Exception {
+        HintTest.create()
+                .sourceLevel("21")
+                .classpath(FileUtil.urlForArchiveOrDir(new File(System.getProperty("hints-jspecify.jar.location"))))
+                .input("""
+                       package test;
+                       import org.jspecify.annotations.NullMarked;
+                       import org.jspecify.annotations.Nullable;
+                       @NullMarked
+                       public class Test {
+                           public String test(@Nullable String s) {
+                               String local = s;
+                               return local != null ? local : "";
+                           }
+                       }
+                       """)
+                .run(NPECheck.class)
+                .assertWarnings();
+    }
+
     public void testNotNullReturnType() throws Exception {
         HintTest.create()
                 .sourceLevel("21")
@@ -2362,6 +2407,29 @@ public class NPECheckTest extends NbTestCase {
                 .run(NPECheck.class)
                 .assertWarnings("5:22-5:23:verifier:Synchronizing on null",
                                 "6:22-6:23:verifier:Synchronizing on possible null");
+    }
+
+    public void testAssignmentIsExpression() throws Exception {
+        HintTest.create()
+                .sourceLevel("21")
+                .input("""
+                       package test;
+                       import java.lang.annotation.*;
+                       import java.util.*;
+                       public class Test {
+                           private void test(@NullAllowed String str) {
+                               String s;
+                               if ((s = str) != null) {
+                                   s.toString();
+                                   str.toString();
+                               }
+                           }
+                       }
+                       @Target(ElementType.TYPE_USE)
+                       @interface NullAllowed {}
+                       """)
+                .run(NPECheck.class)
+                .assertWarnings();
     }
 
     //TODO: NullnessUnspecified
