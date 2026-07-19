@@ -16,12 +16,20 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.netbeans.modules.lsp.client.spi;
+package org.netbeans.modules.lsp.client.spi.friend;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import com.google.gson.Gson;
+import java.io.IOException;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.annotations.common.NullAllowed;
+import org.openide.filesystems.FileObject;
 
 //based on the VS Code API's "LanguageConfiguration" (MIT)
+//TODO: the language-configuration.json is more broad, should be enhanced to support language-configuration.json:
 public final class LanguageConfiguration {
     public final @NullAllowed CommentRule comments;
     public final @NullAllowed CharacterPair[] brackets;
@@ -163,5 +171,23 @@ public final class LanguageConfiguration {
         public static AutoClosingPair from(String open, String close, SyntaxTokenType[] notIn) {
             return new AutoClosingPair(open, close, notIn);
         }
+    }
+
+    private static final Gson GSON = new Gson();
+    public static LanguageConfiguration create(FileObject source) throws IOException {
+        //TODO resilience against "incorrect" config:
+        Map<String, Object> config = GSON.fromJson(source.asText(), HashMap.class);
+        CommentRule comments = null;
+        Map<String, Object> commentsConfig = (Map<String, Object>) config.get("comments");
+        if (commentsConfig != null) {
+            List<String> commentsBlockConfig = (List<String>) commentsConfig.get("blockComment");
+            CharacterPair blockComment = null;
+
+            if (commentsBlockConfig != null) {
+                blockComment = CharacterPair.from(commentsBlockConfig.get(0), commentsBlockConfig.get(1));
+            }
+            comments = CommentRule.from((String) commentsConfig.get("lineComment"), blockComment);
+        }
+        return LanguageConfiguration.from(comments, null, null, null, null, null);
     }
 }

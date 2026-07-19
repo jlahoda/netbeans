@@ -33,10 +33,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.swing.event.ChangeEvent;
+import javax.swing.text.EditorKit;
+import javax.swing.text.TextAction;
 import org.netbeans.modules.lsp.client.debugger.api.RegisterDAPBreakpoints;
 import org.eclipse.tm4e.core.internal.grammar.raw.RawGrammarReader;
 import org.eclipse.tm4e.core.registry.IGrammarSource;
 import org.netbeans.core.spi.multiview.MultiViewFactory;
+import org.netbeans.modules.lsp.client.bindings.configuration.ToggleCommentActionImpl;
+import org.netbeans.modules.lsp.client.spi.friend.LanguageConfiguration;
 import org.netbeans.modules.textmate.lexer.TextmateTokenId;
 import org.netbeans.spi.navigator.NavigatorPanel;
 import org.openide.filesystems.FileObject;
@@ -164,6 +168,27 @@ public class LanguageStorage {
                     multiViewRegistration.setAttribute("persistenceType", 1);
                     multiViewRegistration.setAttribute("position", 100);
                     multiViewRegistration.setAttribute("method", "createEditor");
+
+                    FileObject editorKit = FileUtil.createData(FileUtil.getConfigRoot(), "Editors/" + description.mimeType + "/EditorKit.instance");
+                    Method createGenericEditorKit = GenericEditorKit.class.getDeclaredMethod("create", Map.class);
+                    editorKit.setAttribute("methodvalue:instanceCreate", createGenericEditorKit);
+                    editorKit.setAttribute("instanceOf", EditorKit.class.getName());
+                    editorKit.setAttribute("mimeType", description.mimeType);
+
+                    FileObject toggleCommentAction = FileUtil.createData(FileUtil.getConfigRoot(), "Editors/" + description.mimeType + "/Actions/toggleComment.instance");
+                    Method createToggleCommentActionImpl = ToggleCommentActionImpl.class.getDeclaredMethod("create", Map.class);
+                    toggleCommentAction.setAttribute("methodvalue:instanceCreate", createToggleCommentActionImpl);
+                    toggleCommentAction.setAttribute("instanceOf", TextAction.class.getName());
+
+                    FileObject languageConfiguration = FileUtil.createData(FileUtil.getConfigRoot(), "Editors/" + description.mimeType + "/LanguageConfiguration.instance");
+                    Method createLanguageConfiguration = LanguageConfiguration.class.getDeclaredMethod("create", FileObject.class);
+                    languageConfiguration.setAttribute("methodvalue:instanceCreate", createLanguageConfiguration);
+                    languageConfiguration.setAttribute("instanceOf", org.netbeans.modules.lsp.client.spi.friend.LanguageConfiguration.class.getName());
+                    FileObject languageConfigurationSource = FileUtil.toFileObject(new File("/tmp/python/language-configuration.json"));
+                    try (InputStream in = languageConfigurationSource.getInputStream();
+                         OutputStream out = languageConfiguration.getOutputStream()) {
+                        in.transferTo(out);
+                    }
 
                     FileObject icon = FileUtil.getConfigFile("Loaders/" + description.mimeType + "/Factories/icon.png");
                     if (icon != null) {
