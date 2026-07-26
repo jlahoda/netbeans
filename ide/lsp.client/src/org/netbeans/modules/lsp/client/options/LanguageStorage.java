@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -184,7 +185,7 @@ public class LanguageStorage {
                     Method createLanguageConfiguration = LanguageConfiguration.class.getDeclaredMethod("create", FileObject.class);
                     languageConfiguration.setAttribute("methodvalue:instanceCreate", createLanguageConfiguration);
                     languageConfiguration.setAttribute("instanceOf", org.netbeans.modules.lsp.client.spi.friend.LanguageConfiguration.class.getName());
-                    FileObject languageConfigurationSource = FileUtil.toFileObject(new File("/tmp/python/language-configuration.json"));
+                    FileObject languageConfigurationSource = FileUtil.toFileObject(Path.of(description.languageConfiguration));
                     try (InputStream in = languageConfigurationSource.getInputStream();
                          OutputStream out = languageConfiguration.getOutputStream()) {
                         in.transferTo(out);
@@ -305,6 +306,7 @@ public class LanguageStorage {
         public String id;
         public String extensions;
         public String syntaxGrammar;
+        public String languageConfiguration;
         public String languageServer;
         public String name;
         public String icon;
@@ -316,6 +318,7 @@ public class LanguageStorage {
             this.id = null;
             this.extensions = null;
             this.syntaxGrammar = null;
+            this.languageConfiguration = null;
             this.languageServer = null;
             this.name = null;
             this.icon = null;
@@ -324,10 +327,11 @@ public class LanguageStorage {
             this.languageId = null;
         }
 
-        public LanguageDescription(String id, String extensions, String syntaxGrammar, String languageServer, String name, String icon, boolean debugger, String languageId) {
+        public LanguageDescription(String id, String extensions, String syntaxGrammar, String languageConfiguration, String languageServer, String name, String icon, boolean debugger, String languageId) {
             this.id = id;
             this.extensions = extensions;
             this.syntaxGrammar = syntaxGrammar;
+            this.languageConfiguration = languageConfiguration;
             this.languageServer = languageServer;
             this.name = name;
             this.icon = icon;

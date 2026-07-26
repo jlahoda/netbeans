@@ -56,7 +56,7 @@ public class ToggleCommentActionImpl extends BaseAction {
         Boolean forceComment = (Boolean) getValue("force-uncomment");
         String mimeType = NbEditorUtilities.getMimeType(target);
         LanguageConfiguration lc = MimeLookup.getLookup(mimeType).lookup(LanguageConfiguration.class);
-        String lineCommentString = lc != null && lc.comments != null ? lc.comments.lineComment : null;
+        String lineCommentString = lc != null && lc.comments != null && lc.comments.lineComment != null ? lc.comments.lineComment.comment : null;
         if (lineCommentString != null) {
             commentUncomment(evt, target, forceComment, lineCommentString, lineCommentString.length());
         } else {
