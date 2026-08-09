@@ -18,7 +18,6 @@
  */
 package org.netbeans.modules.lsp.client.spi.friend;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,16 +76,34 @@ public final class LanguageConfiguration {
         }
     }
 
+    public static final class LineComment {
+        public final @NonNull String comment;
+        public final boolean noIdent;
+
+        private LineComment(String comment, boolean noIdent) {
+            this.comment = comment;
+            this.noIdent = noIdent;
+        }
+
+        public static LineComment from(String comment) {
+            return from(comment, false);
+        }
+
+        public static LineComment from(String comment, boolean noIdent) {
+            return new LineComment(comment, noIdent);
+        }
+    }
+
     public static final class CommentRule {
-        public final @NullAllowed String lineComment;
+        public final @NullAllowed LineComment lineComment;
         public final @NullAllowed CharacterPair blockComment;
 
-        private CommentRule(String lineComment, CharacterPair blockComment) {
+        private CommentRule(LineComment lineComment, CharacterPair blockComment) {
             this.lineComment = lineComment;
             this.blockComment = blockComment;
         }
 
-        public static CommentRule from(String lineComment, CharacterPair blockComment) {
+        public static CommentRule from(LineComment lineComment, CharacterPair blockComment) {
             return new CommentRule(lineComment, blockComment);
         }
     }
@@ -174,20 +191,31 @@ public final class LanguageConfiguration {
     }
 
     private static final Gson GSON = new Gson();
-    public static LanguageConfiguration create(FileObject source) throws IOException {
+    public static LanguageConfiguration from(String source) {
         //TODO resilience against "incorrect" config:
-        Map<String, Object> config = GSON.fromJson(source.asText(), HashMap.class);
+        Map<String, Object> config = GSON.fromJson(source, HashMap.class);
         CommentRule comments = null;
         Map<String, Object> commentsConfig = (Map<String, Object>) config.get("comments");
         if (commentsConfig != null) {
+            LineComment lineComment = null;
+            Object lineCommentConfig = commentsConfig.get("lineComment");
+            if (lineCommentConfig instanceof String comment) {
+                lineComment = LineComment.from(comment);
+            } else if (lineCommentConfig instanceof Map vals) {
+                lineComment = LineComment.from((String) vals.get("comment"), (boolean) vals.getOrDefault("noIndent", false));
+            }
             List<String> commentsBlockConfig = (List<String>) commentsConfig.get("blockComment");
             CharacterPair blockComment = null;
 
             if (commentsBlockConfig != null) {
                 blockComment = CharacterPair.from(commentsBlockConfig.get(0), commentsBlockConfig.get(1));
             }
-            comments = CommentRule.from((String) commentsConfig.get("lineComment"), blockComment);
+            comments = CommentRule.from(lineComment, blockComment);
         }
         return LanguageConfiguration.from(comments, null, null, null, null, null);
+    }
+
+    public static LanguageConfiguration create(FileObject source) throws IOException {
+        return from(source.asText());
     }
 }
