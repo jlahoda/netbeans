@@ -58,13 +58,13 @@ public class ToggleCommentActionImpl extends BaseAction {
         LanguageConfiguration lc = MimeLookup.getLookup(mimeType).lookup(LanguageConfiguration.class);
         String lineCommentString = lc != null && lc.comments != null && lc.comments.lineComment != null ? lc.comments.lineComment.comment : null;
         if (lineCommentString != null) {
-            commentUncomment(evt, target, forceComment, lineCommentString, lineCommentString.length());
+            commentUncomment(evt, target, forceComment, lineCommentString, lineCommentString.length(), lc != null && lc.comments != null && lc.comments.lineComment != null ? lc.comments.lineComment.noIdent : false);
         } else {
             target.getToolkit().beep();
         }
     }
 
-    private void commentUncomment(ActionEvent evt, final JTextComponent target, final Boolean forceComment, String lineCommentString, int lineCommentStringLen) {
+    private void commentUncomment(ActionEvent evt, final JTextComponent target, final Boolean forceComment, String lineCommentString, int lineCommentStringLen, boolean noIndent) {
         if (target != null) {
             if (!target.isEditable() || !target.isEnabled()) {
                 target.getToolkit().beep();
@@ -100,7 +100,7 @@ public class ToggleCommentActionImpl extends BaseAction {
                                 boolean comment = forceComment != null ? forceComment : !allComments(doc, startPos, lineCount, lineCommentString, lineCommentStringLen);
 
                                 if (comment) {
-                                    comment(doc, startPos, lineCount, lineCommentString, lineCommentStringLen);
+                                    comment(doc, startPos, lineCount, lineCommentString, noIndent);
                                 } else {
                                     uncomment(doc, startPos, lineCount, lineCommentString, lineCommentStringLen);
                                 }
@@ -134,7 +134,7 @@ public class ToggleCommentActionImpl extends BaseAction {
                             boolean comment = forceComment != null ? forceComment : !allComments(doc, startPos, lineCount, lineCommentString, lineCommentStringLen);
 
                             if (comment) {
-                                comment(doc, startPos, lineCount, lineCommentString, lineCommentStringLen);
+                                comment(doc, startPos, lineCount, lineCommentString, noIndent);
                             } else {
                                 uncomment(doc, startPos, lineCount, lineCommentString, lineCommentStringLen);
                             }
@@ -169,9 +169,27 @@ public class ToggleCommentActionImpl extends BaseAction {
         return true;
     }
 
-    private void comment(BaseDocument doc, int startOffset, int lineCount, String lineCommentString, int lineCommentStringLen) throws BadLocationException {
+    private int commonIndent(BaseDocument doc, int startOffset, int lineCount) throws BadLocationException {
+        int indent = Integer.MAX_VALUE;
+        for (int offset = startOffset; lineCount > 0 && indent > 0; lineCount--) {
+            int firstNonWhiteSpace = LineDocumentUtils.getLineFirstNonWhitespace(doc, offset);
+
+            if (firstNonWhiteSpace == (-1)) {
+                indent = 0;
+                break;
+            }
+
+            indent = Math.min(indent, firstNonWhiteSpace - offset);
+
+            offset = Utilities.getRowStart(doc, offset, +1);
+        }
+        return indent;
+    }
+
+    private void comment(BaseDocument doc, int startOffset, int lineCount, String lineCommentString, boolean noIndent) throws BadLocationException {
+        int indent = noIndent ? 0 : commonIndent(doc, startOffset, lineCount); //TODO: reflect noIndent
         for (int offset = startOffset; lineCount > 0; lineCount--) {
-            doc.insertString(offset, lineCommentString, null); // NOI18N
+            doc.insertString(offset + indent, lineCommentString + " ", null); // NOI18N
             offset = Utilities.getRowStart(doc, offset, +1);
         }
     }
@@ -183,10 +201,15 @@ public class ToggleCommentActionImpl extends BaseAction {
 
             // If there is any, check wheter it's the line-comment-chars and remove them
             if (firstNonWhitePos != -1) {
-                if (LineDocumentUtils.getLineEndOffset(doc, firstNonWhitePos) - firstNonWhitePos >= lineCommentStringLen) {
-                    CharSequence maybeLineComment = DocumentUtilities.getText(doc, firstNonWhitePos, lineCommentStringLen);
-                    if (CharSequenceUtilities.textEquals(maybeLineComment, lineCommentString)) {
-                        doc.remove(firstNonWhitePos, lineCommentStringLen);
+                int lineContentLen = LineDocumentUtils.getLineEndOffset(doc, firstNonWhitePos) - firstNonWhitePos;
+                if (lineContentLen >= lineCommentStringLen) {
+                    CharSequence maybeLineComment = DocumentUtilities.getText(doc, firstNonWhitePos, lineCommentStringLen + (lineContentLen > lineCommentStringLen ? 1 : 0));
+                    if (CharSequenceUtilities.textEquals(maybeLineComment.subSequence(0, lineCommentStringLen), lineCommentString)) {
+                        int toRemove = lineCommentStringLen;
+                        if (maybeLineComment.length() > lineCommentStringLen && maybeLineComment.charAt(maybeLineComment.length() - 1) == ' ') {
+                            toRemove++;
+                        }
+                        doc.remove(firstNonWhitePos, toRemove);
                     }
                 }
             }
