@@ -39,9 +39,11 @@ import org.netbeans.modules.lsp.client.debugger.api.RegisterDAPBreakpoints;
 import org.eclipse.tm4e.core.internal.grammar.raw.RawGrammarReader;
 import org.eclipse.tm4e.core.registry.IGrammarSource;
 import org.netbeans.core.spi.multiview.MultiViewFactory;
+import org.netbeans.modules.lsp.client.bindings.configuration.BracesMatcherFactoryImpl;
 import org.netbeans.modules.lsp.client.bindings.configuration.ToggleCommentActionImpl;
 import org.netbeans.modules.lsp.client.spi.friend.LanguageConfiguration;
 import org.netbeans.modules.textmate.lexer.TextmateTokenId;
+import org.netbeans.spi.editor.bracesmatching.BracesMatcherFactory;
 import org.netbeans.spi.navigator.NavigatorPanel;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
@@ -174,6 +176,11 @@ public class LanguageStorage {
                     editorKit.setAttribute("methodvalue:instanceCreate", createGenericEditorKit);
                     editorKit.setAttribute("instanceOf", EditorKit.class.getName());
                     editorKit.setAttribute("mimeType", description.mimeType);
+
+                    FileObject bracesMatcher = FileUtil.createData(FileUtil.getConfigRoot(), "Editors/" + description.mimeType + "/BracesMatchers/languageConfigurationMatcher.instance");
+                    Method createBracesMatcherImpl = BracesMatcherFactoryImpl.class.getDeclaredMethod("create", Map.class);
+                    bracesMatcher.setAttribute("methodvalue:instanceCreate", createBracesMatcherImpl);
+                    bracesMatcher.setAttribute("instanceOf", BracesMatcherFactory.class.getName());
 
                     FileObject toggleCommentAction = FileUtil.createData(FileUtil.getConfigRoot(), "Editors/" + description.mimeType + "/Actions/toggleComment.instance");
                     Method createToggleCommentActionImpl = ToggleCommentActionImpl.class.getDeclaredMethod("create", Map.class);

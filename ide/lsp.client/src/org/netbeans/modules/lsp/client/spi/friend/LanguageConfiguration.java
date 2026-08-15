@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import com.google.gson.Gson;
 import java.io.IOException;
+import org.eclipse.tm4e.core.internal.parser.PropertySettable.ArrayList;
 import org.netbeans.api.annotations.common.NonNull;
 import org.netbeans.api.annotations.common.NullAllowed;
 import org.openide.filesystems.FileObject;
@@ -212,7 +213,18 @@ public final class LanguageConfiguration {
             }
             comments = CommentRule.from(lineComment, blockComment);
         }
-        return LanguageConfiguration.from(comments, null, null, null, null, null);
+        CharacterPair[] braces = null;
+        List<Object> bracesConfig = (List<Object>) config.get("brackets");
+        if (bracesConfig != null) {
+            List<CharacterPair> bracesList = new ArrayList<>();
+            for (Object conf : bracesConfig) {
+                if (conf instanceof List<?> pair) {
+                    bracesList.add(new CharacterPair((String) pair.get(0), (String) pair.get(1)));
+                }
+            }
+            braces = bracesList.toArray(CharacterPair[]::new);
+        }
+        return LanguageConfiguration.from(comments, braces, null, null, null, null);
     }
 
     public static LanguageConfiguration create(FileObject source) throws IOException {
