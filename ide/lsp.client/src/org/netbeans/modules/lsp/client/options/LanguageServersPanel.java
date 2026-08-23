@@ -244,7 +244,7 @@ final class LanguageServersPanel extends javax.swing.JPanel {
             if (value instanceof LanguageDescription) {
                 LanguageDescription ld = (LanguageDescription) value;
                 value = ld.name != null && !ld.name.isEmpty() ? ld.name : Bundle.TXT_Files(ld.extensions);
-                icon = ImageUtilities.image2Icon(Utils.loadIcon(ld.icon != null && !ld.icon.isBlank() ? FileUtil.toFileObject(new File(ld.icon)) : null, BeanInfo.ICON_COLOR_16x16));
+                icon = ImageUtilities.image2Icon(Utils.loadIcon(ld.icon != null && !ld.icon.isBlank() ? FileUtil.toFileObject(FileUtil.normalizeFile(new File(ld.icon))) : null, BeanInfo.ICON_COLOR_16x16));
             }
             super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
             setIcon(icon);

@@ -159,6 +159,8 @@ public class ToggleCommentActionImplTest {
                """);
     }
 
+    //TODO: block comment
+
     private void doTest(String code, LanguageConfiguration config, String expected) throws Exception {
         //TODO: could be nice to be also test mark > caret.
         NbEditorDocument doc = new NbEditorDocument("text/x-test");

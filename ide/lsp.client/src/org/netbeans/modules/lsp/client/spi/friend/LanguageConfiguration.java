@@ -224,7 +224,18 @@ public final class LanguageConfiguration {
             }
             braces = bracesList.toArray(CharacterPair[]::new);
         }
-        return LanguageConfiguration.from(comments, braces, null, null, null, null);
+        AutoClosingPair[] autoClosingPairs = null;
+        List<Object> autoClosingPairsConfig = (List<Object>) config.get("autoClosingPairs");
+        if (autoClosingPairsConfig != null) {
+            List<AutoClosingPair> autoClosingPairsList = new ArrayList<>();
+            for (Object conf : autoClosingPairsConfig) {
+                if (conf instanceof Map<?, ?> map) {
+                    autoClosingPairsList.add(new AutoClosingPair((String) map.get("open"), (String) map.get("close"), /*TODO:*/ null));
+                }
+            }
+            autoClosingPairs = autoClosingPairsList.toArray(AutoClosingPair[]::new);
+        }
+        return LanguageConfiguration.from(comments, braces, null, null, null, autoClosingPairs);
     }
 
     public static LanguageConfiguration create(FileObject source) throws IOException {

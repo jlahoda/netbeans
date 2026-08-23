@@ -42,9 +42,11 @@ import org.eclipse.tm4e.core.registry.IGrammarSource;
 import org.netbeans.core.spi.multiview.MultiViewFactory;
 import org.netbeans.modules.lsp.client.bindings.configuration.BracesMatcherFactoryImpl;
 import org.netbeans.modules.lsp.client.bindings.configuration.ToggleCommentActionImpl;
+import org.netbeans.modules.lsp.client.bindings.configuration.TypingCompletionImpl;
 import org.netbeans.modules.lsp.client.spi.friend.LanguageConfiguration;
 import org.netbeans.modules.textmate.lexer.TextmateTokenId;
 import org.netbeans.spi.editor.bracesmatching.BracesMatcherFactory;
+import org.netbeans.spi.editor.typinghooks.TypedTextInterceptor;
 import org.netbeans.spi.navigator.NavigatorPanel;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
@@ -182,6 +184,11 @@ public class LanguageStorage {
                     Method createBracesMatcherImpl = BracesMatcherFactoryImpl.class.getDeclaredMethod("create", Map.class);
                     bracesMatcher.setAttribute("methodvalue:instanceCreate", createBracesMatcherImpl);
                     bracesMatcher.setAttribute("instanceOf", BracesMatcherFactory.class.getName());
+
+                    FileObject typingCompletion = FileUtil.createData(FileUtil.getConfigRoot(), "Editors/" + description.mimeType + "/typingCompletionImpl.instance");
+                    Method createTypingCompletionFactory = TypingCompletionImpl.FactoryImpl.class.getDeclaredMethod("create", Map.class);
+                    typingCompletion.setAttribute("methodvalue:instanceCreate", createTypingCompletionFactory);
+                    typingCompletion.setAttribute("instanceOf", TypedTextInterceptor.Factory.class.getName());
 
                     FileObject toggleCommentAction = FileUtil.createData(FileUtil.getConfigRoot(), "Editors/" + description.mimeType + "/Actions/toggleComment.instance");
                     Method createToggleCommentActionImpl = ToggleCommentActionImpl.class.getDeclaredMethod("create", Map.class);
