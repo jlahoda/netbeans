@@ -73,6 +73,26 @@ public class TypingCompletionImplTest {
                          """
                          !--|
                          """));
+        doTest("""
+               |
+               """,
+               LanguageConfiguration.from("{ 'autoClosingPairs': [ { 'open': 'č', 'close': 'ž' } ] }"),
+               new Input('č',
+                         """
+                         č|ž
+                         """),
+               new Input('ž',
+                         """
+                         čž|
+                         """));
+        doTest("""
+               |
+               """,
+               LanguageConfiguration.from("{ 'autoClosingPairs': [ { 'open': '(', 'close': ')' } ] }"),
+               new Input('č',
+                         """
+                         č|
+                         """));
     }
 
     private void doTest(String code, LanguageConfiguration config, Input... inputs) throws Exception {

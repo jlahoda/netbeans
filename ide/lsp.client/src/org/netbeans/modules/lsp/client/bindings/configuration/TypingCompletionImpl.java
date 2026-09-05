@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Position;
@@ -36,8 +37,10 @@ import org.netbeans.spi.editor.typinghooks.TypedTextInterceptor;
 public class TypingCompletionImpl implements TypedTextInterceptor {
 
     private static final Object KEY_SKIP_POSITIONS = new Object();
+    private static final int SIMPLE_CHAR_LIMIT = 128;
     private final LanguageConfiguration lc;
-    private final Map<Character, AutoClosingPair[]> lastChar2ClosingPair; //TODO: could be optimized using a char
+    private final AutoClosingPair[][] simpleLastChar2ClosingPair;
+    private final Map<Character, AutoClosingPair[]> lastChar2ClosingPair;
     private int moveOffset;
 
     public TypingCompletionImpl(LanguageConfiguration lc) {
@@ -45,6 +48,15 @@ public class TypingCompletionImpl implements TypedTextInterceptor {
         Map<Character, List<AutoClosingPair>> tempLastChar2ClosingPair = new HashMap<>();
         Arrays.stream(lc.autoClosingPairs)
               .forEach(p -> tempLastChar2ClosingPair.computeIfAbsent(p.open.charAt(p.open.length() - 1), x -> new ArrayList<>()).add(p));
+        simpleLastChar2ClosingPair = new AutoClosingPair[SIMPLE_CHAR_LIMIT][];
+        for (Iterator<Entry<Character, List<AutoClosingPair>>> it = tempLastChar2ClosingPair.entrySet().iterator(); it.hasNext();) {
+            Entry<Character, List<AutoClosingPair>> e = it.next();
+            char lastChar = e.getKey();
+            if (lastChar < SIMPLE_CHAR_LIMIT) {
+                simpleLastChar2ClosingPair[lastChar] = e.getValue().toArray(AutoClosingPair[]::new);
+                it.remove();
+            }
+        }
         lastChar2ClosingPair = tempLastChar2ClosingPair.entrySet().stream().collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue().toArray(AutoClosingPair[]::new)));
     }
 
@@ -57,6 +69,7 @@ public class TypingCompletionImpl implements TypedTextInterceptor {
     public void insert(MutableContext context) throws BadLocationException {
         List<Position> skipPositions = (List<Position>) context.getDocument().getProperty(KEY_SKIP_POSITIONS);
         if (skipPositions != null) {
+            //TODO: there can be very many skip positions, evict at some point?
             for (Iterator<Position> it = skipPositions.iterator(); it.hasNext();) {
                 Position skipPosition = it.next();
                 if (skipPosition.getOffset() == context.getOffset() && context.getDocument().getText(skipPosition.getOffset(), 1).equals(context.getText())) {
@@ -69,7 +82,8 @@ public class TypingCompletionImpl implements TypedTextInterceptor {
         }
 
         char lastChar = context.getText().charAt(0);
-        AutoClosingPair[] candidates = lastChar2ClosingPair.get(lastChar);
+        AutoClosingPair[] candidates = lastChar < SIMPLE_CHAR_LIMIT ? simpleLastChar2ClosingPair[lastChar]
+                                                                    : lastChar2ClosingPair.get(lastChar);
 
         if (candidates != null) {
             for (AutoClosingPair candidate : candidates) {
