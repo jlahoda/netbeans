@@ -240,6 +240,8 @@ public final class LanguageConfiguration {
                         }).toArray(SyntaxTokenType[]::new);
                     }
                     autoClosingPairsList.add(new AutoClosingPair((String) map.get("open"), (String) map.get("close"), notIn));
+                } else if (conf instanceof List<?> pair && pair.size() == 2) {
+                    autoClosingPairsList.add(new AutoClosingPair((String) pair.get(0), (String) pair.get(1), null));
                 }
             }
             autoClosingPairs = autoClosingPairsList.toArray(AutoClosingPair[]::new);
