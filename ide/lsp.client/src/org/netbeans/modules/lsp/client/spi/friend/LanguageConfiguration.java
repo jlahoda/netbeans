@@ -37,18 +37,20 @@ public final class LanguageConfiguration {
     public final @NullAllowed IndentationRule indentationRules;
     public final @NullAllowed OnEnterRule[] onEnterRules;
     public final @NullAllowed AutoClosingPair[] autoClosingPairs;
+    public final @NullAllowed String autoCloseBefore;
 
-    private LanguageConfiguration(CommentRule comments, CharacterPair[] brackets, RegExp wordPattern, IndentationRule indentationRules, OnEnterRule[] onEnterRules, AutoClosingPair[] autoClosingPairs) {
+    private LanguageConfiguration(CommentRule comments, CharacterPair[] brackets, RegExp wordPattern, IndentationRule indentationRules, OnEnterRule[] onEnterRules, AutoClosingPair[] autoClosingPairs, String autoCloseBefore) {
         this.comments = comments;
         this.brackets = brackets;
         this.wordPattern = wordPattern;
         this.indentationRules = indentationRules;
         this.onEnterRules = onEnterRules;
         this.autoClosingPairs = autoClosingPairs;
+        this.autoCloseBefore = autoCloseBefore;
     }
     
-    public static LanguageConfiguration from(CommentRule comments, CharacterPair[] brackets, RegExp wordPattern, IndentationRule indentationRules, OnEnterRule[] onEnterRules, AutoClosingPair[] autoClosingPairs) {
-        return new LanguageConfiguration(comments, brackets, wordPattern, indentationRules, onEnterRules, autoClosingPairs);
+    public static LanguageConfiguration from(CommentRule comments, CharacterPair[] brackets, RegExp wordPattern, IndentationRule indentationRules, OnEnterRule[] onEnterRules, AutoClosingPair[] autoClosingPairs, String autoCloseBefore) {
+        return new LanguageConfiguration(comments, brackets, wordPattern, indentationRules, onEnterRules, autoClosingPairs, autoCloseBefore);
     }
 
     public static final class RegExp {
@@ -246,7 +248,11 @@ public final class LanguageConfiguration {
             }
             autoClosingPairs = autoClosingPairsList.toArray(AutoClosingPair[]::new);
         }
-        return LanguageConfiguration.from(comments, braces, null, null, null, autoClosingPairs);
+        String autoCloseBefore = null;
+        if (config.get("autoCloseBefore") instanceof String autoCloseBeforeValue) {
+            autoCloseBefore = autoCloseBeforeValue;
+        }
+        return LanguageConfiguration.from(comments, braces, null, null, null, autoClosingPairs, autoCloseBefore);
     }
 
     public static LanguageConfiguration create(FileObject source) throws IOException {

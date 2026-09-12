@@ -126,6 +126,22 @@ public class TypingCompletionImplTest {
                          """
                          ()|
                          """));
+        doTest("""
+               |>
+               """,
+               LanguageConfiguration.from("{ 'autoClosingPairs': [ { 'open': '(', 'close': ')' } ] }"),
+               new Input('(',
+                         """
+                         (|>
+                         """));
+        doTest("""
+               |>
+               """,
+               LanguageConfiguration.from("{ 'autoClosingPairs': [ { 'open': '(', 'close': ')' } ], 'autoCloseBefore': '>' }"),
+               new Input('(',
+                         """
+                         (|)>
+                         """));
     }
 
     private void doTest(String code, LanguageConfiguration config, Input... inputs) throws Exception {
