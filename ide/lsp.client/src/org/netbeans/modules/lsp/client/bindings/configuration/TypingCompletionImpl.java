@@ -21,17 +21,23 @@ package org.netbeans.modules.lsp.client.bindings.configuration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Position;
 import org.netbeans.api.editor.mimelookup.MimeLookup;
 import org.netbeans.api.editor.mimelookup.MimePath;
+import org.netbeans.api.lexer.Token;
+import org.netbeans.api.lexer.TokenHierarchy;
+import org.netbeans.api.lexer.TokenSequence;
 import org.netbeans.modules.lsp.client.spi.friend.LanguageConfiguration;
 import org.netbeans.modules.lsp.client.spi.friend.LanguageConfiguration.AutoClosingPair;
+import org.netbeans.modules.lsp.client.spi.friend.LanguageConfiguration.SyntaxTokenType;
 import org.netbeans.spi.editor.typinghooks.TypedTextInterceptor;
 
 public class TypingCompletionImpl implements TypedTextInterceptor {
@@ -86,7 +92,9 @@ public class TypingCompletionImpl implements TypedTextInterceptor {
                                                                     : lastChar2ClosingPair.get(lastChar);
 
         if (candidates != null) {
-            for (AutoClosingPair candidate : candidates) {
+            SyntaxTokenType type = null;
+
+            NEXT: for (AutoClosingPair candidate : candidates) {
                 if (candidate.open.length() > 1) {
                     int prefixLen = candidate.open.length() - 1;
                     if (context.getDocument().getLength() <= prefixLen) {
@@ -96,11 +104,62 @@ public class TypingCompletionImpl implements TypedTextInterceptor {
                         continue;
                     }
                 }
+                if (candidate.notIn != null && candidate.notIn.length > 0) {
+                    if (type == null) {
+                        type = inferSyntaxTokenType(context);
+                    }
+                    for (SyntaxTokenType notIn : candidate.notIn) {
+                        if (type == notIn) {
+                            continue NEXT;
+                        }
+                    }
+                }
                 context.setText(context.getText() + candidate.close, 1);
                 moveOffset = -1;
                 return ;
             }
         }
+    }
+
+    private SyntaxTokenType inferSyntaxTokenType(MutableContext context) {
+        TokenSequence<?> ts = TokenHierarchy.get(context.getDocument()).tokenSequence();
+
+        ts.move(context.getOffset());
+
+        if (ts.moveNext()) {
+            Token<?> token = ts.token();
+
+            if (token.getProperty("categories") instanceof List<?> categories) {
+                for (Object cat : categories) {
+                    if (cat instanceof String category) {
+                        if (detectTypeFromText(category) instanceof SyntaxTokenType detected) {
+                            return detected;
+                        }
+                    }
+                }
+            } else {
+                if (detectTypeFromText(token.id().name().toLowerCase()) instanceof SyntaxTokenType detected) {
+                    return detected;
+                }
+                if (detectTypeFromText(token.id().primaryCategory().toLowerCase()) instanceof SyntaxTokenType detected) {
+                    return detected;
+                }
+            }
+
+        }
+
+        return SyntaxTokenType.Other;
+    }
+
+    private Object detectTypeFromText(String text) {
+        if (text.contains("string")) {
+            return SyntaxTokenType.String;
+        } else if (text.contains("comment")) {
+            return SyntaxTokenType.Comment;
+        } else if (text.contains("regex")) {
+            return SyntaxTokenType.RegEx;
+        }
+        return null;
     }
 
     @Override

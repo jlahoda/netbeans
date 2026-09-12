@@ -18,6 +18,8 @@
  */
 package org.netbeans.modules.lsp.client.bindings.configuration;
 
+import java.io.InputStream;
+import java.io.OutputStream;
 import javax.swing.JEditorPane;
 import javax.swing.text.Caret;
 import javax.swing.text.JTextComponent;
@@ -25,7 +27,10 @@ import org.junit.Test;
 import org.netbeans.modules.editor.NbEditorDocument;
 import org.netbeans.modules.lsp.client.spi.friend.LanguageConfiguration;
 import org.netbeans.modules.editor.lib2.typinghooks.TypingHooksSpiAccessor;
+import org.netbeans.modules.textmate.lexer.TextmateTokenId;
 import org.netbeans.spi.editor.typinghooks.TypedTextInterceptor.MutableContext;
+import org.openide.filesystems.FileObject;
+import org.openide.filesystems.FileUtil;
 
 import static org.junit.Assert.*;
 
@@ -92,6 +97,22 @@ public class TypingCompletionImplTest {
                new Input('č',
                          """
                          č|
+                         """));
+        FileObject systemConfigRoot = FileUtil.getSystemConfigRoot();
+        FileObject grammar = FileUtil.createData(systemConfigRoot, "Editors/text/x-test/grammar.json");
+        grammar.setAttribute("textmate-grammar", "source.c");
+        try (InputStream is = TypingCompletionImplTest.class.getResourceAsStream("c.tmLanguage.json");
+             OutputStream os = grammar.getOutputStream()) {
+            FileUtil.copy(is, os);
+        }
+        TextmateTokenId.LanguageHierarchyImpl.refreshGrammars();
+        doTest("""
+               "|"
+               """,
+               LanguageConfiguration.from("{ 'autoClosingPairs': [ { 'open': '(', 'close': ')', 'notIn': [ 'string' ] } ] }"),
+               new Input('(',
+                         """
+                         "(|"
                          """));
     }
 

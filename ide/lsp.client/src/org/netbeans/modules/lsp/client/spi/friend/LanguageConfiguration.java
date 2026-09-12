@@ -230,7 +230,16 @@ public final class LanguageConfiguration {
             List<AutoClosingPair> autoClosingPairsList = new ArrayList<>();
             for (Object conf : autoClosingPairsConfig) {
                 if (conf instanceof Map<?, ?> map) {
-                    autoClosingPairsList.add(new AutoClosingPair((String) map.get("open"), (String) map.get("close"), /*TODO:*/ null));
+                    SyntaxTokenType[] notIn = null;
+                    if (map.get("notIn") instanceof List<?> notInList) {
+                        notIn = notInList.stream().map(key -> switch ((String) key) {
+                            case "string" -> SyntaxTokenType.String;
+                            case "comment" -> SyntaxTokenType.Comment;
+                            case "regex" -> SyntaxTokenType.RegEx;
+                            default -> SyntaxTokenType.Other;
+                        }).toArray(SyntaxTokenType[]::new);
+                    }
+                    autoClosingPairsList.add(new AutoClosingPair((String) map.get("open"), (String) map.get("close"), notIn));
                 }
             }
             autoClosingPairs = autoClosingPairsList.toArray(AutoClosingPair[]::new);
