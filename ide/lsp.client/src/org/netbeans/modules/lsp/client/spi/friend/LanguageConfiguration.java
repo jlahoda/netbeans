@@ -38,8 +38,9 @@ public final class LanguageConfiguration {
     public final @NullAllowed OnEnterRule[] onEnterRules;
     public final @NullAllowed AutoClosingPair[] autoClosingPairs;
     public final @NullAllowed String autoCloseBefore;
+    public final @NullAllowed CharacterPair[] surroundingPairs;
 
-    private LanguageConfiguration(CommentRule comments, CharacterPair[] brackets, RegExp wordPattern, IndentationRule indentationRules, OnEnterRule[] onEnterRules, AutoClosingPair[] autoClosingPairs, String autoCloseBefore) {
+    private LanguageConfiguration(CommentRule comments, CharacterPair[] brackets, RegExp wordPattern, IndentationRule indentationRules, OnEnterRule[] onEnterRules, AutoClosingPair[] autoClosingPairs, String autoCloseBefore, CharacterPair[] surroundingPairs) {
         this.comments = comments;
         this.brackets = brackets;
         this.wordPattern = wordPattern;
@@ -47,10 +48,11 @@ public final class LanguageConfiguration {
         this.onEnterRules = onEnterRules;
         this.autoClosingPairs = autoClosingPairs;
         this.autoCloseBefore = autoCloseBefore;
+        this.surroundingPairs = surroundingPairs;
     }
     
-    public static LanguageConfiguration from(CommentRule comments, CharacterPair[] brackets, RegExp wordPattern, IndentationRule indentationRules, OnEnterRule[] onEnterRules, AutoClosingPair[] autoClosingPairs, String autoCloseBefore) {
-        return new LanguageConfiguration(comments, brackets, wordPattern, indentationRules, onEnterRules, autoClosingPairs, autoCloseBefore);
+    public static LanguageConfiguration from(CommentRule comments, CharacterPair[] brackets, RegExp wordPattern, IndentationRule indentationRules, OnEnterRule[] onEnterRules, AutoClosingPair[] autoClosingPairs, String autoCloseBefore, CharacterPair[] surroundingPairs) {
+        return new LanguageConfiguration(comments, brackets, wordPattern, indentationRules, onEnterRules, autoClosingPairs, autoCloseBefore, surroundingPairs);
     }
 
     public static final class RegExp {
@@ -215,17 +217,7 @@ public final class LanguageConfiguration {
             }
             comments = CommentRule.from(lineComment, blockComment);
         }
-        CharacterPair[] braces = null;
-        List<Object> bracesConfig = (List<Object>) config.get("brackets");
-        if (bracesConfig != null) {
-            List<CharacterPair> bracesList = new ArrayList<>();
-            for (Object conf : bracesConfig) {
-                if (conf instanceof List<?> pair) {
-                    bracesList.add(new CharacterPair((String) pair.get(0), (String) pair.get(1)));
-                }
-            }
-            braces = bracesList.toArray(CharacterPair[]::new);
-        }
+        CharacterPair[] braces = gatherPairs(config.get("brackets"));
         AutoClosingPair[] autoClosingPairs = null;
         List<Object> autoClosingPairsConfig = (List<Object>) config.get("autoClosingPairs");
         if (autoClosingPairsConfig != null) {
@@ -252,7 +244,24 @@ public final class LanguageConfiguration {
         if (config.get("autoCloseBefore") instanceof String autoCloseBeforeValue) {
             autoCloseBefore = autoCloseBeforeValue;
         }
-        return LanguageConfiguration.from(comments, braces, null, null, null, autoClosingPairs, autoCloseBefore);
+        CharacterPair[] surroundingPairs = gatherPairs(config.get("surroundingPairs"));
+        return LanguageConfiguration.from(comments, braces, null, null, null, autoClosingPairs, autoCloseBefore, surroundingPairs);
+    }
+
+    private static CharacterPair[] gatherPairs(Object pairsConfigObj) {
+        CharacterPair[] result = null;
+
+        if (pairsConfigObj instanceof List<?> pairsConfig) {
+            List<CharacterPair> bracesList = new ArrayList<>();
+            for (Object conf : pairsConfig) {
+                if (conf instanceof List<?> pair) {
+                    bracesList.add(new CharacterPair((String) pair.get(0), (String) pair.get(1)));
+                }
+            }
+            result = bracesList.toArray(CharacterPair[]::new);
+        }
+
+        return result;
     }
 
     public static LanguageConfiguration create(FileObject source) throws IOException {

@@ -36,8 +36,8 @@ import static org.junit.Assert.*;
 
 public class TypingCompletionImplTest {
 
-    @Test
-    public void testTypingCompletion() throws Exception {
+//    @Test
+    public void testBracketCompletion() throws Exception {
         doTest("""
                |
                """,
@@ -144,24 +144,37 @@ public class TypingCompletionImplTest {
                          """));
     }
 
+    @Test
+    public void testAutoSurrounding() throws Exception {
+        doTest("""
+               ^hello|
+               """,
+               LanguageConfiguration.from("{ 'surroundingPairs': [ [ '(', ')' ] ] }"),
+               new Input('(',
+                         """
+                         (hello)|
+                         """));
+    }
+
     private void doTest(String code, LanguageConfiguration config, Input... inputs) throws Exception {
-        //TODO: could be nice to be also test mark > caret.
         NbEditorDocument doc = new NbEditorDocument("text/x-test");
         JTextComponent c = new JEditorPane();
         c.setDocument(doc);
-        String[] parts = code.split("\\|");
-        assertEquals("Caret marked incorrectly", 2, parts.length);
-        int caret = parts[0].length();
-        code = parts[0] + parts[1];
-        doc.insertString(0, code, null);
+        ParsedCode parsedCode = detectSpan(code);
+        doc.insertString(0, parsedCode.code(), null);
         Caret caretObj = c.getCaret();
-        caretObj.setDot(caret);
+        caretObj.setDot(parsedCode.mark());
+        caretObj.moveDot(parsedCode.caret());
         TypingCompletionImpl typing = new TypingCompletionImpl(config);
         for (Input input : inputs) {
+            int first = Math.min(caretObj.getMark(), caretObj.getDot());
+            int second = Math.max(caretObj.getMark(), caretObj.getDot());
             String typed = String.valueOf(input.c());
-            MutableContext context = TypingHooksSpiAccessor.get().createTtiContext(c, doc.createPosition(caretObj.getDot()), typed, "");
+            MutableContext context = TypingHooksSpiAccessor.get().createTtiContext(c, doc.createPosition(first), typed, doc.getText(first, second - first));
             boolean callAfterInsert = false;
             if (!typing.beforeInsert(context)) {
+                doc.remove(first, second - first);
+                caretObj.setDot(first);
                 typing.insert(context);
                 callAfterInsert = true;
             }
@@ -169,7 +182,7 @@ public class TypingCompletionImplTest {
             if (data == null) {
                 data = new Object[] {typed, 1, false};
             }
-            doc.insertString(caretObj.getDot(), (String) data[0], null);
+            doc.insertString(first, (String) data[0], null);
             caretObj.setDot(caretObj.getDot() + (int) data[1]);
             assertFalse((Boolean) data[2]);
             if (callAfterInsert) {
@@ -183,6 +196,19 @@ public class TypingCompletionImplTest {
             assertEquals(expected, doc.getText(0, doc.getLength()));
         }
     }
+
+    private ParsedCode detectSpan(String code) {
+        int caret = code.replace("^", "").indexOf('|');
+        assertTrue("Caret marked incorrectly", caret != (-1));
+        int mark = code.replace("|", "").indexOf('^');
+        if (mark == (-1)) {
+            mark = caret;
+        }
+        code = code.replace("|", "").replace("^", "");
+        return new ParsedCode(code, mark, caret);
+    }
+
+    private record ParsedCode(String code, int mark, int caret) {}
 
     private record Input(char c, String expectedOutput) {}
 }

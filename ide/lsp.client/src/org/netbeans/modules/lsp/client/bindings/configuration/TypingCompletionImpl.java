@@ -36,6 +36,7 @@ import org.netbeans.api.lexer.TokenSequence;
 import org.netbeans.lib.editor.util.swing.DocumentUtilities;
 import org.netbeans.modules.lsp.client.spi.friend.LanguageConfiguration;
 import org.netbeans.modules.lsp.client.spi.friend.LanguageConfiguration.AutoClosingPair;
+import org.netbeans.modules.lsp.client.spi.friend.LanguageConfiguration.CharacterPair;
 import org.netbeans.modules.lsp.client.spi.friend.LanguageConfiguration.SyntaxTokenType;
 import org.netbeans.spi.editor.typinghooks.TypedTextInterceptor;
 
@@ -46,13 +47,16 @@ public class TypingCompletionImpl implements TypedTextInterceptor {
     private static final String DEFAULT_AUTOCLOSE_BEFORE = " \n\t";
     private final AutoClosingPair[][] simpleLastChar2ClosingPair;
     private final Map<Character, AutoClosingPair[]> lastChar2ClosingPair;
+    private final Map<String, String> surroundingPairs;
     private final String autoCloseBefore;
     private int moveOffset;
 
     public TypingCompletionImpl(LanguageConfiguration lc) {
         Map<Character, List<AutoClosingPair>> tempLastChar2ClosingPair = new HashMap<>();
-        Arrays.stream(lc.autoClosingPairs)
-              .forEach(p -> tempLastChar2ClosingPair.computeIfAbsent(p.open.charAt(p.open.length() - 1), x -> new ArrayList<>()).add(p));
+        if (lc.autoClosingPairs != null) {
+            Arrays.stream(lc.autoClosingPairs)
+                  .forEach(p -> tempLastChar2ClosingPair.computeIfAbsent(p.open.charAt(p.open.length() - 1), x -> new ArrayList<>()).add(p));
+        }
         simpleLastChar2ClosingPair = new AutoClosingPair[SIMPLE_CHAR_LIMIT][];
         for (Iterator<Entry<Character, List<AutoClosingPair>>> it = tempLastChar2ClosingPair.entrySet().iterator(); it.hasNext();) {
             Entry<Character, List<AutoClosingPair>> e = it.next();
@@ -64,6 +68,10 @@ public class TypingCompletionImpl implements TypedTextInterceptor {
         }
         lastChar2ClosingPair = tempLastChar2ClosingPair.entrySet().stream().collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue().toArray(AutoClosingPair[]::new)));
         autoCloseBefore = lc.autoCloseBefore != null ? lc.autoCloseBefore : DEFAULT_AUTOCLOSE_BEFORE;
+        surroundingPairs = new HashMap<>();
+        for (CharacterPair characterPair : lc.surroundingPairs) {
+            surroundingPairs.put(characterPair.first, characterPair.second);
+        }
     }
 
     @Override
@@ -87,7 +95,17 @@ public class TypingCompletionImpl implements TypedTextInterceptor {
             }
         }
 
-        //TODO: handle replaced text!
+        if (!context.getReplacedText().isEmpty()) {
+            String close = surroundingPairs.get(context.getText());
+
+            if (close != null) {
+                String newText = context.getText() + context.getReplacedText() + close;
+
+                context.setText(newText, newText.length());
+                return ;
+            }
+        }
+
         char next = DocumentUtilities.getText(context.getDocument(), context.getOffset(), 1).charAt(0);
         if (autoCloseBefore.indexOf(next) == (-1)) {
             return ;
